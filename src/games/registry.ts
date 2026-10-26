@@ -4,6 +4,7 @@ import { bluff } from './bluff';
 import { sumo } from './sumo';
 import { bombsGame } from './bombs';
 import { kart } from './kart';
+import { archers } from './archers';
 import type { GameDef } from './types';
 
 const soon = (
@@ -36,7 +37,7 @@ export const GAMES: GameDef[] = [
   bombsGame,
   sumo,
   kart,
-  soon('archers', '🏹', 'Flèches à Ventouse', 'Sucker Arrows', 'TowerFall', 8),
+  archers,
   soon('bagarre', '🤼', 'Bagarre Molle', 'Wobbly Brawl', 'Gang Beasts', 8),
   soon('cuisine', '🍳', 'Cuisine en Panique', 'Kitchen Panic', 'Overcooked', 8),
   soon('traitre', '🕵️', 'Le Traître du Frigo', 'Fridge Traitor', 'Loup-garou / Among Us', 12, 'tap'),

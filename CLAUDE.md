@@ -23,7 +23,8 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 3. ✅ Le Bar des Bobards (`src/games/bluff.ts` + `src/pad/BluffPad.tsx`) : bluff 2-6 joueurs, main privée sur le téléphone (`padData` + `ctx.refresh()`), roulette du coussin péteur.
 4. ✅ Sumo Tamponneur (`sumo.ts`, 12 joueurs, 3 vies, assiette qui rétrécit) et Pétards Mouillés (`bombs.ts`, 8 joueurs, grille, bonus, bots qui fuient le danger).
 5. ✅ Mini Bolides (`kart.ts`, 8 karts, 3 tours, objets turbo/sirop/pétard).
-6. Ensuite : Pétards Mouillés (Bomberman), Sumo Tamponneur, Mini Bolides (kart), Flèches à Ventouse (TowerFall), Bagarre Molle (Gang Beasts), Cuisine en Panique (Overcooked), Le Traître du Frigo (rôle caché), Gribouillis (dessin), Le Grand Plateau (Mario Party), Coussin Clash (Smash, le jeu phare).
+6. ✅ Flèches à Ventouse (`archers.ts`, 8 joueurs, bords qui se rejoignent, premier à 3 manches).
+7. Ensuite : Pétards Mouillés (Bomberman), Sumo Tamponneur, Mini Bolides (kart), Flèches à Ventouse (TowerFall), Bagarre Molle (Gang Beasts), Cuisine en Panique (Overcooked), Le Traître du Frigo (rôle caché), Gribouillis (dessin), Le Grand Plateau (Mario Party), Coussin Clash (Smash, le jeu phare).
 Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 ## Architecture
@@ -39,7 +40,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 ## Tester
 
 - `npm run dev` (port 5180, déclaré dans `.claude/launch.json`).
-- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
+- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
 - `#/m/TEST?s=lobby|tap|stick|results|podium` : la manette sans connexion.
 
 ## Règles de travail

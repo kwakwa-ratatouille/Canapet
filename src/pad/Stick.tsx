@@ -7,6 +7,7 @@ const LABELS: Record<string, Record<Lang, [string, string]>> = {
   sumo: { fr: ['TURBO', 'ANCRE'], en: ['BOOST', 'ANCHOR'] },
   bombes: { fr: ['PÉTARD', 'POUSSE'], en: ['BOMB', 'KICK'] },
   kart: { fr: ['OBJET', 'FREIN'], en: ['ITEM', 'BRAKE'] },
+  archers: { fr: ['SAUT', 'TIR'], en: ['JUMP', 'SHOOT'] },
 };
 
 /** Manette « stick + 2 boutons » : le stick apparaît là où le pouce se pose. */
