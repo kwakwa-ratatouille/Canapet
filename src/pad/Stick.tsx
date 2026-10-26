@@ -4,6 +4,9 @@ import type { Lang, ToTv } from '../shared/protocol';
 
 const LABELS: Record<string, Record<Lang, [string, string]>> = {
   obstacles: { fr: ['SAUT', 'PLONGE'], en: ['JUMP', 'DIVE'] },
+  sumo: { fr: ['TURBO', 'ANCRE'], en: ['BOOST', 'ANCHOR'] },
+  bombes: { fr: ['PÉTARD', 'POUSSE'], en: ['BOMB', 'KICK'] },
+  kart: { fr: ['GAZ', 'OBJET'], en: ['GAS', 'ITEM'] },
 };
 
 /** Manette « stick + 2 boutons » : le stick apparaît là où le pouce se pose. */

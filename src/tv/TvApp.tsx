@@ -32,6 +32,8 @@ export function TvApp() {
       if (k === 't') session.hostAction('tournament');
       if (k === 'd') session.hostAction('pick', 'obstacles');
       if (k === 'b') session.hostAction('pick', 'bluff');
+      if (k === 's') session.hostAction('pick', 'sumo');
+      if (k === 'p') session.hostAction('pick', 'bombes');
       if (k === 'n') session.hostAction('next');
       if (k === 'r') session.hostAction('replay');
       if (k === 'l' || k === 'escape') session.hostAction('lobby');
