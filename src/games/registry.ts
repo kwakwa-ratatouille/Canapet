@@ -1,5 +1,6 @@
 import { thumbRace } from './thumbRace';
 import { tumble } from './tumble';
+import { bluff } from './bluff';
 import type { GameDef } from './types';
 
 const soon = (
@@ -28,7 +29,7 @@ const soon = (
 export const GAMES: GameDef[] = [
   thumbRace,
   tumble,
-  soon('bluff', '🃏', 'Le Bar des Bobards', 'Fibbers’ Bar', "Liar's Bar", 6, 'tap'),
+  bluff,
   soon('bombes', '💣', 'Pétards Mouillés', 'Soggy Bangers', 'Bomberman', 8),
   soon('sumo', '🛞', 'Sumo Tamponneur', 'Bumper Sumo', 'auto-tamponneuses', 12),
   soon('kart', '🏎️', 'Mini Bolides', 'Tiny Racers', 'Micro Machines', 8),

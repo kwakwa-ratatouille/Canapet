@@ -13,7 +13,7 @@ export interface Profile {
   selfie?: string;
 }
 
-export type PadLayout = 'tap' | 'stick';
+export type PadLayout = 'tap' | 'stick' | 'bluff' | 'buttons';
 
 export interface GameInfo {
   id: string;
@@ -22,7 +22,7 @@ export interface GameInfo {
 
 export type PadScreen =
   | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number }
-  | { s: 'play'; layout: PadLayout; game: string }
+  | { s: 'play'; layout: PadLayout; game: string; data?: unknown }
   | { s: 'wait'; game: string }
   | {
       s: 'results';
@@ -49,6 +49,8 @@ export type ToTv =
   | { t: 'profile'; profile: Profile }
   | { t: 'tap'; side: 0 | 1 }
   | { t: 'in'; x: number; y: number; a: boolean; b: boolean }
+  /** Action propre à un jeu (poser des cartes, voter…). */
+  | { t: 'act'; a: string; n?: number[] }
   | { t: 'host'; action: HostAction; game?: string }
   | { t: 'ping'; ts: number };
 

@@ -153,6 +153,7 @@ export class Session {
         return;
       case 'tap':
       case 'in':
+      case 'act':
         if (this.phase === 'game' && this.game && this.clock >= INTRO + COUNT) this.game.input(pid, m);
         return;
       case 'host':
@@ -244,6 +245,7 @@ export class Session {
       lang: this.lang(),
       light: LIGHT,
       buzz: (pid, ms) => this.net.send(pid, { t: 'buzz', ms }),
+      refresh: () => this.pushScreens(),
     });
     this.phase = 'game';
     this.clock = 0;
@@ -349,7 +351,7 @@ export class Session {
           count: this.list().filter((x) => x.connected).length,
         };
       case 'game':
-        return playing ? { s: 'play', layout: this.def!.layout, game: this.def!.id } : { s: 'wait', game: this.def!.id };
+        return playing ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid) } : { s: 'wait', game: this.def!.id };
       case 'results': {
         const row = this.results.find((r) => r.pid === p.pid);
         if (!row && !host) return { s: 'wait', game: this.def?.id ?? '' };

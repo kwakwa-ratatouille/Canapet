@@ -8,6 +8,8 @@ import type { HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/proto
 import { sfx, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
 import { Stick } from './Stick';
+import { BluffPad } from './BluffPad';
+import type { BluffPadData } from '../games/bluffShared';
 
 function defaultProfile(): Profile {
   return {
@@ -204,6 +206,7 @@ function PadScreenView({
         </div>
       );
     case 'play':
+      if (screen.layout === 'bluff' && screen.data) return <BluffPad data={screen.data as BluffPadData} lang={lang} send={send} />;
       return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} />;
     case 'wait':
       return (

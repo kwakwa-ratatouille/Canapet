@@ -11,6 +11,8 @@ export interface GameCtx {
   lang: Lang;
   light: boolean;
   buzz(pid: string, ms: number): void;
+  /** Renvoie aux téléphones leur écran (à appeler quand padData change). */
+  refresh(): void;
 }
 
 /** Une partie en cours. La télé l'appelle à 60 Hz (update) et à chaque image (render). */
@@ -24,6 +26,8 @@ export interface GameInstance {
   ranking(): string[];
   /** Pour le présentateur : nom du premier arrivé dès qu'il y en a un. */
   leader?(): string | null;
+  /** Données privées affichées sur le téléphone de ce joueur (sa main, ses choix…). */
+  padData?(pid: string): unknown;
 }
 
 export interface GameDef {

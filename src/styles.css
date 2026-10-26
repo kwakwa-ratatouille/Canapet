@@ -828,6 +828,121 @@ button {
   }
 }
 
+/* Bar des Bobards (manette) */
+.bluff {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  color: #fff;
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+.bluff-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.bluff-table {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 4px 12px 4px 4px;
+}
+.bluff-table div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.bluff-table b {
+  font-size: 22px;
+  color: var(--yellow);
+}
+.danger {
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(123, 209, 59, 0.25);
+}
+.danger.d3,
+.danger.d4,
+.danger.d5 {
+  background: rgba(255, 59, 59, 0.45);
+}
+.bluff-status {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  margin: 4px 0 0;
+}
+.bluff-claim {
+  text-align: center;
+  margin: 0;
+  opacity: 0.85;
+}
+.hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+}
+.card {
+  width: 74px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #fff7e8;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 2px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s;
+}
+.card small {
+  font-weight: 700;
+  font-size: 13px;
+}
+.card.on {
+  transform: translateY(-14px);
+  background: var(--yellow);
+}
+.card.idle {
+  opacity: 0.85;
+}
+.bluff-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.bluff-actions .btn {
+  flex: 1;
+  max-width: 220px;
+}
+.btn.liar {
+  background: #ff3b3b;
+  font-size: 24px;
+}
+.cushion-btn {
+  align-self: center;
+  margin: auto;
+  border: 5px solid #fff;
+  border-radius: 50%;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, #ffd1ea, #ff4f9a);
+  display: grid;
+  place-items: center;
+  animation: pulse 0.8s ease-in-out infinite;
+  touch-action: none;
+}
+
 /* Éditeur de personnage */
 .editor {
   overflow-y: auto;
