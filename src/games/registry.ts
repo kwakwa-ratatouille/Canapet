@@ -3,6 +3,7 @@ import { tumble } from './tumble';
 import { bluff } from './bluff';
 import { sumo } from './sumo';
 import { bombsGame } from './bombs';
+import { kart } from './kart';
 import type { GameDef } from './types';
 
 const soon = (
@@ -34,7 +35,7 @@ export const GAMES: GameDef[] = [
   bluff,
   bombsGame,
   sumo,
-  soon('kart', '🏎️', 'Mini Bolides', 'Tiny Racers', 'Micro Machines', 8),
+  kart,
   soon('archers', '🏹', 'Flèches à Ventouse', 'Sucker Arrows', 'TowerFall', 8),
   soon('bagarre', '🤼', 'Bagarre Molle', 'Wobbly Brawl', 'Gang Beasts', 8),
   soon('cuisine', '🍳', 'Cuisine en Panique', 'Kitchen Panic', 'Overcooked', 8),
