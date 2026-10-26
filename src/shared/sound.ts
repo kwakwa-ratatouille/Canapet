@@ -168,6 +168,12 @@ const TRACKS: Record<string, Track> = {
     arp: 'up',
     wave: 'square',
   },
+  tumble: {
+    bpm: 132,
+    chords: [[65, 69, 72], [67, 71, 74], [64, 67, 71], [69, 72, 76]],
+    arp: 'bounce',
+    wave: 'square',
+  },
   podium: {
     bpm: 120,
     chords: [[60, 64, 67], [65, 69, 72], [67, 71, 74], [60, 64, 67]],

@@ -1,4 +1,5 @@
 import { thumbRace } from './thumbRace';
+import { tumble } from './tumble';
 import type { GameDef } from './types';
 
 const soon = (
@@ -26,7 +27,7 @@ const soon = (
 /** Catalogue complet, dans l'ordre de fabrication prévu. */
 export const GAMES: GameDef[] = [
   thumbRace,
-  soon('obstacles', '🏃', 'La Dégringolade', 'Tumble Run', 'Fall Guys', 12),
+  tumble,
   soon('bluff', '🃏', 'Le Bar des Bobards', 'Fibbers’ Bar', "Liar's Bar", 6, 'tap'),
   soon('bombes', '💣', 'Pétards Mouillés', 'Soggy Bangers', 'Bomberman', 8),
   soon('sumo', '🛞', 'Sumo Tamponneur', 'Bumper Sumo', 'auto-tamponneuses', 12),

@@ -37,7 +37,7 @@ export interface GameDef {
   max: number;
   /** Nombre de participants minimum : on complète avec des bots. */
   botFill: number;
-  music: 'race' | 'lobby';
+  music: 'race' | 'lobby' | 'tumble';
   soon?: boolean;
   create?(runners: Runner[], ctx: GameCtx): GameInstance;
 }

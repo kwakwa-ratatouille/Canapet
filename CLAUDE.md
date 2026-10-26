@@ -19,7 +19,7 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 ## Catalogue (ordre de fabrication)
 
 1. ✅ Course de pouces (`src/games/thumbRace.ts`) : test de latence.
-2. La Dégringolade (Fall Guys 2D), **prochain**.
+2. ✅ La Dégringolade (`src/games/tumble.ts`) : course d’obstacles vue de côté, parcours tiré au hasard (tronçons), caméra qui suit le premier, A = saut, B = plongeon.
 3. Ensuite : Bar des Bobards (Liar's Bar), Pétards Mouillés (Bomberman), Sumo Tamponneur, Mini Bolides (kart), Flèches à Ventouse (TowerFall), Bagarre Molle (Gang Beasts), Cuisine en Panique (Overcooked), Le Traître du Frigo (rôle caché), Gribouillis (dessin), Le Grand Plateau (Mario Party), Coussin Clash (Smash, le jeu phare).
 Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
@@ -36,7 +36,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 ## Tester
 
 - `npm run dev` (port 5180, déclaré dans `.claude/launch.json`).
-- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : Entrée = Course de pouces, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
+- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : Entrée = Course de pouces, D = Dégringolade, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
 - `#/m/TEST?s=lobby|tap|stick|results|podium` : la manette sans connexion.
 
 ## Règles de travail

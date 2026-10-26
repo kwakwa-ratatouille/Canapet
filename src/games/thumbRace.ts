@@ -91,7 +91,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       });
       for (const p of puffs) p.life -= dt;
       while (puffs.length && puffs[0].life <= 0) puffs.shift();
-      const humansDone = rs.every((r) => r.bot || r.done);
+      const humansDone = rs.some((r) => !r.bot) ? rs.every((r) => r.bot || r.done) : rs.every((r) => r.done);
       if (endDelay < 0 && (humansDone || time > MAX_TIME || (firstAt >= 0 && time - firstAt > AFTER_FIRST))) endDelay = 1.8;
       if (endDelay >= 0) {
         endDelay -= dt;

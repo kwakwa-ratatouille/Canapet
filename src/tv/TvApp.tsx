@@ -30,6 +30,7 @@ export function TvApp() {
       const k = e.key.toLowerCase();
       if (k === 'enter') session.hostAction(session.phase === 'results' ? 'next' : 'pick', 'pouces');
       if (k === 't') session.hostAction('tournament');
+      if (k === 'd') session.hostAction('pick', 'obstacles');
       if (k === 'n') session.hostAction('next');
       if (k === 'r') session.hostAction('replay');
       if (k === 'l' || k === 'escape') session.hostAction('lobby');
@@ -139,7 +140,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
         </div>
         <p className="lobby-hint">
           {players.length === 0 ? t(lang, 'waitingPlayers') : t(lang, 'hostStarts', { crown: '👑' })}
-          {PREVIEW && <span className="kbd"> · Entrée = Course de pouces · T = Tournoi</span>}
+          {PREVIEW && <span className="kbd"> · Entrée = Course de pouces · D = Dégringolade · T = Tournoi</span>}
         </p>
       </div>
     </div>

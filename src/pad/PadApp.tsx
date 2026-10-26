@@ -204,7 +204,7 @@ function PadScreenView({
         </div>
       );
     case 'play':
-      return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} />;
+      return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} />;
     case 'wait':
       return (
         <div className="pad-body">

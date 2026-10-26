@@ -2,8 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { t } from '../shared/i18n';
 import type { Lang, ToTv } from '../shared/protocol';
 
+const LABELS: Record<string, Record<Lang, [string, string]>> = {
+  obstacles: { fr: ['SAUT', 'PLONGE'], en: ['JUMP', 'DIVE'] },
+};
+
 /** Manette « stick + 2 boutons » : le stick apparaît là où le pouce se pose. */
-export function Stick({ send, lang }: { send: (m: ToTv) => void; lang: Lang }) {
+export function Stick({ send, lang, game }: { send: (m: ToTv) => void; lang: Lang; game?: string }) {
+  const [la, lb] = LABELS[game ?? '']?.[lang] ?? ['A', 'B'];
   const state = useRef({ x: 0, y: 0, a: false, b: false });
   const [knob, setKnob] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
   const [pressed, setPressed] = useState({ a: false, b: false });
@@ -28,7 +33,11 @@ export function Stick({ send, lang }: { send: (m: ToTv) => void; lang: Lang }) {
   const down = (e: React.PointerEvent) => {
     if (stickId.current !== null) return;
     stickId.current = e.pointerId;
-    (e.target as Element).setPointerCapture(e.pointerId);
+    try {
+      (e.target as Element).setPointerCapture(e.pointerId);
+    } catch {
+      /* certains navigateurs refusent : le stick marche quand même */
+    }
     setKnob({ ox: e.clientX, oy: e.clientY, x: 0, y: 0 });
   };
   const move = (e: React.PointerEvent) => {
@@ -75,10 +84,10 @@ export function Stick({ send, lang }: { send: (m: ToTv) => void; lang: Lang }) {
       </div>
       <div className="ab">
         <button className={`ab-btn b ${pressed.b ? 'down' : ''}`} onPointerDown={btn('b', true)} onPointerUp={btn('b', false)} onPointerCancel={btn('b', false)}>
-          B
+          {lb}
         </button>
         <button className={`ab-btn a ${pressed.a ? 'down' : ''}`} onPointerDown={btn('a', true)} onPointerUp={btn('a', false)} onPointerCancel={btn('a', false)}>
-          A
+          {la}
         </button>
       </div>
     </div>
