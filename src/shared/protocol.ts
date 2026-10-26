@@ -50,7 +50,7 @@ export type ToTv =
   | { t: 'tap'; side: 0 | 1 }
   | { t: 'in'; x: number; y: number; a: boolean; b: boolean }
   /** Action propre à un jeu (poser des cartes, voter…). */
-  | { t: 'act'; a: string; n?: number[] }
+  | { t: 'act'; a: string; n?: number[]; s?: string }
   | { t: 'host'; action: HostAction; game?: string }
   | { t: 'ping'; ts: number };
 

@@ -5,6 +5,7 @@ import { sumo } from './sumo';
 import { bombsGame } from './bombs';
 import { kart } from './kart';
 import { archers } from './archers';
+import { scribble } from './scribble';
 import type { GameDef } from './types';
 
 const soon = (
@@ -41,7 +42,7 @@ export const GAMES: GameDef[] = [
   soon('bagarre', '🤼', 'Bagarre Molle', 'Wobbly Brawl', 'Gang Beasts', 8),
   soon('cuisine', '🍳', 'Cuisine en Panique', 'Kitchen Panic', 'Overcooked', 8),
   soon('traitre', '🕵️', 'Le Traître du Frigo', 'Fridge Traitor', 'Loup-garou / Among Us', 12, 'tap'),
-  soon('dessin', '✏️', 'Gribouillis', 'Scribbles', 'Jackbox', 12, 'tap'),
+  scribble,
   soon('plateau', '🎲', 'Le Grand Plateau', 'The Big Board', 'Mario Party', 8),
   soon('combat', '🥊', 'Coussin Clash', 'Cushion Clash', 'Smash Bros', 8),
 ];
