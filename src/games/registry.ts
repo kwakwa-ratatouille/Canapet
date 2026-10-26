@@ -6,6 +6,8 @@ import { bombsGame } from './bombs';
 import { kart } from './kart';
 import { archers } from './archers';
 import { scribble } from './scribble';
+import { traitor } from './traitor';
+import { clash } from './clash';
 import type { GameDef } from './types';
 
 const soon = (
@@ -41,10 +43,10 @@ export const GAMES: GameDef[] = [
   archers,
   soon('bagarre', '🤼', 'Bagarre Molle', 'Wobbly Brawl', 'Gang Beasts', 8),
   soon('cuisine', '🍳', 'Cuisine en Panique', 'Kitchen Panic', 'Overcooked', 8),
-  soon('traitre', '🕵️', 'Le Traître du Frigo', 'Fridge Traitor', 'Loup-garou / Among Us', 12, 'tap'),
+  traitor,
   scribble,
   soon('plateau', '🎲', 'Le Grand Plateau', 'The Big Board', 'Mario Party', 8),
-  soon('combat', '🥊', 'Coussin Clash', 'Cushion Clash', 'Smash Bros', 8),
+  clash,
 ];
 
 export const gameById = (id: string) => GAMES.find((g) => g.id === id);

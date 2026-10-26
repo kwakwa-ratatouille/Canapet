@@ -10,6 +10,8 @@ import { PadNet, type PadStatus } from './net';
 import { Stick } from './Stick';
 import { BluffPad } from './BluffPad';
 import { ScribblePad } from './ScribblePad';
+import { TraitorPad } from './TraitorPad';
+import type { TraitorPadData } from '../games/traitorShared';
 import type { ScribblePadData } from '../games/scribbleShared';
 import type { BluffPadData } from '../games/bluffShared';
 
@@ -208,6 +210,7 @@ function PadScreenView({
         </div>
       );
     case 'play':
+      if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
       if (screen.game === 'dessin' && screen.data) return <ScribblePad data={screen.data as ScribblePadData} lang={lang} send={send} />;
       if (screen.layout === 'bluff' && screen.data) return <BluffPad data={screen.data as BluffPadData} lang={lang} send={send} />;
       return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} />;
