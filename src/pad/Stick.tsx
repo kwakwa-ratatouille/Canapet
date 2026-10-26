@@ -9,6 +9,7 @@ const LABELS: Record<string, Record<Lang, [string, string]>> = {
   kart: { fr: ['OBJET', 'FREIN'], en: ['ITEM', 'BRAKE'] },
   archers: { fr: ['SAUT', 'TIR'], en: ['JUMP', 'SHOOT'] },
   combat: { fr: ['SAUT', 'COUP'], en: ['JUMP', 'HIT'] },
+  bagarre: { fr: ['SAUT', 'BAFFE'], en: ['JUMP', 'SLAP'] },
 };
 
 /** Manette « stick + 2 boutons » : le stick apparaît là où le pouce se pose. */

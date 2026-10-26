@@ -94,7 +94,7 @@ export function BluffPad({ data, lang, send }: { data: BluffPadData; lang: Lang;
             {data.hand.map((c, k) => (
               <button
                 key={k + c}
-                className={`card ${sel.includes(k) ? 'on' : ''} ${data.myTurn && !data.forced ? '' : 'idle'}`}
+                className={`bcard ${sel.includes(k) ? 'on' : ''} ${data.myTurn && !data.forced ? '' : 'idle'}`}
                 onClick={() => toggle(k)}
               >
                 <MiniCard card={c} lang={lang} size={58} />

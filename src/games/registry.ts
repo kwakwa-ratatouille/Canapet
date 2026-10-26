@@ -8,6 +8,7 @@ import { archers } from './archers';
 import { scribble } from './scribble';
 import { traitor } from './traitor';
 import { clash } from './clash';
+import { brawl } from './brawl';
 import type { GameDef } from './types';
 
 const soon = (
@@ -41,7 +42,7 @@ export const GAMES: GameDef[] = [
   sumo,
   kart,
   archers,
-  soon('bagarre', '🤼', 'Bagarre Molle', 'Wobbly Brawl', 'Gang Beasts', 8),
+  brawl,
   soon('cuisine', '🍳', 'Cuisine en Panique', 'Kitchen Panic', 'Overcooked', 8),
   traitor,
   scribble,
