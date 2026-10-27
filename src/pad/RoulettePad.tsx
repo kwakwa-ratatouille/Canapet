@@ -1,11 +1,15 @@
-import { useRef, useState } from 'react';
-import { CHUNK, MAX_MEDIA, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS, type RoulettePadData } from '../games/rouletteShared';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CHUNK, MAX_MEDIA, MAX_VIDEO_BYTES, MAX_VIDEOS, MAX_VIDEO_SECONDS, type RoulettePadData } from '../games/rouletteShared';
 import type { Lang, ToTv } from '../shared/protocol';
 
 const TXT = {
   fr: {
-    pick: 'Choisis des photos et vidéos de ta galerie (8 max). La télé en tirera quelques-unes au hasard 🤭',
-    add: '📷 Ajouter des photos / vidéos',
+    pick: 'Sélectionne plein de photos et vidéos de ta galerie (tout si tu veux !) : on en tire 16 au hasard 🤭',
+    add: '📷 Choisir dans ma galerie',
+    reroll: '🔀 Retirer au hasard',
+    swap: 'Touche une image pour la changer',
+    sendGo: (n: number) => `Envoyer ces ${n} et je suis prêt !`,
+    pool: (n: number) => `${n} dans ta sélection`,
     sending: (k: number, n: number) => `Envoi… ${k} / ${n}`,
     sent: (n: number) => `${n} reçue(s) par la télé`,
     ready: 'Je suis prêt !',
@@ -20,8 +24,12 @@ const TXT = {
     privacy: 'Tes fichiers vont directement à la télé et ne sont gardés nulle part.',
   },
   en: {
-    pick: 'Pick photos and videos from your gallery (8 max). The TV will draw a few at random 🤭',
-    add: '📷 Add photos / videos',
+    pick: 'Select lots of photos and videos from your gallery (all of them if you like!): we draw 16 at random 🤭',
+    add: '📷 Pick from my gallery',
+    reroll: '🔀 Draw again',
+    swap: 'Tap a picture to swap it',
+    sendGo: (n: number) => `Send these ${n}, I’m ready!`,
+    pool: (n: number) => `${n} in your selection`,
     sending: (k: number, n: number) => `Sending… ${k} / ${n}`,
     sent: (n: number) => `${n} received by the TV`,
     ready: 'I’m ready!',
@@ -87,9 +95,34 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
   const [warn, setWarn] = useState('');
   const nextId = useRef(Math.floor(Math.random() * 1e6));
 
-  const upload = async (files: FileList | null) => {
-    if (!files?.length) return;
-    const list = [...files].slice(0, Math.max(0, MAX_MEDIA - data.sent));
+  const [pool, setPool] = useState<File[]>([]);
+  const [picks, setPicks] = useState<File[]>([]);
+  const draw = (from: File[]) => {
+    const mixed = [...from].sort(() => Math.random() - 0.5);
+    const out: File[] = [];
+    let vids = 0;
+    for (const f of mixed) {
+      if (out.length >= MAX_MEDIA) break;
+      const v = f.type.startsWith('video/');
+      if (v && vids >= MAX_VIDEOS) continue;
+      if (v) vids++;
+      out.push(f);
+    }
+    setPicks(out);
+  };
+  const swap = (i: number) => {
+    const rest = pool.filter((f) => !picks.includes(f));
+    if (!rest.length) return;
+    const n = [...picks];
+    n[i] = rest[Math.floor(Math.random() * rest.length)];
+    setPicks(n);
+  };
+  const thumbs = useMemo(() => picks.map((f) => ({ url: URL.createObjectURL(f), video: f.type.startsWith('video/') })), [picks]);
+  useEffect(() => () => thumbs.forEach((t) => URL.revokeObjectURL(t.url)), [thumbs]);
+
+  const upload = async (files: File[]) => {
+    if (!files.length) return;
+    const list = files.slice(0, Math.max(0, MAX_MEDIA - data.sent));
     setWarn('');
     for (let k = 0; k < list.length; k++) {
       setBusy({ k: k + 1, n: list.length });
@@ -113,25 +146,59 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
       }
     }
     setBusy(null);
+    send({ t: 'act', a: 'ready' });
   };
 
   if (data.phase === 'upload')
     return (
       <div className="traitor">
         <p className="pad-title">{T.pick}</p>
-        <button className="btn big sun" disabled={!!busy || data.sent >= MAX_MEDIA} onClick={() => fileRef.current?.click()}>
-          {busy ? T.sending(busy.k, busy.n) : T.add}
-        </button>
-        <input ref={fileRef} type="file" accept="image/*,video/*" multiple hidden onChange={(e) => void upload(e.target.files)} />
-        <p className="pad-small">{T.sent(data.sent)}</p>
-        {warn && <p className="pad-small uc-note">{warn}</p>}
         {data.ready ? (
           <p className="pad-title pulse">{T.waitReady}</p>
+        ) : busy ? (
+          <p className="pad-title pulse">{T.sending(busy.k, busy.n)}</p>
         ) : (
-          <button className="btn big mint" disabled={!!busy || data.sent === 0} onClick={() => send({ t: 'act', a: 'ready' })}>
-            {T.ready}
-          </button>
+          <>
+            <button className="btn big sun" onClick={() => fileRef.current?.click()}>
+              {T.add}
+            </button>
+            {pool.length > 0 && (
+              <>
+                <p className="pad-small">
+                  {T.pool(pool.length)} · {T.swap}
+                </p>
+                <div className="roulette-grid">
+                  {thumbs.map((t, i) => (
+                    <button key={t.url} className="roulette-thumb" onClick={() => swap(i)}>
+                      {t.video ? <video src={t.url} muted playsInline /> : <img src={t.url} alt="" />}
+                      {t.video && <span>🎬</span>}
+                    </button>
+                  ))}
+                </div>
+                <button className="btn alt" onClick={() => draw(pool)}>
+                  {T.reroll}
+                </button>
+                <button className="btn big mint" onClick={() => void upload(picks)}>
+                  {T.sendGo(picks.length)}
+                </button>
+              </>
+            )}
+          </>
         )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            const all = [...(e.target.files ?? [])];
+            if (!all.length) return;
+            setPool(all);
+            draw(all);
+          }}
+        />
+        {warn && <p className="pad-small uc-note">{warn}</p>}
         <p className="pad-small">{T.privacy}</p>
       </div>
     );

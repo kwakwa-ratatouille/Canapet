@@ -68,6 +68,11 @@ export class Session {
   private announced = false;
   private lastCount = 0;
   private lastStatus = 0;
+  /** Commentateur : dernier premier annoncé et moment de la dernière annonce. */
+  private leadPid = '';
+  private lastCall = 0;
+  /** Bandeau du commentateur à la télé. */
+  toast = { text: '', t: 0 };
   /** Numéro de la dernière partie terminée. */
   private gameNo = 0;
   version = 0;
@@ -334,6 +339,9 @@ export class Session {
       refresh: () => this.pushScreens(),
     });
     this.phase = 'game';
+    this.leadPid = '';
+    this.lastCall = 0;
+    this.toast = { text: '', t: 0 };
     this.paused = false;
     this.lastStatus = 0;
     this.timeUp = 0;
@@ -401,6 +409,7 @@ export class Session {
     const dt = this.last && !this.paused ? Math.max(0, Math.min(0.25, (now - this.last) / 1000)) : 0;
     this.last = now;
     this.watchdog(now);
+    if (this.toast.t > 0) this.toast.t -= dt;
     if (this.phase !== 'game' || !this.game || this.paused) return;
     this.acc += dt;
     while (this.acc >= STEP) {
@@ -422,7 +431,10 @@ export class Session {
           continue;
         }
         this.game.update(STEP);
-        if (this.clock - this.lastStatus >= 1) this.sendStatus();
+        if (this.clock - this.lastStatus >= 1) {
+          this.sendStatus();
+          this.commentate();
+        }
         if (!this.game.over && this.limitTick()) continue;
       }
       const lead = this.game.leader?.();
@@ -435,6 +447,27 @@ export class Session {
         return;
       }
     }
+  }
+
+  /** Le commentateur réagit quand la tête de course change (pas plus d'une fois toutes les 9 s). */
+  private commentate() {
+    if (!this.game || !this.runners.length) return;
+    const first = this.game.ranking()[0];
+    const play = this.clock - this.intro - COUNT;
+    if (!first || first === this.leadPid) return;
+    const prev = this.leadPid;
+    this.leadPid = first;
+    if (play < 6 || this.clock - this.lastCall < 9) return;
+    this.lastCall = this.clock;
+    const n = this.runners.find((r) => r.pid === first)?.profile.name ?? '?';
+    const p = this.runners.find((r) => r.pid === prev)?.profile.name ?? '';
+    const fr = this.lang() === 'fr';
+    const lines = fr
+      ? [`${n} prend la tête !`, `Oh là là, ${n} passe devant !`, p ? `${n} double ${p} !` : `${n} est en feu !`, this.family ? `Bravo ${n} !` : `${n} met tout le monde à l’amende !`]
+      : [`${n} takes the lead!`, `Whoa, ${n} is in front!`, p ? `${n} overtakes ${p}!` : `${n} is on fire!`, `${n} is showing everyone how it’s done!`];
+    const text = lines[Math.floor(Math.random() * lines.length)];
+    this.toast = { text, t: 3 };
+    speak(text, this.lang());
   }
 
   /** Envoie à chaque manette sa place du moment et le chrono. */

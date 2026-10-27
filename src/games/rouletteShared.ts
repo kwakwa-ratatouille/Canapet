@@ -20,4 +20,6 @@ export const CHUNK = 48000;
 /** Vidéos : au plus 8 Mo et 20 secondes. */
 export const MAX_VIDEO_BYTES = 8 * 1024 * 1024;
 export const MAX_VIDEO_SECONDS = 20;
-export const MAX_MEDIA = 8;
+export const MAX_MEDIA = 16;
+/** Au plus 4 vidéos dans le tirage. */
+export const MAX_VIDEOS = 4;

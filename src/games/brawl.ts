@@ -10,7 +10,7 @@ import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const GRAV = 2200;
 const RUN = 340;
-const JUMP = 840;
+const JUMP = 1060;
 const HW = 24;
 const SIZE = 100;
 const WIN_ROUNDS = 2;

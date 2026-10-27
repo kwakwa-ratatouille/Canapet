@@ -221,6 +221,16 @@ function GameView({ session }: { session: Session }) {
       drawTimer(g, session, tt);
       drawIntro(g, session);
       if (session.paused) drawPause(g, session, tt);
+      else if (session.toast.t > 0) {
+        // Bandeau du commentateur qui glisse en haut
+        const k = Math.min(1, (3 - session.toast.t) * 5, session.toast.t * 4);
+        g.save();
+        g.globalAlpha = Math.max(0, k);
+        g.translate(960, 300 - (1 - k) * 60);
+        g.rotate(-0.03);
+        stickerText(g, '🎙️ ' + session.toast.text, 0, 0, 64, SOLEIL);
+        g.restore();
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

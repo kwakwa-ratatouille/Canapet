@@ -2428,3 +2428,33 @@ h3,
 .reflex-choice:disabled {
   opacity: 0.4;
 }
+
+/* Photo Roulette : les 16 tirées au hasard */
+.roulette-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.roulette-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 0;
+  background: #fff;
+}
+.roulette-thumb img,
+.roulette-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.roulette-thumb span {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-size: 16px;
+}

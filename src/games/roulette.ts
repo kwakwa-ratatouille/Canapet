@@ -73,7 +73,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const urls: string[] = [];
 
   function addMedia(p: Pl, i: number, data: string, video: boolean) {
-    if (p.media.length >= PER_PLAYER * 3) return;
+    if (p.media.length >= 16) return;
     const url = dataUrlToBlobUrl(data);
     urls.push(url);
     const m: Media = { owner: i, video, url };
