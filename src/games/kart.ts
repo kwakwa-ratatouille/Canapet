@@ -16,9 +16,48 @@ const KART_R = 28;
 const MAX_TIME = 200;
 const AFTER_FIRST = 22;
 
-const CTRL: [number, number][] = [
+/** Circuits : chaque course en tire un au hasard. */
+const CIRCUITS: {
+  name: { fr: string; en: string };
+  ctrl: [number, number][];
+  grass: string;
+  dots: string;
+  road: string;
+  panel: [number, number];
+}[] = [
+  {
+    name: { fr: 'Le Bonbon', en: 'The Candy' },
+    grass: '#bff0d4',
+    dots: '#a6e6c1',
+    road: '#ffd9ea',
+    panel: [330, 300],
+    ctrl: [
   [240, 330], [620, 170], [1100, 240], [1600, 170], [1760, 430], [1480, 560], [1160, 470],
   [880, 640], [1200, 790], [1640, 780], [1730, 950], [1100, 1000], [500, 970], [240, 760],
+    ],
+  },
+  {
+    name: { fr: 'Le Huit', en: 'Figure Eight' },
+    grass: '#fff1d6',
+    dots: '#ffe3b0',
+    road: '#e8b98a',
+    panel: [760, 30],
+    ctrl: [
+      [960, 540], [1300, 330], [1680, 300], [1800, 560], [1680, 820], [1300, 800],
+      [960, 545], [620, 330], [240, 300], [120, 560], [240, 820], [620, 800],
+    ],
+  },
+  {
+    name: { fr: 'L’Ovale Express', en: 'Oval Express' },
+    grass: '#dff1ff',
+    dots: '#c7e6ff',
+    road: '#d9ccff',
+    panel: [750, 380],
+    ctrl: [
+      [300, 300], [960, 200], [1620, 300], [1800, 540], [1620, 820], [1250, 880], [1060, 760],
+      [860, 760], [670, 880], [300, 820], [120, 540],
+    ],
+  },
 ];
 
 type Item = 'turbo' | 'sirop' | 'petard';
@@ -65,8 +104,9 @@ function catmull(points: [number, number][], per: number): [number, number][] {
   return out;
 }
 
-const PATH = catmull(CTRL, 30);
-const N = PATH.length;
+// Circuit de la partie en cours (une seule course à la fois).
+let PATH: [number, number][] = [];
+let N = 0;
 
 function nearest(x: number, y: number, hint: number) {
   let best = hint;
@@ -83,6 +123,9 @@ function nearest(x: number, y: number, hint: number) {
 }
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
+  const circuit = CIRCUITS[Math.floor(Math.random() * CIRCUITS.length)];
+  PATH = catmull(circuit.ctrl, 30);
+  N = PATH.length;
   const fr = ctx.lang === 'fr';
   const [sx, sy] = PATH[N - 6];
   const [tx, ty] = PATH[0];
@@ -276,10 +319,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (endDelay >= 0 && (endDelay -= dt) <= 0) game.over = true;
     },
     render(g, t) {
-      g.fillStyle = '#bff0d4';
+      g.fillStyle = circuit.grass;
       g.fillRect(0, 0, 1920, 1080);
       if (!ctx.light) {
-        g.fillStyle = '#a6e6c1';
+        g.fillStyle = circuit.dots;
         for (let i = 0; i < 40; i++) {
           g.beginPath();
           g.arc((i * 397) % 1920, (i * 233) % 1080, 18, 0, Math.PI * 2);
@@ -312,7 +355,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.setLineDash([]);
       g.lineDashOffset = 0;
       loop();
-      g.strokeStyle = '#ffd9ea';
+      g.strokeStyle = circuit.road;
       g.lineWidth = ROAD;
       g.stroke();
       loop();
@@ -418,22 +461,24 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.strokeStyle = INK;
       g.lineWidth = 3;
       g.beginPath();
-      g.roundRect(330, 300, 420, 30 + ranked.length * 44, 18);
+      const [px, py] = circuit.panel;
+      g.roundRect(px, py, 420, 30 + ranked.length * 44, 18);
       g.fill();
       g.stroke();
       ranked.forEach((k, r) => {
         g.fillStyle = INK;
         g.font = '700 28px Fredoka, sans-serif';
         g.textAlign = 'left';
-        g.fillText(`${r + 1}`, 350, 342 + r * 44);
-        roundRectText(g, k.profile.name, 385, 333 + r * 44, 200, 26, k.profile.color);
+        g.fillText(`${r + 1}`, px + 20, py + 42 + r * 44);
+        roundRectText(g, k.profile.name, px + 55, py + 33 + r * 44, 200, 26, k.profile.color);
         g.fillStyle = INK;
         g.font = '600 28px Fredoka, sans-serif';
         g.textAlign = 'left';
         const lapTxt = k.done ? '🏁' : `${fr ? 'Tour' : 'Lap'} ${Math.max(1, Math.min(LAPS, k.lap + 1))}/${LAPS}`;
-        g.fillText(lapTxt, 600, 342 + r * 44);
+        g.fillText(lapTxt, px + 270, py + 42 + r * 44);
       });
     },
+    mapName: circuit.name,
     ranking() {
       return [...ks].sort((a, b) => (a.done || 99) - (b.done || 99) || progress(b) - progress(a)).map((k) => k.pid);
     },

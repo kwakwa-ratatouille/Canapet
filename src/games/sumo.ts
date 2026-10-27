@@ -46,6 +46,24 @@ interface S extends Runner {
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
+/** Arènes : chaque partie en tire une au hasard. */
+const MAPS = [
+  { id: 'assiette', name: { fr: 'L’Assiette', en: 'The Plate' }, shrink: true, grip: 0.3, acc: 1, plate: '#ffd1ea', rim: '#fff', under: '#c9b8e8', bumpers: [] as [number, number][] },
+  { id: 'glace', name: { fr: 'La Patinoire', en: 'The Ice Rink' }, shrink: false, grip: 0.82, acc: 0.6, plate: '#dff4ff', rim: '#ffffff', under: '#9fd2ee', bumpers: [] as [number, number][] },
+  {
+    id: 'pizza',
+    name: { fr: 'La Pizza Flipper', en: 'Pinball Pizza' },
+    shrink: true,
+    grip: 0.3,
+    acc: 1,
+    plate: '#ffcf6b',
+    rim: '#e39b45',
+    under: '#c9783a',
+    bumpers: [[-230, 0], [230, 0], [0, -190], [0, 190]] as [number, number][],
+  },
+];
+const BUMPER_R = 52;
+
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const n = runners.length;
@@ -78,7 +96,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let time = 0;
   let outCount = 0;
   let endDelay = -1;
-  const radius = () => R0 - (R0 - R_MIN) * Math.min(1, time / SHRINK_TIME);
+  const map = MAPS[Math.floor(Math.random() * MAPS.length)];
+  const radius = () => (map.shrink ? R0 - (R0 - R_MIN) * Math.min(1, time / SHRINK_TIME) : R0 - 40);
   const inPlay = (s: S) => s.lives > 0 && s.falling <= 0 && s.respawn <= 0;
 
   function bot(s: S, i: number, dt: number) {
@@ -153,8 +172,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const iy = il > 0.2 ? s.inp.y / Math.max(1, il) : 0;
       if (ix) s.face = ix > 0 ? 1 : -1;
       if (!s.anchor) {
-        s.vx += ix * ACC * dt;
-        s.vy += iy * ACC * dt;
+        s.vx += ix * ACC * map.acc * dt;
+        s.vy += iy * ACC * map.acc * dt;
       }
       if (s.dashReq && s.dashCd <= 0 && !s.anchor) {
         const dl = Math.hypot(ix, iy) > 0.1 ? Math.hypot(ix, iy) : 0;
@@ -173,7 +192,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         s.vx *= max / sp;
         s.vy *= max / sp;
       }
-      const damp = Math.pow(s.anchor ? 0.02 : 0.3, dt);
+      const damp = Math.pow(s.anchor ? 0.02 : map.grip, dt);
       s.vx *= damp;
       s.vy *= damp;
       s.x += s.vx * dt;
@@ -184,6 +203,26 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (!s.bot) ctx.buzz(s.pid, 400);
       }
     });
+
+    // Champignons de la pizza : ils renvoient fort
+    for (const s of ss) {
+      if (!inPlay(s)) continue;
+      for (const [bx, by] of map.bumpers) {
+        const dx = s.x - bx;
+        const dy = s.y - by;
+        const d = Math.hypot(dx, dy);
+        if (d > 0 && d < BUMPER_R + BODY) {
+          const nx = dx / d;
+          const ny = dy / d;
+          s.x = bx + nx * (BUMPER_R + BODY);
+          s.y = by + ny * (BUMPER_R + BODY);
+          s.vx = nx * 820;
+          s.vy = ny * 820;
+          sfx.boing();
+          if (!s.bot) ctx.buzz(s.pid, 60);
+        }
+      }
+    }
 
     // Chocs entre bouées
     for (let i = 0; i < ss.length; i++)
@@ -258,21 +297,59 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       // Assiette
       const R = radius();
-      g.fillStyle = '#c9b8e8';
+      g.fillStyle = map.under;
       g.beginPath();
       g.ellipse(CX, CY + 26, R * SX + 20, R * SY + 18, 0, 0, Math.PI * 2);
       g.fill();
-      g.fillStyle = '#fff';
+      g.fillStyle = map.rim;
       g.strokeStyle = INK;
       g.lineWidth = 6;
       g.beginPath();
       g.ellipse(CX, CY, R * SX + 14, R * SY + 10, 0, 0, Math.PI * 2);
       g.fill();
       g.stroke();
-      g.fillStyle = '#ffd1ea';
+      g.fillStyle = map.plate;
       g.beginPath();
       g.ellipse(CX, CY, R * SX - 10, R * SY - 8, 0, 0, Math.PI * 2);
       g.fill();
+      if (map.id === 'pizza') {
+        g.fillStyle = '#e8453c';
+        for (let k = 0; k < 9; k++) {
+          const a = k * 2.3;
+          const r = (0.3 + (k % 3) * 0.2) * R;
+          g.beginPath();
+          g.ellipse(CX + Math.cos(a) * r * SX, CY + Math.sin(a) * r * SY, 26, 18, 0, 0, Math.PI * 2);
+          g.fill();
+        }
+      }
+      if (map.id === 'glace') {
+        g.strokeStyle = 'rgba(255,255,255,0.9)';
+        g.lineWidth = 5;
+        for (let k = 0; k < 6; k++) {
+          g.beginPath();
+          g.arc(CX + (k - 2.5) * 120, CY + Math.sin(k) * 60, 80 + k * 6, 0.3, 1.4);
+          g.stroke();
+        }
+      }
+      for (const [bx, by] of map.bumpers) {
+        const px = CX + bx * SX;
+        const py = CY + by * SY;
+        g.fillStyle = INK;
+        g.beginPath();
+        g.ellipse(px, py + 10, BUMPER_R * SX, BUMPER_R * SY, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#3a3a46';
+        g.strokeStyle = INK;
+        g.lineWidth = 5;
+        g.beginPath();
+        g.ellipse(px, py, BUMPER_R * SX, BUMPER_R * SY, 0, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = '#7bd13b';
+        g.beginPath();
+        g.ellipse(px, py, BUMPER_R * SX * 0.4, BUMPER_R * SY * 0.4, 0, 0, Math.PI * 2);
+        g.fill();
+      }
       g.strokeStyle = 'rgba(255,79,154,0.35)';
       g.lineWidth = 4;
       g.beginPath();
@@ -335,8 +412,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.fillStyle = INK;
       g.font = '700 36px Fredoka, sans-serif';
       g.textAlign = 'center';
-      g.fillText(fr ? 'L’assiette rétrécit !' : 'The plate is shrinking!', CX, 1050);
+      if (map.shrink) g.fillText(fr ? 'L’arène rétrécit !' : 'The arena is shrinking!', CX, 1050);
     },
+    mapName: map.name,
     ranking() {
       return ss
         .map((s, i) => ({ s, i }))

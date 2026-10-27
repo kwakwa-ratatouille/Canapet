@@ -13,12 +13,49 @@ const HW = 22;
 const BH = 70;
 const STOCKS = 3;
 const MAX_TIME = 180;
-const MAIN = { x: 460, y: 700, w: 1000, h: 130 };
-const PLATS = [
-  { x: 560, y: 530, w: 240 },
-  { x: 1120, y: 530, w: 240 },
-  { x: 840, y: 370, w: 240 },
+type Plat = { x: number; y: number; w: number };
+/** Scènes : chaque combat en tire une au hasard. */
+const STAGES: { id: string; name: { fr: string; en: string }; main: { x: number; y: number; w: number; h: number }; plats: Plat[]; bg: [string, string] }[] = [
+  {
+    id: 'canape',
+    name: { fr: 'Le Canapé', en: 'The Couch' },
+    bg: ['#6a4bd8', '#ff9ccc'],
+    main: { x: 460, y: 700, w: 1000, h: 130 },
+    plats: [
+      { x: 560, y: 530, w: 240 },
+      { x: 1120, y: 530, w: 240 },
+      { x: 840, y: 370, w: 240 },
+    ],
+  },
+  {
+    id: 'etagere',
+    name: { fr: 'L’Étagère', en: 'The Bookshelf' },
+    bg: ['#ffb58a', '#ffe9c7'],
+    main: { x: 560, y: 720, w: 800, h: 110 },
+    plats: [
+      { x: 300, y: 560, w: 220 },
+      { x: 1400, y: 560, w: 220 },
+      { x: 820, y: 500, w: 280 },
+      { x: 600, y: 330, w: 200 },
+      { x: 1120, y: 330, w: 200 },
+    ],
+  },
+  {
+    id: 'frigo',
+    name: { fr: 'Le Frigo', en: 'The Fridge' },
+    bg: ['#9fe3ff', '#e3f2ff'],
+    main: { x: 610, y: 760, w: 700, h: 120 },
+    plats: [
+      { x: 470, y: 600, w: 200 },
+      { x: 1250, y: 600, w: 200 },
+      { x: 760, y: 450, w: 400 },
+      { x: 860, y: 290, w: 200 },
+    ],
+  },
 ];
+// Scène du combat en cours (un seul combat à la fois).
+let MAIN = STAGES[0].main;
+let PLATS: Plat[] = STAGES[0].plats;
 const BLAST = { l: -260, r: 2180, t: -360, b: 1320 };
 
 type Move = 'jab' | 'side' | 'up' | 'down' | 'spike' | 'super';
@@ -87,6 +124,9 @@ interface Spark {
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
+  const stage = STAGES[Math.floor(Math.random() * STAGES.length)];
+  MAIN = stage.main;
+  PLATS = stage.plats;
   const fr = ctx.lang === 'fr';
   const n = runners.length;
   const fs: F[] = runners.slice(0, 8).map((r, i) => ({
@@ -366,8 +406,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     render(g, t) {
       const bg = g.createLinearGradient(0, 0, 0, 1080);
-      bg.addColorStop(0, '#6a4bd8');
-      bg.addColorStop(1, '#ff9ccc');
+      bg.addColorStop(0, stage.bg[0]);
+      bg.addColorStop(1, stage.bg[1]);
       g.fillStyle = bg;
       g.fillRect(0, 0, 1920, 1080);
       if (!ctx.light) {
@@ -378,9 +418,41 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillRect(x, y, 3, 3);
         }
       }
-      // Canapé géant
       g.strokeStyle = INK;
       g.lineWidth = 6;
+      if (stage.id === 'etagere') {
+        // Étagère en bois avec des livres
+        g.fillStyle = '#c98a5a';
+        g.beginPath();
+        g.roundRect(MAIN.x, MAIN.y, MAIN.w, MAIN.h, 18);
+        g.fill();
+        g.stroke();
+        const books = ['#ff4f9a', '#2ec5ff', '#ffd60a', '#7b4dff', '#1fc9a0'];
+        for (let k = 0; k < 14; k++) {
+          g.fillStyle = books[k % books.length];
+          g.fillRect(MAIN.x + 30 + k * 54, MAIN.y + 22, 40, MAIN.h - 40);
+        }
+        g.fillStyle = '#a0643a';
+        g.fillRect(MAIN.x + 30, MAIN.y + MAIN.h, 26, 200);
+        g.fillRect(MAIN.x + MAIN.w - 56, MAIN.y + MAIN.h, 26, 200);
+      } else if (stage.id === 'frigo') {
+        // Frigo : portes blanches, poignées, magnets
+        g.fillStyle = '#ffffff';
+        g.beginPath();
+        g.roundRect(MAIN.x, MAIN.y, MAIN.w, MAIN.h + 300, 30);
+        g.fill();
+        g.stroke();
+        g.fillStyle = '#b8c6dd';
+        g.fillRect(MAIN.x + MAIN.w - 60, MAIN.y + 40, 16, 120);
+        for (const [mx, my, mc] of [[MAIN.x + 80, MAIN.y + 60, '#ff4f9a'], [MAIN.x + 180, MAIN.y + 110, '#ffd60a'], [MAIN.x + 300, MAIN.y + 70, '#1fc9a0']] as [number, number, string][]) {
+          g.fillStyle = mc;
+          g.beginPath();
+          g.arc(mx, my, 20, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+        }
+      }
+      if (stage.id === 'canape') {
       g.fillStyle = '#e0457b';
       g.beginPath();
       g.roundRect(MAIN.x - 60, MAIN.y - 170, MAIN.w + 120, 180, 40);
@@ -406,8 +478,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.fillStyle = '#a0643a';
       g.fillRect(MAIN.x + 40, MAIN.y + MAIN.h, 30, 60);
       g.fillRect(MAIN.x + MAIN.w - 70, MAIN.y + MAIN.h, 30, 60);
+      }
       for (const p of PLATS) {
-        g.fillStyle = '#ffd60a';
+        g.fillStyle = stage.id === 'frigo' ? '#bff0e4' : stage.id === 'etagere' ? '#e8b98a' : '#ffd60a';
         g.beginPath();
         g.roundRect(p.x, p.y - 4, p.w, 34, 17);
         g.fill();
@@ -515,6 +588,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.globalAlpha = 1;
       });
     },
+    mapName: stage.name,
     ranking() {
       return [...fs].sort((a, b) => b.stocks - a.stocks || (b.out || 99) - (a.out || 99) || a.dmg - b.dmg || b.kos - a.kos).map((f) => f.pid);
     },

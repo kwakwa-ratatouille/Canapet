@@ -270,6 +270,8 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
     g.font = '700 38px Nunito, sans-serif';
     g.textAlign = 'center';
     wrap(g, def.how[lang], W / 2, 700, 720, 46);
+    const map = session.game?.mapName?.[lang];
+    if (map) stickerText(g, (lang === 'fr' ? 'Carte : ' : 'Map: ') + map, W / 2, 960, 52, '#fff');
     if (session.mode === 'tournament') stickerText(g, t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN }), W / 2, 110, 56, SOLEIL);
     g.globalAlpha = 1;
     return;

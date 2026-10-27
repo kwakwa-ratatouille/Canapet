@@ -11,12 +11,41 @@ const RUN = 330;
 const JUMP = 820;
 const HW = 24;
 const MAX_TIME = 150;
-const PLATS = [
+type Plat = { x: number; y: number; w: number };
+/** Cartes : chaque bagarre en tire une au hasard. */
+const MAPS: { name: { fr: string; en: string }; plats: Plat[]; sky: [string, string]; sea: string; plat: string }[] = [
+  { name: { fr: 'Les Nénuphars', en: 'The Lily Pads' }, sky: ['#ffc6a8', '#ffe9f3'], sea: '#fff6e0', plat: '#7bd13b', plats: [
   { x: 360, y: 760, w: 1200 },
   { x: 110, y: 560, w: 270 },
   { x: 1540, y: 560, w: 270 },
   { x: 780, y: 470, w: 360 },
+] },
+  {
+    name: { fr: 'Le Pont', en: 'The Bridge' },
+    sky: ['#9fe3ff', '#e3f2ff'],
+    sea: '#e9f9ff',
+    plat: '#c98a5a',
+    plats: [
+      { x: 240, y: 760, w: 560 },
+      { x: 900, y: 760, w: 120 },
+      { x: 1120, y: 760, w: 560 },
+      { x: 700, y: 560, w: 520 },
+    ],
+  },
+  {
+    name: { fr: 'La Pile de Crêpes', en: 'The Pancake Stack' },
+    sky: ['#ffe08a', '#ffe9f3'],
+    sea: '#fff2d6',
+    plat: '#f0b45a',
+    plats: [
+      { x: 460, y: 800, w: 1000 },
+      { x: 620, y: 620, w: 680 },
+      { x: 800, y: 440, w: 320 },
+    ],
+  },
 ];
+// Carte de la bagarre en cours (une seule à la fois).
+let PLATS: Plat[] = MAPS[0].plats;
 
 interface B extends Runner {
   x: number;
@@ -50,12 +79,15 @@ interface B extends Runner {
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
+  const map = MAPS[Math.floor(Math.random() * MAPS.length)];
+  PLATS = map.plats;
+  const spawnPlat = (i: number) => PLATS[i % PLATS.length];
   const fr = ctx.lang === 'fr';
   const n = runners.length;
   const bs: B[] = runners.slice(0, 8).map((r, i) => ({
     ...r,
-    x: 460 + (i * 1000) / Math.max(1, n - 1),
-    y: 760,
+    x: spawnPlat(i).x + 40 + ((i * 137) % Math.max(1, spawnPlat(i).w - 80)),
+    y: spawnPlat(i).y,
     vx: 0,
     vy: 0,
     onGround: true,
@@ -304,12 +336,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     render(g, t) {
       const sky = g.createLinearGradient(0, 0, 0, 1080);
-      sky.addColorStop(0, '#ffc6a8');
-      sky.addColorStop(1, '#ffe9f3');
+      sky.addColorStop(0, map.sky[0]);
+      sky.addColorStop(1, map.sky[1]);
       g.fillStyle = sky;
       g.fillRect(0, 0, 1920, 1080);
       // Mer de crème
-      g.fillStyle = '#fff6e0';
+      g.fillStyle = map.sea;
       g.beginPath();
       g.moveTo(0, 1080);
       for (let x = 0; x <= 1920; x += 40) g.lineTo(x, 960 + Math.sin(x / 120 + t * 1.5) * 16);
@@ -322,7 +354,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.lineWidth = 5;
       for (const p of PLATS) {
         const wob = Math.sin(t * 2 + p.x) * 3;
-        g.fillStyle = '#7bd13b';
+        g.fillStyle = map.plat;
         g.beginPath();
         g.roundRect(p.x, p.y + wob, p.w, 46, 22);
         g.fill();
@@ -391,6 +423,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.textAlign = 'center';
       g.fillText(fr ? 'B court : baffe · B maintenu : attraper, relâcher : jeter' : 'Tap B: slap · Hold B: grab, release: throw', 960, 1060);
     },
+    mapName: map.name,
     ranking() {
       return [...bs].sort((a, b) => Number(b.alive) - Number(a.alive) || b.out - a.out || b.kos - a.kos).map((b) => b.pid);
     },

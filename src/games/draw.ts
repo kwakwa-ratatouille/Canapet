@@ -1,13 +1,13 @@
 import { INK } from '../shared/palette';
 // Petits outils de dessin partagés par les jeux.
 
-export function drawSky(g: CanvasRenderingContext2D, t: number, light: boolean) {
+export function drawSky(g: CanvasRenderingContext2D, t: number, light: boolean, top = '#8fd8ff', bottom = '#ffd6ec', sun = '#fff3a8') {
   const sky = g.createLinearGradient(0, 0, 0, 1080);
-  sky.addColorStop(0, '#8fd8ff');
-  sky.addColorStop(1, '#ffd6ec');
+  sky.addColorStop(0, top);
+  sky.addColorStop(1, bottom);
   g.fillStyle = sky;
   g.fillRect(0, 0, 1920, 1080);
-  g.fillStyle = '#fff3a8';
+  g.fillStyle = sun;
   g.beginPath();
   g.arc(1700, 120, 70, 0, Math.PI * 2);
   g.fill();

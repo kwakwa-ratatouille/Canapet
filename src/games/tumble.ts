@@ -20,7 +20,7 @@ const BASE_Y = 860;
 const MAX_TIME = 150;
 const AFTER_FIRST = 25;
 
-type Kind = 'ground' | 'block' | 'tile' | 'bounce' | 'conveyor' | 'mover';
+type Kind = 'ground' | 'block' | 'tile' | 'bounce' | 'conveyor' | 'mover' | 'sink';
 
 interface Solid {
   x: number;
@@ -35,7 +35,23 @@ interface Solid {
   move?: { bx: number; by: number; ax: number; ay: number; freq: number; ph: number };
   dx?: number;
   dy?: number;
+  baseY?: number;
 }
+
+interface Fan {
+  x: number;
+  w: number;
+  y: number;
+  force: number;
+}
+
+/** Décors : chaque partie en tire un au hasard. */
+const THEMES = [
+  { name: { fr: 'La Pâtisserie', en: 'The Bakery' }, sky: ['#8fd8ff', '#ffd6ec'], sun: '#fff3a8', hills: ['#bfe8c4', '#ffc6e0'], ground: '#ffd9ea', top: '#ff7eb6' },
+  { name: { fr: 'Le Jardin', en: 'The Garden' }, sky: ['#9ee4ff', '#e9ffd9'], sun: '#ffe66b', hills: ['#a5e08c', '#7cc96a'], ground: '#f6e3c4', top: '#7bd13b' },
+  { name: { fr: 'La Nuit Pyjama', en: 'Pyjama Night' }, sky: ['#2a1838', '#6a4bd8'], sun: '#fff6c2', hills: ['#43306e', '#5b3f8c'], ground: '#c9b6ff', top: '#9b72ff' },
+];
+type Theme = (typeof THEMES)[number];
 
 interface Sweeper {
   cx: number;
@@ -80,6 +96,7 @@ interface Level {
   spawners: Spawner[];
   balls: Ball[];
   checkpoints: { x: number; y: number }[];
+  fans: Fan[];
   finishX: number;
   length: number;
 }
@@ -89,7 +106,7 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 // ——— Fabrication du parcours : une suite de tronçons tirés au hasard ———
 
 function buildLevel(): Level {
-  const L: Level = { solids: [], sweepers: [], hammers: [], spawners: [], balls: [], checkpoints: [], finishX: 0, length: 0 };
+  const L: Level = { solids: [], sweepers: [], hammers: [], spawners: [], balls: [], checkpoints: [], fans: [], finishX: 0, length: 0 };
   let x = 0;
   let y = BASE_Y;
   const solid = (sx: number, sy: number, w: number, kind: Kind = 'ground', h?: number) => {
@@ -175,6 +192,27 @@ function buildLevel(): Level {
       solid(x, y, 260);
       x += 260;
     },
+    ventilos() {
+      // Des ventilateurs soufflent vers l'arrière : il faut avancer face au vent.
+      entry();
+      solid(x, y, 1100);
+      L.fans.push({ x: x + 150, w: 380, y, force: -1300 });
+      L.fans.push({ x: x + 640, w: 380, y, force: -1600 });
+      x += 1100;
+    },
+    coulantes() {
+      // Plateformes de caramel qui s'enfoncent quand on marche dessus.
+      entry();
+      for (let i = 0; i < 5; i++) {
+        x += 110;
+        const s = solid(x, y - (i % 2) * 60, 170, 'sink', 34);
+        s.baseY = s.y;
+        x += 170;
+      }
+      x += 110;
+      solid(x, y, 260);
+      x += 260;
+    },
     escaliers() {
       entry();
       for (let i = 0; i < 6; i++) {
@@ -192,7 +230,7 @@ function buildLevel(): Level {
   solid(x, y, 760);
   L.checkpoints.push({ x: 200, y });
   x += 760;
-  const keys = Object.keys(segments).sort(() => Math.random() - 0.5).slice(0, 7);
+  const keys = Object.keys(segments).sort(() => Math.random() - 0.5).slice(0, 8);
   for (const k of keys) segments[k]();
   // Arrivée
   entry(500);
@@ -233,6 +271,7 @@ interface P extends Runner {
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const L = buildLevel();
+  const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const ps: P[] = runners.map((r, i) => ({
     ...r,
     x: 120 + i * 40,
@@ -266,8 +305,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let endDelay = -1;
 
   /** Plateformes fines : on les traverse par en dessous, on atterrit dessus. */
-  const oneWay = (s: Solid) => s.kind === 'block' || s.kind === 'mover' || s.kind === 'tile';
-  const active = (s: Solid) => !(s.kind === 'tile' && s.gone !== undefined);
+  const oneWay = (s: Solid) => s.kind === 'block' || s.kind === 'mover' || s.kind === 'tile' || s.kind === 'sink';
+  const active = (s: Solid) => !((s.kind === 'tile' || s.kind === 'sink') && s.gone !== undefined);
   const solidAt = (px: number, py: number) =>
     L.solids.find((s) => active(s) && px >= s.x && px <= s.x + s.w && py >= s.y && py <= s.y + s.h);
 
@@ -387,6 +426,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     }
     p.diveReq = false;
 
+    // Ventilateurs : le vent pousse vers l'arrière (moins fort en l'air au ras du sol)
+    for (const fan of L.fans)
+      if (p.x > fan.x && p.x < fan.x + fan.w && p.y <= fan.y + 4 && p.y > fan.y - 420) p.vx += fan.force * dt * (p.diving > 0 ? 0.4 : 1);
+
     // Saut plus court si on relâche A
     p.vy += GRAV * dt * (p.vy < 0 && !p.inp.a && p.diving <= 0 ? 1.7 : 1);
     p.vy = Math.min(p.vy, 1700);
@@ -419,7 +462,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         p.vy = 0;
         p.onGround = true;
         p.ground = s;
-        if (s.kind === 'tile' && s.touched === undefined) s.touched = time;
+        if ((s.kind === 'tile' || s.kind === 'sink') && s.touched === undefined) s.touched = time;
       } else if (!oneWay(s) && p.vy < 0 && p.y - BODY_H < s.y + s.h && prevY - BODY_H >= s.y + s.h - 4) {
         p.y = s.y + s.h + BODY_H;
         p.vy = 0;
@@ -491,6 +534,18 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         s.dy = ny - s.y;
         s.x = nx;
         s.y = ny;
+      }
+      if (s.kind === 'sink' && s.baseY !== undefined) {
+        if (s.gone !== undefined) {
+          if (time - s.gone > 2.5) {
+            s.y = s.baseY;
+            s.touched = s.gone = undefined;
+          }
+        } else if (s.touched !== undefined) {
+          s.y += 150 * dt;
+          s.dy = 150 * dt;
+          if (s.y > s.baseY + 280) s.gone = time;
+        }
       }
       if (s.kind === 'tile') {
         if (s.touched !== undefined && s.gone === undefined && time - s.touched > 0.55) s.gone = time;
@@ -575,15 +630,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
     },
     render(g, t) {
-      drawSky(g, t, ctx.light);
-      drawHills(g, camX);
+      drawSky(g, t, ctx.light, theme.sky[0], theme.sky[1], theme.sun);
+      drawHills(g, camX, theme);
       g.save();
       g.translate(-Math.round(camX), 0);
       const x0 = camX - 200;
       const x1 = camX + VIEW_W + 200;
       drawFinish(g, L.finishX, L.solids, ctx.lang);
       for (const c of L.checkpoints) if (c.x > x0 && c.x < x1) drawFlag(g, c.x - 60, c.y);
-      for (const s of L.solids) if (s.x + s.w > x0 && s.x < x1) drawSolid(g, s, time, ctx.light);
+      for (const s of L.solids) if (s.x + s.w > x0 && s.x < x1) drawSolid(g, s, time, ctx.light, theme);
+      for (const fan of L.fans) if (fan.x + fan.w > x0 && fan.x < x1) drawFan(g, fan, time, ctx.light);
       for (const h of L.hammers) if (Math.abs(h.cx - camX - VIEW_W / 2) < VIEW_W) drawHammer(g, h);
       for (const s of L.sweepers) if (Math.abs(s.cx - camX - VIEW_W / 2) < VIEW_W) drawSweeper(g, s);
       for (const b of L.balls) if (b.x > x0 && b.x < x1) drawBall(g, b);
@@ -591,6 +647,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.restore();
       drawHud(g, ps, L, time, order, ctx.lang);
     },
+    mapName: theme.name,
     ranking() {
       return [...ps].sort((a, b) => (a.done || 99) - (b.done || 99) || b.x - a.x).map((p) => p.pid);
     },
@@ -603,15 +660,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
 // ——— Dessin ———
 
-function drawHills(g: CanvasRenderingContext2D, camX: number) {
-  g.fillStyle = '#bfe8c4';
+function drawHills(g: CanvasRenderingContext2D, camX: number, theme: Theme) {
+  g.fillStyle = theme.hills[0];
   const off = (camX * 0.25) % 700;
   for (let i = -1; i < 5; i++) {
     g.beginPath();
     g.ellipse(i * 700 - off + 200, 1000, 420, 300, 0, Math.PI, 0);
     g.fill();
   }
-  g.fillStyle = '#ffc6e0';
+  g.fillStyle = theme.hills[1];
   const off2 = (camX * 0.45) % 560;
   for (let i = -1; i < 6; i++) {
     g.beginPath();
@@ -620,19 +677,53 @@ function drawHills(g: CanvasRenderingContext2D, camX: number) {
   }
 }
 
-function drawSolid(g: CanvasRenderingContext2D, s: Solid, time: number, light: boolean) {
+function drawFan(g: CanvasRenderingContext2D, f: Fan, time: number, light: boolean) {
+  // Le ventilateur, au bout de la zone, souffle vers la gauche.
+  const x = f.x + f.w + 30;
+  const y = f.y - 110;
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  g.fillStyle = '#b8c6dd';
+  g.fillRect(x - 8, y, 16, 110);
+  g.strokeRect(x - 8, y, 16, 110);
+  g.fillStyle = '#fff';
+  g.beginPath();
+  g.ellipse(x, y, 26, 70, 0, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.fillStyle = '#2ec5ff';
+  for (let k = 0; k < 3; k++) {
+    const a = time * 18 + (k * Math.PI * 2) / 3;
+    g.beginPath();
+    g.ellipse(x, y + Math.sin(a) * 34, 12, 26 * Math.abs(Math.cos(a)) + 4, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  if (light) return;
+  g.strokeStyle = 'rgba(255,255,255,0.8)';
+  g.lineWidth = 5;
+  for (let k = 0; k < 6; k++) {
+    const wx = f.x + f.w - ((time * 520 + k * 140) % f.w);
+    const wy = f.y - 60 - (k % 3) * 100;
+    g.beginPath();
+    g.moveTo(wx, wy);
+    g.lineTo(wx + 70, wy);
+    g.stroke();
+  }
+}
+
+function drawSolid(g: CanvasRenderingContext2D, s: Solid, time: number, light: boolean, theme: Theme) {
   g.lineWidth = 4;
   g.strokeStyle = INK;
   const h = Math.min(s.h, 1300 - s.y);
   switch (s.kind) {
     case 'ground':
     case 'block': {
-      g.fillStyle = '#ffd9ea';
+      g.fillStyle = theme.ground;
       g.beginPath();
       g.roundRect(s.x, s.y, s.w, h, s.kind === 'block' ? 12 : [14, 14, 0, 0]);
       g.fill();
       g.stroke();
-      g.fillStyle = '#ff7eb6';
+      g.fillStyle = theme.top;
       g.beginPath();
       g.roundRect(s.x, s.y, s.w, 20, [14, 14, 0, 0]);
       g.fill();
@@ -644,6 +735,21 @@ function drawSolid(g: CanvasRenderingContext2D, s: Solid, time: number, light: b
       g.beginPath();
       g.roundRect(s.x, s.y, s.w, h, s.kind === 'block' ? 12 : [14, 14, 0, 0]);
       g.stroke();
+      break;
+    }
+    case 'sink': {
+      if (s.gone !== undefined) break;
+      g.fillStyle = s.touched !== undefined ? '#c27a3a' : '#e09a52';
+      g.beginPath();
+      g.roundRect(s.x, s.y, s.w, s.h, 14);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#ffd590';
+      for (let k = 0; k < 3; k++) {
+        g.beginPath();
+        g.arc(s.x + 30 + k * 55, s.y + s.h, 8 + (k % 2) * 4, 0, Math.PI);
+        g.fill();
+      }
       break;
     }
     case 'tile': {

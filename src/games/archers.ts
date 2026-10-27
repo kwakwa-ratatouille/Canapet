@@ -18,16 +18,42 @@ const ARROW_V = 1350;
 const WIN_ROUNDS = 3;
 const MAX_TIME = 170;
 
-const RECTS: [number, number, number, number][] = [
+// Bords communs : plafond et sol troués au milieu, murs troués (on passe d'un côté à l'autre).
+const BORDERS: [number, number, number, number][] = [
+  [0, 0, 10, 1], [22, 0, 10, 1], [0, 17, 10, 1], [22, 17, 10, 1],
+  [0, 0, 1, 6], [0, 8, 1, 10], [31, 0, 1, 6], [31, 8, 1, 10],
+];
+/** Arènes : chaque partie en tire une au hasard. */
+const MAPS: { name: { fr: string; en: string }; rects: [number, number, number, number][]; spawns: [number, number][]; sky: [string, string] }[] = [
+  {
+    name: { fr: 'La Tour', en: 'The Tower' },
+    sky: ['#8fd8ff', '#ffd6ec'],
+    rects: [
   [0, 0, 10, 1], [22, 0, 10, 1], [0, 17, 10, 1], [22, 17, 10, 1],
   [0, 0, 1, 6], [0, 8, 1, 10], [31, 0, 1, 6], [31, 8, 1, 10],
   [5, 3, 6, 1], [21, 3, 6, 1], [10, 6, 12, 1], [5, 9, 4, 1], [23, 9, 4, 1],
   [12, 11, 8, 1], [0, 14, 6, 1], [26, 14, 6, 1], [14, 14, 4, 3],
-];
-const SOLIDS = RECTS.map(([x, y, w, h]) => ({ x: x * T, y: y * T, w: w * T, h: h * T }));
-const SPAWNS: [number, number][] = [
+],
+    spawns: [
   [150, 840], [1770, 840], [480, 180], [1440, 180], [420, 540], [1500, 540], [720, 360], [1200, 360],
+],
+  },
+  {
+    name: { fr: 'Les Étagères', en: 'The Shelves' },
+    sky: ['#ffe9c7', '#ffd6ec'],
+    rects: [...BORDERS, [3, 4, 7, 1], [22, 4, 7, 1], [12, 7, 8, 1], [2, 10, 6, 1], [24, 10, 6, 1], [9, 13, 5, 1], [18, 13, 5, 1]],
+    spawns: [[360, 240], [1560, 240], [960, 420], [300, 600], [1620, 600], [690, 780], [1230, 780], [300, 1020]],
+  },
+  {
+    name: { fr: 'Le Puits', en: 'The Well' },
+    sky: ['#d7d0ff', '#ffe3f1'],
+    rects: [...BORDERS, [14, 5, 4, 8], [4, 5, 6, 1], [22, 5, 6, 1], [6, 9, 5, 1], [21, 9, 5, 1], [3, 13, 7, 1], [22, 13, 7, 1]],
+    spawns: [[960, 300], [420, 300], [1500, 300], [510, 540], [1410, 540], [390, 780], [1530, 780], [1620, 1020]],
+  },
 ];
+// Arène de la partie en cours (une seule partie à la fois).
+let SOLIDS: { x: number; y: number; w: number; h: number }[] = [];
+let SPAWNS: [number, number][] = [];
 
 interface Arrow {
   x: number;
@@ -64,6 +90,9 @@ const wrap = (v: number, m: number) => ((v % m) + m) % m;
 const hitSolid = (x: number, y: number) => SOLIDS.find((s) => x >= s.x && x < s.x + s.w && y >= s.y && y < s.y + s.h);
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
+  const map = MAPS[Math.floor(Math.random() * MAPS.length)];
+  SOLIDS = map.rects.map(([x, y, w, h]) => ({ x: x * T, y: y * T, w: w * T, h: h * T }));
+  SPAWNS = map.spawns;
   const fr = ctx.lang === 'fr';
   const ps: P[] = runners.slice(0, SPAWNS.length).map((r) => ({
     ...r,
@@ -303,7 +332,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
     },
     render(g, t) {
-      drawSky(g, t, ctx.light);
+      drawSky(g, t, ctx.light, map.sky[0], map.sky[1]);
       g.strokeStyle = INK;
       g.lineWidth = 4;
       for (const s of SOLIDS) {
@@ -369,6 +398,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(banner, 960, 560);
       }
     },
+    mapName: map.name,
     ranking() {
       return [...ps].sort((a, b) => b.wins - a.wins || b.kills - a.kills).map((p) => p.pid);
     },

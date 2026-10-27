@@ -13,7 +13,20 @@ const FLAME = 0.55;
 const MAX_TIME = 150;
 
 type Cell = 0 | 1 | 2; // vide, pilier, gelée
-type Bonus = 'bomb' | 'fire' | 'speed';
+type Bonus = 'bomb' | 'fire' | 'speed' | 'shield';
+
+/** Plans de l'arène : chaque partie en tire un au hasard. */
+const LAYOUTS: { name: { fr: string; en: string }; pillar: (x: number, y: number) => boolean; crates: number; free?: (x: number, y: number) => boolean; floor: [string, string] }[] = [
+  { name: { fr: 'Le Classique', en: 'The Classic' }, pillar: (x, y) => x % 2 === 0 && y % 2 === 0, crates: 0.62, floor: ['#fff0f7', '#ffe1ef'] },
+  { name: { fr: 'L’Arène ouverte', en: 'The Open Arena' }, pillar: (x, y) => x % 4 === 0 && y % 4 === 0, crates: 0.72, floor: ['#effaf3', '#dcf5e6'] },
+  {
+    name: { fr: 'La Croix', en: 'The Cross' },
+    pillar: (x, y) => x % 2 === 0 && y % 2 === 0 && !(x === 7 || y === 5),
+    crates: 0.55,
+    free: (x, y) => Math.abs(x - 7) <= 2 && Math.abs(y - 5) <= 1,
+    floor: ['#f1edff', '#e4dcff'],
+  },
+];
 
 interface Bomb {
   x: number;
@@ -45,6 +58,8 @@ interface P extends Runner {
   pass: Set<string>;
   botPath: [number, number][];
   botT: number;
+  shield: number;
+  invuln: number;
 }
 
 const SPAWNS: [number, number][] = [
@@ -55,12 +70,13 @@ const key = (x: number, y: number) => `${x},${y}`;
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
+  const layout = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
   const grid: Cell[][] = [];
   for (let y = 0; y < GH; y++) {
     grid.push([]);
     for (let x = 0; x < GW; x++) {
-      const wall = x === 0 || y === 0 || x === GW - 1 || y === GH - 1 || (x % 2 === 0 && y % 2 === 0);
-      grid[y].push(wall ? 1 : Math.random() < 0.62 ? 2 : 0);
+      const wall = x === 0 || y === 0 || x === GW - 1 || y === GH - 1 || layout.pillar(x, y);
+      grid[y].push(wall ? 1 : layout.free?.(x, y) ? 0 : Math.random() < layout.crates ? 2 : 0);
     }
   }
   const players: P[] = runners.slice(0, SPAWNS.length).map((r, i) => {
@@ -89,6 +105,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       pass: new Set(),
       botPath: [],
       botT: 0,
+      shield: 0,
+      invuln: 0,
     };
   });
   let bombs: Bomb[] = [];
@@ -119,7 +137,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (grid[y][x] === 2) {
           if (apply) {
             grid[y][x] = 0;
-            if (Math.random() < 0.32) bonuses.set(key(x, y), (['bomb', 'fire', 'speed'] as Bonus[])[Math.floor(Math.random() * 3)]);
+            if (Math.random() < 0.32) bonuses.set(key(x, y), (['bomb', 'fire', 'speed', 'bomb', 'fire', 'shield'] as Bonus[])[Math.floor(Math.random() * 6)]);
           }
           break;
         }
@@ -317,6 +335,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if (bonus === 'bomb') p.bombs = Math.min(6, p.bombs + 1);
           if (bonus === 'fire') p.range = Math.min(7, p.range + 1);
           if (bonus === 'speed') p.speed = Math.min(6, p.speed + 0.5);
+          if (bonus === 'shield') p.shield = 1;
           sfx.join();
           if (!p.bot) ctx.buzz(p.pid, 60);
         }
@@ -344,7 +363,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         else flames.set(k, v - dt);
       }
       players.forEach((p) => {
-        if (p.alive && flames.has(key(Math.round(p.x), Math.round(p.y)))) {
+        p.invuln = Math.max(0, p.invuln - dt);
+        if (p.alive && p.invuln <= 0 && flames.has(key(Math.round(p.x), Math.round(p.y)))) {
+          // Le bouclier encaisse une éclaboussure.
+          if (p.shield) {
+            p.shield = 0;
+            p.invuln = 1;
+            sfx.boing();
+            return;
+          }
           p.alive = false;
           p.out = ++outCount;
           sfx.pet();
@@ -365,7 +392,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         for (let x = 0; x < GW; x++) {
           const px = ox + x * cs;
           const py = oy + y * cs;
-          g.fillStyle = (x + y) % 2 ? '#fff0f7' : '#ffe1ef';
+          g.fillStyle = (x + y) % 2 ? layout.floor[0] : layout.floor[1];
           g.fillRect(px, py, cs, cs);
         }
       for (const [k, b] of bonuses) {
@@ -373,7 +400,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.font = `${cs * 0.6}px sans-serif`;
         g.textAlign = 'center';
         g.textBaseline = 'middle';
-        g.fillText(b === 'bomb' ? '🧨' : b === 'fire' ? '💦' : '👟', ox + (x + 0.5) * cs, oy + (y + 0.5) * cs + Math.sin(t * 4) * 3);
+        g.fillText(b === 'bomb' ? '🧨' : b === 'fire' ? '💦' : b === 'shield' ? '🛡️' : '👟', ox + (x + 0.5) * cs, oy + (y + 0.5) * cs + Math.sin(t * 4) * 3);
         g.textBaseline = 'alphabetic';
       }
       g.strokeStyle = INK;
@@ -456,6 +483,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           dir: p.dir,
           run: p.inp.x || p.inp.y ? 0.6 : 0,
         });
+        if (p.shield || p.invuln > 0) {
+          g.strokeStyle = p.invuln > 0 ? 'rgba(46,197,255,0.4)' : 'rgba(46,197,255,0.85)';
+          g.lineWidth = 5;
+          g.beginPath();
+          g.arc(ox + (p.x + 0.5) * cs, oy + (p.y + 0.5) * cs, cs * 0.55, 0, Math.PI * 2);
+          g.stroke();
+        }
       }
       const w = Math.min(220, 1840 / players.length);
       players.forEach((p, i) => {
@@ -464,10 +498,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.font = '28px sans-serif';
         g.textAlign = 'center';
         g.fillStyle = INK;
-        g.fillText(p.alive ? `🧨${p.bombs} 💦${p.range} 👟${Math.round((p.speed - 3.1) * 2)}` : '💦 KO', 40 + i * w + (w - 10) / 2, 96);
+        g.fillText(p.alive ? `🧨${p.bombs} 💦${p.range}${p.shield ? ' 🛡️' : ''}` : '💦 KO', 40 + i * w + (w - 10) / 2, 96);
         g.globalAlpha = 1;
       });
     },
+    mapName: layout.name,
     ranking() {
       return [...players].sort((a, b) => Number(b.alive) - Number(a.alive) || b.out - a.out).map((p) => p.pid);
     },

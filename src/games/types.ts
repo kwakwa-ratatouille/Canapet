@@ -28,6 +28,8 @@ export interface GameInstance {
   leader?(): string | null;
   /** Données privées affichées sur le téléphone de ce joueur (sa main, ses choix…). */
   padData?(pid: string): unknown;
+  /** Nom de la carte tirée pour cette partie (affiché à l'intro). */
+  mapName?: Record<Lang, string>;
 }
 
 /** Ce que chaque fichier de jeu définit ; le catalogue y ajoute l'icône et la couleur de la DA. */
