@@ -35,16 +35,16 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 8. ✅ Le Traître du Frigo (`traitor.ts` + `TraitorPad.tsx`) : rôle caché 4-12, nuit/débat/vote, Goûteur dès 5.
 9. ✅ Coussin Clash (`clash.ts`) : combat de plateforme sur un canapé, % de dégâts, 3 vies, 4 coups + super coup (bas + B jauge pleine).
 10. ✅ Bagarre Molle (`brawl.ts`) : persos mous, baffe / attraper / jeter, sonné après 4 baffes.
-11. ✅ Cuisine en Panique (`kitchen.ts`) : coop 1-8, caisses/planche/feux/assiettes/passe-plat, 3 recettes. Pas d’IA de commis : les bots restent plantés (botFill 0).
+11. ✅ Cuisine en Panique (`kitchen.ts`) : coop 1-8, caisses/planche/feux/assiettes/passe-plat, 3 recettes, bots commis.
 12. ✅ Le Grand Plateau (`board.ts` + `BoardPad.tsx`) : dé sur le téléphone, bonbons, Coussins d’or, mini-jeux Tapotage et Réflexe.
-13. Ensuite : mode famille, comptes Google (Firebase), Chromecast, appli PC .exe, Pétards Mouillés (Bomberman), Sumo Tamponneur, Mini Bolides (kart), Flèches à Ventouse (TowerFall), Bagarre Molle (Gang Beasts), Cuisine en Panique (Overcooked), Le Traître du Frigo (rôle caché), Gribouillis (dessin), Le Grand Plateau (Mario Party), Coussin Clash (Smash, le jeu phare).
+13. Ensuite : mode famille, comptes Google (Firebase), activer le Chromecast (identifiant Google Cast à fournir).
 Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 ## Cartes et ajouts (oct. 2026)
 
-- Chaque jeu d'action tire une carte au hasard ( affiché à l'intro) : Pouces (Plage/Neige/Parc + boue 🐌 et turbo ⚡), Dégringolade (Pâtisserie/Jardin/Nuit Pyjama + ventilateurs + caramel qui s'enfonce), Sumo (Assiette/Patinoire/Pizza Flipper à champignons), Bolides (Bonbon/Huit/Ovale Express), Flèches (Tour/Étagères/Puits), Clash (Canapé/Étagère/Frigo), Bagarre (Nénuphars/Pont/Pile de Crêpes), Pétards (Classique/Arène ouverte/Croix + bonus bouclier 🛡️), Cuisine (Bistrot/Couloir), Plateau (Ovale/Grand Salon/Cœur).
+- Chaque jeu d'action tire une carte au hasard (`mapName`, affiché à l'intro) : Pouces (Plage/Neige/Parc + boue 🐌 et turbo ⚡), Dégringolade (Pâtisserie/Jardin/Nuit Pyjama + ventilateurs + caramel qui s'enfonce), Sumo (Assiette/Patinoire/Pizza Flipper à champignons), Bolides (Bonbon/Huit/Ovale Express), Flèches (Tour/Étagères/Puits), Clash (Canapé/Étagère/Frigo), Bagarre (Nénuphars/Pont/Pile de Crêpes), Pétards (Classique/Arène ouverte/Croix + bonus bouclier 🛡️), Cuisine (Bistrot/Couloir), Plateau (Ovale/Grand Salon/Cœur).
 - Bar des Bobards : carte Miroir 🪞 (si elle est retournée, l'accusateur perd). Gribouillis : 90 mots. Plateau : mini-jeu Pile ou Face. Traître : rôle Glouton dès 7 joueurs (gagne s'il est voté). Cuisine : bots commis (prendre, couper, cuire, poser sur un plan de travail ; les humains dressent et servent).
-- Tester sans afficher le panneau : appeler  en boucle avec un temps croissant (le panneau caché ralentit l'animation).
+- Tester sans afficher le panneau : appeler `__session.frame(t)` en boucle avec un temps croissant (le panneau caché ralentit l'animation).
 
 ## Architecture
 
