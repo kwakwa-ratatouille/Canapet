@@ -1,0 +1,244 @@
+// Tutos affichés sur la télé avant chaque jeu : le but, puis 3 étapes illustrées (icône + texte court).
+import type { Lang } from '../shared/protocol';
+
+export interface Tuto {
+  goal: string;
+  steps: [string, string][];
+}
+
+export const TUTOS: Record<string, Record<Lang, Tuto>> = {
+  pouces: {
+    fr: {
+      goal: 'Arrive le premier au bout de la piste !',
+      steps: [
+        ['👈👉', 'Tapote GAUCHE puis DROITE, en alternant'],
+        ['🐌', 'Dans la boue, tes pas sont plus courts'],
+        ['⚡', 'Sur le tapis turbo, tu fonces !'],
+      ],
+    },
+    en: {
+      goal: 'Reach the end of the track first!',
+      steps: [
+        ['👈👉', 'Tap LEFT then RIGHT, alternating'],
+        ['🐌', 'In the mud, your steps are shorter'],
+        ['⚡', 'On the boost pad, you fly!'],
+      ],
+    },
+  },
+  obstacles: {
+    fr: {
+      goal: 'Franchis tous les obstacles jusqu’à l’arrivée !',
+      steps: [
+        ['🕹️', 'Stick : courir à gauche et à droite'],
+        ['🅰️', 'A : sauter (garde appuyé pour sauter plus haut)'],
+        ['🅱️', 'B : plongeon pour passer sous les obstacles'],
+      ],
+    },
+    en: {
+      goal: 'Clear every obstacle to the finish!',
+      steps: [
+        ['🕹️', 'Stick: run left and right'],
+        ['🅰️', 'A: jump (hold to jump higher)'],
+        ['🅱️', 'B: dive under obstacles'],
+      ],
+    },
+  },
+  bluff: {
+    fr: {
+      goal: 'Bluffe sans te faire griller, et reste le dernier debout !',
+      steps: [
+        ['🃏', 'Ta main est sur ton téléphone. Pose 1 à 3 cartes « de la carte du tour »… vrai ou faux'],
+        ['📣', 'Tu doutes du joueur d’avant ? Crie MENTEUR !'],
+        ['💨', 'Le perdant appuie sur son coussin : 1 sur 6 fait éliminer'],
+      ],
+    },
+    en: {
+      goal: 'Bluff without getting caught, be the last one standing!',
+      steps: [
+        ['🃏', 'Your hand is on your phone. Play 1 to 3 cards “of the round card”… true or not'],
+        ['📣', 'Doubt the previous player? Shout LIAR!'],
+        ['💨', 'The loser squeezes their cushion: 1 in 6 knocks them out'],
+      ],
+    },
+  },
+  bombes: {
+    fr: {
+      goal: 'Sois le dernier au sec dans l’arène !',
+      steps: [
+        ['🕹️', 'Stick : se déplacer dans les couloirs'],
+        ['🧨', 'A : poser un pétard (il éclate en croix)'],
+        ['🛡️', 'Casse les blocs pour gagner des bonus, B pour shooter un pétard'],
+      ],
+    },
+    en: {
+      goal: 'Be the last one dry in the arena!',
+      steps: [
+        ['🕹️', 'Stick: move through the corridors'],
+        ['🧨', 'A: drop a banger (it splashes in a cross)'],
+        ['🛡️', 'Break blocks for power-ups, B to kick a banger'],
+      ],
+    },
+  },
+  sumo: {
+    fr: {
+      goal: 'Pousse les autres hors de l’arène. 3 vies chacun !',
+      steps: [
+        ['🕹️', 'Stick : rouler dans ta bouée'],
+        ['💥', 'A : turbo, pour foncer dans quelqu’un'],
+        ['⚓', 'B : ancre, tu deviens lourd et dur à pousser'],
+      ],
+    },
+    en: {
+      goal: 'Push the others off the arena. 3 lives each!',
+      steps: [
+        ['🕹️', 'Stick: roll in your rubber ring'],
+        ['💥', 'A: boost, to ram someone'],
+        ['⚓', 'B: anchor, you get heavy and hard to push'],
+      ],
+    },
+  },
+  kart: {
+    fr: {
+      goal: 'Fais 3 tours avant tout le monde !',
+      steps: [
+        ['🕹️', 'Pointe le stick là où tu veux aller : le kart accélère tout seul'],
+        ['❓', 'Roule sur les boîtes pour gagner un objet'],
+        ['🅰️', 'A : utiliser l’objet (turbo, sirop, pétard) · B : freiner'],
+      ],
+    },
+    en: {
+      goal: 'Finish 3 laps before everyone else!',
+      steps: [
+        ['🕹️', 'Point the stick where you want to go: the kart speeds up by itself'],
+        ['❓', 'Drive over boxes to get an item'],
+        ['🅰️', 'A: use the item (boost, syrup, banger) · B: brake'],
+      ],
+    },
+  },
+  archers: {
+    fr: {
+      goal: 'Une flèche ou un saut sur la tête, et c’est perdu. Premier à 3 manches !',
+      steps: [
+        ['🕹️', 'Stick : courir et viser (8 directions)'],
+        ['🅰️', 'A : sauter · 🅱️ B : tirer'],
+        ['🏹', '3 flèches seulement : ramasse celles qui sont plantées'],
+      ],
+    },
+    en: {
+      goal: 'One arrow or a stomp and you’re out. First to 3 rounds!',
+      steps: [
+        ['🕹️', 'Stick: run and aim (8 directions)'],
+        ['🅰️', 'A: jump · 🅱️ B: shoot'],
+        ['🏹', 'Only 3 arrows: pick up the stuck ones'],
+      ],
+    },
+  },
+  bagarre: {
+    fr: {
+      goal: 'Jette tout le monde dans la crème !',
+      steps: [
+        ['👋', 'B (appui court) : une baffe. 4 baffes et l’autre est sonné'],
+        ['🤲', 'B (maintenu) : attraper quelqu’un'],
+        ['🚀', 'Relâche B pour le jeter, dans la direction du stick'],
+      ],
+    },
+    en: {
+      goal: 'Throw everyone into the cream!',
+      steps: [
+        ['👋', 'Tap B: a slap. 4 slaps and they’re dizzy'],
+        ['🤲', 'Hold B: grab someone'],
+        ['🚀', 'Release B to throw them, in the stick’s direction'],
+      ],
+    },
+  },
+  cuisine: {
+    fr: {
+      goal: 'En équipe : servez un maximum de commandes !',
+      steps: [
+        ['🍅', 'A : prendre un ingrédient dans une caisse, le poser'],
+        ['🔪', 'Pose-le sur une planche et garde B appuyé pour couper. Le steak se cuit sur le feu'],
+        ['🍽️', 'Mets tout sur une assiette et apporte-la au passe-plat 🛎️'],
+      ],
+    },
+    en: {
+      goal: 'As a team: serve as many orders as you can!',
+      steps: [
+        ['🍅', 'A: grab an ingredient from a crate, drop it'],
+        ['🔪', 'Put it on a board and hold B to chop. Steak cooks on the stove'],
+        ['🍽️', 'Put everything on a plate and bring it to the pass 🛎️'],
+      ],
+    },
+  },
+  traitre: {
+    fr: {
+      goal: 'Les Gourmands doivent démasquer les Pique-assiettes cachés parmi eux',
+      steps: [
+        ['🤫', 'Regarde ton rôle en secret sur ton téléphone'],
+        ['🌙', 'La nuit, les Pique-assiettes choisissent une victime'],
+        ['🗳️', 'Le jour, on débat à voix haute puis on vote'],
+      ],
+    },
+    en: {
+      goal: 'The Foodies must unmask the Moochers hiding among them',
+      steps: [
+        ['🤫', 'Check your role in secret on your phone'],
+        ['🌙', 'At night, the Moochers pick a victim'],
+        ['🗳️', 'By day, debate out loud then vote'],
+      ],
+    },
+  },
+  dessin: {
+    fr: {
+      goal: 'Fais deviner ton dessin… ou devine celui des autres !',
+      steps: [
+        ['✏️', 'Le dessinateur voit un mot secret et dessine du doigt'],
+        ['📺', 'Le dessin apparaît en direct sur la télé'],
+        ['⌨️', 'Les autres tapent leurs réponses : vite = plus de points'],
+      ],
+    },
+    en: {
+      goal: 'Get your drawing guessed… or guess the others’!',
+      steps: [
+        ['✏️', 'The artist sees a secret word and draws with a finger'],
+        ['📺', 'The drawing appears live on the TV'],
+        ['⌨️', 'Everyone else types guesses: faster = more points'],
+      ],
+    },
+  },
+  plateau: {
+    fr: {
+      goal: 'Récolte le plus de Coussins d’or en 5 tours !',
+      steps: [
+        ['🎲', 'À ton tour, lance le dé sur ton téléphone'],
+        ['🍬', 'Gagne des bonbons, et passe sur l’étoile ⭐ avec 20 bonbons'],
+        ['🎮', 'Après chaque tour : un mini-jeu pour gagner des bonbons'],
+      ],
+    },
+    en: {
+      goal: 'Collect the most Golden Cushions in 5 rounds!',
+      steps: [
+        ['🎲', 'On your turn, roll the die on your phone'],
+        ['🍬', 'Earn candies, and pass the star ⭐ with 20 candies'],
+        ['🎮', 'After each round: a mini-game to win candies'],
+      ],
+    },
+  },
+  combat: {
+    fr: {
+      goal: 'Éjecte les autres hors de l’écran. 3 vies chacun !',
+      steps: [
+        ['🕹️', 'Stick : se déplacer · A : sauter (double saut)'],
+        ['👊', 'B : frapper. Le stick change le coup (côté, haut, bas). Plus de % = on vole plus loin'],
+        ['🎁', 'Des objets tombent : touche-les pour les ramasser, B pour s’en servir'],
+      ],
+    },
+    en: {
+      goal: 'Knock the others off the screen. 3 lives each!',
+      steps: [
+        ['🕹️', 'Stick: move · A: jump (double jump)'],
+        ['👊', 'B: hit. The stick changes the move (side, up, down). More % = fly further'],
+        ['🎁', 'Items fall from the sky: touch them to pick up, B to use'],
+      ],
+    },
+  },
+};

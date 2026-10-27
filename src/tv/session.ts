@@ -1,5 +1,6 @@
 // La soirée côté télé : joueurs, enchaînement des jeux, scores. La télé fait autorité.
 import { GAMES, gameById, playable } from '../games/registry';
+import { TUTOS } from '../games/tutos';
 import type { GameDef, GameInstance, Runner } from '../games/types';
 import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
 import { LIGHT, newId, save, store } from '../shared/device';
@@ -29,7 +30,9 @@ export interface ResultRow {
 
 const POINTS = [10, 7, 5, 4, 3, 2];
 const STEP = 1 / 60;
-const INTRO = 2.6;
+const INTRO_SHORT = 2.6;
+/** Intro avec tuto : le temps de lire les 3 étapes. */
+const INTRO_TUTO = 8.5;
 const COUNT = 3;
 export const TOURNAMENT_LEN = 5;
 const MAX_PLAYERS = 12;
@@ -48,6 +51,8 @@ export class Session {
   results: ResultRow[] = [];
   /** Secondes depuis le lancement du jeu (intro + compte à rebours compris). */
   clock = 0;
+  /** Durée de l'intro de la partie en cours (plus longue la première fois : tuto). */
+  intro = INTRO_SHORT;
   net: TvNet;
   private acc = 0;
   private last = 0;
@@ -157,7 +162,7 @@ export class Session {
       case 'tap':
       case 'in':
       case 'act':
-        if (this.phase === 'game' && this.game && this.clock >= INTRO + COUNT) this.game.input(pid, m);
+        if (this.phase === 'game' && this.game && this.clock >= this.intro + COUNT) this.game.input(pid, m);
         return;
       case 'host':
         if (pid !== this.hostPid()) return;
@@ -254,6 +259,8 @@ export class Session {
         profile: { name: `${t(this.lang(), 'bot')} ${i + 1}`, food, color, hat: 'aucun', acc: 'aucun', lang: 'fr' },
       });
     }
+    // Tuto la première fois ; pour « Rejouer » le même jeu, intro courte.
+    this.intro = TUTOS[id] && this.def?.id !== id ? INTRO_TUTO : INTRO_SHORT;
     this.def = def;
     this.runners = runners;
     this.game = def.create(runners, {
@@ -314,13 +321,13 @@ export class Session {
     while (this.acc >= STEP) {
       this.acc -= STEP;
       this.clock += STEP;
-      const c = Math.ceil(INTRO + COUNT - this.clock);
-      if (this.clock > INTRO && c !== this.lastCount && c >= 0) {
+      const c = Math.ceil(this.intro + COUNT - this.clock);
+      if (this.clock > this.intro && c !== this.lastCount && c >= 0) {
         this.lastCount = c;
         if (c > 0) sfx.tick();
         else sfx.go();
       }
-      if (this.clock >= INTRO + COUNT) this.game.update(STEP);
+      if (this.clock >= this.intro + COUNT) this.game.update(STEP);
       const lead = this.game.leader?.();
       if (lead && !this.announced) {
         this.announced = true;
@@ -342,8 +349,8 @@ export class Session {
       }
   }
 
-  introState(): { title: number; count: number } {
-    return { title: Math.max(0, INTRO - this.clock), count: INTRO + COUNT - this.clock };
+  introState(): { title: number; count: number; tutoLeft: number } {
+    return { title: Math.max(0, this.intro - this.clock), tutoLeft: this.intro === INTRO_TUTO ? Math.max(0, this.intro - this.clock) / INTRO_TUTO : 0, count: this.intro + COUNT - this.clock };
   }
 
   // ——— Écrans des manettes ———

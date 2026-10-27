@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { gameById } from '../games/registry';
+import { TUTOS } from '../games/tutos';
 import { sofaGroup, characterGroup, starGroup } from '../shared/art/canapet-art.js';
 import { CharCanvas } from '../shared/CharCanvas';
 import { LIGHT, PREVIEW } from '../shared/device';
@@ -247,7 +248,7 @@ export function stickerText(g: CanvasRenderingContext2D, text: string, x: number
 
 function drawIntro(g: CanvasRenderingContext2D, session: Session) {
   if (session.phase !== 'game' || !session.def) return;
-  const { title, count } = session.introState();
+  const { title, count, tutoLeft } = session.introState();
   const lang = session.lang();
   const def = session.def;
   if (title > 0) {
@@ -255,7 +256,89 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
     g.globalAlpha = a;
     g.fillStyle = def.color;
     g.fillRect(0, 0, W, H);
-    // Carte blanche au contour prune, ombre plate
+    // Ronds décoratifs dans le fond
+    g.fillStyle = 'rgba(255,255,255,0.18)';
+    for (let k = 0; k < 7; k++) {
+      g.beginPath();
+      g.arc((k * 337) % W, 120 + ((k * 211) % 860), 90 + (k % 3) * 50, 0, Math.PI * 2);
+      g.fill();
+    }
+    const tuto = TUTOS[def.id]?.[lang];
+    const map = session.game?.mapName?.[lang];
+    if (session.mode === 'tournament') stickerText(g, t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN }), W / 2, 80, 52, SOLEIL);
+    if (tuto && tutoLeft > 0) {
+      // Carte tuto : icône + nom à gauche, but et 3 étapes à droite.
+      const x0 = 150;
+      const y0 = 130;
+      const cw = 1620;
+      const ch = 820;
+      g.fillStyle = INK;
+      g.beginPath();
+      g.roundRect(x0, y0 + 14, cw, ch, 56);
+      g.fill();
+      g.fillStyle = '#fff';
+      g.strokeStyle = INK;
+      g.lineWidth = 6;
+      g.beginPath();
+      g.roundRect(x0, y0, cw, ch, 56);
+      g.fill();
+      g.stroke();
+      const img = iconImage(def.slug);
+      if (img.complete && img.naturalWidth) g.drawImage(img, x0 + 70, y0 + 70, 320, 320);
+      stickerText(g, def.name[lang], x0 + 230, y0 + 480, 64, ROSE);
+      if (map) {
+        g.fillStyle = def.color;
+        g.beginPath();
+        g.roundRect(x0 + 60, y0 + 530, 340, 64, 32);
+        g.fill();
+        g.stroke();
+        g.fillStyle = INK;
+        g.font = '700 30px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.fillText((lang === 'fr' ? 'Carte : ' : 'Map: ') + map, x0 + 230, y0 + 573);
+      }
+      // But
+      g.textAlign = 'left';
+      g.fillStyle = INK;
+      g.font = '700 46px Fredoka, sans-serif';
+      wrap(g, tuto.goal, x0 + 480, y0 + 110, 1060, 54, 'left');
+      // Étapes
+      tuto.steps.forEach(([icon, text], i) => {
+        const y = y0 + 250 + i * 170;
+        g.fillStyle = [ROSE, VIOLET, MENTHE][i];
+        g.strokeStyle = INK;
+        g.lineWidth = 5;
+        g.beginPath();
+        g.arc(x0 + 540, y + 40, 52, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.font = '56px sans-serif';
+        g.textAlign = 'center';
+        g.fillText(icon, x0 + 540, y + 60);
+        g.fillStyle = INK;
+        g.font = '700 36px Nunito, sans-serif';
+        g.textAlign = 'left';
+        wrap(g, text, x0 + 620, y + 30, 940, 44, 'left');
+      });
+      // Barre de temps restant
+      g.fillStyle = '#f1e6f7';
+      g.beginPath();
+      g.roundRect(x0 + 60, y0 + ch - 90, cw - 120, 28, 14);
+      g.fill();
+      g.fillStyle = def.color;
+      g.beginPath();
+      g.roundRect(x0 + 60, y0 + ch - 90, (cw - 120) * tutoLeft, 28, 14);
+      g.fill();
+      g.strokeStyle = INK;
+      g.lineWidth = 4;
+      g.beginPath();
+      g.roundRect(x0 + 60, y0 + ch - 90, cw - 120, 28, 14);
+      g.stroke();
+      stickerText(g, lang === 'fr' ? 'Prends ton téléphone, ça commence !' : 'Grab your phone, here we go!', W / 2, H - 22, 44, '#fff');
+      g.globalAlpha = 1;
+      return;
+    }
+    // Intro courte (jeu déjà vu) : icône + nom
     g.fillStyle = INK;
     g.beginPath();
     g.roundRect(560, 170, 800, 700, 48);
@@ -274,9 +357,7 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
     g.font = '700 38px Nunito, sans-serif';
     g.textAlign = 'center';
     wrap(g, def.how[lang], W / 2, 700, 720, 46);
-    const map = session.game?.mapName?.[lang];
     if (map) stickerText(g, (lang === 'fr' ? 'Carte : ' : 'Map: ') + map, W / 2, 960, 52, '#fff');
-    if (session.mode === 'tournament') stickerText(g, t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN }), W / 2, 110, 56, SOLEIL);
     g.globalAlpha = 1;
     return;
   }
@@ -293,7 +374,8 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
   }
 }
 
-function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lh: number) {
+function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lh: number, align: CanvasTextAlign = 'center') {
+  g.textAlign = align;
   const words = text.split(' ');
   let line = '';
   for (const w of words) {
