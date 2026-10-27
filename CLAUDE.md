@@ -75,7 +75,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 ## Progression et boutique (oct. 2026)
 
 - Gardée sur le téléphone (`src/shared/progress.ts`, clé `progress`) : XP, niveaux (`xpFor`), bonbons 🍬, objets achetés (`PRICES` : prix + niveau minimum ; le reste est gratuit). Gains comptés une fois par partie (`gid` dans les écrans results/podium, clé code télé + numéro). Niveau envoyé dans le profil (badge « Niv. » dans le salon télé). Boutique = éditeur de perso (cadenas, prix, fenêtre d’achat). 7 chapeaux et 4 accessoires ajoutés dans `canapet-art.js`.
-- Compte Google : à brancher sur Firebase (projet à créer par le propriétaire) pour sauvegarder la progression en ligne.
+- Compte Google : projet Firebase `canapet-31bb7` (config dans `src/shared/cloud.ts`, Firebase chargé à la demande via `cloudImpl.ts`). Bouton « Sauvegarder avec Google » sur la carte de progression du téléphone (popup, sinon redirection). Progression dans Realtime Database `players/<uid>/progress` (Belgique, europe-west1), fusion « le meilleur des deux » à la connexion. Règles : `database.rules.json`.
 - Manette : colonne du milieu (perso, place en direct, chrono) via le message `status` envoyé chaque seconde. Tuto : 16 s, les joueurs appuient sur un bouton pour dire « prêt » (`ready`, saute au compte à rebours quand tout le monde l’est).
 
 ## Chromecast et appli PC

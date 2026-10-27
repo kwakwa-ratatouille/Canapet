@@ -1,0 +1,38 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "players": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "progress": {
+          ".validate": "newData.hasChildren(['xp','coins'])",
+          "xp": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10000000"
+          },
+          "coins": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10000000"
+          },
+          "games": {
+            ".validate": "newData.isNumber()"
+          },
+          "wins": {
+            ".validate": "newData.isNumber()"
+          },
+          "updated": {
+            ".validate": "newData.isNumber()"
+          },
+          "owned": {
+            "$i": {
+              ".validate": "newData.isString() && newData.val().length < 40"
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    }
+  }
+}

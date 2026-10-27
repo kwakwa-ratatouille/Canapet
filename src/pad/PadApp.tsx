@@ -1,4 +1,5 @@
 import { TEAMS } from '../games/teams';
+import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
 import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRICES, rewardFor, saveProgress, type Kind, type Progress } from '../shared/progress';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GAMES, gameById, playable } from '../games/registry';
@@ -61,6 +62,50 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   });
   const [reward, setReward] = useState<{ xp: number; coins: number; level: number | null } | null>(null);
   const level = levelInfo(progress.xp).level;
+  // Compte Google : on ne charge Firebase que si le joueur s'est déjà connecté une fois (ou le demande).
+  const [user, setUser] = useState<CloudUser | null>(null);
+  const [cloud, setCloud] = useState<'off' | 'busy' | 'ok' | 'error'>('off');
+  const [useCloud, setUseCloud] = useState(() => store('cloud', false));
+  const synced = useRef(false);
+  useEffect(() => {
+    if (!useCloud || demo) return;
+    return watchUser((u) => {
+      setUser(u);
+      synced.current = false;
+      if (!u) {
+        setCloud('off');
+        return;
+      }
+      setCloud('busy');
+      loadCloud(u.uid)
+        .then((remote) => {
+          setProgress((p) => merge(p, remote));
+          synced.current = true;
+          setCloud('ok');
+        })
+        .catch(() => setCloud('error'));
+    });
+  }, [useCloud, demo]);
+  // Sauvegarde sur le compte (regroupée) à chaque changement.
+  useEffect(() => {
+    if (!user || !synced.current) return;
+    const id = setTimeout(() => {
+      saveCloud(user.uid, progress)
+        .then(() => setCloud('ok'))
+        .catch(() => setCloud('error'));
+    }, 800);
+    return () => clearTimeout(id);
+  }, [progress, user]);
+  const connect = () => {
+    save('cloud', true);
+    setUseCloud(true);
+    setCloud('busy');
+    signIn().catch(() => setCloud('error'));
+  };
+  const disconnect = () => {
+    void signOut();
+  };
+  const account = { user, cloud, connect, disconnect };
   const [live, setLive] = useState<{ rank: number; of: number; left: number | null } | null>(demo === 'stick' ? { rank: 2, of: 4, left: 83 } : null);
   const profileRef = useRef(profile);
   profileRef.current = profile;
@@ -191,6 +236,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           live={live}
           progress={progress}
           reward={reward}
+          account={account}
           send={send}
           host={host}
           edit={() => setEditing(true)}
@@ -212,7 +258,9 @@ function PadScreenView({
   live,
   progress,
   reward,
+  account,
 }: {
+  account: Account;
   progress: Progress;
   reward: { xp: number; coins: number; level: number | null } | null;
   profile: Profile;
@@ -275,7 +323,7 @@ function PadScreenView({
               </span>
             </div>
           </div>
-          <ProgressCard progress={progress} lang={lang} onShop={edit} />
+          <ProgressCard progress={progress} lang={lang} onShop={edit} account={account} />
           {screen.teams && (
             <div className="team-box">
               <p className="opt-title">{t(lang, 'yourTeam')}</p>
@@ -423,9 +471,21 @@ function PadScreenView({
 }
 
 /** Niveau, barre d'expérience et bonbons, avec l'accès à la boutique. */
-function ProgressCard({ progress, lang, onShop }: { progress: Progress; lang: Lang; onShop: () => void }) {
+interface Account {
+  user: CloudUser | null;
+  cloud: 'off' | 'busy' | 'ok' | 'error';
+  connect: () => void;
+  disconnect: () => void;
+}
+
+function ProgressCard({ progress, lang, onShop, account }: { progress: Progress; lang: Lang; onShop: () => void; account: Account }) {
   const { level, into, need } = levelInfo(progress.xp);
+  const { user, cloud } = account;
+  useEffect(() => {
+    if (!user) preload();
+  }, [user]);
   return (
+    <div className="prog-wrap">
     <div className="prog-card">
       <span className="prog-level">
         <small>{lang === 'fr' ? 'Niv.' : 'Lv.'}</small>
@@ -442,6 +502,26 @@ function ProgressCard({ progress, lang, onShop }: { progress: Progress; lang: La
       <button className="prog-shop" onClick={onShop}>
         🛍️ <span>{t(lang, 'shop')}</span>
       </button>
+    </div>
+      {user ? (
+        <div className="cloud-row">
+          {user.photo ? <img src={user.photo} alt="" referrerPolicy="no-referrer" /> : <span className="cloud-ini">{user.name.slice(0, 1)}</span>}
+          <span>
+            {cloud === 'error' ? t(lang, 'cloudError') : cloud === 'busy' ? t(lang, 'cloudBusy') : t(lang, 'cloudSaved', { name: user.name.split(' ')[0] })}
+          </span>
+          <button onClick={account.disconnect}>{t(lang, 'signOut')}</button>
+        </div>
+      ) : (
+        <button className="google-btn" onClick={account.connect} disabled={cloud === 'busy'}>
+          <svg viewBox="0 0 48 48" aria-hidden>
+            <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z" />
+            <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z" />
+            <path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z" />
+            <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z" />
+          </svg>
+          <span>{cloud === 'busy' ? t(lang, 'cloudBusy') : cloud === 'error' ? t(lang, 'cloudError') : t(lang, 'signIn')}</span>
+        </button>
+      )}
     </div>
   );
 }
