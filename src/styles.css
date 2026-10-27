@@ -1290,12 +1290,16 @@ h3,
   background: #fff;
   border: var(--cp-contour) solid var(--ink);
   box-shadow: var(--cp-ombre);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
+  position: relative;
 }
+/* Le perso tient en entier dans la bulle (le chapeau peut dépasser) */
 .editor-preview .char {
-  margin-top: 12px;
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  width: 150px !important;
+  height: 188px !important;
 }
 .name-input {
   width: 100%;

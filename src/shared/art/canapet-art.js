@@ -40,14 +40,37 @@ function wm(mode='cloud'){
 }
 const wmSvg=(mode,cls='w')=>svg('0 0 400 124',wm(mode),`class="${cls}" role="img" aria-label="Cana'pet"`);
 
+/* ===== Relief bonbon ===== */
+const hex2=c=>{c=c.replace('#','');if(c.length===3)c=c.split('').map(x=>x+x).join('');return [0,2,4].map(i=>parseInt(c.slice(i,i+2),16));};
+const rgb2=(a)=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const mixC=(c,t,k)=>{const a=hex2(c),b=hex2(t);return rgb2(a.map((v,i)=>v+(b[i]-v)*k));};
+/** Remplace les couleurs pleines par des dégradés bombés (définis dans le même bout de SVG). */
+function relief(str){
+  const seen=new Set();
+  const out=str.replace(/fill="(#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?)"/g,(m,c)=>{
+    const lc=c.toLowerCase();
+    if(lc===P) return m;
+    const id='cpg'+lc.slice(1);
+    seen.add(lc);
+    return `fill="url(#${id})"`;
+  });
+  let defs='';
+  for(const c of seen){
+    const id='cpg'+c.slice(1);
+    const light=mixC(c,'#ffffff',.5),dark=mixC(c,'#3a2140',.28);
+    defs+=`<radialGradient id="${id}" cx=".34" cy=".26" r=".9" fx=".3" fy=".2"><stop offset="0" stop-color="${light}"/><stop offset=".5" stop-color="${c}"/><stop offset="1" stop-color="${dark}"/></radialGradient>`;
+  }
+  return (defs?`<defs>${defs}</defs>`:'')+out;
+}
+
 /* ===== Visage ===== */
 function face(cx,cy,m='happy',s=1){
-  const e=12*s,r=8.5*s,p=4.2*s,ch=m==='toot'?.85:.55;let g='';
+  const e=12.5*s,r=10*s,p=5.4*s,ch=m==='toot'?.85:.6;let g='';
   g+=`<ellipse cx="${cx-20*s}" cy="${cy+10*s}" rx="${6*s}" ry="${3.6*s}" fill="#ff7fb3" opacity="${ch}"/><ellipse cx="${cx+20*s}" cy="${cy+10*s}" rx="${6*s}" ry="${3.6*s}" fill="#ff7fb3" opacity="${ch}"/>`;
   for(const x of [cx-e,cx+e]){
     if(m==='win'||m==='toot') g+=`<path d="M${x-6*s} ${cy+2*s}Q${x} ${cy-7*s} ${x+6*s} ${cy+2*s}" fill="none" ${sw(3.5*s)}/>`;
     else{const py=m==='sad'?cy+2.5*s:cy,ry=m==='wow'?r*1.2:r;
-      g+=`<ellipse cx="${x}" cy="${cy}" rx="${r}" ry="${ry}" fill="#fff" ${sw(3*s)}/><circle cx="${x+s}" cy="${py+s}" r="${p}" fill="${P}"/><circle cx="${x+2.6*s}" cy="${py-1.2*s}" r="${1.6*s}" fill="#fff"/>`;}
+      g+=`<ellipse cx="${x}" cy="${cy}" rx="${r}" ry="${ry}" fill="#fff" ${sw(3*s)}/><circle cx="${x+s}" cy="${py+1.2*s}" r="${p}" fill="${P}"/><circle cx="${x+3*s}" cy="${py-1.4*s}" r="${2.1*s}" fill="#fff"/><circle cx="${x-1.4*s}" cy="${py+3.2*s}" r="${1*s}" fill="#fff" opacity=".85"/>`;}
   }
   const my=cy+13*s;
   if(m==='sad') g+=`<path d="M${cx-e-7*s} ${cy-11*s}L${cx-e+5*s} ${cy-15*s}M${cx+e+7*s} ${cy-11*s}L${cx+e-5*s} ${cy-15*s}" fill="none" ${sw(3*s)}/>`;
@@ -131,10 +154,10 @@ function perso(kind,c=ROSE,o={}){
   const k=K[kind],s=k.fs||1;let g='';
   if(o.toot) g+=cloud(14,116,20,'#fff',3.5)+cloud(-2,96,11,'#fff',3)+star(30,92,6,SOL,2.5)+star(-2,124,4,SOL,2);
   if(o.arms) g+=`<path d="M22 ${k.fy+6}Q6 ${k.fy-4} 8 ${k.fy-24}M98 ${k.fy+6}Q114 ${k.fy-4} 112 ${k.fy-24}" fill="none" ${sw(4.5)}/><circle cx="8" cy="${k.fy-27}" r="6.5" fill="#fff" ${sw(3.5)}/><circle cx="112" cy="${k.fy-27}" r="6.5" fill="#fff" ${sw(3.5)}/>`;
-  g+=feet(c)+k.b(c);
+  g+=relief(feet(c)+k.b(c));
   g+=o.selfie?selfie(60,k.fy,s):face(60,k.fy,o.mood||'happy',s);
   if(o.acc) g+=acc(o.acc,60,k.fy,s);
-  if(o.hat) g+=hat(o.hat,k.hx||60,k.top,c);
+  if(o.hat) g+=relief(hat(o.hat,k.hx||60,k.top,c));
   return g;
 }
 const VB='-6 -36 132 180';

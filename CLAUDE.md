@@ -19,6 +19,7 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 ## Direction artistique « Le salon du dimanche » (oct. 2026)
 
 - Source : dossier `canapet-da` du propriétaire, copié dans `public/da/` (logos, mascotte Pouet, persos, icônes de jeux `jeux/<slug>.svg`, maquettes) et `src/tokens.css` (couleurs, contours, ombres, typo = source de vérité). Brief : `public/da/BRIEF-CLAUDE-CODE.md`.
+- Style choisi (oct. 2026) : **bonbon en relief**. `relief()` dans canapet-art.js transforme chaque aplat du corps, des pieds et des chapeaux en dégradé radial (clair en haut à gauche, plus foncé en bas) ; yeux plus grands à deux reflets. À poursuivre : décors et interface dans le même esprit.
 - Dessin : `src/shared/art/canapet-art.js` (+ `.d.ts`). Les persos passent par `characterSvg()` puis sont convertis UNE fois en image (cache dans `characters.ts`) ; selfie posé sur `faceSlot()`. Humeurs : happy, wow, sad, win (+ bras sur le podium).
 - Canvas : couleurs via `src/shared/palette.ts`. Écrans HTML : variables `--cp-*` (alias `--ink`, `--pink`… dans `styles.css`). Télé : unité `--u` = 1 px d’un écran 1920, aucun texte sous 28 px, contours 6 px ; téléphone : contours 4 px. Ombres plates prune, jamais de flou ni de filter (Chromecast).
 - Typo : Fredoka 600/700 (titres, boutons), Nunito (texte). Logo principal = monogramme C’p ; logotype à apostrophe-nuage (`<Wordmark/>`) en tête de la télé et de l’accueil ; favicon `icone-claire.svg`. Icône PC : `desktop/make-icon.js` (rendu par Electron avec Fredoka chargée).
