@@ -84,16 +84,16 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Pousse les autres hors de l’arène. 3 vies chacun !',
       steps: [
         ['🕹️', 'Stick : rouler dans ta bouée'],
-        ['💥', 'A : turbo, pour foncer dans quelqu’un'],
-        ['⚓', 'B : ancre, tu deviens lourd et dur à pousser'],
+        ['💥', 'A : turbo. Maintiens A pour le charger, relâche pour foncer'],
+        ['🌶️', 'B : ancre (tu deviens lourd). Ramasse les bonus : piment, bouclier, géant'],
       ],
     },
     en: {
       goal: 'Push the others off the arena. 3 lives each!',
       steps: [
         ['🕹️', 'Stick: roll in your rubber ring'],
-        ['💥', 'A: boost, to ram someone'],
-        ['⚓', 'B: anchor, you get heavy and hard to push'],
+        ['💥', 'A: boost. Hold A to charge it, release to ram'],
+        ['🌶️', 'B: anchor (you get heavy). Grab power-ups: chili, shield, giant'],
       ],
     },
   },

@@ -169,7 +169,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
               <div key={p.pid} className={`slot ${p.connected ? '' : 'off'}`}>
                 {p.pid === hostPid && <span className="slot-badge">👑</span>}
                 <div className="slot-disc" style={{ background: tint(p.color, 0.35) }}>
-                  <CharCanvas profile={p} size={140} ghost={!p.connected} />
+                  <CharCanvas profile={p} size={160} ghost={!p.connected} />
                 </div>
                 <div className="slot-name">{p.name}</div>
               </div>

@@ -400,17 +400,20 @@ h3,
   min-height: 0;
 }
 .slot-disc {
+  position: relative;
   width: calc(160 * var(--u));
   height: calc(160 * var(--u));
   border-radius: 50%;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
+  margin-top: calc(20 * var(--u));
 }
+/* Le perso tient en entier : posé au fond de la bulle, le chapeau peut dépasser. */
 .slot .char {
-  width: calc(140 * var(--u)) !important;
-  height: calc(175 * var(--u)) !important;
-  margin-top: calc(10 * var(--u));
+  position: absolute;
+  left: 50%;
+  bottom: calc(-2 * var(--u));
+  transform: translateX(-50%);
+  width: calc(176 * var(--u)) !important;
+  height: calc(220 * var(--u)) !important;
 }
 .slot.off {
   opacity: 0.5;
