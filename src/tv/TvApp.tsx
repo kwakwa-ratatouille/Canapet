@@ -226,6 +226,7 @@ function GameView({ session }: { session: Session }) {
       if (ev?.kind === 'seisme') g.translate(Math.sin(tt * 60) * 14, Math.cos(tt * 47) * 10);
       if (session.game) session.game.render(g, tt);
       g.setTransform(scale, 0, 0, scale, 0, 0);
+      if (session.game && !LIGHT) drawAmbience(g, tt, session);
       if (ev?.kind === 'disco') {
         g.globalAlpha = 0.22;
         g.fillStyle = ['#ff4f9a', '#ffd60a', '#2ec5ff', '#1fc9a0', '#9b5cff'][Math.floor(tt * 6) % 5];
@@ -303,6 +304,51 @@ export function stickerText(g: CanvasRenderingContext2D, text: string, x: number
   g.fillStyle = fill;
   g.fillText(text, x, y);
   g.restore();
+}
+
+// Ambiance « ciné » commune à tous les jeux : lumière chaude, bords assombris, poussières de lumière.
+let ambience: HTMLCanvasElement | null = null;
+function drawAmbience(g: CanvasRenderingContext2D, t: number, session: Session) {
+  if (!ambience) {
+    ambience = document.createElement('canvas');
+    ambience.width = W;
+    ambience.height = H;
+    const a = ambience.getContext('2d')!;
+    const light = a.createRadialGradient(W * 0.25, -100, 50, W * 0.25, -100, 1300);
+    light.addColorStop(0, 'rgba(255,240,200,0.22)');
+    light.addColorStop(1, 'rgba(255,240,200,0)');
+    a.fillStyle = light;
+    a.fillRect(0, 0, W, H);
+    const vig = a.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, H * 1.05);
+    vig.addColorStop(0, 'rgba(42,24,56,0)');
+    vig.addColorStop(1, 'rgba(42,24,56,0.32)');
+    a.fillStyle = vig;
+    a.fillRect(0, 0, W, H);
+  }
+  g.drawImage(ambience, 0, 0);
+  // Poussières de lumière qui flottent doucement
+  g.fillStyle = 'rgba(255,255,255,0.55)';
+  for (let i = 0; i < 18; i++) {
+    const x = (i * 277 + t * (8 + (i % 5) * 3)) % W;
+    const y = (i * 151 + Math.sin(t * 0.6 + i) * 30 + t * 6) % H;
+    g.beginPath();
+    g.arc(x, y, 2 + (i % 3), 0, Math.PI * 2);
+    g.fill();
+  }
+  // Ouverture en iris au début de la partie
+  const st = session.introState();
+  if (st.count > -1 && st.count < 3.2 && st.title <= 0) {
+    const k = Math.min(1, Math.max(0, (3.2 - st.count) / 0.8));
+    if (k < 1) {
+      g.save();
+      g.fillStyle = '#2a1838';
+      g.beginPath();
+      g.rect(0, 0, W, H);
+      g.arc(W / 2, H / 2, Math.max(1, k * 1200), 0, Math.PI * 2, true);
+      g.fill('evenodd');
+      g.restore();
+    }
+  }
 }
 
 /** Écran de pause (l'hôte reprend depuis son téléphone, ou touche Échap). */
