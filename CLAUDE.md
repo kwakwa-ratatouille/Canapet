@@ -43,6 +43,11 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Personnages dessinés par le code : `src/shared/characters.ts`. Sons : `src/shared/sound.ts`. Textes FR/EN : `src/shared/i18n.ts`.
 - Mode léger automatique (`LIGHT`, Chromecast et petits Android) : canvas en 1280×720, moins d'effets.
 
+## Chromecast et appli PC
+
+- **Chromecast** : récepteur `public/cast.html` (SDK CAF, iframe vers `index.html?cast=1#/tv`, bandeau de diagnostic). La page télé envoie son code au récepteur (postMessage), qui le renvoie aux téléphones sur le canal `urn:x-cast:com.canapet`. Bouton « Lancer sur le Chromecast » sur l’accueil (`src/shared/cast.ts`), caché tant que `CAST_APP_ID` est vide : le propriétaire doit enregistrer l’appli (Custom Receiver, URL `https://kwakwa-ratatouille.github.io/Canapet/cast.html`) dans la console Google Cast, la **publier**, et donner l’identifiant.
+- **Appli PC** : `desktop/` (Electron). Charge `…/Canapet/#/tv` en plein écran sans cache ; page `offline.html` si pas d’internet ; F11 plein écran, F5 recharger. `npx electron . --smoke` (dans desktop/) charge la télé et affiche le code puis quitte. Le .exe est fabriqué par `.github/workflows/desktop.yml` (seulement quand desktop/** change) et publié sur la release `pc-latest` : https://github.com/kwakwa-ratatouille/Canapet/releases/download/pc-latest/Canapet-Setup.exe. Ne pas lancer l’installateur sur le PC du propriétaire pour tester.
+
 ## Tester
 
 - `npm run dev` (port 5180, déclaré dans `.claude/launch.json`).

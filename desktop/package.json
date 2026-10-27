@@ -1,0 +1,45 @@
+{
+  "name": "canapet-pc",
+  "productName": "Cana'pet",
+  "version": "1.0.0",
+  "description": "Cana'pet sur le PC branché à la télé",
+  "main": "main.js",
+  "author": "Cana'pet",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable --publish never"
+  },
+  "build": {
+    "appId": "io.github.kwakwa-ratatouille.canapet",
+    "productName": "Cana'pet",
+    "files": [
+      "main.js",
+      "offline.html",
+      "icon.png"
+    ],
+    "win": {
+      "icon": "icon.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "Cana'pet",
+      "artifactName": "Canapet-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "Canapet-Portable.${ext}"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  }
+}

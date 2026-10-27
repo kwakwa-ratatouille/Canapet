@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cana'pet</title>
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        font-family: 'Segoe UI', sans-serif;
+        background: linear-gradient(160deg, #ffd6ea, #d7ecff);
+        color: #3a2140;
+        text-align: center;
+      }
+      h1 {
+        font-size: 80px;
+        margin: 0;
+        color: #ff4f9a;
+        -webkit-text-stroke: 3px #3a2140;
+      }
+      p {
+        font-size: 26px;
+        margin: 0;
+        max-width: 800px;
+      }
+      a {
+        font-size: 26px;
+        font-weight: 700;
+        color: #fff;
+        background: #ff4f9a;
+        border: 3px solid #3a2140;
+        border-radius: 18px;
+        padding: 14px 30px;
+        text-decoration: none;
+        box-shadow: 0 5px 0 #3a2140;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Cana’pet</h1>
+    <p>Pas de connexion internet. La télé et les téléphones en ont besoin pour se retrouver.</p>
+    <p>Vérifie le Wi-Fi ou le câble du PC, puis réessaie.</p>
+    <a href="#retry" id="retry">Réessayer</a>
+    <script>
+      // Nouvel essai automatique dès que la connexion revient.
+      window.addEventListener('online', function () {
+        location.hash = 'retry';
+      });
+      setInterval(function () {
+        if (navigator.onLine) location.hash = location.hash === '#retry' ? 'retry2' : 'retry';
+      }, 15000);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+name: Appli PC
+on:
+  push:
+    branches: [main]
+    paths: ['desktop/**', '.github/workflows/desktop.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: desktop
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm run dist
+      - name: Publier sur la page « Appli PC » (lien fixe pc-latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pc-latest
+          name: Appli PC Cana'pet
+          body: |
+            Appli PC de Cana'pet (Windows). Elle charge toujours la dernière version du site.
+            - **Canapet-Setup.exe** : installation, avec raccourci sur le bureau.
+            - **Canapet-Portable.exe** : sans installation.
+            Windows peut afficher « PC protégé » : « Informations complémentaires » puis « Exécuter quand même ».
+          files: |
+            desktop/dist/Canapet-Setup.exe
+            desktop/dist/Canapet-Portable.exe
+          make_latest: true
