@@ -177,6 +177,8 @@ interface F extends Runner {
   atkReq: boolean;
   lastA: boolean;
   lastB: boolean;
+  lastD: boolean;
+  superReq: boolean;
   out: number;
   kos: number;
   lastHitBy: number;
@@ -221,6 +223,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     atkReq: false,
     lastA: false,
     lastB: false,
+    lastD: false,
+    superReq: false,
     out: 0,
     kos: 0,
     lastHitBy: -1,
@@ -261,7 +265,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       return;
     }
     const up = f.inp.y < -0.5;
-    const down = f.inp.y > 0.5;
+    const down = f.inp.y > 0.5 || f.superReq;
+    f.superReq = false;
     const side = Math.abs(f.inp.x) > 0.5;
     let m: Move = 'jab';
     if (f.item === 'batte') m = 'batte';
@@ -601,6 +606,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (!f) return;
       if (m.a && !f.lastA) f.jumpReq = true;
       if (m.b && !f.lastB) f.atkReq = true;
+      // Y : super coup direct quand la jauge est pleine
+      if (m.d && !f.lastD && f.meter >= 100 && f.onGround) {
+        f.superReq = true;
+        f.atkReq = true;
+      }
+      f.lastD = !!m.d;
       f.lastA = m.a;
       f.lastB = m.b;
       f.inp = { x: m.x, y: m.y };

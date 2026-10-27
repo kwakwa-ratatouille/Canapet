@@ -94,6 +94,8 @@ interface K extends Runner {
   inp: { x: number; y: number; b: boolean };
   useReq: boolean;
   lastA: boolean;
+  lastC: boolean;
+  honkT: number;
   botItemT: number;
   botLane: number;
 }
@@ -170,6 +172,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       inp: { x: 0, y: 0, b: false },
       useReq: false,
       lastA: false,
+      lastC: false,
+      honkT: 0,
       botItemT: rnd(1, 3),
       botLane: rnd(-40, 40),
     };
@@ -269,6 +273,23 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (!k) return;
       if (m.a && !k.lastA) k.useReq = true;
       k.lastA = m.a;
+      // X : klaxon « pouet » qui écarte les karts tout proches
+      if (m.c && !k.lastC && k.honkT <= 0) {
+        k.honkT = 1.2;
+        sfx.pet();
+        pops.push({ x: k.x, y: k.y - 60, text: 'POUET !', c: '#ffd60a', t: 0.9 });
+        for (const o of ks)
+          if (o !== k) {
+            const dx = o.x - k.x;
+            const dy = o.y - k.y;
+            const d = Math.hypot(dx, dy);
+            if (d < 140 && d > 0) {
+              o.vx += (dx / d) * 380;
+              o.vy += (dy / d) * 380;
+            }
+          }
+      }
+      k.lastC = !!m.c;
       k.inp = { x: m.x, y: m.y, b: m.b };
     },
     update(dt) {
@@ -278,6 +299,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (k.done) k.inp = { x: Math.cos(k.a) * 0.4, y: Math.sin(k.a) * 0.4, b: false };
         k.turbo = Math.max(0, k.turbo - dt);
         k.safe = Math.max(0, k.safe - dt);
+        k.honkT = Math.max(0, k.honkT - dt);
         k.padT = Math.max(0, k.padT - dt);
         k.bumpT = Math.max(0, k.bumpT - dt);
         if (k.useReq) useItem(k, i);

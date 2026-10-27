@@ -54,7 +54,8 @@ export type ToTv =
   | { t: 'hello'; pid: string; profile: Profile }
   | { t: 'profile'; profile: Profile }
   | { t: 'tap'; side: 0 | 1 }
-  | { t: 'in'; x: number; y: number; a: boolean; b: boolean }
+  /** Stick + boutons ; c = bouton X, d = bouton Y (manette façon Switch). */
+  | { t: 'in'; x: number; y: number; a: boolean; b: boolean; c?: boolean; d?: boolean }
   /** Action propre à un jeu (poser des cartes, voter…). */
   | { t: 'act'; a: string; n?: number[]; s?: string }
   | { t: 'host'; action: HostAction; game?: string }

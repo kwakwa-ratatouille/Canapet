@@ -98,6 +98,7 @@ interface B extends Runner {
   bHeld: boolean;
   lastA: boolean;
   lastB: boolean;
+  lastC: boolean;
   kos: number;
   wins: number;
   lastHitBy: number;
@@ -157,6 +158,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     bHeld: false,
     lastA: false,
     lastB: false,
+    lastC: false,
     kos: 0,
     wins: 0,
     lastHitBy: -1,
@@ -412,6 +414,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (b.holding >= 0) release(i, true);
         else if (b.bDown < 0.22) punch(i);
       }
+      // X : attraper (relâcher pour lancer)
+      if (m.c && !b.lastC) {
+        if (b.heldBy >= 0) b.grip -= 1;
+        else grab(i);
+      }
+      if (!m.c && b.lastC && b.holding >= 0) release(i, true);
+      b.lastC = !!m.c;
       b.bHeld = m.b;
       b.lastA = m.a;
       b.lastB = m.b;

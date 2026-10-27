@@ -4,14 +4,15 @@ import { CharCanvas } from '../shared/CharCanvas';
 import { ordinal } from '../shared/i18n';
 import type { Lang, Profile, ToTv } from '../shared/protocol';
 
-const LABELS: Record<string, Record<Lang, [string, string]>> = {
+/** Rôle des boutons A, B, X, Y selon le jeu (X et Y n'apparaissent que s'ils servent). */
+const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> = {
   obstacles: { fr: ['SAUT', 'PLONGE'], en: ['JUMP', 'DIVE'] },
   sumo: { fr: ['TURBO', 'ANCRE'], en: ['BOOST', 'ANCHOR'] },
   bombes: { fr: ['PÉTARD', 'POUSSE'], en: ['BOMB', 'KICK'] },
-  kart: { fr: ['OBJET', 'FREIN'], en: ['ITEM', 'BRAKE'] },
-  archers: { fr: ['SAUT', 'TIR'], en: ['JUMP', 'SHOOT'] },
-  combat: { fr: ['SAUT', 'COUP'], en: ['JUMP', 'HIT'] },
-  bagarre: { fr: ['SAUT', 'BAFFE'], en: ['JUMP', 'SLAP'] },
+  kart: { fr: ['OBJET', 'FREIN', 'POUET'], en: ['ITEM', 'BRAKE', 'HONK'] },
+  archers: { fr: ['SAUT', 'TIR', 'ESQUIVE'], en: ['JUMP', 'SHOOT', 'DODGE'] },
+  combat: { fr: ['SAUT', 'COUP', undefined, 'SUPER'], en: ['JUMP', 'HIT', undefined, 'SUPER'] },
+  bagarre: { fr: ['SAUT', 'BAFFE', 'ATTRAPE'], en: ['JUMP', 'SLAP', 'GRAB'] },
   cuisine: { fr: ['PRENDRE', 'COUPER'], en: ['GRAB', 'CHOP'] },
 };
 
@@ -50,23 +51,24 @@ export function Stick({
   profile?: Profile;
   live?: { rank: number; of: number; left: number | null } | null;
 }) {
-  const [la, lb] = LABELS[game ?? '']?.[lang] ?? ['A', 'B'];
-  const state = useRef({ x: 0, y: 0, a: false, b: false });
+  const [la, lb, lx, ly] = LABELS[game ?? '']?.[lang] ?? ['A', 'B'];
+  const four = !!(lx || ly);
+  const state = useRef({ x: 0, y: 0, a: false, b: false, c: false, d: false });
   // Le stick est visible au repos ; s'il est touché ailleurs, il vient sous le pouce.
   const [knob, setKnob] = useState({ ox: 0, oy: 0, x: 0, y: 0, on: false });
   const zone = useRef<HTMLDivElement>(null);
   const origin = useRef({ x: 0, y: 0 });
-  const [pressed, setPressed] = useState({ a: false, b: false });
+  const [pressed, setPressed] = useState({ a: false, b: false, c: false, d: false });
   const stickId = useRef<number | null>(null);
   const lastSent = useRef(0);
-  const R = 62;
+  const R = 46;
 
   const flush = (force = false) => {
     const now = performance.now();
     if (!force && now - lastSent.current < 33) return;
     lastSent.current = now;
     const s = state.current;
-    send({ t: 'in', x: +s.x.toFixed(2), y: +s.y.toFixed(2), a: s.a, b: s.b });
+    send({ t: 'in', x: +s.x.toFixed(2), y: +s.y.toFixed(2), a: s.a, b: s.b, c: s.c, d: s.d });
   };
 
   // Renvoi régulier : si un message se perd, l'état se recale tout seul.
@@ -118,7 +120,7 @@ export function Stick({
     state.current.y = 0;
     flush(true);
   };
-  const btn = (k: 'a' | 'b', v: boolean) => (e: React.PointerEvent) => {
+  const btn = (k: 'a' | 'b' | 'c' | 'd', v: boolean) => (e: React.PointerEvent) => {
     e.preventDefault();
     state.current[k] = v;
     setPressed((p) => ({ ...p, [k]: v }));
@@ -156,15 +158,28 @@ export function Stick({
           </span>
         )}
       </div>
-      <div className="ab">
-        <button className={`ab-btn b ${pressed.b ? 'down' : ''}`} onPointerDown={btn('b', true)} onPointerUp={btn('b', false)} onPointerCancel={btn('b', false)}>
-          <i>B</i>
-          {lb}
-        </button>
-        <button className={`ab-btn a ${pressed.a ? 'down' : ''}`} onPointerDown={btn('a', true)} onPointerUp={btn('a', false)} onPointerCancel={btn('a', false)}>
-          <i>A</i>
-          {la}
-        </button>
+      <div className={`ab ${four ? 'four' : ''}`}>
+        {(
+          [
+            ['c', 'X', lx],
+            ['d', 'Y', ly],
+            ['b', 'B', lb],
+            ['a', 'A', la],
+          ] as const
+        ).map(([k, letter, label]) =>
+          label ? (
+            <button
+              key={k}
+              className={`ab-btn ${k} ${pressed[k] ? 'down' : ''}`}
+              onPointerDown={btn(k, true)}
+              onPointerUp={btn(k, false)}
+              onPointerCancel={btn(k, false)}
+            >
+              <i>{letter}</i>
+              {label}
+            </button>
+          ) : null,
+        )}
       </div>
     </div>
   );

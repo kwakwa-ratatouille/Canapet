@@ -1146,9 +1146,9 @@ h3,
 }
 .stick-base {
   position: absolute;
-  width: min(56vmin, 210px);
-  height: min(56vmin, 210px);
-  margin: calc(min(56vmin, 210px) / -2) 0 0 calc(min(56vmin, 210px) / -2);
+  width: min(40vmin, 150px);
+  height: min(40vmin, 150px);
+  margin: calc(min(40vmin, 150px) / -2) 0 0 calc(min(40vmin, 150px) / -2);
   border-radius: 50%;
   background: #e6ddff;
   border: 5px solid var(--ink);
@@ -1161,7 +1161,7 @@ h3,
 .stick-base::before {
   content: '';
   position: absolute;
-  inset: 30px;
+  inset: 22px;
   border-radius: 50%;
   background: #cbbcff;
   border: 4px solid var(--ink);
@@ -1174,8 +1174,8 @@ h3,
   fill: var(--ink);
 }
 .stick-knob {
-  width: 96px;
-  height: 96px;
+  width: 66px;
+  height: 66px;
   border-radius: 50%;
   background: var(--c);
   border: 5px solid var(--ink);
@@ -1199,7 +1199,7 @@ h3,
 .stick-hint {
   position: absolute;
   left: 45%;
-  top: calc(55% + 120px);
+  top: calc(55% + 92px);
   transform: translateX(-50%);
   font-family: var(--cp-font-titre);
   font-weight: 700;
@@ -2170,8 +2170,10 @@ h3,
 }
 .slot-level {
   position: absolute;
-  top: calc(-14 * var(--u));
-  right: calc(-14 * var(--u));
+  bottom: calc(-16 * var(--u));
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
   font-family: var(--cp-font-titre);
   font-weight: 700;
   font-size: calc(28 * var(--u));
@@ -2239,4 +2241,35 @@ h3,
   text-decoration: underline;
   background: none;
   border: 0;
+}
+
+/* Croix de 4 boutons façon Switch : X en haut, A à droite, B en bas, Y à gauche */
+.ab.four .ab-btn {
+  width: min(27vmin, 100px);
+  height: min(27vmin, 100px);
+  font-size: clamp(11px, 3.4vmin, 15px);
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+}
+.ab.four .ab-btn.down {
+  transform: translate(-50%, -50%);
+}
+.ab.four .ab-btn.c {
+  left: 50%;
+  top: 22%;
+  background: var(--cp-ciel, #2ec5ff);
+}
+.ab.four .ab-btn.a {
+  left: 80%;
+  top: 50%;
+}
+.ab.four .ab-btn.b {
+  left: 50%;
+  top: 78%;
+}
+.ab.four .ab-btn.d {
+  left: 20%;
+  top: 50%;
+  background: var(--mint);
 }
