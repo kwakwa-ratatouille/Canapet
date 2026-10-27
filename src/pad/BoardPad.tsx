@@ -34,6 +34,16 @@ export function BoardPad({ data, lang, send }: { data: BoardPadData; lang: Lang;
           {data.early ? T.early : data.go ? T.now : T.wait}
         </button>
       )}
+      {data.mode === 'coin' && (
+        <div className="coin-row">
+          <button className="round-btn rose" onPointerDown={(e) => { e.preventDefault(); send({ t: 'act', a: 'coin', n: [0] }); }}>
+            {lang === 'fr' ? 'PILE' : 'HEADS'}
+          </button>
+          <button className="round-btn sun" onPointerDown={(e) => { e.preventDefault(); send({ t: 'act', a: 'coin', n: [1] }); }}>
+            {lang === 'fr' ? 'FACE' : 'TAILS'}
+          </button>
+        </div>
+      )}
       {data.mode === 'wait' && <p className="pad-title">{data.info}</p>}
     </div>
   );

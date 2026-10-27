@@ -21,6 +21,13 @@ const WORDS: [string, string][] = [
   ['papillon', 'butterfly'], ['tortue', 'turtle'], ['soleil', 'sun'], ['lunettes', 'glasses'], ['frigo', 'fridge'],
   ['ninja', 'ninja'], ['dinosaure', 'dinosaur'], ['sapin de noël', 'christmas tree'], ['œuf au plat', 'fried egg'], ['poulpe', 'octopus'],
   ['baleine', 'whale'], ['trampoline', 'trampoline'], ['magicien', 'wizard'], ['bougie', 'candle'], ['clown', 'clown'],
+  ['kangourou', 'kangaroo'], ['astronaute', 'astronaut'], ['croissant', 'croissant'], ['brosse à dents', 'toothbrush'], ['parachute', 'parachute'],
+  ['tour eiffel', 'eiffel tower'], ['pieuvre', 'squid'], ['bonhomme', 'stickman'], ['cerf-volant', 'kite'], ['marteau', 'hammer'],
+  ['sirop', 'syrup'], ['hérisson', 'hedgehog'], ['télévision', 'television'], ['gâteau', 'cake'], ['moto', 'motorbike'],
+  ['phare', 'lighthouse'], ['zombie', 'zombie'], ['boussole', 'compass'], ['lama', 'llama'], ['igloo', 'igloo'],
+  ['bateau', 'boat'], ['cheval', 'horse'], ['citrouille', 'pumpkin'], ['taupe', 'mole'], ['pompier', 'firefighter'],
+  ['ballon', 'balloon'], ['fourchette', 'fork'], ['cascade', 'waterfall'], ['dauphin', 'dolphin'], ['épouvantail', 'scarecrow'],
+  ['chameau', 'camel'], ['loupe', 'magnifying glass'], ['sorcière', 'witch'], ['hamac', 'hammock'], ['coussin', 'cushion'],
 ];
 
 interface Stroke {

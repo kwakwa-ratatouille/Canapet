@@ -4,11 +4,12 @@ import type { Lang, ToTv } from '../shared/protocol';
 
 const TXT = {
   fr: {
-    role: { gourmand: 'Gourmand 😇', pique: 'Pique-assiette 😈', gouteur: 'Goûteur 👃' },
+    role: { gourmand: 'Gourmand 😇', pique: 'Pique-assiette 😈', gouteur: 'Goûteur 👃', glouton: 'Glouton 🤤' },
     goal: {
       gourmand: 'Trouve les Pique-assiettes et vote contre eux.',
       pique: 'Vide le frigo sans te faire griller. Mens !',
       gouteur: 'Chaque nuit, renifle un joueur pour savoir s’il est Pique-assiette.',
+      glouton: 'Tu joues seul : fais-toi mettre à la porte au vote et tu gagnes. Aie l’air louche !',
     },
     mates: 'Tes complices : ',
     kill: 'Qui finit la tête dans le frigo ?',
@@ -22,11 +23,12 @@ const TXT = {
     sniffed: 'Reniflés : ',
   },
   en: {
-    role: { gourmand: 'Foodie 😇', pique: 'Moocher 😈', gouteur: 'Taster 👃' },
+    role: { gourmand: 'Foodie 😇', pique: 'Moocher 😈', gouteur: 'Taster 👃', glouton: 'Glutton 🤤' },
     goal: {
       gourmand: 'Find the Moochers and vote them out.',
       pique: 'Raid the fridge without getting caught. Lie!',
       gouteur: 'Each night, sniff a player to learn if they are a Moocher.',
+      glouton: 'You play alone: get voted out and you win. Act suspicious!',
     },
     mates: 'Your partners: ',
     kill: 'Who ends up head-first in the fridge?',

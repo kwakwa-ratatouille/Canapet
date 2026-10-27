@@ -35,13 +35,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const pls: Pl[] = runners.map((r) => ({ ...r, role: 'gourmand', alive: true, pick: -1, ready: false, diedAt: 0, sniffed: new Map() }));
   order.slice(0, nTraitors).forEach((i) => (pls[i].role = 'pique'));
   if (n >= 5) pls[order[nTraitors]].role = 'gouteur';
+  // Dès 7 joueurs, un Glouton joue pour lui seul : il gagne s'il se fait mettre à la porte au vote.
+  if (n >= 7) pls[order[nTraitors + 1]].role = 'glouton';
 
   let phase: Phase = 'roles';
   let timer = T_ROLES;
   let day = 0;
   let headline = fr ? 'Regardez votre rôle en secret…' : 'Check your role in secret…';
   let sub = '';
-  let winner: 'pique' | 'gourmand' | null = null;
+  let winner: 'pique' | 'gourmand' | 'glouton' | null = null;
   let deaths = 0;
   let lastVotes = new Map<number, number>();
   const botDelay: number[] = pls.map(() => rnd(2, 8));
@@ -49,7 +51,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const name = (i: number) => pls[i].profile.name;
   const alive = () => pls.map((p, i) => ({ p, i })).filter((x) => x.p.alive);
   const roleName = (r: Role) =>
-    fr ? { gourmand: 'Gourmand', pique: 'Pique-assiette', gouteur: 'Goûteur' }[r] : { gourmand: 'Foodie', pique: 'Moocher', gouteur: 'Taster' }[r];
+    fr
+      ? { gourmand: 'Gourmand', pique: 'Pique-assiette', gouteur: 'Goûteur', glouton: 'Glouton' }[r]
+      : { gourmand: 'Foodie', pique: 'Moocher', gouteur: 'Taster', glouton: 'Glutton' }[r];
 
   function go(p: Phase, t: number) {
     phase = p;
@@ -127,6 +131,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const v = majority(alive().map((x) => x.p));
     if (v !== null) {
       kill(v);
+      if (pls[v].role === 'glouton') {
+        winner = 'glouton';
+        headline = fr ? `${name(v)} était le Glouton : il voulait être viré, il gagne !` : `${name(v)} was the Glutton: they wanted out, they win!`;
+        sub = '';
+        speak(headline, ctx.lang);
+        sfx.win();
+        go('end', 7);
+        return;
+      }
       headline = fr ? `${name(v)} est mis à la porte !` : `${name(v)} is kicked out!`;
       sub = fr ? `C'était un ${roleName(pls[v].role)}.` : `They were a ${roleName(pls[v].role)}.`;
     } else {
@@ -306,7 +319,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       });
     },
     ranking() {
-      const won = (p: Pl) => (winner === 'pique' ? p.role === 'pique' : p.role !== 'pique');
+      const won = (p: Pl) =>
+        winner === 'glouton' ? p.role === 'glouton' : winner === 'pique' ? p.role === 'pique' : p.role !== 'pique' && p.role !== 'glouton';
       return [...pls]
         .sort((a, b) => Number(won(b)) - Number(won(a)) || Number(b.alive) - Number(a.alive) || b.diedAt - a.diedAt)
         .map((p) => p.pid);

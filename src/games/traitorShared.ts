@@ -1,5 +1,5 @@
 // Le Traître du Frigo : données privées envoyées à chaque téléphone.
-export type Role = 'gourmand' | 'pique' | 'gouteur';
+export type Role = 'gourmand' | 'pique' | 'gouteur' | 'glouton';
 
 export interface TraitorPadData {
   phase: 'roles' | 'night' | 'morning' | 'debate' | 'vote' | 'verdict' | 'end';

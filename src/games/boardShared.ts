@@ -1,6 +1,6 @@
 // Le Grand Plateau : ce que la télé envoie en privé à chaque téléphone.
 export interface BoardPadData {
-  mode: 'roll' | 'tap' | 'react' | 'wait';
+  mode: 'roll' | 'tap' | 'react' | 'coin' | 'wait';
   /** Réflexe : l'écran est passé au vert. */
   go: boolean;
   /** Réflexe : on a appuyé trop tôt. */

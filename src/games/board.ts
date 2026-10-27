@@ -12,7 +12,7 @@ const SPACES = 26;
 const STAR_PRICE = 20;
 
 type Space = 'bleu' | 'rouge' | 'vert';
-type Phase = 'roll' | 'dice' | 'move' | 'land' | 'miniIntro' | 'tap' | 'react' | 'miniEnd' | 'end';
+type Phase = 'roll' | 'dice' | 'move' | 'land' | 'miniIntro' | 'tap' | 'react' | 'coin' | 'miniEnd' | 'end';
 
 interface Pl extends Runner {
   pos: number;
@@ -25,16 +25,44 @@ interface Pl extends Runner {
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
-/** Coordonnées des cases sur un ovale arrondi. */
-const SPOTS = Array.from({ length: SPACES }, (_, i) => {
-  const a = (i / SPACES) * Math.PI * 2 - Math.PI / 2;
-  const x = 960 + Math.cos(a) * 760;
-  const y = 560 + Math.sin(a) * 360;
-  return { x, y };
-});
+/** Plateaux : chaque partie en tire un au hasard (forme du chemin et couleurs). */
+const BOARDS: { name: { fr: string; en: string }; bg: string; inner: string; spot: (a: number) => { x: number; y: number } }[] = [
+  {
+    name: { fr: 'L’Ovale', en: 'The Oval' },
+    bg: '#c9f0e0',
+    inner: '#fff3c4',
+    spot: (a) => ({ x: 960 + Math.cos(a) * 760, y: 560 + Math.sin(a) * 360 }),
+  },
+  {
+    name: { fr: 'Le Grand Salon', en: 'The Living Room' },
+    bg: '#ffe3f1',
+    inner: '#ffffff',
+    // Rectangle aux coins arrondis (superellipse)
+    spot: (a) => {
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      return { x: 960 + Math.sign(c) * Math.pow(Math.abs(c), 0.35) * 780, y: 560 + Math.sign(s) * Math.pow(Math.abs(s), 0.35) * 380 };
+    },
+  },
+  {
+    name: { fr: 'Le Cœur', en: 'The Heart' },
+    bg: '#ffd6ea',
+    inner: '#fff0f7',
+    spot: (a) => {
+      const t = a + Math.PI / 2;
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      return { x: 960 + x * 46, y: 520 - y * 27 };
+    },
+  },
+];
+// Cases du plateau en cours (une seule partie à la fois).
+let SPOTS: { x: number; y: number }[] = [];
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
+  const boardDef = BOARDS[Math.floor(Math.random() * BOARDS.length)];
+  SPOTS = Array.from({ length: SPACES }, (_, i) => boardDef.spot((i / SPACES) * Math.PI * 2 - Math.PI / 2));
   const pls: Pl[] = runners.slice(0, 8).map((r) => ({ ...r, pos: 0, candies: 10, stars: 0, taps: 0, reactAt: -1, early: false }));
   const spaces: Space[] = Array.from({ length: SPACES }, (_, i) => (i === 0 ? 'bleu' : Math.random() < 0.18 ? 'vert' : Math.random() < 0.3 ? 'rouge' : 'bleu'));
   let star = 8 + Math.floor(Math.random() * 10);
@@ -46,7 +74,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let steps = 0;
   let hop = 0;
   let message = '';
-  let mini: 'tap' | 'react' = 'tap';
+  let mini: 'tap' | 'react' | 'coin' = 'tap';
+  let coin = 0;
+  const coinPick = new Map<string, number>();
   let goAt = 0;
   let time = 0;
   let miniResult: string[] = [];
@@ -108,7 +138,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }
 
   function startMini() {
-    mini = round % 2 ? 'tap' : 'react';
+    mini = (['coin', 'tap', 'react'] as const)[round % 3];
+    coinPick.clear();
     phase = 'miniIntro';
     timer = 3;
     pls.forEach((p) => {
@@ -119,13 +150,30 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     say(
       mini === 'tap'
         ? fr ? 'Mini-jeu : Tapotage ! Tape le plus vite possible.' : 'Mini-game: Tap frenzy! Tap as fast as you can.'
-        : fr ? 'Mini-jeu : Réflexe ! Appuie dès que c’est vert.' : 'Mini-game: Reflex! Press as soon as it turns green.',
+        : mini === 'react'
+          ? fr ? 'Mini-jeu : Réflexe ! Appuie dès que c’est vert.' : 'Mini-game: Reflex! Press as soon as it turns green.'
+          : fr ? 'Mini-jeu : Pile ou Face ! Choisis sur ton téléphone.' : 'Mini-game: Heads or Tails! Pick on your phone.',
       true,
     );
     ctx.refresh();
   }
 
   function endMini() {
+    if (mini === 'coin') {
+      coin = Math.random() < 0.5 ? 0 : 1;
+      const winners = pls.filter((p) => coinPick.get(p.pid) === coin);
+      winners.forEach((p) => (p.candies += 6));
+      miniResult = [
+        (fr ? (coin ? 'C’est FACE !' : 'C’est PILE !') : coin ? 'TAILS!' : 'HEADS!'),
+        ...winners.slice(0, 4).map((p) => `🍬 ${name(p)} +6`),
+      ];
+      phase = 'miniEnd';
+      timer = 3.5;
+      say(miniResult[0], true);
+      sfx.win();
+      ctx.refresh();
+      return;
+    }
     const order =
       mini === 'tap'
         ? [...pls].sort((a, b) => b.taps - a.taps)
@@ -150,6 +198,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (!p) return;
       if (m.a === 'roll' && p === cur()) roll();
       if (m.a === 'tap' && phase === 'tap') p.taps++;
+      if (m.a === 'coin' && phase === 'coin' && !coinPick.has(p.pid)) {
+        coinPick.set(p.pid, m.n?.[0] ? 1 : 0);
+        ctx.refresh();
+      }
       if (m.a === 'tap' && phase === 'react' && p.reactAt < 0 && !p.early) {
         if (time < goAt) p.early = true;
         else p.reactAt = time - goAt;
@@ -204,6 +256,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if (mini === 'tap') {
             phase = 'tap';
             timer = 6;
+          } else if (mini === 'coin') {
+            phase = 'coin';
+            timer = 6;
+            for (const p of pls) if (p.bot) coinPick.set(p.pid, Math.random() < 0.5 ? 0 : 1);
           } else {
             phase = 'react';
             goAt = time + rnd(2, 5);
@@ -214,6 +270,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           break;
         case 'tap':
         case 'react':
+        case 'coin':
           endMini();
           break;
         case 'miniEnd':
@@ -232,9 +289,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
     },
     render(g, t) {
-      g.fillStyle = '#c9f0e0';
+      g.fillStyle = boardDef.bg;
       g.fillRect(0, 0, 1920, 1080);
-      g.fillStyle = '#fff3c4';
+      g.fillStyle = boardDef.inner;
       g.beginPath();
       g.ellipse(960, 560, 640, 260, 0, 0, Math.PI * 2);
       g.fill();
@@ -310,12 +367,25 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(phase === 'roll' ? '🎲' : String(v), 1520, 500);
       }
       // Mini-jeux en plein écran
-      if (phase === 'miniIntro' || phase === 'tap' || phase === 'react' || phase === 'miniEnd') {
+      if (phase === 'miniIntro' || phase === 'tap' || phase === 'react' || phase === 'coin' || phase === 'miniEnd') {
         g.fillStyle = 'rgba(58,33,64,0.85)';
         g.fillRect(0, 0, 1920, 1080);
         g.fillStyle = '#fff';
         g.font = '700 70px Fredoka, sans-serif';
-        g.fillText(mini === 'tap' ? (fr ? 'Tapotage !' : 'Tap frenzy!') : fr ? 'Réflexe !' : 'Reflex!', 960, 150);
+        g.fillText(mini === 'tap' ? (fr ? 'Tapotage !' : 'Tap frenzy!') : mini === 'react' ? (fr ? 'Réflexe !' : 'Reflex!') : fr ? 'Pile ou Face !' : 'Heads or Tails!', 960, 150);
+        if (phase === 'coin' || (phase === 'miniIntro' && mini === 'coin')) {
+          g.fillStyle = '#ffd60a';
+          g.strokeStyle = INK;
+          g.lineWidth = 8;
+          g.beginPath();
+          g.ellipse(960, 480, 180 * Math.abs(Math.cos(t * 6)) + 10, 180, 0, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.fillStyle = '#fff';
+          g.font = '700 40px Fredoka, sans-serif';
+          g.fillText(fr ? `Choix faits : ${coinPick.size}/${pls.length}` : `Picks: ${coinPick.size}/${pls.length}`, 960, 780);
+          if (phase === 'coin') g.fillText(`⏱ ${Math.ceil(timer)}`, 960, 850);
+        }
         if (phase === 'tap' || (phase === 'miniIntro' && mini === 'tap')) {
           const max = Math.max(20, ...pls.map((p) => p.taps));
           pls.forEach((p, i) => {
@@ -358,6 +428,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.textAlign = 'center';
       g.fillText(message, 960, 1052);
     },
+    mapName: boardDef.name,
     ranking() {
       return [...pls].sort((a, b) => b.stars - a.stars || b.candies - a.candies).map((p) => p.pid);
     },
@@ -369,6 +440,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       let mode: BoardPadData['mode'] = 'wait';
       if (phase === 'roll' && p === cur()) mode = 'roll';
       if (phase === 'tap') mode = 'tap';
+      if (phase === 'coin') mode = coinPick.has(pid) ? 'wait' : 'coin';
       if (phase === 'react') mode = 'react';
       return {
         mode,

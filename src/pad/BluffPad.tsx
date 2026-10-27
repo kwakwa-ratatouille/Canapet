@@ -123,5 +123,11 @@ export function BluffPad({ data, lang, send }: { data: BluffPadData; lang: Lang;
 }
 
 function MiniCard({ card, size }: { card: Card; lang: Lang; size: number }) {
+  if (card === 'miroir')
+    return (
+      <span className="mirror-card" style={{ fontSize: size * 0.7, width: size, height: size * 1.25 }}>
+        🪞
+      </span>
+    );
   return <CharCanvas profile={{ food: card, color: '#ffffff', hat: 'aucun', acc: 'aucun' }} size={size} still />;
 }

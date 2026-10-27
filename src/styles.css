@@ -1639,3 +1639,22 @@ h3,
   background: var(--cp-joueur-5);
 }
 
+
+.mirror-card {
+  display: grid;
+  place-items: center;
+}
+
+.coin-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.coin-row .round-btn {
+  width: min(40vw, 40vh, 200px);
+}
+
+.role-card.glouton {
+  background: var(--cp-joueur-3);
+}

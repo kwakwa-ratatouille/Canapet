@@ -293,7 +293,7 @@ export class Session {
 
   /** Appelée à chaque image : avance la logique à pas fixe de 1/60 s. */
   frame(now: number) {
-    const dt = this.last ? Math.min(0.25, (now - this.last) / 1000) : 0;
+    const dt = this.last ? Math.max(0, Math.min(0.25, (now - this.last) / 1000)) : 0;
     this.last = now;
     this.watchdog(now);
     if (this.phase !== 'game' || !this.game) return;

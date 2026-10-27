@@ -26,7 +26,17 @@ interface Puff {
   life: number;
 }
 
+/** Décors : chaque course en tire un au hasard. Boue = pas plus courts, tapis turbo = pas plus longs. */
+const THEMES = [
+  { name: { fr: 'La Plage', en: 'The Beach' }, sky: ['#7fd6ff', '#fff1c9'], lanes: ['#ffe9b8', '#fff3d1'], mud: '#d9a066', boost: '#2ec5ff' },
+  { name: { fr: 'La Neige', en: 'The Snow' }, sky: ['#bfe3ff', '#f4f9ff'], lanes: ['#ffffff', '#eef6ff'], mud: '#9fb4d6', boost: '#ff4f9a' },
+  { name: { fr: 'Le Parc', en: 'The Park' }, sky: ['#8fd8ff', '#ffd6ec'], lanes: ['#ffd3e8', '#ffe6f2'], mud: '#a0643a', boost: '#ffd60a' },
+];
+const MUD: [number, number] = [0.3, 0.45];
+const BOOST: [number, number] = [0.65, 0.78];
+
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
+  const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const rs: R[] = runners.map((r) => ({
     ...r,
     pos: 0,
@@ -52,7 +62,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function step(r: R, side: 0 | 1, i: number) {
     if (r.done) return;
-    r.pos += side !== r.lastSide ? 1 : 0.3;
+    const k = r.pos / STEPS;
+    const zone = k >= MUD[0] && k < MUD[1] ? 0.55 : k >= BOOST[0] && k < BOOST[1] ? 1.7 : 1;
+    r.pos += (side !== r.lastSide ? 1 : 0.3) * zone;
     r.lastSide = side;
     r.taps.push(time);
     if (!ctx.light && puffs.length < 60) {
@@ -99,7 +111,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
     },
     render(g, t) {
-      drawSky(g, t, ctx.light);
+      drawSky(g, t, ctx.light, theme.sky[0], theme.sky[1]);
       // Temps écoulé
       g.fillStyle = '#3a2140';
       g.font = '700 54px Fredoka, sans-serif';
@@ -108,7 +120,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
       rs.forEach((r, i) => {
         const { y, h } = lane(i);
-        g.fillStyle = i % 2 ? '#ffd3e8' : '#ffe6f2';
+        g.fillStyle = i % 2 ? theme.lanes[0] : theme.lanes[1];
         g.beginPath();
         g.roundRect(60, y + 4, 1800, h - 8, 18);
         g.fill();
@@ -122,6 +134,24 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           }
         g.fillStyle = 'rgba(58,33,64,0.25)';
         g.fillRect(START_X - 4, y + 8, 4, h - 16);
+        // Zones de boue et de tapis turbo
+        const zx = (a: number) => START_X + 20 + a * (FINISH_X - START_X - 40);
+        g.fillStyle = theme.mud;
+        g.globalAlpha = 0.55;
+        g.beginPath();
+        g.roundRect(zx(MUD[0]), y + 10, zx(MUD[1]) - zx(MUD[0]), h - 20, 14);
+        g.fill();
+        g.fillStyle = theme.boost;
+        g.beginPath();
+        g.roundRect(zx(BOOST[0]), y + 10, zx(BOOST[1]) - zx(BOOST[0]), h - 20, 14);
+        g.fill();
+        g.globalAlpha = 1;
+        if (i === 0) {
+          g.font = '28px sans-serif';
+          g.textAlign = 'center';
+          g.fillText('🐌', (zx(MUD[0]) + zx(MUD[1])) / 2, y - 6);
+          g.fillText('⚡', (zx(BOOST[0]) + zx(BOOST[1])) / 2, y - 6);
+        }
       });
 
       for (const p of puffs) {
@@ -153,6 +183,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
       });
     },
+    mapName: theme.name,
     ranking() {
       return [...rs]
         .sort((a, b) => (a.done || 99) - (b.done || 99) || b.pos - a.pos)

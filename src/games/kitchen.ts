@@ -6,7 +6,9 @@ import { roundRectText } from './draw';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
 
-const MAP = [
+/** Cuisines : chaque service en tire une au hasard. */
+const KITCHENS: { name: { fr: string; en: string }; map: string[]; floor: [string, string] }[] = [
+  { name: { fr: 'Le Bistrot', en: 'The Bistro' }, floor: ['#fff', '#f3ecff'], map: [
   '##T#S#F#P#V#####',
   '#..............W',
   'C..............#',
@@ -16,6 +18,22 @@ const MAP = [
   '#...#####......#',
   '#..............#',
   '################',
+] },
+  {
+    name: { fr: 'Le Couloir', en: 'The Corridor' },
+    floor: ['#fff', '#e9fbf4'],
+    map: [
+      '#T#S#F#P#V######',
+      '#..............W',
+      '#..............#',
+      'C..#OO#..#OO#..D',
+      'C..............#',
+      '#..............X',
+      '#..#####..####.#',
+      '#..............#',
+      '################',
+    ],
+  },
 ];
 const GW = 16;
 const GH = 9;
@@ -61,6 +79,7 @@ interface Cook extends Runner {
   chopping: boolean;
   lastA: boolean;
   pts: number;
+  botT: number;
 }
 
 const isPlate = (i: Item | null | undefined): i is Plate => !!i && 'plate' in i;
@@ -68,7 +87,8 @@ const tag = (i: Ing) => `${i.kind}:${i.state}`;
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
-  const cells = MAP.map((r) => r.split(''));
+  const kitchenDef = KITCHENS[Math.floor(Math.random() * KITCHENS.length)];
+  const cells = kitchenDef.map.map((r) => r.split(''));
   const slots = new Map<string, Item>();
   const key = (x: number, y: number) => `${x},${y}`;
   const floor = (x: number, y: number) => cells[y]?.[x] === '.';
@@ -87,6 +107,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     chopping: false,
     lastA: false,
     pts: 0,
+    botT: Math.random() * 0.3,
   }));
   let orders: { r: number; t: number; max: number }[] = [];
   let score = 0;
@@ -194,6 +215,133 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     }
   }
 
+/** Bots commis : ils préparent les ingrédients des commandes (prendre, couper, cuire) et les posent sur un plan de travail. */
+  const NEED_CHOP = new Set(['tomate', 'salade', 'fromage']);
+  const cellsOf = (pred: (ch: string, x: number, y: number) => boolean) => {
+    const out: [number, number][] = [];
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (pred(cells[y][x], x, y)) out.push([x, y]);
+    return out;
+  };
+  const nearFloor = (x: number, y: number) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => floor(x + dx, y + dy));
+
+  /** Chemin (cases de sol) jusqu'à une case voisine d'une des cibles. */
+  function route(c: Cook, goals: [number, number][]) {
+    const sx = Math.floor(c.x);
+    const sy = Math.floor(c.y);
+    const goalSet = new Set(goals.map(([x, y]) => key(x, y)));
+    const prev = new Map<string, string | null>([[key(sx, sy), null]]);
+    const q: [number, number][] = [[sx, sy]];
+    while (q.length) {
+      const [x, y] = q.shift()!;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (goalSet.has(key(x + dx, y + dy))) {
+          const path: [number, number][] = [];
+          let k: string | null = key(x, y);
+          while (k) {
+            const [px, py] = k.split(',').map(Number);
+            path.unshift([px, py]);
+            k = prev.get(k) ?? null;
+          }
+          return { path, goal: [x + dx, y + dy] as [number, number] };
+        }
+      }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (!floor(nx, ny) || prev.has(key(nx, ny))) continue;
+        prev.set(key(nx, ny), key(x, y));
+        q.push([nx, ny]);
+      }
+    }
+    return null;
+  }
+
+  /** Avance vers la cible ; renvoie vrai quand le bot y est, tourné vers elle. */
+  function approach(c: Cook, goals: [number, number][]): boolean {
+    const r = route(c, goals);
+    if (!r) return false;
+    const [nx, ny] = r.path.length > 1 ? r.path[1] : r.path[0];
+    const tx = nx + 0.5;
+    const ty = ny + 0.5;
+    if (r.path.length > 1) {
+      c.inp = { x: Math.abs(tx - c.x) > 0.06 ? Math.sign(tx - c.x) : 0, y: Math.abs(ty - c.y) > 0.06 ? Math.sign(ty - c.y) : 0 };
+      return false;
+    }
+    // Arrivé : on se tourne vers la cible (on pousse dedans, le plan de travail bloque).
+    c.inp = { x: (r.goal[0] - nx) * 0.5, y: (r.goal[1] - ny) * 0.5 };
+    const [fx, fy] = target(c);
+    return fx === r.goal[0] && fy === r.goal[1];
+  }
+
+  function botThink(c: Cook) {
+    c.chopping = false;
+    const free = (ch: string) => cellsOf((x, cx, cy) => x === ch && !slots.has(key(cx, cy)) && nearFloor(cx, cy));
+    // 1) Les mains pleines : on range au bon endroit.
+    if (c.hand && !isPlate(c.hand)) {
+      const it = c.hand;
+      let goals: [number, number][];
+      if (it.state === 'brule') goals = cellsOf((x) => x === 'X');
+      else if (it.state === 'cru' && NEED_CHOP.has(it.kind)) goals = free('C');
+      else if (it.state === 'cru' && it.kind === 'steak') goals = free('O');
+      else goals = cellsOf((x, cx, cy) => x === '#' && cy > 0 && !slots.has(key(cx, cy)) && nearFloor(cx, cy));
+      if (goals.length && approach(c, goals)) c.actReq = true;
+      return;
+    }
+    if (c.hand) {
+      // Une assiette : on la laisse aux humains (on la pose).
+      const goals = cellsOf((x, cx, cy) => x === '#' && cy > 0 && !slots.has(key(cx, cy)) && nearFloor(cx, cy));
+      if (goals.length && approach(c, goals)) c.actReq = true;
+      return;
+    }
+    // 2) Une planche avec un ingrédient cru : on coupe.
+    const toChop = cellsOf((x, cx, cy) => {
+      const it = slots.get(key(cx, cy));
+      return x === 'C' && !!it && !isPlate(it) && it.state === 'cru';
+    });
+    if (toChop.length) {
+      if (approach(c, toChop)) c.chopping = true;
+      return;
+    }
+    // 2 bis) Un ingrédient déjà coupé sur une planche : on libère la planche.
+    const chopped = cellsOf((x, cx, cy) => {
+      const it = slots.get(key(cx, cy));
+      return x === 'C' && !!it && !isPlate(it) && it.state === 'coupe';
+    });
+    if (chopped.length) {
+      if (approach(c, chopped)) c.actReq = true;
+      return;
+    }
+    // 3) Un steak cuit (ou brûlé) sur le feu : on le récupère.
+    const ready = cellsOf((x, cx, cy) => {
+      const it = slots.get(key(cx, cy));
+      return x === 'O' && !!it && !isPlate(it) && (it.state === 'cuit' || it.state === 'brule');
+    });
+    if (ready.length) {
+      if (approach(c, ready)) c.actReq = true;
+      return;
+    }
+    // 4) Sinon : chercher un ingrédient dont une commande a besoin et qui n'est pas déjà prêt.
+    const have = new Map<string, number>();
+    for (const it of slots.values()) if (!isPlate(it)) have.set(it.kind, (have.get(it.kind) ?? 0) + 1);
+    for (const o of cooks) if (o.hand && !isPlate(o.hand)) have.set(o.hand.kind, (have.get(o.hand.kind) ?? 0) + 1);
+    const wanted: Kind[] = [];
+    for (const o of orders) for (const t of RECIPES[o.r].items) wanted.push(t.split(':')[0] as Kind);
+    const need = wanted.find((k) => {
+      const n = have.get(k) ?? 0;
+      if (n > 0) {
+        have.set(k, n - 1);
+        return false;
+      }
+      return true;
+    });
+    if (!need) {
+      c.inp = { x: 0, y: 0 };
+      return;
+    }
+    const crate = cellsOf((x) => CRATES[x] === need);
+    if (crate.length && approach(c, crate)) c.actReq = true;
+  }
+
   function move(c: Cook, dt: number) {
     let ix = c.inp.x;
     let iy = c.inp.y;
@@ -241,7 +389,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         orders = orders.filter((o) => o.t > 0);
       }
       cooks.forEach((c) => {
-        if (c.bot) return; // les bots restent en cuisine pour faire nombre (pas encore d'IA de commis)
+        if (c.bot && (c.botT -= dt) <= 0) {
+          c.botT = 0.12;
+          botThink(c);
+        }
         move(c, dt);
         if (c.actReq) interact(c);
         c.actReq = false;
@@ -291,7 +442,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           const px = OX + x * CS;
           const py = OY + y * CS;
           if (c === '.') {
-            g.fillStyle = (x + y) % 2 ? '#fff' : '#f3ecff';
+            g.fillStyle = (x + y) % 2 ? kitchenDef.floor[0] : kitchenDef.floor[1];
             g.fillRect(px, py, CS, CS);
             continue;
           }
@@ -416,10 +567,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(toast, 960, 1065);
       }
       cooks.forEach((c, i) => {
-        if (c.bot) return;
         roundRectText(g, `${c.profile.name} · ${c.pts}`, 20, 170 + i * 50, 130, 20, c.profile.color);
       });
     },
+    mapName: kitchenDef.name,
     ranking() {
       return [...cooks].sort((a, b) => Number(a.bot) - Number(b.bot) || b.pts - a.pts).map((c) => c.pid);
     },
@@ -442,7 +593,7 @@ export const kitchen: GameBase = {
   layout: 'stick',
   min: 1,
   max: 8,
-  botFill: 0,
+  botFill: 2,
   music: 'tumble',
   create,
 };

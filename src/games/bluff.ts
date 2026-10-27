@@ -63,6 +63,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const deck: Card[] = [];
     for (const t of TYPES) for (let i = 0; i < Math.max(6, n * 2); i++) deck.push(t);
     for (let i = 0; i < Math.max(2, Math.ceil(n / 2)); i++) deck.push('coussin');
+    deck.push('miroir');
     shuffle(deck);
     for (const s of seats) s.hand = s.alive ? deck.splice(0, HAND) : [];
     table = TYPES[Math.floor(Math.random() * TYPES.length)];
@@ -116,7 +117,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   function call(i: number) {
     if (phase !== 'turn' || turn !== i || !last || last.seat === i) return;
     caller = i;
-    const honest = last.cards.every(isTrue);
+    // Un Miroir dans les cartes retournées renvoie l'accusation sur celui qui l'a lancée.
+    const mirror = last.cards.includes('miroir');
+    const honest = mirror || last.cards.every(isTrue);
+    if (mirror) setTimeout(() => speak(fr ? 'Le miroir renvoie l’accusation !' : 'The mirror bounces it back!', ctx.lang), 1200);
     target = honest ? i : last.seat;
     phase = 'reveal';
     timer = 3.2;
@@ -264,7 +268,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           drawCard(g, x, 330, w * Math.max(0.05, Math.abs(flip * 2 - 1)), w * 1.4, flip > 0.5 ? c : null, t, ctx.lang);
           if (flip >= 1) {
             g.font = '700 70px sans-serif';
-            g.fillText(isTrue(c) ? '✅' : '❌', x, 230);
+            g.fillText(c === 'miroir' ? '🪞' : isTrue(c) ? '✅' : '❌', x, 230);
           }
         });
         g.font = '700 110px Fredoka, sans-serif';
@@ -421,7 +425,17 @@ function drawCard(g: CanvasRenderingContext2D, cx: number, cy: number, w: number
     g.arc(cx, cy, Math.min(w, h) * 0.25, 0, Math.PI * 2);
     g.fill();
   } else if (w > 40) {
-    drawCharacter(g, cx, cy + h * 0.22, h * 0.48, { food: c, color: '#ffffff', t });
+    if (c === 'miroir') {
+      g.fillStyle = '#bfe6ff';
+      g.beginPath();
+      g.ellipse(cx, cy - h * 0.06, w * 0.3, h * 0.26, 0, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#fff';
+      g.beginPath();
+      g.ellipse(cx - w * 0.1, cy - h * 0.14, w * 0.06, h * 0.08, -0.5, 0, Math.PI * 2);
+      g.fill();
+    } else drawCharacter(g, cx, cy + h * 0.22, h * 0.48, { food: c, color: '#ffffff', t });
     g.fillStyle = INK;
     g.font = `700 ${Math.round(h * 0.11)}px Fredoka, sans-serif`;
     g.textAlign = 'center';
