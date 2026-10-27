@@ -1058,10 +1058,10 @@ h3,
   box-shadow: 0 2px 0 var(--ink);
 }
 @media (orientation: portrait) {
-  .tap-pad {
+  .pad:not(.turn) .tap-pad {
     grid-template-columns: 1fr;
   }
-  .tap-hint {
+  .pad:not(.turn) .tap-hint {
     grid-column: 1;
   }
 }
@@ -1069,6 +1069,19 @@ h3,
 /* Manette stick + A/B */
 .pad-play {
   background: #ffeaf5;
+}
+/* Téléphone tenu droit : la manette est affichée tournée, comme une vraie manette en paysage. */
+@media (orientation: portrait) {
+  .pad.turn {
+    position: fixed;
+    top: 0;
+    left: 100vw;
+    width: 100vh;
+    width: 100dvh;
+    height: 100vw;
+    transform-origin: top left;
+    transform: rotate(90deg);
+  }
 }
 .stick-pad {
   flex: 1;
@@ -1083,122 +1096,112 @@ h3,
 }
 .stick-base {
   position: absolute;
-  width: 170px;
-  height: 170px;
-  margin: -85px 0 0 -85px;
+  width: 200px;
+  height: 200px;
+  margin: -100px 0 0 -100px;
   border-radius: 50%;
-  background: #fff;
+  background: #e6ddff;
   border: 5px solid var(--ink);
-  box-shadow: 0 7px 0 var(--ink);
+  box-shadow: 0 8px 0 var(--ink);
   display: grid;
   place-items: center;
   pointer-events: none;
 }
+/* Le creux où bouge le stick */
 .stick-base::before {
   content: '';
   position: absolute;
-  inset: 18px;
+  inset: 30px;
   border-radius: 50%;
-  border: 3px dashed #cdbfd6;
+  background: #cbbcff;
+  border: 4px solid var(--ink);
 }
-.stick-base .arrow {
+.stick-arrows {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #b9a6c4;
-  font-size: 18px;
-}
-.stick-base .arrow.l {
-  left: 6px;
-}
-.stick-base .arrow.r {
-  right: 6px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: var(--ink);
 }
 .stick-knob {
-  width: 78px;
-  height: 78px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: var(--c);
   border: 5px solid var(--ink);
-  box-shadow: 0 5px 0 var(--ink);
+  box-shadow: 0 6px 0 var(--ink);
   position: relative;
+  z-index: 1;
 }
 .stick-knob::after {
   content: '';
   position: absolute;
-  top: 12px;
-  left: 16px;
-  width: 18px;
-  height: 18px;
+  top: 14px;
+  left: 18px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.55);
+}
+.stick-base.on .stick-knob {
+  box-shadow: 0 3px 0 var(--ink);
+}
+.stick-hint {
+  position: absolute;
+  left: 45%;
+  top: calc(55% + 120px);
+  transform: translateX(-50%);
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--soft);
+  white-space: nowrap;
+  pointer-events: none;
 }
 .ab {
-  flex: 0 0 min(46%, 340px);
+  flex: 0 0 min(46%, 360px);
   position: relative;
 }
 .ab-btn {
   position: absolute;
   border-radius: 50%;
   border: 5px solid var(--ink);
-  box-shadow: 0 7px 0 var(--ink);
+  box-shadow: 0 8px 0 var(--ink);
   font-family: var(--cp-font-titre);
   font-weight: 700;
-  font-size: clamp(16px, 5.5vh, 24px);
+  font-size: clamp(14px, 4.5vmin, 20px);
   color: #fff;
-  -webkit-text-stroke: 5px var(--ink);
+  -webkit-text-stroke: 4px var(--ink);
   paint-order: stroke fill;
   touch-action: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  gap: 2px;
+}
+.ab-btn i {
+  font-style: normal;
+  font-size: 1.9em;
 }
 .ab-btn.a {
-  width: min(40vh, 150px);
-  height: min(40vh, 150px);
-  right: 6%;
-  bottom: 14%;
+  width: min(42vmin, 160px);
+  height: min(42vmin, 160px);
+  right: 7%;
+  bottom: 12%;
   background: var(--pink);
 }
 .ab-btn.b {
-  width: min(30vh, 112px);
-  height: min(30vh, 112px);
-  right: calc(6% + min(40vh, 150px) + 4px);
-  bottom: calc(10% + min(14vh, 50px));
+  width: min(32vmin, 120px);
+  height: min(32vmin, 120px);
+  right: calc(7% + min(42vmin, 160px) + 6px);
+  bottom: calc(8% + min(16vmin, 60px));
   background: var(--purple);
 }
 .ab-btn.down {
-  box-shadow: 0 1px 0 var(--ink);
-  translate: 0 5px;
-}
-.rotate-hint {
-  display: none;
-}
-@media (orientation: portrait) {
-  .stick-pad {
-    flex-direction: column;
-  }
-  .ab {
-    flex: 0 0 42%;
-  }
-  .ab-btn.a {
-    width: 150px;
-    height: 150px;
-  }
-  .ab-btn.b {
-    width: 112px;
-    height: 112px;
-    right: calc(6% + 154px);
-    bottom: calc(12% + 50px);
-  }
-  .rotate-hint {
-    display: block;
-    position: absolute;
-    top: 8px;
-    left: 0;
-    right: 0;
-    text-align: center;
-    color: var(--soft);
-    font-weight: 800;
-    z-index: 2;
-  }
+  box-shadow: 0 2px 0 var(--ink);
+  translate: 0 6px;
 }
 
 /* Éditeur de personnage */
@@ -1730,28 +1733,133 @@ h3,
   left: 25px;
 }
 
-/* Mode équipes : choix du camp sur la manette, badge sur la télé */
-.team-pick {
-  display: flex;
-  gap: 10px;
+/* Réglages de la soirée (téléphone de l'hôte) et choix d'équipe */
+.opt-title {
   width: 100%;
   max-width: 420px;
-}
-.team-pick button {
-  flex: 1;
   font-family: var(--cp-font-titre);
   font-weight: 700;
-  font-size: 17px;
-  padding: 12px 6px;
+  font-size: 16px;
+  color: var(--soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 6px 0 -4px;
+  text-align: left;
+}
+.opt-row {
+  width: 100%;
+  max-width: 420px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px 12px;
+  background: #fff;
+  color: var(--ink);
   border: 4px solid var(--ink);
-  border-radius: 18px;
-  box-shadow: 0 4px 0 var(--ink);
+  border-radius: 22px;
+  box-shadow: 0 5px 0 var(--ink);
+  text-align: center;
+}
+.opt:active {
+  translate: 0 3px;
+  box-shadow: 0 2px 0 var(--ink);
+}
+.opt-ico {
+  font-size: 30px;
+  line-height: 1.1;
+}
+.opt b {
+  font-family: var(--cp-font-titre);
+  font-size: 18px;
+  line-height: 1.1;
+}
+.opt small {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--soft);
+  min-height: 2.4em;
+}
+.opt-state {
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  background: #eee8f4;
+}
+.opt.mint.on {
+  background: var(--mint);
+}
+.opt.rose.on {
+  background: var(--pink);
+}
+.opt.on b,
+.opt.on small {
+  color: #fff;
+}
+.opt.on .opt-state {
+  background: #fff;
+}
+.team-box {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.team-pick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.team-pick button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 16px;
+  padding: 12px 6px;
+  background: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 0 5px 0 var(--ink);
   color: var(--ink);
 }
+.team-pick .tp-emoji {
+  font-size: 30px;
+}
 .team-pick button.on {
+  background: var(--tc);
   color: #fff;
-  transform: translateY(2px);
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+  translate: 0 3px;
   box-shadow: 0 2px 0 var(--ink);
+}
+.tp-check {
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  color: var(--ink);
+  -webkit-text-stroke: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
 }
 .slot-team {
   position: absolute;

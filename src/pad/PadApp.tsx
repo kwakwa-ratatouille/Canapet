@@ -107,7 +107,8 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const gameName = screen && 'game' in screen ? gameById(screen.game)?.name[lang] : '';
 
   return (
-    <div className={`pad ${playing ? 'pad-play' : ''}`} style={{ ['--c' as string]: profile.color }} onPointerDown={unlockAudio}>
+    // Manettes stick et tapotage : toujours en paysage, même si le téléphone reste droit (on tourne l'écran).
+    <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (screen.layout === 'stick' || screen.layout === 'tap') && !['plateau', 'traitre', 'dessin'].includes(screen.game) ? 'turn' : ''}`} style={{ ['--c' as string]: profile.color }} onPointerDown={unlockAudio}>
       <header className={`pad-head ${playing ? 'slim' : ''}`}>
         <CharCanvas profile={profile} size={playing ? 34 : 46} still />
         <b className="pad-name">{profile.name || '???'}</b>
@@ -219,17 +220,23 @@ function PadScreenView({
             </div>
           </div>
           {screen.teams && (
-            <div className="team-pick">
-              {TEAMS.map((tm, k) => (
-                <button
-                  key={k}
-                  className={screen.team === k ? 'on' : ''}
-                  style={{ background: screen.team === k ? tm.color : '#fff' }}
-                  onClick={() => send({ t: 'team', n: k })}
-                >
-                  {tm.emoji} {tm.name[lang]}
-                </button>
-              ))}
+            <div className="team-box">
+              <p className="opt-title">{t(lang, 'yourTeam')}</p>
+              <div className="team-pick">
+                {TEAMS.map((tm, k) => (
+                  <button
+                    key={k}
+                    className={screen.team === k ? 'on' : ''}
+                    style={{ ['--tc' as string]: tm.color }}
+                    onClick={() => send({ t: 'team', n: k })}
+                    aria-pressed={screen.team === k}
+                  >
+                    <span className="tp-emoji">{tm.emoji}</span>
+                    <span>{tm.name[lang]}</span>
+                    {screen.team === k && <span className="tp-check">✓</span>}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {screen.host ? (
@@ -266,20 +273,21 @@ function PadScreenView({
                   <small>{t(lang, 'catalogue', { n: playable().length })}</small>
                 </span>
               </button>
-              <button className={`family-toggle ${screen.family ? 'on' : ''}`} onClick={() => host('family')}>
-                <span className="switch" />
-                <span>
+              <p className="opt-title">{t(lang, 'options')}</p>
+              <div className="opt-row">
+                <button className={`opt mint ${screen.family ? 'on' : ''}`} onClick={() => host('family')} aria-pressed={screen.family}>
+                  <span className="opt-ico">👨‍👩‍👧</span>
                   <b>{t(lang, 'family')}</b>
-                  <small>{t(lang, screen.family ? 'familyOn' : 'familyOff')}</small>
-                </span>
-              </button>
-              <button className={`family-toggle ${screen.teams ? 'on' : ''}`} onClick={() => host('teams')}>
-                <span className="switch" />
-                <span>
-                  <b>{t(lang, 'teams')}</b>
-                  <small>{t(lang, screen.teams ? 'teamsOn' : 'teamsOff')}</small>
-                </span>
-              </button>
+                  <small>{t(lang, screen.family ? 'familyShortOn' : 'familyShortOff')}</small>
+                  <span className="opt-state">{t(lang, screen.family ? 'yes' : 'no')}</span>
+                </button>
+                <button className={`opt rose ${screen.teams ? 'on' : ''}`} onClick={() => host('teams')} aria-pressed={screen.teams}>
+                  <span className="opt-ico">{screen.teams ? '🍓🌿' : '🤼'}</span>
+                  <b>{t(lang, screen.teams ? 'teams' : 'melee')}</b>
+                  <small>{t(lang, screen.teams ? 'teamsShortOn' : 'teamsShortOff')}</small>
+                  <span className="opt-state">{t(lang, 'tapToChange')}</span>
+                </button>
+              </div>
             </>
           ) : (
             <>
