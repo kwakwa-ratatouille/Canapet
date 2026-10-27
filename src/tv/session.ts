@@ -68,6 +68,8 @@ export class Session {
   private announced = false;
   private lastCount = 0;
   private lastStatus = 0;
+  /** Numéro de la dernière partie terminée. */
+  private gameNo = 0;
   version = 0;
   /** Secondes restantes de l'écran « Temps écoulé ! » avant les résultats. */
   timeUp = 0;
@@ -326,6 +328,7 @@ export class Session {
 
   private endGame() {
     if (!this.game) return;
+    this.gameNo++;
     let order = this.game.ranking();
     // Mode équipes : chaque camp marque la moyenne des places de ses joueurs (équitable même à 3 contre 2).
     const teamOf = (pid: string) => this.runners.find((x) => x.pid === pid)?.team;
@@ -501,11 +504,11 @@ export class Session {
       case 'results': {
         const row = this.results.find((r) => r.pid === p.pid);
         if (!row && !host) return { s: 'wait', game: this.def?.id ?? '' };
-        return { s: 'results', host, rank: row?.rank ?? 0, points: row?.points ?? 0, total: p.total, step };
+        return { s: 'results', gid: this.gameNo, host, rank: row?.rank ?? 0, points: row?.points ?? 0, total: p.total, step };
       }
       case 'podium': {
         const rank = this.list().sort((a, b) => b.total - a.total).findIndex((x) => x.pid === p.pid) + 1;
-        return { s: 'podium', host, rank, total: p.total };
+        return { s: 'podium', gid: this.gameNo, host, rank, total: p.total };
       }
     }
   }

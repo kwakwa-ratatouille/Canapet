@@ -72,6 +72,12 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - **Équipes** (interrupteur de l’hôte, touche E) : Fraise 🍓 contre Menthe 🌿 (`src/games/teams.ts`), chacun choisit son camp sur sa manette, les bots équilibrent. Tous les jeux : chaque équipe marque la moyenne des places de ses joueurs (juste à 3 contre 2), l’équipe gagnante prend 10 pts chacun, l’autre 4 (égalité 7). Sumo, Pétards, Bagarre, Clash, Flèches : pas de coups entre coéquipiers (sauf Pétards), fin quand il reste un seul camp (`allies`, `sidesLeft`). Sans équipes = mêlée générale.
 - **Musique** (`sound.ts`) : compositeur maison, grille couplet + pont par ambiance, mélodie réinventée à chaque tour (A A' B A, 32 mesures), basse, batterie, nappe, bus musique filtré et plus bas que les bruitages.
 
+## Progression et boutique (oct. 2026)
+
+- Gardée sur le téléphone (`src/shared/progress.ts`, clé `progress`) : XP, niveaux (`xpFor`), bonbons 🍬, objets achetés (`PRICES` : prix + niveau minimum ; le reste est gratuit). Gains comptés une fois par partie (`gid` dans les écrans results/podium, clé code télé + numéro). Niveau envoyé dans le profil (badge « Niv. » dans le salon télé). Boutique = éditeur de perso (cadenas, prix, fenêtre d’achat). 7 chapeaux et 4 accessoires ajoutés dans `canapet-art.js`.
+- Compte Google : à brancher sur Firebase (projet à créer par le propriétaire) pour sauvegarder la progression en ligne.
+- Manette : colonne du milieu (perso, place en direct, chrono) via le message `status` envoyé chaque seconde. Tuto : 16 s, les joueurs appuient sur un bouton pour dire « prêt » (`ready`, saute au compte à rebours quand tout le monde l’est).
+
 ## Chromecast et appli PC
 
 - **Chromecast** : récepteur `public/cast.html` (SDK CAF, iframe vers `index.html?cast=1#/tv`, bandeau de diagnostic). La page télé envoie son code au récepteur (postMessage), qui le renvoie aux téléphones sur le canal `urn:x-cast:com.canapet`. Bouton « Lancer sur le Chromecast » sur l’accueil (`src/shared/cast.ts`), caché tant que `CAST_APP_ID` est vide : le propriétaire doit enregistrer l’appli (Custom Receiver, URL `https://kwakwa-ratatouille.github.io/Canapet/cast.html`) dans la console Google Cast, la **publier**, et donner l’identifiant.

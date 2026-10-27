@@ -1,4 +1,5 @@
 import { TEAMS } from '../games/teams';
+import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRICES, rewardFor, saveProgress, type Kind, type Progress } from '../shared/progress';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GAMES, gameById, playable } from '../games/registry';
 import { CharCanvas } from '../shared/CharCanvas';
@@ -34,8 +35,8 @@ const DEMO: Record<string, PadScreen> = {
   lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0 },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
-  results: { s: 'results', host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
-  podium: { s: 'podium', host: true, rank: 1, total: 42 },
+  results: { s: 'results', gid: 1, host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
+  podium: { s: 'podium', gid: 1, host: true, rank: 1, total: 42 },
 };
 
 export function PadApp({ code, demo }: { code: string; demo?: string }) {
@@ -49,6 +50,17 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const [screen, setScreen] = useState<PadScreen | null>(demo ? DEMO[demo] ?? DEMO.lobby : null);
   const [status, setStatus] = useState<PadStatus>(demo ? 'ok' : 'connecting');
   const [rtt, setRtt] = useState(0);
+  // Progression : la première fois, ce que le joueur porte déjà lui appartient.
+  const [progress, setProgress] = useState<Progress>(() => {
+    const p = loadProgress();
+    if (!store('progress', null)) {
+      const cur = store<Profile | null>('profile', null);
+      if (cur) p.owned = [itemKey('food', cur.food), itemKey('hat', cur.hat), itemKey('acc', cur.acc)];
+    }
+    return p;
+  });
+  const [reward, setReward] = useState<{ xp: number; coins: number; level: number | null } | null>(null);
+  const level = levelInfo(progress.xp).level;
   const [live, setLive] = useState<{ rank: number; of: number; left: number | null } | null>(demo === 'stick' ? { rank: 2, of: 4, left: 83 } : null);
   const profileRef = useRef(profile);
   profileRef.current = profile;
@@ -81,6 +93,33 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     return () => net.stop();
   }, [code, pid, demo]);
 
+  useEffect(() => saveProgress(progress), [progress]);
+  useEffect(() => {
+    if (profile.level !== level) setProfile((p) => ({ ...p, level }));
+  }, [level, profile.level]);
+
+  // Gains de fin de partie et de podium, comptés une seule fois.
+  useEffect(() => {
+    if (!screen || (screen.s !== 'results' && screen.s !== 'podium') || screen.rank <= 0) return;
+    const key = `${code}:${screen.s}:${screen.gid}`;
+    if (progress.last === key) return;
+    const gain = screen.s === 'results' ? rewardFor(screen.points, screen.rank) : { xp: 0, coins: podiumBonus(screen.rank) };
+    const before = levelInfo(progress.xp).level;
+    const after = levelInfo(progress.xp + gain.xp).level;
+    const up = after > before;
+    setProgress((p) => ({
+      ...p,
+      last: key,
+      xp: p.xp + gain.xp,
+      coins: p.coins + gain.coins + (up ? LEVEL_GIFT * (after - before) : 0),
+      games: p.games + (screen.s === 'results' ? 1 : 0),
+      wins: p.wins + (screen.rank === 1 ? 1 : 0),
+    }));
+    setReward({ xp: gain.xp, coins: gain.coins, level: up ? after : null });
+    if (up) sfx.win();
+    else sfx.join();
+  }, [screen, code]);
+
   // Profil : sauvegardé sur le téléphone et envoyé à la télé (regroupé pour ne pas inonder la liaison).
   useEffect(() => {
     save('profile', profile);
@@ -105,7 +144,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
 
   if (editing) {
     const taken = screen?.s === 'lobby' ? screen.taken : [];
-    return <Editor profile={profile} setProfile={setProfile} taken={taken} onDone={() => setEditing(false)} />;
+    return <Editor profile={profile} setProfile={setProfile} taken={taken} onDone={() => setEditing(false)} progress={progress} setProgress={setProgress} />;
   }
 
   const playing = screen?.s === 'play' && status === 'ok';
@@ -150,6 +189,8 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           myColor={profile.color}
           profile={profile}
           live={live}
+          progress={progress}
+          reward={reward}
           send={send}
           host={host}
           edit={() => setEditing(true)}
@@ -169,7 +210,11 @@ function PadScreenView({
   edit,
   profile,
   live,
+  progress,
+  reward,
 }: {
+  progress: Progress;
+  reward: { xp: number; coins: number; level: number | null } | null;
   profile: Profile;
   live: { rank: number; of: number; left: number | null } | null;
   screen: PadScreen;
@@ -230,6 +275,7 @@ function PadScreenView({
               </span>
             </div>
           </div>
+          <ProgressCard progress={progress} lang={lang} onShop={edit} />
           {screen.teams && (
             <div className="team-box">
               <p className="opt-title">{t(lang, 'yourTeam')}</p>
@@ -335,6 +381,7 @@ function PadScreenView({
               </div>
             </div>
           )}
+          {reward && <RewardCard reward={reward} progress={progress} lang={lang} />}
           {screen.host && (
             <>
               <button className="btn big mint" onClick={() => host('next')}>
@@ -364,6 +411,7 @@ function PadScreenView({
               <p className="pad-small">{screen.total} pts</p>
             </div>
           </div>
+          {reward && <RewardCard reward={reward} progress={progress} lang={lang} />}
           {screen.host && (
             <button className="btn big mint" onClick={() => host('lobby')}>
               {t(lang, 'toLobby')}
@@ -372,6 +420,50 @@ function PadScreenView({
         </div>
       );
   }
+}
+
+/** Niveau, barre d'expérience et bonbons, avec l'accès à la boutique. */
+function ProgressCard({ progress, lang, onShop }: { progress: Progress; lang: Lang; onShop: () => void }) {
+  const { level, into, need } = levelInfo(progress.xp);
+  return (
+    <div className="prog-card">
+      <span className="prog-level">
+        <small>{lang === 'fr' ? 'Niv.' : 'Lv.'}</small>
+        <b>{level}</b>
+      </span>
+      <div className="prog-mid">
+        <div className="prog-bar">
+          <i style={{ width: `${(into / need) * 100}%` }} />
+        </div>
+        <small>
+          {into} / {need} XP · 🍬 {progress.coins}
+        </small>
+      </div>
+      <button className="prog-shop" onClick={onShop}>
+        🛍️ <span>{t(lang, 'shop')}</span>
+      </button>
+    </div>
+  );
+}
+
+/** Ce que la partie vient de rapporter (et le niveau gagné). */
+function RewardCard({ reward, progress, lang }: { reward: { xp: number; coins: number; level: number | null }; progress: Progress; lang: Lang }) {
+  const { level, into, need } = levelInfo(progress.xp);
+  return (
+    <div className={`reward-card ${reward.level ? 'up' : ''}`}>
+      {reward.level && <p className="reward-up">🎉 {t(lang, 'levelUp', { n: reward.level })} +{LEVEL_GIFT} 🍬</p>}
+      <div className="reward-row">
+        {reward.xp > 0 && <span className="reward-pill xp">+{reward.xp} XP</span>}
+        <span className="reward-pill coin">+{reward.coins} 🍬</span>
+      </div>
+      <div className="prog-bar">
+        <i style={{ width: `${(into / need) * 100}%` }} />
+      </div>
+      <small>
+        {lang === 'fr' ? 'Niveau' : 'Level'} {level} · 🍬 {progress.coins}
+      </small>
+    </div>
+  );
 }
 
 function TapPad({ lang, send }: { lang: Lang; send: (m: ToTv) => void }) {
@@ -408,13 +500,46 @@ function Editor({
   setProfile,
   taken,
   onDone,
+  progress,
+  setProgress,
 }: {
   profile: Profile;
   setProfile: (f: (p: Profile) => Profile) => void;
   taken: string[];
   onDone: () => void;
+  progress: Progress;
+  setProgress: (f: (p: Progress) => Progress) => void;
 }) {
   const lang = profile.lang;
+  const level = levelInfo(progress.xp).level;
+  const [buying, setBuying] = useState<{ kind: Kind; id: string; name: string } | null>(null);
+  const owned = (kind: Kind, id: string) => isOwned(progress, kind, id);
+  /** Touche un objet : on le met s'il est à nous, sinon on propose de l'acheter. */
+  const choose = (kind: Kind, id: string, name: string) => {
+    if (owned(kind, id)) set(kind === 'food' ? { food: id } : kind === 'hat' ? { hat: id } : { acc: id });
+    else {
+      sfx.click();
+      setBuying({ kind, id, name });
+    }
+  };
+  const buy = () => {
+    if (!buying) return;
+    const it = PRICES[itemKey(buying.kind, buying.id)];
+    if (!it || progress.coins < it.price || level < (it.level ?? 1)) return;
+    setProgress((p) => ({ ...p, coins: p.coins - it.price, owned: [...p.owned, itemKey(buying.kind, buying.id)] }));
+    set(buying.kind === 'food' ? { food: buying.id } : buying.kind === 'hat' ? { hat: buying.id } : { acc: buying.id });
+    sfx.win();
+    setBuying(null);
+  };
+  const lock = (kind: Kind, id: string) => {
+    if (owned(kind, id)) return null;
+    const it = PRICES[itemKey(kind, id)];
+    return (
+      <span className={`lock ${level < (it.level ?? 1) ? 'lvl' : progress.coins >= it.price ? 'ok' : ''}`}>
+        {level < (it.level ?? 1) ? `🔒 ${lang === 'fr' ? 'Niv.' : 'Lv.'} ${it.level}` : `🍬 ${it.price}`}
+      </span>
+    );
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>('perso');
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
@@ -435,10 +560,10 @@ function Editor({
   };
   const randomize = () =>
     set({
-      food: pick(FOODS).id,
+      food: pick(FOODS.filter((f) => owned('food', f.id))).id,
       color: pick(COLORS.filter((c) => !taken.includes(c))) ?? profile.color,
-      hat: pick(HATS).id,
-      acc: pick(ACCS).id,
+      hat: pick(HATS.filter((h) => owned('hat', h.id))).id,
+      acc: pick(ACCS.filter((a) => owned('acc', a.id))).id,
     });
 
   const labels = lang === 'fr' ? ['Perso', 'Couleur', 'Chapeau', 'Déco'] : ['Character', 'Color', 'Hat', 'Extras'];
@@ -447,6 +572,12 @@ function Editor({
   return (
     <div className="pad editor" style={{ ['--c' as string]: profile.color }}>
       <h2 className="editor-title">{t(lang, 'myChar')}</h2>
+      <div className="shop-bar">
+        <span>
+          {lang === 'fr' ? 'Niveau' : 'Level'} <b>{level}</b>
+        </span>
+        <span className="shop-coins">🍬 {progress.coins}</span>
+      </div>
       <div className="editor-preview">
         <CharCanvas profile={profile} size={150} />
       </div>
@@ -469,8 +600,9 @@ function Editor({
       {tab === 'perso' && (
         <div className="pick-grid">
           {FOODS.map((f) => (
-            <button key={f.id} className={`pick ${profile.food === f.id ? 'on' : ''}`} onClick={() => set({ food: f.id })}>
+            <button key={f.id} className={`pick ${profile.food === f.id ? 'on' : ''} ${owned('food', f.id) ? '' : 'locked'}`} onClick={() => choose('food', f.id, f.name[lang])}>
               <CharCanvas profile={{ ...profile, food: f.id, selfie: undefined, hat: 'aucun', acc: 'aucun' }} size={52} still />
+              {lock('food', f.id)}
             </button>
           ))}
         </div>
@@ -478,9 +610,10 @@ function Editor({
       {tab === 'hat' && (
         <div className="pick-grid">
           {HATS.map((h) => (
-            <button key={h.id} className={`pick ${profile.hat === h.id ? 'on' : ''}`} onClick={() => set({ hat: h.id })}>
+            <button key={h.id} className={`pick ${profile.hat === h.id ? 'on' : ''} ${owned('hat', h.id) ? '' : 'locked'}`} onClick={() => choose('hat', h.id, h.name[lang])}>
               <CharCanvas profile={{ ...profile, selfie: undefined, acc: 'aucun', hat: h.id }} size={52} still />
               <small>{h.name[lang]}</small>
+              {lock('hat', h.id)}
             </button>
           ))}
         </div>
@@ -489,9 +622,10 @@ function Editor({
         <>
           <div className="pick-grid">
             {ACCS.map((a) => (
-              <button key={a.id} className={`pick ${profile.acc === a.id ? 'on' : ''}`} onClick={() => set({ acc: a.id })}>
+              <button key={a.id} className={`pick ${profile.acc === a.id ? 'on' : ''} ${owned('acc', a.id) ? '' : 'locked'}`} onClick={() => choose('acc', a.id, a.name[lang])}>
                 <CharCanvas profile={{ ...profile, selfie: undefined, hat: 'aucun', acc: a.id }} size={52} still />
                 <small>{a.name[lang]}</small>
+                {lock('acc', a.id)}
               </button>
             ))}
           </div>
@@ -530,6 +664,35 @@ function Editor({
       <button className="btn big mint" disabled={!profile.name.trim()} onClick={onDone}>
         {t(lang, 'itsMe')}
       </button>
+      {buying && (
+        <div className="buy-veil" onClick={() => setBuying(null)}>
+          <div className="buy-card" onClick={(e) => e.stopPropagation()}>
+            <CharCanvas
+              profile={{
+                ...profile,
+                selfie: undefined,
+                ...(buying.kind === 'food' ? { food: buying.id } : buying.kind === 'hat' ? { hat: buying.id } : { acc: buying.id }),
+              }}
+              size={120}
+              mood="wow"
+            />
+            <b>{buying.name}</b>
+            {(() => {
+              const it = PRICES[itemKey(buying.kind, buying.id)];
+              if (level < (it.level ?? 1)) return <p className="pad-small">{t(lang, 'needLevel', { n: it.level ?? 1 })}</p>;
+              if (progress.coins < it.price) return <p className="pad-small">{t(lang, 'needCoins', { n: it.price - progress.coins })}</p>;
+              return (
+                <button className="btn big sun" onClick={buy}>
+                  {t(lang, 'buyFor', { n: it.price })}
+                </button>
+              );
+            })()}
+            <button className="btn ghost" onClick={() => setBuying(null)}>
+              {t(lang, 'back')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

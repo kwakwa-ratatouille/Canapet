@@ -101,6 +101,13 @@ function hat(t,x,y,c){
   case 'bob':return `<path d="M${x-30} ${y+4}Q${x} ${y+12} ${x+30} ${y+4}L${x+19} ${y-6}C${x+17} ${y-26} ${x-17} ${y-26} ${x-19} ${y-6}Z" fill="${SOL}" ${sw(3.5)}/><path d="M${x-19} ${y-6}Q${x} ${y} ${x+19} ${y-6}" fill="none" ${sw(3)}/><circle cx="${x-7}" cy="${y-14}" r="2.5" fill="${ROSE}"/><circle cx="${x+8}" cy="${y-16}" r="2.5" fill="${ROSE}"/>`;
   case 'cornes':return [-1,1].map(k=>`<path d="M${x+k*8} ${y+4}C${x+k*12} ${y-8} ${x+k*22} ${y-14} ${x+k*24} ${y-26}C${x+k*30} ${y-14} ${x+k*26} ${y} ${x+k*20} ${y+6}Z" fill="#fff3d6" ${sw(3.5)}/>`).join('');
   case 'antenne':return `<path d="M${x} ${y+4}V${y-22}" fill="none" ${sw(3.5)}/><circle cx="${x}" cy="${y-27}" r="7" fill="${SOL}" ${sw(3.5)}/>`;
+  case 'toque':return `<path d="M${x-14} ${y+2}V${y-12}C${x-28} ${y-14} ${x-26} ${y-36} ${x-12} ${y-32}C${x-10} ${y-46} ${x+10} ${y-46} ${x+12} ${y-32}C${x+26} ${y-36} ${x+28} ${y-14} ${x+14} ${y-12}V${y+2}Z" fill="#fff" ${sw(3.5)}/><path d="M${x-14} ${y-6}H${x+14}" ${sw(3)}/>`;
+  case 'fete':return `<path d="M${x-15} ${y+2}L${x} ${y-34}L${x+15} ${y+2}Z" fill="${c}" ${sw(3.5)}/><path d="M${x-8} ${y-12}L${x+5} ${y-19}M${x-11} ${y-2}L${x+10} ${y-11}" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="${x}" cy="${y-37}" r="5.5" fill="${SOL}" ${sw(3)}/>`;
+  case 'pirate':return `<path d="M${x-30} ${y+2}Q${x} ${y-8} ${x+30} ${y+2}C${x+24} ${y-14} ${x+14} ${y-30} ${x} ${y-30}C${x-14} ${y-30} ${x-24} ${y-14} ${x-30} ${y+2}Z" fill="${P}"/><circle cx="${x}" cy="${y-16}" r="5.5" fill="#fff"/><path d="M${x-7} ${y-7}L${x+7} ${y-3}M${x-7} ${y-3}L${x+7} ${y-7}" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`;
+  case 'aureole':return `<ellipse cx="${x}" cy="${y-18}" rx="21" ry="6.5" fill="none" stroke="${P}" stroke-width="10"/><ellipse cx="${x}" cy="${y-18}" rx="21" ry="6.5" fill="none" stroke="${SOL}" stroke-width="5"/>`;
+  case 'fleur':return [0,1,2,3,4].map(k=>{const a=k*1.2566;return `<circle cx="${x+14+Math.cos(a)*8}" cy="${y-8+Math.sin(a)*8}" r="6.5" fill="${ROSE}" ${sw(3)}/>`;}).join('')+`<circle cx="${x+14}" cy="${y-8}" r="5" fill="${SOL}" ${sw(3)}/>`;
+  case 'bonnet':return `<path d="M${x-20} ${y+2}C${x-20} ${y-28} ${x+20} ${y-28} ${x+20} ${y+2}Z" fill="${c}" ${sw(3.5)}/><rect x="${x-23}" y="${y-7}" width="46" height="11" rx="5.5" fill="#fff" ${sw(3)}/><circle cx="${x}" cy="${y-27}" r="7" fill="#fff" ${sw(3)}/>`;
+  case 'sorciere':return `<path d="M${x-15} ${y}L${x+4} ${y-42}L${x+14} ${y-32}L${x+15} ${y}Z" fill="${VIO}" ${sw(3.5)}/><rect x="${x-15}" y="${y-10}" width="30" height="6" fill="${SOL}"/><ellipse cx="${x}" cy="${y+1}" rx="31" ry="6" fill="${VIO}" ${sw(3.5)}/>`;
   case 'noeud':return `<path d="M${x+2} ${y-2}L${x-18} ${y-14}V${y+10}ZM${x+2} ${y-2}L${x+22} ${y-14}V${y+10}Z" fill="${ROSE}" ${sw(3.5)}/><circle cx="${x+2}" cy="${y-2}" r="5" fill="${ROSE}" ${sw(3.5)}/>`;
   }
   return '';
@@ -112,6 +119,10 @@ function acc(t,cx,cy,s){
   case 'soleil':return [cx-e,cx+e].map(x=>`<rect x="${x-10*s}" y="${cy-7*s}" width="${20*s}" height="${14*s}" rx="${6*s}" fill="${P}"/><path d="M${x-5*s} ${cy-3*s}L${x-1*s} ${cy-3*s}" stroke="#fff" stroke-width="${2.5*s}" stroke-linecap="round"/>`).join('')+`<path d="M${cx-3*s} ${cy-3*s}H${cx+3*s}" ${sw(3*s)}/>`;
   case 'moustache':{const y=cy+12*s;return `<path d="M${cx} ${y}C${cx-6*s} ${y-5*s} ${cx-18*s} ${y-4*s} ${cx-20*s} ${y+5*s}C${cx-12*s} ${y+2*s} ${cx-6*s} ${y+3*s} ${cx} ${y+1*s}C${cx+6*s} ${y+3*s} ${cx+12*s} ${y+2*s} ${cx+20*s} ${y+5*s}C${cx+18*s} ${y-4*s} ${cx+6*s} ${y-5*s} ${cx} ${y}Z" fill="${P}" ${sw(2*s)}/>`;}
   case 'monocle':return `<circle cx="${cx+e}" cy="${cy}" r="${11*s}" fill="#fff" fill-opacity=".25" ${sw(3*s)}/><path d="M${cx+e+8*s} ${cy+8*s}Q${cx+e+18*s} ${cy+20*s} ${cx+e+10*s} ${cy+32*s}" fill="none" stroke="${SOL}" stroke-width="${2.5*s}" stroke-linecap="round"/>`;
+  case 'coeurs':return heart(cx-e,cy+1*s,11*s,ROSE)+heart(cx+e,cy+1*s,11*s,ROSE)+`<path d="M${cx-3*s} ${cy-3*s}H${cx+3*s}" ${sw(3*s)}/>`;
+  case 'masque':return `<path d="M${cx-26*s} ${cy-6*s}Q${cx} ${cy-13*s} ${cx+26*s} ${cy-6*s}Q${cx+27*s} ${cy+9*s} ${cx+12*s} ${cy+9*s}Q${cx} ${cy+2*s} ${cx-12*s} ${cy+9*s}Q${cx-27*s} ${cy+9*s} ${cx-26*s} ${cy-6*s}Z" fill="${P}"/>`+[cx-e,cx+e].map(x=>`<ellipse cx="${x}" cy="${cy}" rx="${5*s}" ry="${4*s}" fill="#fff"/>`).join('');
+  case 'barbe':return `<path d="M${cx-20*s} ${cy+12*s}Q${cx} ${cy+48*s} ${cx+20*s} ${cy+12*s}Q${cx+10*s} ${cy+24*s} ${cx} ${cy+20*s}Q${cx-10*s} ${cy+24*s} ${cx-20*s} ${cy+12*s}Z" fill="#9a6a44" ${sw(2.5*s)}/>`;
+  case 'rougir':return [cx-20*s,cx+20*s].map(x=>`<ellipse cx="${x}" cy="${cy+12*s}" rx="${7*s}" ry="${4*s}" fill="${ROSE}" fill-opacity=".55"/>`).join('');
   case 'bisou':return heart(cx+e+18*s,cy-8*s,7*s,ROSE)+heart(cx+e+28*s,cy-20*s,4.5*s,ROSE);
   }
   return '';
@@ -385,8 +396,8 @@ export const COLORS = { P, ROSE, VIO, VIO2, SOL, MEN, CIEL, NUIT };
 export const PLAYER_COLORS = COL;
 export const PLAYER_COLOR_NAMES = COLN;
 export const CHARACTERS = Object.fromEntries(KEYS.map(k => [k, K[k].n]));
-export const HATS = ['couronne','casquette','haut','bob','cornes','antenne','noeud'];
-export const ACCESSORIES = ['lunettes','soleil','moustache','monocle','bisou'];
+export const HATS = ['couronne','casquette','haut','bob','cornes','antenne','noeud','toque','fete','pirate','aureole','fleur','bonnet','sorciere'];
+export const ACCESSORIES = ['lunettes','soleil','moustache','monocle','bisou','coeurs','masque','barbe','rougir'];
 export const MOODS = ['happy','wow','sad','win','toot'];
 /** Personnage complet. kind: clé de CHARACTERS ; color: couleur des baskets ;
  *  opts: { mood, hat, acc, selfie, arms, toot }. Renvoie un <svg> (viewBox ${VB}). */

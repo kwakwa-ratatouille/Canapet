@@ -48,6 +48,13 @@ export const HATS: { id: string; name: Name }[] = [
   { id: 'cornes', name: { fr: 'Cornes', en: 'Horns' } },
   { id: 'antenne', name: { fr: 'Antenne', en: 'Antenna' } },
   { id: 'noeud', name: { fr: 'Nœud', en: 'Bow' } },
+  { id: 'bonnet', name: { fr: 'Bonnet', en: 'Beanie' } },
+  { id: 'fete', name: { fr: 'Chapeau de fête', en: 'Party hat' } },
+  { id: 'fleur', name: { fr: 'Fleur', en: 'Flower' } },
+  { id: 'toque', name: { fr: 'Toque de chef', en: 'Chef hat' } },
+  { id: 'pirate', name: { fr: 'Pirate', en: 'Pirate' } },
+  { id: 'sorciere', name: { fr: 'Sorcière', en: 'Witch hat' } },
+  { id: 'aureole', name: { fr: 'Auréole', en: 'Halo' } },
 ];
 
 export const ACCS: { id: string; name: Name }[] = [
@@ -57,6 +64,10 @@ export const ACCS: { id: string; name: Name }[] = [
   { id: 'moustache', name: { fr: 'Moustache', en: 'Moustache' } },
   { id: 'monocle', name: { fr: 'Monocle', en: 'Monocle' } },
   { id: 'bisou', name: { fr: 'Bisou', en: 'Kiss' } },
+  { id: 'rougir', name: { fr: 'Joues roses', en: 'Blush' } },
+  { id: 'barbe', name: { fr: 'Barbe', en: 'Beard' } },
+  { id: 'masque', name: { fr: 'Masque', en: 'Mask' } },
+  { id: 'coeurs', name: { fr: 'Lunettes cœur', en: 'Heart glasses' } },
 ];
 
 export type Mood = 'happy' | 'sad' | 'wow' | 'win' | 'toot';

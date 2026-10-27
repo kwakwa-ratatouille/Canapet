@@ -11,6 +11,8 @@ export interface Profile {
   lang: Lang;
   /** Selfie recadré en rond, en data URL JPEG (~8 Ko). */
   selfie?: string;
+  /** Niveau du joueur (progression gardée sur son téléphone). */
+  level?: number;
 }
 
 export type PadLayout = 'tap' | 'stick' | 'bluff' | 'buttons';
@@ -26,13 +28,15 @@ export type PadScreen =
   | { s: 'wait'; game: string }
   | {
       s: 'results';
+      /** Numéro de la partie (pour ne compter les gains qu'une fois). */
+      gid: number;
       host: boolean;
       rank: number;
       points: number;
       total: number;
       step: { index: number; count: number } | null;
     }
-  | { s: 'podium'; host: boolean; rank: number; total: number };
+  | { s: 'podium'; gid: number; host: boolean; rank: number; total: number };
 
 /** Télé → téléphone */
 export type ToPad =

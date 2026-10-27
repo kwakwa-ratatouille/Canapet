@@ -181,6 +181,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
                   <CharCanvas profile={p} size={160} ghost={!p.connected} />
                 </div>
                 <div className="slot-name">{p.name}</div>
+                {p.level && p.level > 1 ? <span className="slot-level">{lang === 'fr' ? 'Niv.' : 'Lv.'} {p.level}</span> : null}
               </div>
             ) : (
               <div key={'e' + i} className="slot empty">
