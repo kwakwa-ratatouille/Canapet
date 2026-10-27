@@ -99,7 +99,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
   },
   kart: {
     fr: {
-      goal: 'Fais 3 tours avant tout le monde !',
+      goal: 'Fais 5 tours avant tout le monde ! Les tapis jaunes donnent un turbo',
       steps: [
         ['🕹️', 'Pointe le stick là où tu veux aller : le kart accélère tout seul'],
         ['❓', 'Roule sur les boîtes pour gagner un objet'],
@@ -107,7 +107,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
     en: {
-      goal: 'Finish 3 laps before everyone else!',
+      goal: 'Finish 5 laps before everyone else! Yellow pads give a boost',
       steps: [
         ['🕹️', 'Point the stick where you want to go: the kart speeds up by itself'],
         ['❓', 'Drive over boxes to get an item'],

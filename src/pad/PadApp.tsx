@@ -49,6 +49,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const [screen, setScreen] = useState<PadScreen | null>(demo ? DEMO[demo] ?? DEMO.lobby : null);
   const [status, setStatus] = useState<PadStatus>(demo ? 'ok' : 'connecting');
   const [rtt, setRtt] = useState(0);
+  const [live, setLive] = useState<{ rank: number; of: number; left: number | null } | null>(demo === 'stick' ? { rank: 2, of: 4, left: 83 } : null);
   const profileRef = useRef(profile);
   profileRef.current = profile;
   const netRef = useRef<PadNet | null>(null);
@@ -59,7 +60,11 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     const net = new PadNet(code, {
       hello: () => ({ t: 'hello', pid, profile: profileRef.current }),
       onMsg: (m) => {
-        if (m.t === 'screen') setScreen(m.screen);
+        if (m.t === 'screen') {
+          setScreen(m.screen);
+          if (m.screen.s !== 'play') setLive(null);
+        }
+        if (m.t === 'status') setLive({ rank: m.rank, of: m.of, left: m.left });
         if (m.t === 'welcome' && m.color !== profileRef.current.color) setProfile((p) => ({ ...p, color: m.color }));
         if (m.t === 'buzz') {
           if (navigator.vibrate) navigator.vibrate(m.ms);
@@ -143,6 +148,8 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           lang={lang}
           code={code}
           myColor={profile.color}
+          profile={profile}
+          live={live}
           send={send}
           host={host}
           edit={() => setEditing(true)}
@@ -160,7 +167,11 @@ function PadScreenView({
   send,
   host,
   edit,
+  profile,
+  live,
 }: {
+  profile: Profile;
+  live: { rank: number; of: number; left: number | null } | null;
   screen: PadScreen;
   lang: Lang;
   code: string;
@@ -305,7 +316,7 @@ function PadScreenView({
       if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
       if (screen.game === 'dessin' && screen.data) return <ScribblePad data={screen.data as ScribblePadData} lang={lang} send={send} />;
       if (screen.layout === 'bluff' && screen.data) return <BluffPad data={screen.data as BluffPadData} lang={lang} send={send} />;
-      return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} />;
+      return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} profile={profile} live={live} />;
     case 'wait':
       return (
         <div className="pad-body">

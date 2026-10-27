@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '../shared/i18n';
-import type { Lang, ToTv } from '../shared/protocol';
+import { CharCanvas } from '../shared/CharCanvas';
+import { ordinal } from '../shared/i18n';
+import type { Lang, Profile, ToTv } from '../shared/protocol';
 
 const LABELS: Record<string, Record<Lang, [string, string]>> = {
   obstacles: { fr: ['SAUT', 'PLONGE'], en: ['JUMP', 'DIVE'] },
@@ -35,7 +37,19 @@ function toPad(el: HTMLElement, cx: number, cy: number): { x: number; y: number 
 }
 
 /** Manette « stick + 2 boutons » : le stick apparaît là où le pouce se pose. */
-export function Stick({ send, lang, game }: { send: (m: ToTv) => void; lang: Lang; game?: string }) {
+export function Stick({
+  send,
+  lang,
+  game,
+  profile,
+  live,
+}: {
+  send: (m: ToTv) => void;
+  lang: Lang;
+  game?: string;
+  profile?: Profile;
+  live?: { rank: number; of: number; left: number | null } | null;
+}) {
   const [la, lb] = LABELS[game ?? '']?.[lang] ?? ['A', 'B'];
   const state = useRef({ x: 0, y: 0, a: false, b: false });
   // Le stick est visible au repos ; s'il est touché ailleurs, il vient sous le pouce.
@@ -127,6 +141,20 @@ export function Stick({ send, lang, game }: { send: (m: ToTv) => void; lang: Lan
           <div className="stick-knob" style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
         </div>
         {!knob.on && <span className="stick-hint">{t(lang, 'stickHint')}</span>}
+      </div>
+      <div className="stick-mid">
+        {live && live.of > 1 && (
+          <span className={`mid-rank r${Math.min(4, live.rank)}`}>
+            <b>{ordinal(lang, live.rank)}</b>
+            <small>/ {live.of}</small>
+          </span>
+        )}
+        {profile && <CharCanvas profile={profile} size={110} mood={pressed.a || pressed.b ? 'wow' : live?.rank === 1 ? 'win' : 'happy'} />}
+        {live?.left != null && (
+          <span className={`mid-time ${live.left <= 10 ? 'hot' : ''}`}>
+            ⏱ {Math.floor(live.left / 60)}:{String(live.left % 60).padStart(2, '0')}
+          </span>
+        )}
       </div>
       <div className="ab">
         <button className={`ab-btn b ${pressed.b ? 'down' : ''}`} onPointerDown={btn('b', true)} onPointerUp={btn('b', false)} onPointerCancel={btn('b', false)}>

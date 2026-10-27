@@ -36,7 +36,7 @@ const POINTS = [10, 7, 5, 4, 3, 2];
 const STEP = 1 / 60;
 const INTRO_SHORT = 2.6;
 /** Intro avec tuto : le temps de lire les 3 étapes. */
-const INTRO_TUTO = 8.5;
+const INTRO_TUTO = 16;
 const COUNT = 3;
 export const TOURNAMENT_LEN = 5;
 const MAX_PLAYERS = 12;
@@ -67,9 +67,12 @@ export class Session {
   private listeners = new Set<() => void>();
   private announced = false;
   private lastCount = 0;
+  private lastStatus = 0;
   version = 0;
   /** Secondes restantes de l'écran « Temps écoulé ! » avant les résultats. */
   timeUp = 0;
+  /** Joueurs qui ont appuyé sur un bouton pendant le tuto (« prêt ! »). */
+  ready = new Set<string>();
 
   constructor(preview: boolean) {
     setFamily(this.family);
@@ -180,6 +183,7 @@ export class Session {
       case 'in':
       case 'act':
         if (this.phase === 'game' && this.game && this.clock >= this.intro + COUNT) this.game.input(pid, m);
+        else if (this.phase === 'game' && this.clock < this.intro && (m.t !== 'in' || m.a || m.b)) this.markReady(pid);
         return;
       case 'team':
         if (!p || this.phase !== 'lobby') return;
@@ -307,7 +311,9 @@ export class Session {
       refresh: () => this.pushScreens(),
     });
     this.phase = 'game';
+    this.lastStatus = 0;
     this.timeUp = 0;
+    this.ready = new Set();
     this.clock = 0;
     this.acc = 0;
     this.announced = false;
@@ -391,6 +397,7 @@ export class Session {
           continue;
         }
         this.game.update(STEP);
+        if (this.clock - this.lastStatus >= 1) this.sendStatus();
         if (!this.game.over && this.limitTick()) continue;
       }
       const lead = this.game.leader?.();
@@ -403,6 +410,26 @@ export class Session {
         return;
       }
     }
+  }
+
+  /** Envoie à chaque manette sa place du moment et le chrono. */
+  private sendStatus() {
+    this.lastStatus = this.clock;
+    if (!this.game) return;
+    const order = this.game.ranking();
+    const left = this.timeLeft();
+    for (const r of this.runners)
+      if (!r.bot) this.net.send(r.pid, { t: 'status', rank: order.indexOf(r.pid) + 1, of: order.length, left: left === null ? null : Math.ceil(left) });
+  }
+
+  /** Pendant le tuto : un joueur se dit prêt ; quand tout le monde l'est, on passe au compte à rebours. */
+  private markReady(pid: string) {
+    if (this.ready.has(pid) || !this.runners.some((r) => r.pid === pid && !r.bot)) return;
+    this.ready.add(pid);
+    sfx.join();
+    const humans = this.runners.filter((r) => !r.bot);
+    if (humans.every((r) => this.ready.has(r.pid)) && this.clock < this.intro - 0.8) this.clock = this.intro - 0.8;
+    this.changed();
   }
 
   /** Secondes de jeu restantes au chrono (null si le jeu n'a pas de temps maximum). */

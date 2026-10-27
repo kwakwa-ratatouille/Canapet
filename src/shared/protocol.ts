@@ -39,6 +39,8 @@ export type ToPad =
   | { t: 'welcome'; color: string; code: string }
   | { t: 'screen'; screen: PadScreen }
   | { t: 'buzz'; ms: number }
+  /** Pendant la partie, chaque seconde : ta place et le temps restant. */
+  | { t: 'status'; rank: number; of: number; left: number | null }
   | { t: 'pong'; ts: number };
 
 export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams';

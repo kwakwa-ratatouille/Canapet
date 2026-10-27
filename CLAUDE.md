@@ -29,7 +29,7 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 2. ✅ La Dégringolade (`src/games/tumble.ts`) : course d’obstacles vue de côté, parcours tiré au hasard (tronçons), caméra qui suit le premier, A = saut, B = plongeon.
 3. ✅ Le Bar des Bobards (`src/games/bluff.ts` + `src/pad/BluffPad.tsx`) : bluff 2-6 joueurs, main privée sur le téléphone (`padData` + `ctx.refresh()`), roulette du coussin péteur.
 4. ✅ Sumo Tamponneur (`sumo.ts`, 12 joueurs, 3 vies, assiette qui rétrécit) et Pétards Mouillés (`bombs.ts`, 8 joueurs, grille, bonus, bots qui fuient le danger).
-5. ✅ Mini Bolides (`kart.ts`, 8 karts, 3 tours, objets turbo/sirop/pétard).
+5. ✅ Mini Bolides (`kart.ts`, 8 karts, 5 tours, bordures qui renvoient sur la piste, tapis turbo, rattrapage pour les derniers, objets turbo/sirop/pétard, glissade unique puis protection).
 6. ✅ Flèches à Ventouse (`archers.ts`, 8 joueurs, bords qui se rejoignent, premier à 3 manches, saut assez haut pour toutes les plateformes, manche de 45 s avec mort subite à 30 s).
 7. ✅ Gribouillis (`scribble.ts` + `ScribblePad.tsx`) : dessin en direct du téléphone vers la télé, devinettes tapées, seuls les humains dessinent.
 8. ✅ Le Traître du Frigo (`traitor.ts` + `TraitorPad.tsx`) : rôle caché 4-12, nuit/débat/vote, Goûteur dès 5.

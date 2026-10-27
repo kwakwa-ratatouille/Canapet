@@ -8,6 +8,7 @@ import { LIGHT, PREVIEW } from '../shared/device';
 import { ordinal, t } from '../shared/i18n';
 import { gameIcon, tint, Wordmark } from '../shared/Logo';
 import { INK, MENTHE, ROSE, SOLEIL, VIOLET } from '../shared/palette';
+import { drawCharacter } from '../shared/characters';
 import { joinUrl } from '../shared/protocol';
 import { QR } from '../shared/QR';
 import { audioLocked, isMuted, setMuted, unlockAudio } from '../shared/sound';
@@ -356,74 +357,223 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
     const map = session.game?.mapName?.[lang];
     if (session.mode === 'tournament') stickerText(g, t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN }), W / 2, 80, 52, SOLEIL);
     if (tuto && tutoLeft > 0) {
-      // Carte tuto : icône + nom à gauche, but et 3 étapes à droite.
-      const x0 = 150;
-      const y0 = 130;
-      const cw = 1620;
-      const ch = 820;
+      const el = session.clock;
+      // Bandes de bonbon qui défilent
+      g.save();
+      g.globalAlpha = a * 0.13;
+      g.fillStyle = '#fff';
+      for (let k = -8; k < 22; k++) {
+        const x = k * 140 + ((el * 50) % 280);
+        g.beginPath();
+        g.moveTo(x, 0);
+        g.lineTo(x + 70, 0);
+        g.lineTo(x + 70 - 620, H);
+        g.lineTo(x - 620, H);
+        g.closePath();
+        g.fill();
+      }
+      g.restore();
+      g.globalAlpha = a;
+      // Titre : icône qui sautille + nom du jeu + carte
+      const img = iconImage(def.slug);
+      const bob = Math.sin(el * 3) * 10;
+      g.save();
+      g.translate(300, 150 + bob);
+      g.rotate(Math.sin(el * 2) * 0.06);
+      if (img.complete && img.naturalWidth) g.drawImage(img, -115, -115, 230, 230);
+      g.restore();
+      g.save();
+      g.textAlign = 'left';
+      g.font = '700 104px Fredoka, sans-serif';
+      const nameW = g.measureText(def.name[lang]).width;
+      g.restore();
+      stickerText(g, def.name[lang], 460 + nameW / 2, 165, 104, '#fff');
+      if (map) {
+        g.font = '700 34px Fredoka, sans-serif';
+        const label = '🗺️ ' + (lang === 'fr' ? 'Carte : ' : 'Map: ') + map;
+        const mw = g.measureText(label).width + 60;
+        g.fillStyle = INK;
+        g.beginPath();
+        g.roundRect(460, 196, mw, 64, 32);
+        g.fill();
+        g.fillStyle = SOLEIL;
+        g.strokeStyle = INK;
+        g.lineWidth = 5;
+        g.beginPath();
+        g.roundRect(460, 190, mw, 64, 32);
+        g.fill();
+        g.stroke();
+        g.fillStyle = INK;
+        g.textAlign = 'left';
+        g.fillText(label, 490, 234);
+      }
+      // But : grande bulle
+      const bx = 140;
+      const by = 290;
+      const bw = W - 280;
+      const bh = 120;
       g.fillStyle = INK;
       g.beginPath();
-      g.roundRect(x0, y0 + 14, cw, ch, 56);
+      g.roundRect(bx, by + 10, bw, bh, 60);
       g.fill();
       g.fillStyle = '#fff';
       g.strokeStyle = INK;
       g.lineWidth = 6;
       g.beginPath();
-      g.roundRect(x0, y0, cw, ch, 56);
+      g.roundRect(bx, by, bw, bh, 60);
       g.fill();
       g.stroke();
-      const img = iconImage(def.slug);
-      if (img.complete && img.naturalWidth) g.drawImage(img, x0 + 70, y0 + 70, 320, 320);
-      stickerText(g, def.name[lang], x0 + 230, y0 + 480, 64, ROSE);
-      if (map) {
-        g.fillStyle = def.color;
-        g.beginPath();
-        g.roundRect(x0 + 60, y0 + 530, 340, 64, 32);
-        g.fill();
-        g.stroke();
-        g.fillStyle = INK;
-        g.font = '700 30px Fredoka, sans-serif';
-        g.textAlign = 'center';
-        g.fillText((lang === 'fr' ? 'Carte : ' : 'Map: ') + map, x0 + 230, y0 + 573);
+      g.font = '700 50px Fredoka, sans-serif';
+      const goal = '🎯 ' + tuto.goal;
+      let gs = 50;
+      while (gs > 34 && g.measureText(goal).width > bw - 80) {
+        gs -= 2;
+        g.font = `700 ${gs}px Fredoka, sans-serif`;
       }
-      // But
-      g.textAlign = 'left';
       g.fillStyle = INK;
-      g.font = '700 46px Fredoka, sans-serif';
-      wrap(g, tuto.goal, x0 + 480, y0 + 110, 1060, 54, 'left');
-      // Étapes
+      g.textAlign = 'center';
+      g.fillText(goal, W / 2, by + bh / 2 + gs * 0.36);
+      // 3 étapes : cartes qui apparaissent l'une après l'autre
+      const cw = 500;
+      const gap = 50;
+      const cx0 = (W - (cw * 3 + gap * 2)) / 2;
       tuto.steps.forEach(([icon, text], i) => {
-        const y = y0 + 250 + i * 170;
-        g.fillStyle = [ROSE, VIOLET, MENTHE][i];
-        g.strokeStyle = INK;
-        g.lineWidth = 5;
+        const appear = Math.min(1, Math.max(0, (el - 0.4 - i * 0.45) * 3));
+        if (appear <= 0) return;
+        const pop = appear < 1 ? 1 + Math.sin(appear * Math.PI) * 0.12 : 1;
+        const x = cx0 + i * (cw + gap);
+        const y = 460;
+        const ch = 370;
+        const col = [ROSE, VIOLET, MENTHE][i];
+        g.save();
+        g.translate(x + cw / 2, y + ch / 2);
+        g.scale(appear * pop, appear * pop);
+        g.rotate([-0.02, 0.015, -0.01][i]);
+        g.translate(-cw / 2, -ch / 2);
+        g.fillStyle = INK;
         g.beginPath();
-        g.arc(x0 + 540, y + 40, 52, 0, Math.PI * 2);
+        g.roundRect(0, 14, cw, ch, 40);
+        g.fill();
+        g.fillStyle = '#fff';
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.roundRect(0, 0, cw, ch, 40);
         g.fill();
         g.stroke();
-        g.font = '56px sans-serif';
+        // Bandeau coloré avec la grosse icône
+        g.save();
+        g.beginPath();
+        g.roundRect(0, 0, cw, ch, 40);
+        g.clip();
+        g.fillStyle = col;
+        g.fillRect(0, 0, cw, 160);
+        g.fillStyle = 'rgba(255,255,255,0.2)';
+        for (let k = 0; k < 5; k++) {
+          g.beginPath();
+          g.arc((k * 131) % cw, 30 + ((k * 53) % 110), 26 + (k % 3) * 10, 0, Math.PI * 2);
+          g.fill();
+        }
+        g.restore();
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.moveTo(0, 160);
+        g.lineTo(cw, 160);
+        g.stroke();
+        g.font = '96px sans-serif';
         g.textAlign = 'center';
-        g.fillText(icon, x0 + 540, y + 60);
+        g.fillText(icon, cw / 2, 120 + Math.sin(el * 4 + i) * 5);
+        // Pastille numéro
+        g.fillStyle = SOLEIL;
+        g.beginPath();
+        g.arc(44, 40, 34, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
         g.fillStyle = INK;
+        g.font = '700 40px Fredoka, sans-serif';
+        g.fillText(String(i + 1), 44, 54);
+        // Texte
         g.font = '700 36px Nunito, sans-serif';
-        g.textAlign = 'left';
-        wrap(g, text, x0 + 620, y + 30, 940, 44, 'left');
+        let ts = 36;
+        const lines = (size: number) => {
+          g.font = `700 ${size}px Nunito, sans-serif`;
+          let n = 1;
+          let line = '';
+          for (const w of text.split(' ')) {
+            const test = line ? line + ' ' + w : w;
+            if (g.measureText(test).width > cw - 60 && line) {
+              n++;
+              line = w;
+            } else line = test;
+          }
+          return n;
+        };
+        while (ts > 28 && lines(ts) * ts * 1.25 > ch - 200) ts -= 2;
+        g.font = `700 ${ts}px Nunito, sans-serif`;
+        g.fillStyle = INK;
+        wrap(g, text, cw / 2, 160 + 40 + ts, cw - 60, ts * 1.25, 'center');
+        g.restore();
       });
-      // Barre de temps restant
-      g.fillStyle = '#f1e6f7';
+      // Barre de temps
+      const px = 160;
+      const pw = W - 320;
+      g.fillStyle = INK;
       g.beginPath();
-      g.roundRect(x0 + 60, y0 + ch - 90, cw - 120, 28, 14);
+      g.roundRect(px, 876, pw, 30, 15);
       g.fill();
-      g.fillStyle = def.color;
+      g.fillStyle = '#fff';
       g.beginPath();
-      g.roundRect(x0 + 60, y0 + ch - 90, (cw - 120) * tutoLeft, 28, 14);
+      g.roundRect(px, 870, pw, 30, 15);
+      g.fill();
+      g.fillStyle = SOLEIL;
+      g.beginPath();
+      g.roundRect(px, 870, Math.max(30, pw * tutoLeft), 30, 15);
       g.fill();
       g.strokeStyle = INK;
-      g.lineWidth = 4;
+      g.lineWidth = 5;
       g.beginPath();
-      g.roundRect(x0 + 60, y0 + ch - 90, cw - 120, 28, 14);
+      g.roundRect(px, 870, pw, 30, 15);
       g.stroke();
-      stickerText(g, lang === 'fr' ? 'Prends ton téléphone, ça commence !' : 'Grab your phone, here we go!', W / 2, H - 22, 44, '#fff');
+      // Joueurs prêts
+      const humans = session.runners.filter((r) => !r.bot);
+      const step = Math.min(110, 1300 / Math.max(1, humans.length));
+      humans.forEach((r, i) => {
+        const x = W / 2 + (i - (humans.length - 1) / 2) * step;
+        const ok = session.ready.has(r.pid);
+        g.globalAlpha = a * (ok ? 1 : 0.55);
+        drawCharacter(g, x, 1010 + (ok ? Math.sin(el * 8 + i) * 4 : 0), 74, {
+          food: r.profile.food,
+          color: r.profile.color,
+          hat: r.profile.hat,
+          acc: r.profile.acc,
+          selfie: r.selfie,
+          t: el + i,
+          mood: ok ? 'win' : 'happy',
+        });
+        if (ok) {
+          g.fillStyle = MENTHE;
+          g.strokeStyle = INK;
+          g.lineWidth = 4;
+          g.beginPath();
+          g.arc(x + 34, 948, 20, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.fillStyle = '#fff';
+          g.font = '700 26px Fredoka, sans-serif';
+          g.textAlign = 'center';
+          g.fillText('✓', x + 34, 957);
+        }
+      });
+      g.globalAlpha = a;
+      stickerText(
+        g,
+        lang === 'fr' ? 'Appuie sur un bouton de ta manette quand tu es prêt !' : 'Press a button on your phone when you are ready!',
+        W / 2,
+        1066,
+        38,
+        '#fff',
+      );
       g.globalAlpha = 1;
       return;
     }
