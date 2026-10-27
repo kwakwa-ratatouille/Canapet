@@ -167,7 +167,10 @@ export class Session {
   hostAction(action: string, game?: string) {
     switch (action) {
       case 'tournament': {
-        const pool = playable().map((g) => g.id);
+        // Seulement les jeux jouables avec le nombre de joueurs présents (les bots complètent quand le jeu le permet).
+        const count = this.list().filter((p) => p.connected).length;
+        const fit = playable().filter((g) => Math.max(count, g.botFill) >= g.min);
+        const pool = (fit.length ? fit : playable()).map((g) => g.id);
         this.plan = [];
         for (let i = 0; i < TOURNAMENT_LEN; i++) {
           const options = pool.filter((id) => id !== this.plan[i - 1]);

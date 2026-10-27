@@ -1102,6 +1102,47 @@ button {
   color: var(--ink);
 }
 
+/* Grand Plateau (manette) */
+.boardpad {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 16px;
+  color: #fff;
+  text-align: center;
+}
+.boardpad-stats {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+}
+.big-round {
+  width: min(70vw, 70vh, 300px);
+  height: min(70vw, 70vh, 300px);
+  border-radius: 50%;
+  border: 6px solid #fff;
+  background: var(--c);
+  color: var(--ink);
+  font-size: 36px;
+  font-weight: 700;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.4);
+  touch-action: none;
+}
+.big-round:active {
+  transform: translateY(6px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
+}
+.big-round.stop {
+  background: #ff3b3b;
+  color: #fff;
+}
+.big-round.go {
+  background: #7bd13b;
+}
+
 /* Éditeur de personnage */
 .editor {
   overflow-y: auto;

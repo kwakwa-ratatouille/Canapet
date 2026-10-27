@@ -10,6 +10,7 @@ import { traitor } from './traitor';
 import { clash } from './clash';
 import { brawl } from './brawl';
 import { kitchen } from './kitchen';
+import { board } from './board';
 import type { GameDef } from './types';
 
 const soon = (
@@ -47,7 +48,7 @@ export const GAMES: GameDef[] = [
   kitchen,
   traitor,
   scribble,
-  soon('plateau', '🎲', 'Le Grand Plateau', 'The Big Board', 'Mario Party', 8),
+  board,
   clash,
 ];
 
