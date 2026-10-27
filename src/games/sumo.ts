@@ -8,7 +8,8 @@ import { sfx } from '../shared/sound';
 import { roundRectText } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
-const R0 = 520;
+/** Rayon de l’arène : il dépend du nombre de joueurs (fixé au lancement). */
+let R0 = 520;
 const R_MIN = 280;
 const SHRINK_TIME = 70;
 const BODY = 46;
@@ -99,6 +100,7 @@ interface Part {
 }
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
+  R0 = Math.min(570, 400 + runners.length * 15);
   const fr = ctx.lang === 'fr';
   const n = runners.length;
   const map = MAPS[Math.floor(Math.random() * MAPS.length)];
