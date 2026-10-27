@@ -2303,3 +2303,87 @@ h3,
 .uc-note {
   color: var(--pink) !important;
 }
+
+/* ===== Relief bonbon (oct. 2026) : reflet clair en haut, bas un peu plus foncé, ombre plate prune ===== */
+:root {
+  --cp-bonbon: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.14) 40%, rgba(255, 255, 255, 0) 56%, rgba(58, 33, 64, 0.14) 100%);
+  --cp-reflet: inset 0 4px 0 rgba(255, 255, 255, 0.55), inset 0 -5px 0 rgba(58, 33, 64, 0.13);
+  --cp-reflet-tv: inset 0 calc(7 * var(--u)) 0 rgba(255, 255, 255, 0.6), inset 0 calc(-10 * var(--u)) 0 rgba(58, 33, 64, 0.1);
+}
+.btn,
+.big-card,
+.opt,
+.choice,
+.tab,
+.team-pick button,
+.prog-shop,
+.google-btn,
+.pill,
+.code-card,
+.prog-card,
+.reward-card,
+.rank-card,
+.role-card,
+.buy-card,
+.shop-coins,
+.mid-rank,
+.mid-time,
+.slot,
+.res-row,
+.join-card,
+.code span,
+.next-card,
+.count-pill,
+.family-pill,
+.slot-level,
+.slot-team,
+.team-score span {
+  background-image: var(--cp-bonbon);
+}
+.btn {
+  box-shadow: var(--cp-reflet), var(--cp-ombre);
+}
+.btn:active {
+  box-shadow: var(--cp-reflet), 0 1px 0 var(--ink);
+}
+.big-card {
+  box-shadow: var(--cp-reflet), 0 6px 0 var(--ink);
+}
+.big-card:active {
+  box-shadow: var(--cp-reflet), 0 2px 0 var(--ink);
+}
+.opt,
+.role-card,
+.prog-card,
+.reward-card {
+  box-shadow: var(--cp-reflet), 0 5px 0 var(--ink);
+}
+.code-card,
+.rank-card {
+  box-shadow: var(--cp-reflet), var(--cp-ombre);
+}
+.team-pick button {
+  box-shadow: var(--cp-reflet), 0 5px 0 var(--ink);
+}
+.team-pick button.on {
+  box-shadow: var(--cp-reflet), 0 2px 0 var(--ink);
+}
+.slot,
+.join-card,
+.next-card {
+  box-shadow: var(--cp-reflet-tv), 0 calc(10 * var(--u)) 0 var(--ink);
+}
+.res-row,
+.code span,
+.count-pill {
+  box-shadow: var(--cp-reflet-tv), 0 calc(8 * var(--u)) 0 var(--ink);
+}
+/* Bulle du perso dans le salon : un petit reflet bombé */
+.slot-disc {
+  background-image: radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.7) 0, rgba(255, 255, 255, 0) 42%), linear-gradient(180deg, rgba(255, 255, 255, 0) 55%, rgba(58, 33, 64, 0.12) 100%) !important;
+}
+/* Fond du téléphone : pois doux */
+.pad {
+  background-image: radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.55) 7px, transparent 8px), radial-gradient(circle at 60px 60px, rgba(255, 79, 154, 0.1) 6px, transparent 7px);
+  background-size: 80px 80px;
+}
