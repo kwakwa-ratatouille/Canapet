@@ -436,13 +436,25 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const cxp = ox + (x + 0.5) * cs;
         const cyp = oy + (y + 0.5) * cs;
         const s = (v / FLAME) * cs * 0.55;
-        g.fillStyle = 'rgba(46,197,255,0.85)';
+        g.fillStyle = '#2ec5ff';
+        g.strokeStyle = INK;
+        g.lineWidth = 3;
         g.beginPath();
         g.arc(cxp, cyp, s, 0, Math.PI * 2);
         g.fill();
-        g.fillStyle = 'rgba(255,255,255,0.8)';
+        g.stroke();
+        // Gouttelettes qui s'envolent
+        const spread = 1 - v / FLAME;
+        for (let d = 0; d < 5; d++) {
+          const a = d * 1.26 + x;
+          g.beginPath();
+          g.arc(cxp + Math.cos(a) * s * (0.8 + spread * 0.8), cyp + Math.sin(a) * s * (0.8 + spread * 0.8), s * 0.22, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+        }
+        g.fillStyle = 'rgba(255,255,255,0.85)';
         g.beginPath();
-        g.arc(cxp - s * 0.3, cyp - s * 0.3, s * 0.35, 0, Math.PI * 2);
+        g.arc(cxp - s * 0.3, cyp - s * 0.3, s * 0.32, 0, Math.PI * 2);
         g.fill();
       }
       for (const b of bombs) {

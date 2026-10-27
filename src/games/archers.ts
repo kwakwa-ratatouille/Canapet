@@ -50,6 +50,12 @@ const MAPS: { name: { fr: string; en: string }; rects: [number, number, number, 
     rects: [...BORDERS, [14, 5, 4, 8], [4, 5, 6, 1], [22, 5, 6, 1], [6, 9, 5, 1], [21, 9, 5, 1], [3, 13, 7, 1], [22, 13, 7, 1]],
     spawns: [[960, 300], [420, 300], [1500, 300], [510, 540], [1410, 540], [390, 780], [1530, 780], [1620, 1020]],
   },
+  {
+    name: { fr: 'La Cabane', en: 'The Treehouse' },
+    sky: ['#bff0d4', '#fff1c9'],
+    rects: [...BORDERS, [4, 5, 5, 1], [23, 5, 5, 1], [11, 8, 10, 1], [4, 12, 6, 1], [22, 12, 6, 1], [14, 4, 4, 1], [14, 14, 4, 1]],
+    spawns: [[390, 300], [1530, 300], [780, 480], [1140, 480], [420, 720], [1500, 720], [960, 240], [960, 840]],
+  },
 ];
 // Arène de la partie en cours (une seule partie à la fois).
 let SOLIDS: { x: number; y: number; w: number; h: number }[] = [];

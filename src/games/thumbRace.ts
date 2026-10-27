@@ -3,6 +3,7 @@ import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { drawSky, roundRectText } from './draw';
+import { INK } from '../shared/palette';
 
 const STEPS = 60;
 const START_X = 300;
@@ -124,6 +125,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.beginPath();
         g.roundRect(60, y + 4, 1800, h - 8, 18);
         g.fill();
+        g.strokeStyle = INK;
+        g.lineWidth = 3;
+        g.stroke();
         roundRectText(g, r.profile.name || '?', 70, y + h / 2, 210, Math.min(46, h * 0.5), r.profile.color);
         // Ligne d'arrivée en damier
         const sq = Math.max(8, (h - 8) / 6);
@@ -137,7 +141,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         // Zones de boue et de tapis turbo
         const zx = (a: number) => START_X + 20 + a * (FINISH_X - START_X - 40);
         g.fillStyle = theme.mud;
-        g.globalAlpha = 0.55;
+        g.globalAlpha = 0.7;
         g.beginPath();
         g.roundRect(zx(MUD[0]), y + 10, zx(MUD[1]) - zx(MUD[0]), h - 20, 14);
         g.fill();
@@ -147,10 +151,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fill();
         g.globalAlpha = 1;
         if (i === 0) {
-          g.font = '28px sans-serif';
+          g.font = '44px sans-serif';
           g.textAlign = 'center';
-          g.fillText('🐌', (zx(MUD[0]) + zx(MUD[1])) / 2, y - 6);
-          g.fillText('⚡', (zx(BOOST[0]) + zx(BOOST[1])) / 2, y - 6);
+          g.fillText('🐌', (zx(MUD[0]) + zx(MUD[1])) / 2, y - 12);
+          g.fillText('⚡', (zx(BOOST[0]) + zx(BOOST[1])) / 2, y - 12);
         }
       });
 

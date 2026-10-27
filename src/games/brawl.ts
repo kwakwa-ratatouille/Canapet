@@ -2,7 +2,7 @@
 // A = saut · B court = baffe · B maintenu = attraper, relâcher = jeter (direction du stick). Trop de baffes = sonné.
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
-import { roundRectText } from './draw';
+import { drawSky, roundRectText } from './draw';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
 
@@ -44,6 +44,19 @@ const MAPS: { name: { fr: string; en: string }; plats: Plat[]; sky: [string, str
     ],
   },
 ];
+MAPS.push({
+  name: { fr: 'Les Tabourets', en: 'The Stools' },
+  sky: ['#ffd6ea', '#e3f2ff'],
+  sea: '#e9fbf4',
+  plat: '#9b72ff',
+  plats: [
+    { x: 260, y: 760, w: 300 },
+    { x: 700, y: 820, w: 240 },
+    { x: 1060, y: 820, w: 240 },
+    { x: 1440, y: 760, w: 300 },
+    { x: 780, y: 560, w: 360 },
+  ],
+});
 // Carte de la bagarre en cours (une seule à la fois).
 let PLATS: Plat[] = MAPS[0].plats;
 
@@ -335,11 +348,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (endDelay >= 0 && (endDelay -= dt) <= 0) game.over = true;
     },
     render(g, t) {
-      const sky = g.createLinearGradient(0, 0, 0, 1080);
-      sky.addColorStop(0, map.sky[0]);
-      sky.addColorStop(1, map.sky[1]);
-      g.fillStyle = sky;
-      g.fillRect(0, 0, 1920, 1080);
+      drawSky(g, t, ctx.light, map.sky[0], map.sky[1]);
       // Mer de crème
       g.fillStyle = map.sea;
       g.beginPath();

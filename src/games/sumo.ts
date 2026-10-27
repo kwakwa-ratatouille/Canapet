@@ -61,6 +61,17 @@ const MAPS = [
     under: '#c9783a',
     bumpers: [[-230, 0], [230, 0], [0, -190], [0, 190]] as [number, number][],
   },
+  {
+    id: 'gateau',
+    name: { fr: 'Le Gâteau d’anniversaire', en: 'The Birthday Cake' },
+    shrink: true,
+    grip: 0.3,
+    acc: 1,
+    plate: '#fff0f7',
+    rim: '#ff9ccf',
+    under: '#ff4f9a',
+    bumpers: [0, 1, 2, 3, 4, 5].map((k) => [Math.cos((k * Math.PI) / 3) * 300, Math.sin((k * Math.PI) / 3) * 300]) as [number, number][],
+  },
 ];
 const BUMPER_R = 52;
 
@@ -338,14 +349,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.beginPath();
         g.ellipse(px, py + 10, BUMPER_R * SX, BUMPER_R * SY, 0, 0, Math.PI * 2);
         g.fill();
-        g.fillStyle = '#3a3a46';
+        g.fillStyle = map.id === 'gateau' ? ['#2ec5ff', '#ffd60a', '#1fc9a0'][Math.abs(Math.round(bx + by)) % 3] : '#3a3a46';
         g.strokeStyle = INK;
         g.lineWidth = 5;
         g.beginPath();
         g.ellipse(px, py, BUMPER_R * SX, BUMPER_R * SY, 0, 0, Math.PI * 2);
         g.fill();
         g.stroke();
-        g.fillStyle = '#7bd13b';
+        g.fillStyle = map.id === 'gateau' ? (Math.sin(t * 12 + bx) > 0 ? '#ff9a1f' : '#ffd60a') : '#7bd13b';
         g.beginPath();
         g.ellipse(px, py, BUMPER_R * SX * 0.4, BUMPER_R * SY * 0.4, 0, 0, Math.PI * 2);
         g.fill();

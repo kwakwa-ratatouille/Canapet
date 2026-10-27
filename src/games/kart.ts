@@ -58,6 +58,17 @@ const CIRCUITS: {
       [860, 760], [670, 880], [300, 820], [120, 540],
     ],
   },
+  {
+    name: { fr: 'Le Serpentin', en: 'The Wiggle' },
+    grass: '#ffe9f3',
+    dots: '#ffd6ea',
+    road: '#cfe9ff',
+    panel: [1080, 560],
+    ctrl: [
+      [200, 900], [200, 260], [520, 180], [700, 420], [900, 640], [1100, 420], [1300, 200], [1600, 220],
+      [1760, 480], [1650, 760], [1400, 960], [900, 990], [560, 960],
+    ],
+  },
 ];
 
 type Item = 'turbo' | 'sirop' | 'petard';
@@ -155,6 +166,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       botLane: rnd(-40, 40),
     };
   });
+  // Décor au bord de la piste : sucettes géantes, buissons et fleurs, jamais sur la route.
+  const decor: { x: number; y: number; kind: number; c: string }[] = [];
+  for (let k = 0; k < 400 && decor.length < 26; k++) {
+    const x = 60 + Math.random() * 1800;
+    const y = 60 + Math.random() * 960;
+    let d = Infinity;
+    for (let j = 0; j < N; j += 4) d = Math.min(d, Math.hypot(PATH[j][0] - x, PATH[j][1] - y));
+    if (d > ROAD * 0.5 + 70 && decor.every((o) => Math.hypot(o.x - x, o.y - y) > 110))
+      decor.push({ x, y, kind: k % 3, c: ['#ff4f9a', '#2ec5ff', '#ffd60a', '#1fc9a0', '#9b5cff'][k % 5] });
+  }
   const boxes = [0.18, 0.47, 0.74].flatMap((f) => {
     const i = Math.floor(f * N);
     const [x, y] = PATH[i];
@@ -327,6 +348,58 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.beginPath();
           g.arc((i * 397) % 1920, (i * 233) % 1080, 18, 0, Math.PI * 2);
           g.fill();
+        }
+      }
+      g.strokeStyle = INK;
+      g.lineWidth = 4;
+      for (const d of decor) {
+        if (d.kind === 0) {
+          // Sucette géante
+          g.fillStyle = '#fff';
+          g.fillRect(d.x - 5, d.y - 10, 10, 60);
+          g.strokeRect(d.x - 5, d.y - 10, 10, 60);
+          g.fillStyle = d.c;
+          g.beginPath();
+          g.arc(d.x, d.y - 30, 34, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.strokeStyle = '#fff';
+          g.lineWidth = 6;
+          g.beginPath();
+          g.arc(d.x, d.y - 30, 18, 0, Math.PI * 1.5);
+          g.stroke();
+          g.strokeStyle = INK;
+          g.lineWidth = 4;
+        } else if (d.kind === 1) {
+          // Buisson
+          g.fillStyle = '#7bd13b';
+          g.beginPath();
+          g.arc(d.x - 26, d.y, 24, 0, Math.PI * 2);
+          g.arc(d.x, d.y - 14, 30, 0, Math.PI * 2);
+          g.arc(d.x + 26, d.y, 24, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.fillStyle = '#7bd13b';
+          g.fillRect(d.x - 40, d.y - 4, 80, 20);
+          g.fillStyle = d.c;
+          g.beginPath();
+          g.arc(d.x - 8, d.y - 18, 6, 0, Math.PI * 2);
+          g.arc(d.x + 16, d.y - 4, 6, 0, Math.PI * 2);
+          g.fill();
+        } else {
+          // Fleur
+          g.fillStyle = d.c;
+          for (let k = 0; k < 5; k++) {
+            g.beginPath();
+            g.arc(d.x + Math.cos((k * Math.PI * 2) / 5) * 14, d.y + Math.sin((k * Math.PI * 2) / 5) * 14, 11, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+          }
+          g.fillStyle = '#ffd60a';
+          g.beginPath();
+          g.arc(d.x, d.y, 9, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
         }
       }
       const loop = () => {

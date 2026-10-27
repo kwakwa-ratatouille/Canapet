@@ -1,26 +1,83 @@
 import { INK } from '../shared/palette';
 // Petits outils de dessin partagés par les jeux.
 
+/** Nuage « autocollant » : contour prune, ombre plate, reflet. */
+export function stickerCloud(g: CanvasRenderingContext2D, x: number, y: number, s: number) {
+  const blob = (dy: number) => {
+    g.beginPath();
+    g.arc(x, y + dy, 34 * s, Math.PI * 0.5, Math.PI * 1.5);
+    g.arc(x + 40 * s, y - 16 * s + dy, 42 * s, Math.PI, Math.PI * 2);
+    g.arc(x + 88 * s, y + dy, 32 * s, Math.PI * 1.5, Math.PI * 0.5);
+    g.closePath();
+  };
+  g.fillStyle = 'rgba(58,33,64,0.18)';
+  blob(10 * s);
+  g.fill();
+  g.fillStyle = '#fff';
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  blob(0);
+  g.fill();
+  g.stroke();
+  g.fillStyle = 'rgba(227,242,255,0.9)';
+  g.beginPath();
+  g.ellipse(x + 30 * s, y + 18 * s, 40 * s, 8 * s, 0, 0, Math.PI * 2);
+  g.fill();
+}
+
+/** Soleil souriant de la DA. */
+export function smileSun(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, t: number) {
+  g.save();
+  g.translate(x, y);
+  g.rotate(t * 0.2);
+  g.fillStyle = color;
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  for (let k = 0; k < 10; k++) {
+    g.save();
+    g.rotate((k * Math.PI) / 5);
+    g.beginPath();
+    g.roundRect(-8, -r - 30, 16, 26, 8);
+    g.fill();
+    g.stroke();
+    g.restore();
+  }
+  g.restore();
+  g.fillStyle = color;
+  g.strokeStyle = INK;
+  g.lineWidth = 5;
+  g.beginPath();
+  g.arc(x, y, r, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.fillStyle = INK;
+  g.beginPath();
+  g.arc(x - r * 0.3, y - r * 0.1, r * 0.09, 0, Math.PI * 2);
+  g.arc(x + r * 0.3, y - r * 0.1, r * 0.09, 0, Math.PI * 2);
+  g.fill();
+  g.lineWidth = 4;
+  g.beginPath();
+  g.arc(x, y + r * 0.05, r * 0.32, Math.PI * 0.15, Math.PI * 0.85);
+  g.stroke();
+  g.fillStyle = 'rgba(255,90,140,0.4)';
+  g.beginPath();
+  g.ellipse(x - r * 0.5, y + r * 0.2, r * 0.13, r * 0.08, 0, 0, Math.PI * 2);
+  g.ellipse(x + r * 0.5, y + r * 0.2, r * 0.13, r * 0.08, 0, 0, Math.PI * 2);
+  g.fill();
+}
+
 export function drawSky(g: CanvasRenderingContext2D, t: number, light: boolean, top = '#8fd8ff', bottom = '#ffd6ec', sun = '#fff3a8') {
   const sky = g.createLinearGradient(0, 0, 0, 1080);
   sky.addColorStop(0, top);
   sky.addColorStop(1, bottom);
   g.fillStyle = sky;
   g.fillRect(0, 0, 1920, 1080);
-  g.fillStyle = sun;
-  g.beginPath();
-  g.arc(1700, 120, 70, 0, Math.PI * 2);
-  g.fill();
+  smileSun(g, 1700, 130, 62, sun, light ? 0 : t);
   if (light) return;
-  g.fillStyle = 'rgba(255,255,255,0.85)';
   for (let i = 0; i < 5; i++) {
     const x = ((i * 470 + t * (14 + i * 4)) % 2300) - 200;
-    const y = 60 + (i % 3) * 45;
-    g.beginPath();
-    g.arc(x, y, 34, 0, Math.PI * 2);
-    g.arc(x + 40, y - 14, 42, 0, Math.PI * 2);
-    g.arc(x + 86, y, 32, 0, Math.PI * 2);
-    g.fill();
+    const y = 70 + (i % 3) * 50;
+    stickerCloud(g, x, y, 0.8 + (i % 2) * 0.25);
   }
 }
 
