@@ -217,7 +217,40 @@ function GameView({ session }: { session: Session }) {
       session.frame(now);
       g.setTransform(scale, 0, 0, scale, 0, 0);
       const tt = now / 1000;
+      // Événements surprises : écran retourné ou qui tremble
+      const ev = session.phase === 'game' ? session.event : null;
+      if (ev?.kind === 'miroir') {
+        g.translate(W, 0);
+        g.scale(-1, 1);
+      }
+      if (ev?.kind === 'seisme') g.translate(Math.sin(tt * 60) * 14, Math.cos(tt * 47) * 10);
       if (session.game) session.game.render(g, tt);
+      g.setTransform(scale, 0, 0, scale, 0, 0);
+      if (ev?.kind === 'disco') {
+        g.globalAlpha = 0.22;
+        g.fillStyle = ['#ff4f9a', '#ffd60a', '#2ec5ff', '#1fc9a0', '#9b5cff'][Math.floor(tt * 6) % 5];
+        g.fillRect(0, 0, W, H);
+        g.globalAlpha = 1;
+        // Boule à facettes
+        g.fillStyle = '#fff';
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.arc(110, 90, 50, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+      }
+      if (ev && ev.t > 0) {
+        // Petite jauge de l'événement en haut à gauche
+        g.fillStyle = INK;
+        g.beginPath();
+        g.roundRect(40, 150, 300, 30, 15);
+        g.fill();
+        g.fillStyle = SOLEIL;
+        g.beginPath();
+        g.roundRect(40, 150, Math.max(30, 300 * (ev.t / ev.dur)), 30, 15);
+        g.fill();
+      }
       drawTimer(g, session, tt);
       drawIntro(g, session);
       if (session.paused) drawPause(g, session, tt);

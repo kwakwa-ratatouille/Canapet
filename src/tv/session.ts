@@ -41,6 +41,17 @@ const COUNT = 3;
 export const TOURNAMENT_LEN = 5;
 const MAX_PLAYERS = 12;
 
+/** Événements surprises des jeux d'action : quelques secondes de chaos. */
+export type EventKind = 'turbo' | 'ralenti' | 'miroir' | 'inverse' | 'disco' | 'seisme';
+const EVENTS: Record<EventKind, { dur: number; fr: string; en: string }> = {
+  turbo: { dur: 7, fr: 'TURBO ! Tout va plus vite !', en: 'TURBO! Everything speeds up!' },
+  ralenti: { dur: 6, fr: 'Ralenti… tout… doucement…', en: 'Slow… mo… tion…' },
+  miroir: { dur: 8, fr: 'Effet miroir ! L’écran est à l’envers !', en: 'Mirror mode! The screen is flipped!' },
+  inverse: { dur: 7, fr: 'Commandes inversées !', en: 'Controls reversed!' },
+  disco: { dur: 7, fr: 'Soirée disco !', en: 'Disco time!' },
+  seisme: { dur: 5, fr: 'Tremblement de canapé !', en: 'Sofa quake!' },
+};
+
 export class Session {
   players = new Map<string, Player>();
   phase: Phase = 'lobby';
@@ -73,6 +84,9 @@ export class Session {
   private lastCall = 0;
   /** Bandeau du commentateur à la télé. */
   toast = { text: '', t: 0 };
+  /** Événement surprise en cours (t = secondes restantes). */
+  event: { kind: EventKind; t: number; dur: number } | null = null;
+  private nextEvent = 0;
   /** Numéro de la dernière partie terminée. */
   private gameNo = 0;
   version = 0;
@@ -192,6 +206,7 @@ export class Session {
       case 'in':
       case 'act':
         // Les envois de fichiers (Photo Roulette) passent même pendant le tuto
+        if (m.t === 'in' && this.event?.kind === 'inverse') m = { ...m, x: -m.x, y: -m.y };
         if (this.phase === 'game' && this.game && (this.clock >= this.intro + COUNT || (m.t === 'act' && m.a === 'up'))) this.game.input(pid, m);
         else if (this.phase === 'game' && this.clock < this.intro && (m.t !== 'in' || m.a || m.b) && !(m.t === 'act' && m.a === 'up')) this.markReady(pid);
         return;
@@ -342,6 +357,8 @@ export class Session {
     this.leadPid = '';
     this.lastCall = 0;
     this.toast = { text: '', t: 0 };
+    this.event = null;
+    this.nextEvent = 25 + Math.random() * 10;
     this.paused = false;
     this.lastStatus = 0;
     this.timeUp = 0;
@@ -430,7 +447,10 @@ export class Session {
           }
           continue;
         }
-        this.game.update(STEP);
+        // Turbo / ralenti : le jeu avance plus ou moins vite
+        const speed = this.event?.kind === 'turbo' ? 1.35 : this.event?.kind === 'ralenti' ? 0.55 : 1;
+        this.game.update(STEP * speed);
+        this.stepEvent();
         if (this.clock - this.lastStatus >= 1) {
           this.sendStatus();
           this.commentate();
@@ -447,6 +467,30 @@ export class Session {
         return;
       }
     }
+  }
+
+  /** Lance de temps en temps un événement surprise (jeux d'action seulement). */
+  private stepEvent() {
+    if (this.event) {
+      this.event.t -= STEP;
+      if (this.event.t <= 0) this.event = null;
+      return;
+    }
+    const action = this.def && (this.def.layout === 'stick' || this.def.layout === 'tap');
+    const play = this.clock - this.intro - COUNT;
+    const left = this.timeLeft();
+    if (!action || play < this.nextEvent || (left !== null && left < 12)) return;
+    const kinds = Object.keys(EVENTS) as EventKind[];
+    // La course de pouces se joue en tapotant : pas de commandes inversées
+    const pool = this.def!.layout === 'tap' ? kinds.filter((k) => k !== 'inverse') : kinds;
+    const kind = pool[Math.floor(Math.random() * pool.length)];
+    const e = EVENTS[kind];
+    this.event = { kind, t: e.dur, dur: e.dur };
+    this.nextEvent = play + e.dur + 25 + Math.random() * 15;
+    const text = this.lang() === 'fr' ? e.fr : e.en;
+    this.toast = { text: '⚡ ' + text, t: 3 };
+    speak(text, this.lang());
+    sfx.hurry();
   }
 
   /** Le commentateur réagit quand la tête de course change (pas plus d'une fois toutes les 9 s). */
