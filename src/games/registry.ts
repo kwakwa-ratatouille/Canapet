@@ -13,6 +13,7 @@ import { thumbRace } from './thumbRace';
 import { traitor } from './traitor';
 import { tumble } from './tumble';
 import { undercover } from './undercover';
+import { roulette } from './roulette';
 import type { GameBase, GameDef } from './types';
 
 /** Icône et couleur de chaque jeu (fichiers de la DA : public/da/jeux/<slug>.svg). */
@@ -31,10 +32,11 @@ const ART: Record<string, string> = {
   plateau: 'le-grand-plateau',
   combat: 'coussin-clash',
   undercover: 'undercover',
+  roulette: 'photo-roulette',
 };
 
 /** Couleur des jeux ajoutés après la DA. */
-const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff' };
+const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f' };
 
 const withArt = (g: GameBase): GameDef => {
   const slug = ART[g.id];
@@ -54,6 +56,7 @@ export const GAMES: GameDef[] = [
   kitchen,
   traitor,
   undercover,
+  roulette,
   scribble,
   board,
   clash,

@@ -205,6 +205,24 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  roulette: {
+    fr: {
+      goal: 'Devine de quel téléphone viennent les photos et vidéos !',
+      steps: [
+        ['📷', 'Choisis jusqu’à 8 photos ou petites vidéos dans ta galerie'],
+        ['📺', 'La télé en montre une à la fois, tirées au hasard'],
+        ['🤔', 'Devine à qui elle est sur ton téléphone : vite = plus de points. Si c’est la tienne, bluffe !'],
+      ],
+    },
+    en: {
+      goal: 'Guess which phone the photos and videos came from!',
+      steps: [
+        ['📷', 'Pick up to 8 photos or short videos from your gallery'],
+        ['📺', 'The TV shows them one at a time, at random'],
+        ['🤔', 'Guess whose it is on your phone: faster = more points. If it’s yours, bluff!'],
+      ],
+    },
+  },
   dessin: {
     fr: {
       goal: 'Fais deviner ton dessin… ou devine celui des autres !',

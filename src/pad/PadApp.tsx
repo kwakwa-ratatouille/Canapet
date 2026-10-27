@@ -16,6 +16,8 @@ import { BluffPad } from './BluffPad';
 import { ScribblePad } from './ScribblePad';
 import { TraitorPad } from './TraitorPad';
 import { UndercoverPad } from './UndercoverPad';
+import { RoulettePad } from './RoulettePad';
+import type { RoulettePadData } from '../games/rouletteShared';
 import type { UndercoverPadData } from '../games/undercoverShared';
 import { BoardPad } from './BoardPad';
 import type { BoardPadData } from '../games/boardShared';
@@ -409,6 +411,7 @@ function PadScreenView({
       );
     case 'play':
       if (screen.game === 'plateau' && screen.data) return <BoardPad data={screen.data as BoardPadData} lang={lang} send={send} />;
+      if (screen.game === 'roulette' && screen.data) return <RoulettePad data={screen.data as RoulettePadData} lang={lang} send={send} />;
       if (screen.game === 'undercover' && screen.data) return <UndercoverPad data={screen.data as UndercoverPadData} lang={lang} send={send} />;
       if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
       if (screen.game === 'dessin' && screen.data) return <ScribblePad data={screen.data as ScribblePadData} lang={lang} send={send} />;

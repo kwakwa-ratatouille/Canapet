@@ -38,7 +38,11 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 11. ✅ Cuisine en Panique (`kitchen.ts`) : coop 1-8, caisses/planche/feux/assiettes/passe-plat, 3 recettes, bots commis.
 12. ✅ Le Grand Plateau (`board.ts` + `BoardPad.tsx`) : dé sur le téléphone, bonbons, Coussins d’or, mini-jeux Tapotage et Réflexe.
 13. ✅ Mode famille : interrupteur sur le téléphone de l’hôte (salon), mémorisé sur la télé (`session.family`, `ctx.family`), badge à la télé, « pet » → « pouic », PROUT → POUF, mots limites retirés de Gribouillis. Touche H en aperçu.
-14. Ensuite : comptes Google (Firebase), activer le Chromecast (identifiant Google Cast à fournir).
+14. ✅ Undercover (`undercover.ts` + `UndercoverPad.tsx`, mots dans `undercoverWords.ts`) : indices tapés sur le téléphone et affichés à la télé, Mr White peut deviner, 10 thèmes (le piquant caché en mode famille). Touche U.
+15. ✅ Photo Roulette (`roulette.ts` + `RoulettePad.tsx`) : photos (réduites à 960 px) et vidéos (20 s / 8 Mo) envoyées en morceaux de 48 Ko (`act up`, acceptés même pendant le tuto), 3 par joueur tirées au hasard, 12 manches, vote rapide = plus de points, le propriétaire marque s’il trompe la majorité. Rien n’est gardé. Touche J.
+16. Ensuite : activer le Chromecast (identifiant Google Cast à fournir), refonte graphique des persos (direction à choisir avec le propriétaire).
+
+Manette : boutons X (`c`) et Y (`d`) dans le message `in`, croix façon Switch dans `Stick.tsx` (libellés par jeu dans `LABELS`). La Dégringolade : 3 vies, 12 tronçons, glace/gants/pluie. Flèches : esquive X, coffre, bulle.
 Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 ## Cartes et ajouts (oct. 2026)

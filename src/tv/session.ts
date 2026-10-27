@@ -184,8 +184,9 @@ export class Session {
       case 'tap':
       case 'in':
       case 'act':
-        if (this.phase === 'game' && this.game && this.clock >= this.intro + COUNT) this.game.input(pid, m);
-        else if (this.phase === 'game' && this.clock < this.intro && (m.t !== 'in' || m.a || m.b)) this.markReady(pid);
+        // Les envois de fichiers (Photo Roulette) passent même pendant le tuto
+        if (this.phase === 'game' && this.game && (this.clock >= this.intro + COUNT || (m.t === 'act' && m.a === 'up'))) this.game.input(pid, m);
+        else if (this.phase === 'game' && this.clock < this.intro && (m.t !== 'in' || m.a || m.b) && !(m.t === 'act' && m.a === 'up')) this.markReady(pid);
         return;
       case 'team':
         if (!p || this.phase !== 'lobby') return;

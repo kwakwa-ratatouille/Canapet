@@ -57,6 +57,7 @@ export function TvApp() {
         g: 'dessin',
         v: 'traitre',
         u: 'undercover',
+        j: 'roulette',
         c: 'combat',
         w: 'bagarre',
         o: 'cuisine',
@@ -195,7 +196,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
       </div>
       <p className="lobby-hint">
         {host ? t(lang, 'hostLaunches', { name: host.name }) : t(lang, 'waitingPlayers')}
-        {PREVIEW && <span className="kbd"> · Entrée, D, B, S, P, K, A, W, O, V, G, Y, C, U = jeux · T = Tournoi · E = équipes</span>}
+        {PREVIEW && <span className="kbd"> · Entrée, D, B, S, P, K, A, W, O, V, G, Y, C, U, J = jeux · T = Tournoi · E = équipes</span>}
       </p>
     </div>
   );
