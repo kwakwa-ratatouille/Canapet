@@ -55,6 +55,15 @@ const BOARDS: { name: { fr: string; en: string }; bg: string; inner: string; spo
       return { x: 960 + x * 46, y: 520 - y * 27 };
     },
   },
+  {
+    name: { fr: 'L’Étoile', en: 'The Star' },
+    bg: '#e3dbff',
+    inner: '#fff6c9',
+    spot: (a) => {
+      const r = 1 - 0.28 * Math.pow(Math.abs(Math.cos(a * 2.5)), 2);
+      return { x: 960 + Math.cos(a) * 780 * r, y: 560 + Math.sin(a) * 400 * r };
+    },
+  },
 ];
 // Cases du plateau en cours (une seule partie à la fois).
 let SPOTS: { x: number; y: number }[] = [];

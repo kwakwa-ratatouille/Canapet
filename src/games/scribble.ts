@@ -11,6 +11,12 @@ const DRAW_TIME = 70;
 const MAX_TURNS = 8;
 
 const WORDS: [string, string][] = [
+  ['trampoline', 'trampoline'], ['hamac', 'hammock'], ['pirate', 'pirate'], ['robot', 'robot'], ['astronaute', 'astronaut'],
+  ['cactus', 'cactus'], ['koala', 'koala'], ['hérisson', 'hedgehog'], ['pieuvre', 'octopus'], ['flamant rose', 'flamingo'],
+  ['glace', 'ice cream'], ['hamburger', 'burger'], ['croissant', 'croissant'], ['pastèque', 'watermelon'], ['popcorn', 'popcorn'],
+  ['montgolfière', 'hot air balloon'], ['sous-marin', 'submarine'], ['skateboard', 'skateboard'], ['trottinette', 'scooter'], ['tracteur', 'tractor'],
+  ['arc-en-ciel', 'rainbow'], ['tornade', 'tornado'], ['éclair', 'lightning'], ['igloo', 'igloo'], ['phare', 'lighthouse'],
+  ['guitare', 'guitar'], ['micro', 'microphone'], ['lunettes', 'glasses'], ['chaussette', 'sock'], ['dentiste', 'dentist'],
   ['banane', 'banana'], ['pizza', 'pizza'], ['fantôme', 'ghost'], ['dragon', 'dragon'], ['vélo', 'bike'],
   ['château', 'castle'], ['requin', 'shark'], ['fusée', 'rocket'], ['parapluie', 'umbrella'], ['pingouin', 'penguin'],
   ['volcan', 'volcano'], ['sirène', 'mermaid'], ['licorne', 'unicorn'], ['escargot', 'snail'], ['bonhomme de neige', 'snowman'],

@@ -80,6 +80,18 @@ const STAGES: Stage[] = [
     ],
   },
   {
+    id: 'table',
+    name: { fr: 'La Table de la cuisine', en: 'The Kitchen Table' },
+    wall: ['#fff1c9', '#ffe3c4'],
+    main: { x: 760, y: 920, w: 1280, h: 120 },
+    plats: [
+      { x: 860, y: 740, w: 220 },
+      { x: 1720, y: 740, w: 220 },
+      { x: 1290, y: 700, w: 220, move: { ax: 260, ay: 0, freq: 0.35, ph: 0 } },
+      { x: 1290, y: 520, w: 220 },
+    ],
+  },
+  {
     id: 'bain',
     name: { fr: 'La Baignoire', en: 'The Bathtub' },
     wall: ['#cff6ec', '#e3f2ff'],
@@ -1153,6 +1165,18 @@ function drawStage(g: CanvasRenderingContext2D, stage: Stage, M: Box, plats: Pla
       g.fillStyle = INK;
       g.fillRect(M.x + 50, M.y + M.h, 30, 70);
       g.fillRect(M.x + M.w - 80, M.y + M.h, 30, 70);
+      break;
+    }
+    case 'table': {
+      // Nappe à carreaux et pieds de table
+      stickerRect(g, M.x, M.y, M.w, M.h, 20, '#ff6b9a');
+      g.fillStyle = 'rgba(255,255,255,0.55)';
+      for (let x = M.x + 20; x < M.x + M.w - 40; x += 80) g.fillRect(x, M.y + 14, 40, M.h - 40);
+      g.fillStyle = '#c98a5a';
+      g.fillRect(M.x + 60, M.y + M.h, 40, 220);
+      g.fillRect(M.x + M.w - 100, M.y + M.h, 40, 220);
+      g.strokeRect(M.x + 60, M.y + M.h, 40, 220);
+      g.strokeRect(M.x + M.w - 100, M.y + M.h, 40, 220);
       break;
     }
     case 'etagere': {

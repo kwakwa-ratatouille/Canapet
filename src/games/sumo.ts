@@ -84,6 +84,28 @@ const MAPS = [
     under: '#ff4f9a',
     bumpers: [0, 1, 2, 3, 4, 5].map((k) => [Math.cos((k * Math.PI) / 3) * 300, Math.sin((k * Math.PI) / 3) * 300]) as [number, number][],
   },
+  {
+    id: 'gaufre',
+    name: { fr: 'La Gaufre', en: 'The Waffle' },
+    shrink: true,
+    grip: 0.3,
+    acc: 1,
+    plate: '#ffd28a',
+    rim: '#e8a35a',
+    under: '#c97a35',
+    bumpers: [[-170, -170], [170, -170], [-170, 170], [170, 170]] as [number, number][],
+  },
+  {
+    id: 'tarte',
+    name: { fr: 'La Tarte au citron glissante', en: 'The Slippery Lemon Pie' },
+    shrink: true,
+    grip: 0.7,
+    acc: 0.75,
+    plate: '#fff07a',
+    rim: '#ffffff',
+    under: '#e8c240',
+    bumpers: [[0, 0]] as [number, number][],
+  },
 ];
 const BUMPER_R = 52;
 
