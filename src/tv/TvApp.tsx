@@ -212,6 +212,7 @@ function GameView({ session }: { session: Session }) {
       g.setTransform(scale, 0, 0, scale, 0, 0);
       const tt = now / 1000;
       if (session.game) session.game.render(g, tt);
+      drawTimer(g, session, tt);
       drawIntro(g, session);
       raf = requestAnimationFrame(loop);
     };
@@ -252,6 +253,86 @@ export function stickerText(g: CanvasRenderingContext2D, text: string, x: number
   g.fillStyle = fill;
   g.fillText(text, x, y);
   g.restore();
+}
+
+/** Chrono de la partie : pastille qui se vide, rouge et qui bat sur les 10 dernières secondes. */
+function drawTimer(g: CanvasRenderingContext2D, session: Session, t: number) {
+  const left = session.timeLeft();
+  const def = session.def;
+  if (left === null || !def?.limit) return;
+  const lang = session.lang();
+  if (session.timeUp > 0) {
+    // Grand bandeau « Temps écoulé ! »
+    const k = Math.min(1, (2.2 - session.timeUp) * 5);
+    g.save();
+    g.fillStyle = 'rgba(58, 33, 64, 0.35)';
+    g.fillRect(0, 0, 1920, 1080);
+    g.translate(960, 540);
+    g.rotate(-0.06);
+    g.scale(0.4 + 0.6 * k + Math.sin(t * 12) * 0.02, 0.4 + 0.6 * k + Math.sin(t * 12) * 0.02);
+    stickerText(g, lang === 'fr' ? 'TEMPS ÉCOULÉ !' : "TIME'S UP!", 0, 50, 150, ROSE);
+    g.restore();
+    return;
+  }
+  const intro = session.introState();
+  if (intro.count > 0) return;
+  const s = Math.ceil(left);
+  const hot = left <= 10;
+  const warm = left <= 30;
+  const x = 960;
+  const y = def.timerTop ? 74 : 1006;
+  const beat = hot ? 1 + 0.14 * Math.pow(left % 1, 3) : 1;
+  g.save();
+  g.translate(x, y);
+  g.scale(beat, beat);
+  const w = 250;
+  const h = 86;
+  // Ombre plate puis pastille
+  g.fillStyle = INK;
+  g.beginPath();
+  g.roundRect(-w / 2, -h / 2 + 8, w, h, h / 2);
+  g.fill();
+  g.fillStyle = hot ? ROSE : warm ? SOLEIL : '#fff';
+  g.strokeStyle = INK;
+  g.lineWidth = 6;
+  g.beginPath();
+  g.roundRect(-w / 2, -h / 2, w, h, h / 2);
+  g.fill();
+  g.stroke();
+  // Cadran qui se vide
+  const cx = -w / 2 + 46;
+  g.fillStyle = '#fff';
+  g.beginPath();
+  g.arc(cx, 0, 30, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = hot ? '#ff3b3b' : MENTHE;
+  g.beginPath();
+  g.moveTo(cx, 0);
+  g.arc(cx, 0, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (left / def.limit));
+  g.closePath();
+  g.fill();
+  g.beginPath();
+  g.arc(cx, 0, 30, 0, Math.PI * 2);
+  g.lineWidth = 5;
+  g.stroke();
+  g.fillStyle = INK;
+  g.fillRect(cx - 8, -44, 16, 10);
+  // Temps
+  g.font = '700 52px Fredoka, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  // Les 10 dernières secondes : juste le nombre, en gros
+  const label = hot ? String(s) : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  g.fillStyle = hot ? '#fff' : INK;
+  if (hot) {
+    g.font = '700 60px Fredoka, sans-serif';
+    g.lineWidth = 8;
+    g.strokeStyle = INK;
+    g.strokeText(label, 34, 3);
+  }
+  g.fillText(label, 34, 3);
+  g.restore();
+  g.textBaseline = 'alphabetic';
 }
 
 function drawIntro(g: CanvasRenderingContext2D, session: Session) {

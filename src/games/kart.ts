@@ -580,5 +580,6 @@ export const kart: GameBase = {
   max: 8,
   botFill: 4,
   music: 'race',
+  limit: 180,
   create,
 };

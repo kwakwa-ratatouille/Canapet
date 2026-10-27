@@ -1,3 +1,4 @@
+import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 // Sumo Tamponneur : chacun dans sa bouée sur une arène qui rétrécit. On se pousse dans la limonade.
 // Stick = avancer · A = turbo (maintenir pour charger) · B = ancre (lourd et freiné). 3 vies, le dernier debout gagne.
 // Des bonus apparaissent : piment (pousse 2× plus fort), bouclier (on ne recule presque plus), géant (gros et lourd).
@@ -790,6 +791,6 @@ export const sumo: GameBase = {
   max: 12,
   botFill: 4,
   music: 'race',
+  limit: 100,
   create,
-};import { TEAMS, allies, sidesLeft, winnerName } from './teams';
-
+};

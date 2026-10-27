@@ -215,5 +215,6 @@ export const thumbRace: GameBase = {
   max: 12,
   botFill: 4,
   music: 'race',
+  limit: 45,
   create,
 };

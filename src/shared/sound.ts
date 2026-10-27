@@ -151,6 +151,25 @@ export const sfx = {
     [72, 76, 79, 84].forEach((n, i) => tone(midi(n), 0.3, 'square', 0.12, i * 0.12));
     tone(midi(88), 0.6, 'triangle', 0.2, 0.5);
   },
+  /** « Plus que 30 secondes ! » : petite montée pressée. */
+  hurry() {
+    [76, 79, 83, 88].forEach((n, i) => tone(midi(n), 0.12, 'square', 0.1, i * 0.08));
+    tone(midi(91), 0.3, 'triangle', 0.2, 0.34);
+  },
+  /** Tic-tac des 10 dernières secondes (plus aigu sur les 3 dernières). */
+  countdown(n: number) {
+    const hi = n <= 3;
+    tone(hi ? 1480 : 1050, 0.09, 'square', hi ? 0.16 : 0.1);
+    noise(0.04, 0.12, 3200, 0, 3);
+    if (hi) tone(hi ? 740 : 525, 0.18, 'triangle', 0.22, 0.01);
+  },
+  /** Fin du chrono : grosse sirène puis coup de sifflet. */
+  timeUp() {
+    tone(196, 0.75, 'sawtooth', 0.16);
+    tone(98, 0.75, 'square', 0.12);
+    tone(1900, 0.45, 'sine', 0.22, 0.8, 2600);
+    tone(1900, 0.25, 'sine', 0.2, 1.3, 2400);
+  },
   finish() {
     tone(midi(79), 0.12, 'square', 0.12);
     tone(midi(84), 0.25, 'square', 0.12, 0.1);
@@ -285,6 +304,11 @@ function drum(kind: 'kick' | 'snare' | 'hat' | 'clap', at: number) {
 // Un tour de morceau = 32 mesures : A (couplet), A' (couplet, fin variée), B (pont), A.
 let timer = 0;
 let current = '';
+/** Accélération de la musique (fin de chrono). */
+let rush = 1;
+export function setMusicRush(r: number) {
+  rush = r;
+}
 let nextTime = 0;
 let stepIdx = 0;
 let melody: (number | null)[][] = [];
@@ -337,7 +361,7 @@ function schedule() {
   const c = ctx();
   if (!c || !current) return;
   const tr = TRACKS[current];
-  const eighth = 60 / tr.bpm / 2;
+  const eighth = 60 / (tr.bpm * rush) / 2;
   while (nextTime < c.currentTime + 0.2) {
     const bar = Math.floor(stepIdx / 8) % 32;
     const s = stepIdx % 8;
@@ -383,6 +407,7 @@ function schedule() {
 export function playMusic(track: keyof typeof TRACKS | '') {
   if (track === current) return;
   current = track;
+  rush = 1;
   clearInterval(timer);
   if (!track) return;
   const c = ctx();

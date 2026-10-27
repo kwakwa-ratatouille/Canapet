@@ -7,7 +7,7 @@ import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
 import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
-import { playMusic, setFamily, sfx, speak } from '../shared/sound';
+import { playMusic, setFamily, setMusicRush, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
 
 export interface Player extends Profile {
@@ -68,6 +68,8 @@ export class Session {
   private announced = false;
   private lastCount = 0;
   version = 0;
+  /** Secondes restantes de l'écran « Temps écoulé ! » avant les résultats. */
+  timeUp = 0;
 
   constructor(preview: boolean) {
     setFamily(this.family);
@@ -305,6 +307,7 @@ export class Session {
       refresh: () => this.pushScreens(),
     });
     this.phase = 'game';
+    this.timeUp = 0;
     this.clock = 0;
     this.acc = 0;
     this.announced = false;
@@ -378,7 +381,18 @@ export class Session {
         if (c > 0) sfx.tick();
         else sfx.go();
       }
-      if (this.clock >= this.intro + COUNT) this.game.update(STEP);
+      if (this.clock >= this.intro + COUNT) {
+        if (this.timeUp > 0) {
+          this.timeUp -= STEP;
+          if (this.timeUp <= 0) {
+            this.endGame();
+            return;
+          }
+          continue;
+        }
+        this.game.update(STEP);
+        if (!this.game.over && this.limitTick()) continue;
+      }
       const lead = this.game.leader?.();
       if (lead && !this.announced) {
         this.announced = true;
@@ -389,6 +403,33 @@ export class Session {
         return;
       }
     }
+  }
+
+  /** Secondes de jeu restantes au chrono (null si le jeu n'a pas de temps maximum). */
+  timeLeft(): number | null {
+    const lim = this.def?.limit;
+    if (!lim || this.phase !== 'game') return null;
+    return Math.max(0, lim - Math.max(0, this.clock - this.intro - COUNT));
+  }
+
+  /** Chrono : annonce à 30 s, tic-tac sur les 10 dernières, puis fin de partie. Vrai quand le temps est écoulé. */
+  private limitTick(): boolean {
+    const left = this.timeLeft();
+    if (left === null) return false;
+    const prev = left + STEP;
+    const fr = this.lang() === 'fr';
+    if (prev > 30 && left <= 30) {
+      sfx.hurry();
+      setMusicRush(1.18);
+      speak(fr ? 'Plus que 30 secondes !' : '30 seconds left!', this.lang());
+    }
+    if (left > 0 && left <= 10 && Math.ceil(left) !== Math.ceil(prev)) sfx.countdown(Math.ceil(left));
+    if (left > 0) return false;
+    this.timeUp = 2.2;
+    playMusic('');
+    sfx.timeUp();
+    speak(fr ? 'Temps écoulé !' : "Time's up!", this.lang());
+    return true;
   }
 
   /** Un téléphone qui ne donne plus de nouvelles depuis 9 s est considéré parti. */

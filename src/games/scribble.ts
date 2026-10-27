@@ -304,5 +304,6 @@ export const scribble: GameBase = {
   max: 12,
   botFill: 0,
   music: 'lobby',
+  limit: 300,
   create,
 };

@@ -482,5 +482,6 @@ export const archers: GameBase = {
   max: 8,
   botFill: 4,
   music: 'tumble',
+  limit: 150,
   create,
 };

@@ -476,5 +476,6 @@ export const board: GameBase = {
   max: 8,
   botFill: 4,
   music: 'lobby',
+  limit: 480,
   create,
 };

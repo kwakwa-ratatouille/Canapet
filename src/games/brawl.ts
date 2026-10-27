@@ -1,3 +1,4 @@
+import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 // Bagarre Molle : persos tout mous qui se baffent, s'attrapent et se jettent dans la mer de crème.
 // A = saut · B court = baffe · B maintenu = attraper, relâcher = jeter (direction du stick). Trop de baffes = sonné.
 // Premier à 2 manches. Chaque carte a son piège : vent, gouttes de sirop, plateformes qui bougent.
@@ -881,6 +882,6 @@ export const brawl: GameBase = {
   max: 8,
   botFill: 4,
   music: 'tumble',
+  limit: 150,
   create,
-};import { TEAMS, allies, sidesLeft, winnerName } from './teams';
-
+};

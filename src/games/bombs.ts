@@ -1,9 +1,10 @@
+import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 // Pétards Mouillés : arène en grille, on pose des pétards qui éclatent en croix d'éclaboussures.
 // Stick = bouger · A = poser un pétard · B = shooter dans un pétard. Le dernier au sec gagne.
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { roundRectText } from './draw';
-import { TEAMS, allies, sidesLeft, winnerName } from './teams';
+
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
 
@@ -541,5 +542,6 @@ export const bombsGame: GameBase = {
   max: 8,
   botFill: 4,
   music: 'tumble',
+  limit: 120,
   create,
 };

@@ -1,3 +1,4 @@
+import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 // Coussin Clash : combat de plateforme dans le salon. Plus on a de %, plus on vole loin.
 // A = saut (double saut) · B = coup selon la direction du stick (neutre, côté, haut, bas) · bas + B jauge pleine = super coup.
 // La caméra suit les joueurs ; des objets tombent du ciel (tapette, coussin-bombe, cœur, étoile).
@@ -1218,6 +1219,7 @@ export const clash: GameBase = {
   max: 8,
   botFill: 4,
   music: 'tumble',
+  limit: 150,
+  timerTop: true,
   create,
-};import { TEAMS, allies, sidesLeft, winnerName } from './teams';
-
+};

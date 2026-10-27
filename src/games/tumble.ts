@@ -1245,5 +1245,6 @@ export const tumble: GameBase = {
   max: 12,
   botFill: 4,
   music: 'tumble',
+  limit: 120,
   create,
 };

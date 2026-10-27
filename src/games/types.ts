@@ -49,6 +49,10 @@ export interface GameBase {
   /** Nombre de participants minimum : on complète avec des bots. */
   botFill: number;
   music: 'race' | 'lobby' | 'tumble';
+  /** Temps de jeu maximum (s) : chrono à l'écran, la partie s'arrête à zéro avec le classement du moment. */
+  limit?: number;
+  /** Chrono en haut de l'écran (quand le bas est pris par l'interface du jeu). */
+  timerTop?: boolean;
   soon?: boolean;
   create?(runners: Runner[], ctx: GameCtx): GameInstance;
 }

@@ -473,5 +473,6 @@ export const bluff: GameBase = {
   max: 6,
   botFill: 4,
   music: 'lobby',
+  limit: 420,
   create,
 };

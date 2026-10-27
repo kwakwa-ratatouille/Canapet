@@ -67,6 +67,8 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 ## Mode équipes et musique
 
+- **Chrono** : `limit` (+ `timerTop`) dans chaque `GameBase` ; la session (`limitTick`, `timeLeft`) annonce « Plus que 30 secondes ! » et accélère la musique (`setMusicRush`), tic-tac sur les 10 dernières, sirène + « Temps écoulé ! » (2,2 s) puis résultats avec le classement du moment. Pastille dessinée par `drawTimer` (TvApp). Pas de chrono pour Cuisine (le sien) ni Traître.
+
 - **Équipes** (interrupteur de l’hôte, touche E) : Fraise 🍓 contre Menthe 🌿 (`src/games/teams.ts`), chacun choisit son camp sur sa manette, les bots équilibrent. Tous les jeux : chaque équipe marque la moyenne des places de ses joueurs (juste à 3 contre 2), l’équipe gagnante prend 10 pts chacun, l’autre 4 (égalité 7). Sumo, Pétards, Bagarre, Clash, Flèches : pas de coups entre coéquipiers (sauf Pétards), fin quand il reste un seul camp (`allies`, `sidesLeft`). Sans équipes = mêlée générale.
 - **Musique** (`sound.ts`) : compositeur maison, grille couplet + pont par ambiance, mélodie réinventée à chaque tour (A A' B A, 32 mesures), basse, batterie, nappe, bus musique filtré et plus bas que les bruitages.
 
