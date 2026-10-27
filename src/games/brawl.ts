@@ -42,7 +42,7 @@ const MAPS: MapDef[] = [
     sea: '#fff6e0',
     seaLine: '#f0d9a8',
     plat: '#7bd13b',
-    plats: [[360, 760, 1200], [110, 560, 270, 70], [1540, 560, 270, 70], [780, 470, 360, 50]],
+    plats: [[360, 760, 1200], [110, 600, 270, 70], [1540, 600, 270, 70], [780, 600, 360, 50]],
   },
   {
     name: { fr: 'Le Pont venteux', en: 'The Windy Bridge' },
@@ -99,6 +99,7 @@ interface B extends Runner {
   lastA: boolean;
   lastB: boolean;
   lastC: boolean;
+  grabAt: number;
   kos: number;
   wins: number;
   lastHitBy: number;
@@ -159,6 +160,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     lastA: false,
     lastB: false,
     lastC: false,
+    grabAt: -9,
     kos: 0,
     wins: 0,
     lastHitBy: -1,
@@ -269,7 +271,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function grab(i: number) {
     const b = bs[i];
-    if (b.holding >= 0 || b.ko > 0 || b.heldBy >= 0) return;
+    // Pas de prise en rafale : 1,2 s entre deux essais
+    if (b.holding >= 0 || b.ko > 0 || b.heldBy >= 0 || time - b.grabAt < 1.2) return;
+    b.grabAt = time;
     const j = nearest(i, 100);
     if (j < 0) return;
     const o = bs[j];
@@ -687,11 +691,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       bs.forEach((b, i) => {
         if (!b.alive) return;
-        // Bras en spaghetti
+        // Bras en spaghetti : seulement pour une baffe ou une prise (sinon le perso a déjà ses bras)
         const sx = b.x;
         const sy = b.y - 52;
         const reach = b.punchT > 0.1 ? 78 : b.holding >= 0 ? 52 : 26;
-        for (const side of [-1, 1]) {
+        if (b.punchT > 0.1 || b.holding >= 0) for (const side of [-1, 1]) {
           const fx = sx + b.dir * reach + side * 6;
           const fy = sy + (b.holding >= 0 ? -10 : 10 + side * 6) + Math.sin(t * 8 + side + i) * 4;
           g.strokeStyle = INK;
