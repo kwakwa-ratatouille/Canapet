@@ -378,13 +378,29 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
               }
           }
         }
+      // Sprint : on chipe le ballon d un porteur adverse tout proche, quel que soit le côté
+      for (const x of ps) {
+        if (x.dash <= 0 || balls.some((bl) => bl.holder === x)) continue;
+        for (const bl of balls) {
+          const y = bl.holder;
+          if (!y || y.side === x.side || Math.hypot(y.x - x.x, y.y - x.y) > R * 2 + 40) continue;
+          bl.holder = x;
+          bl.holdT = 0;
+          bl.touch = x;
+          y.stun = 0.7;
+          pop(x.x, x.y - 120, fr ? 'VOLÉ !' : 'STOLEN!');
+          sfx.boing();
+          break;
+        }
+      }
       // Ballons
       for (const b of balls) {
         if (b.holder) {
           const h = b.holder;
           b.holdT += dt;
-          b.x = h.x;
-          b.y = h.y - 70;
+          const fl = Math.hypot(h.fx, h.fy) || 1;
+          b.x = h.x + (h.fx / fl) * (R + BALL_R - 4);
+          b.y = h.y - 4 + (h.fy / fl) * 12;
           // On ne peut pas garder le ballon indéfiniment
           if (b.holdT > HOLD_MAX) throwBall(h, b, 500);
           continue;
@@ -397,8 +413,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           // Tir sur un porteur adverse : il lâche son ballon
           const theirs = balls.find((o) => o.holder === p);
           if (fast && b.thrower && b.thrower !== p && b.thrower.side !== p.side && theirs) {
-            throwBall(p, theirs, 600);
+            theirs.holder = null;
+            const bx = b.thrower.x - p.x;
+            const by = b.thrower.y - p.y;
+            const bl = Math.hypot(bx, by) || 1;
+            theirs.vx = (bx / bl) * 900;
+            theirs.vy = (by / bl) * 900;
+            theirs.touch = b.thrower;
             theirs.thrower = null;
+            theirs.throwT = 0.3;
             p.stun = 0.5;
             pop(p.x, p.y - 120, fr ? 'LÂCHÉ !' : 'DROPPED!');
           }
