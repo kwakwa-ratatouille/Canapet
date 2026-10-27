@@ -70,7 +70,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const nTeams = ctx.opts.teams === 4 ? 4 : 2;
   const nBalls = Math.max(1, Math.min(3, ctx.opts.balls ?? 1));
   // Terrain : large à 2 équipes, carré à 4
-  const F = nTeams === 4 ? { x: 480, y: 95, w: 960, h: 790 } : { x: 140, y: 170, w: 1640, h: 820 };
+  const F = nTeams === 4 ? { x: 300, y: 95, w: 1340, h: 800 } : { x: 140, y: 170, w: 1640, h: 820 };
   const cx = F.x + F.w / 2;
   const cy = F.y + F.h / 2;
   /** But de chaque équipe : 0 gauche, 1 droite, 2 haut, 3 bas. */
