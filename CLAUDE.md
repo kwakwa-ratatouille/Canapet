@@ -47,6 +47,13 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Bar des Bobards : carte Miroir 🪞 (si elle est retournée, l'accusateur perd). Gribouillis : 90 mots. Plateau : mini-jeu Pile ou Face. Traître : rôle Glouton dès 7 joueurs (gagne s'il est voté). Cuisine : bots commis (prendre, couper, cuire, poser sur un plan de travail ; les humains dressent et servent).
 - Tester sans afficher le panneau : appeler `__session.frame(t)` en boucle avec un temps croissant (le panneau caché ralentit l'animation).
 
+## Tutos, Coussin Clash v2, persos (oct. 2026)
+
+- Tuto avant chaque jeu (`src/games/tutos.ts`, but + 3 étapes, 8,5 s ; intro courte si on rejoue le même jeu).
+- Coussin Clash (`clash.ts`) : caméra qui suit/zoome, arrêt sur image + tremblement + traînées, objets qui tombent (tapette, coussin-bombe, cœur, étoile), 5 scènes (Canapé, Étagère, Frigo, Lustre et Baignoire à plateformes mobiles).
+- 19 personnages : 6 ajoutés dans `canapet-art.js` (pizza, glace, avocat, macaron, banane, nuage) + SVG de référence dans `public/da/persos/`. Clignement des yeux = sprite « toot » quelques ms.
+- Décor commun : `smileSun` + `stickerCloud` dans `draw.ts`.
+
 ## Architecture
 
 - React + TypeScript + Vite, navigation par `#` (`#/tv`, `#/m/CODE`, `#/aide`).
