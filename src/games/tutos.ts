@@ -282,7 +282,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Éjecte les autres hors de l’écran. 3 vies chacun !',
       steps: [
         ['🕹️', 'Stick : se déplacer · A : sauter (double saut)'],
-        ['👊', 'B : frapper. Le stick change le coup (côté, haut, bas). Plus de % = on vole plus loin'],
+        ['👊', 'B : coup normal, différent selon la direction, au sol comme en l’air. X : attaque lourde (maintiens pour charger) ; en l’air, X te fait remonter'],
         ['🎁', 'Des objets tombent : touche-les pour les ramasser, B pour s’en servir'],
       ],
     },
@@ -290,7 +290,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Knock the others off the screen. 3 lives each!',
       steps: [
         ['🕹️', 'Stick: move · A: jump (double jump)'],
-        ['👊', 'B: hit. The stick changes the move (side, up, down). More % = fly further'],
+        ['👊', 'B: normal attack, different per direction, on the ground and in the air. X: heavy attack (hold to charge); in the air, X sends you back up'],
         ['🎁', 'Items fall from the sky: touch them to pick up, B to use'],
       ],
     },

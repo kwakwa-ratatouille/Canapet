@@ -1,6 +1,7 @@
 import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 // Coussin Clash : combat de plateforme dans le salon. Plus on a de %, plus on vole loin.
-// A = saut (double saut) · B = coup selon la direction du stick (neutre, côté, haut, bas) · bas + B jauge pleine = super coup.
+// A = saut (double saut) · B = coup normal selon la direction (au sol et en l'air, comme dans les jeux de combat de plateforme)
+// X = attaque lourde à charger (au sol) / remontée (en l'air) · Y = super coup quand la jauge est pleine.
 // La caméra suit les joueurs ; des objets tombent du ciel (tapette, coussin-bombe, cœur, étoile).
 import { drawCharacter } from '../shared/characters';
 import { INK, MENTHE, ROSE, SOLEIL, VIOLET } from '../shared/palette';
@@ -91,7 +92,9 @@ const STAGES: Stage[] = [
   },
 ];
 
-type Move = 'jab' | 'side' | 'up' | 'down' | 'spike' | 'super' | 'batte';
+type Move = 'jab' | 'side' | 'up' | 'down' | 'spike' | 'super' | 'batte' | 'nair' | 'fair' | 'bair' | 'uair' | 'recover' | 'fsmash' | 'usmash' | 'dsmash' | 'nsmash';
+/** Pose du perso pendant le coup (pour l'animation). */
+type Pose = 'lean' | 'crouch' | 'stretch' | 'spin' | 'flip' | 'slam';
 
 interface MoveDef {
   dur: number;
@@ -105,14 +108,33 @@ interface MoveDef {
   base: number;
   growth: number;
   ang: number;
+  /** Balayage du coup (degrés, perso tourné vers la droite) et rayon de l'arc dessiné. */
+  arc?: [number, number];
+  r?: number;
+  pose?: Pose;
+  /** Éjection vers l'arrière (coup arrière) ou selon le côté de la cible. */
+  back?: boolean;
+  around?: boolean;
 }
 
 const MOVES: Record<Move, MoveDef> = {
-  jab: { dur: 0.24, from: 0.05, to: 0.14, dx: 52, dy: -46, w: 66, h: 48, dmg: 4, base: 200, growth: 2.6, ang: 25 },
-  side: { dur: 0.48, from: 0.15, to: 0.3, dx: 68, dy: -46, w: 96, h: 60, dmg: 12, base: 320, growth: 6, ang: 35 },
-  up: { dur: 0.42, from: 0.06, to: 0.28, dx: 0, dy: -96, w: 96, h: 84, dmg: 9, base: 340, growth: 4.6, ang: 88 },
-  down: { dur: 0.42, from: 0.12, to: 0.26, dx: 0, dy: -18, w: 170, h: 46, dmg: 8, base: 290, growth: 4.2, ang: 62 },
-  spike: { dur: 0.42, from: 0.08, to: 0.3, dx: 0, dy: 4, w: 78, h: 60, dmg: 10, base: 260, growth: 4.6, ang: -80 },
+  // Coups normaux au sol
+  jab: { dur: 0.24, from: 0.05, to: 0.14, dx: 52, dy: -46, w: 66, h: 48, dmg: 4, base: 200, growth: 2.6, ang: 25, arc: [-30, 30], r: 70, pose: 'lean' },
+  side: { dur: 0.42, from: 0.12, to: 0.26, dx: 68, dy: -46, w: 96, h: 60, dmg: 9, base: 300, growth: 5, ang: 35, arc: [-70, 40], r: 95, pose: 'lean' },
+  up: { dur: 0.38, from: 0.08, to: 0.24, dx: 8, dy: -112, w: 100, h: 80, dmg: 8, base: 300, growth: 4.4, ang: 85, arc: [200, 340], r: 85, pose: 'stretch', around: true },
+  down: { dur: 0.36, from: 0.1, to: 0.22, dx: 40, dy: -14, w: 130, h: 40, dmg: 7, base: 260, growth: 3.8, ang: 70, arc: [80, -10], r: 95, pose: 'crouch' },
+  // En l'air
+  nair: { dur: 0.4, from: 0.06, to: 0.3, dx: 0, dy: -46, w: 140, h: 120, dmg: 8, base: 260, growth: 4, ang: 45, arc: [0, 360], r: 78, pose: 'spin', around: true },
+  fair: { dur: 0.4, from: 0.12, to: 0.26, dx: 62, dy: -40, w: 100, h: 84, dmg: 11, base: 300, growth: 5.2, ang: 40, arc: [-120, 70], r: 95, pose: 'lean' },
+  bair: { dur: 0.36, from: 0.08, to: 0.2, dx: -64, dy: -46, w: 92, h: 70, dmg: 12, base: 340, growth: 5.6, ang: 35, arc: [200, 160], r: 90, pose: 'flip', back: true },
+  uair: { dur: 0.36, from: 0.06, to: 0.24, dx: 0, dy: -112, w: 110, h: 80, dmg: 9, base: 300, growth: 4.4, ang: 85, arc: [190, 350], r: 90, pose: 'stretch', around: true },
+  spike: { dur: 0.42, from: 0.08, to: 0.3, dx: 0, dy: 4, w: 78, h: 60, dmg: 10, base: 260, growth: 4.6, ang: -80, arc: [20, 160], r: 80, pose: 'slam' },
+  recover: { dur: 0.42, from: 0.06, to: 0.28, dx: 0, dy: -96, w: 96, h: 84, dmg: 9, base: 340, growth: 4.6, ang: 88, arc: [0, 360], r: 70, pose: 'spin', around: true },
+  // Attaques lourdes (à charger)
+  fsmash: { dur: 0.55, from: 0.16, to: 0.3, dx: 88, dy: -46, w: 130, h: 80, dmg: 16, base: 430, growth: 8.6, ang: 38, arc: [-100, 40], r: 125, pose: 'lean' },
+  usmash: { dur: 0.55, from: 0.14, to: 0.32, dx: 0, dy: -124, w: 150, h: 120, dmg: 15, base: 420, growth: 8.2, ang: 88, arc: [190, 350], r: 115, pose: 'stretch', around: true },
+  dsmash: { dur: 0.55, from: 0.16, to: 0.3, dx: 0, dy: -20, w: 250, h: 60, dmg: 14, base: 390, growth: 7.6, ang: 30, arc: [170, 10], r: 135, pose: 'crouch', around: true },
+  nsmash: { dur: 0.6, from: 0.22, to: 0.36, dx: 46, dy: -50, w: 170, h: 120, dmg: 17, base: 400, growth: 8, ang: 45, arc: [-80, 80], r: 120, pose: 'slam' },
   super: { dur: 0.8, from: 0.3, to: 0.45, dx: 0, dy: -40, w: 460, h: 330, dmg: 20, base: 600, growth: 7, ang: 45 },
   batte: { dur: 0.5, from: 0.14, to: 0.3, dx: 80, dy: -50, w: 130, h: 80, dmg: 17, base: 430, growth: 7.5, ang: 40 },
 };
@@ -139,7 +161,7 @@ interface Part {
   max: number;
   size: number;
   color: string;
-  kind: 'dust' | 'smoke' | 'star' | 'ring';
+  kind: 'dust' | 'smoke' | 'star' | 'ring' | 'line';
 }
 
 interface Pop {
@@ -179,6 +201,12 @@ interface F extends Runner {
   lastB: boolean;
   lastD: boolean;
   superReq: boolean;
+  lastC: boolean;
+  /** Attaque lourde : secondes de charge (-1 = pas en train de charger). */
+  charge: number;
+  heavyReq: boolean;
+  /** Multiplicateur de puissance du coup en cours (charge). */
+  power: number;
   out: number;
   kos: number;
   lastHitBy: number;
@@ -225,6 +253,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     lastB: false,
     lastD: false,
     superReq: false,
+    lastC: false,
+    charge: -1,
+    heavyReq: false,
+    power: 1,
     out: 0,
     kos: 0,
     lastHitBy: -1,
@@ -266,22 +298,42 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     }
     const up = f.inp.y < -0.5;
     const down = f.inp.y > 0.5 || f.superReq;
+    const superReq = f.superReq;
     f.superReq = false;
     const side = Math.abs(f.inp.x) > 0.5;
+    const heavy = f.heavyReq;
+    f.heavyReq = false;
     let m: Move = 'jab';
-    if (f.item === 'batte') m = 'batte';
-    else if (down && f.onGround && f.meter >= 100) m = 'super';
-    else if (up) m = 'up';
-    else if (down) m = f.onGround ? 'down' : 'spike';
-    else if (side) m = 'side';
-    if (side) f.dir = f.inp.x > 0 ? 1 : -1;
+    f.power = 1;
+    if (f.item === 'batte' && !heavy) m = 'batte';
+    else if (superReq && f.onGround && f.meter >= 100) m = 'super';
+    else if (heavy && !f.onGround) {
+      if (f.upUsed) return;
+      m = 'recover';
+    } else if (heavy) {
+      // Plus on a chargé, plus ça tape fort (jusqu'à +60 %)
+      f.power = 1 + Math.min(1, Math.max(0, f.charge)) * 0.6;
+      m = up ? 'usmash' : down ? 'dsmash' : side ? 'fsmash' : 'nsmash';
+    } else if (f.onGround) m = up ? 'up' : down ? 'down' : side ? 'side' : 'jab';
+    else {
+      // En l'air : neutre, avant, arrière, haut, bas
+      const back = side && Math.sign(f.inp.x) !== f.dir;
+      m = up ? 'uair' : down ? 'spike' : back ? 'bair' : side ? 'fair' : 'nair';
+    }
+    f.charge = -1;
+    if (side && m !== 'bair') f.dir = f.inp.x > 0 ? 1 : -1;
     f.move = m;
     f.moveT = 0;
     f.hitSet = new Set([i]);
-    if (m === 'side') f.vx += f.dir * 320;
-    if (m === 'up' && !f.onGround && !f.upUsed) {
-      f.vy = -1020;
+    if (m === 'side' || m === 'fsmash') f.vx += f.dir * (m === 'fsmash' ? 420 : 320);
+    if (m === 'recover') {
+      f.vy = -1080;
       f.upUsed = true;
+      burst(f.x, f.y, 8, 'dust', '#ffffff', 300, 14);
+    }
+    if (m === 'fsmash' || m === 'usmash' || m === 'dsmash' || m === 'nsmash') {
+      sfx.boing();
+      if (f.power > 1.4) pops.push({ x: f.x, y: f.y - SIZE - 40, text: fr ? 'CHARGÉ !' : 'CHARGED!', color: SOLEIL, t: 0.7, size: 40 });
     }
     if (m === 'spike') f.vy = Math.max(f.vy, 350);
     if (m === 'batte' && --f.uses <= 0) setTimeout(() => (f.item = null), 450);
@@ -309,6 +361,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (o.vy < 0) o.onGround = false;
     o.stun = Math.min(1.6, kb / 1000);
     o.move = null;
+    o.charge = -1;
     o.lastHitBy = by;
     if (o.item && o.item !== 'bombe') {
       items.push({ kind: o.item, x: o.x, y: o.y - BH, vx: rnd(-200, 200), vy: -500, life: 10, thrownBy: -1, fuse: 0, rot: 0 });
@@ -322,9 +375,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     burst(o.x, o.y - BH / 2, strong ? 12 : 5, 'star', strong ? '#fff' : SOLEIL, strong ? 620 : 340, strong ? 14 : 10);
     parts.push({ x: o.x, y: o.y - BH / 2, vx: 0, vy: 0, t: 0, max: 0.3, size: strong ? 110 : 60, color: '#fff', kind: 'ring' });
     pops.push({ x: o.x, y: o.y - BH - 30, text: `+${d.dmg}%`, color: strong ? '#ff3b3b' : ROSE, t: 0.9, size: strong ? 46 : 34 });
+    // Traits d'impact façon manga, plus nombreux quand ça tape fort
+    for (let k = 0; k < (strong ? 14 : 6); k++) {
+      const a = (k / (strong ? 14 : 6)) * Math.PI * 2 + rnd(-0.2, 0.2);
+      const v = (strong ? 900 : 500) * rnd(0.7, 1.2);
+      parts.push({ x: o.x, y: o.y - BH / 2, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, max: strong ? 0.28 : 0.18, size: strong ? 46 : 26, color: strong ? '#fff' : SOLEIL, kind: 'line' });
+    }
     if (strong) {
       sfx.boing();
-      flash = 0.06;
+      flash = 0.09;
     } else sfx.pop();
     if (!o.bot) ctx.buzz(o.pid, strong ? 220 : 60);
     void j;
@@ -339,10 +398,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (f.hitSet.has(j) || !alive(o) || o.invuln > 0 || allies(o, f)) return;
       if (o.x + HW < hb.x || o.x - HW > hb.x + hb.w || o.y < hb.y || o.y - BH > hb.y + hb.h) return;
       f.hitSet.add(j);
-      let dirX: number = f.dir;
-      if (f.move === 'down' || f.move === 'super') dirX = o.x >= f.x ? 1 : -1;
-      if (f.move === 'up') dirX = o.x >= f.x ? 0.3 : -0.3;
-      strike(o, j, i, d, (d.ang * Math.PI) / 180, dirX);
+      let dirX: number = d.back ? -f.dir : f.dir;
+      if (f.move === 'dsmash' || f.move === 'super' || f.move === 'nair') dirX = o.x >= f.x ? 1 : -1;
+      else if (d.around) dirX = o.x >= f.x ? 0.3 : -0.3;
+      const pw = f.power;
+      strike(o, j, i, { dmg: Math.round(d.dmg * pw), base: d.base * pw, growth: d.growth * (0.85 + 0.15 * pw) }, (d.ang * Math.PI) / 180, dirX);
     });
   }
 
@@ -368,6 +428,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     f.invuln = 2.2;
     f.stun = 0;
     f.move = null;
+    f.charge = -1;
     f.jumps = 2;
     f.upUsed = false;
     f.item = null;
@@ -383,6 +444,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (f.jumps > 0) f.jumpReq = true;
         else if (!f.upUsed) {
           f.inp.y = -1;
+          f.heavyReq = true;
           f.atkReq = true;
         }
       }
@@ -426,7 +488,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       f.botCd = rnd(0.3, 0.8);
       const r = Math.random();
       if (f.meter >= 100 && f.onGround) f.inp.y = 1;
-      else if (r < 0.4) f.inp = { x: 0, y: 0 };
+      else if (r < 0.2 && f.onGround) {
+        // Attaque lourde à moitié chargée
+        f.charge = rnd(0.2, 0.8);
+        f.heavyReq = true;
+        f.inp = { x: Math.random() < 0.6 ? Math.sign(dx) || f.dir : 0, y: Math.random() < 0.2 ? -1 : 0 };
+      } else if (r < 0.4) f.inp = { x: 0, y: 0 };
       else if (r < 0.8) f.inp = { x: Math.sign(dx) || f.dir, y: 0 };
       else f.inp = { x: 0, y: dy < -30 ? -1 : 1 };
       f.atkReq = true;
@@ -434,6 +501,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }
 
   function physics(f: F, dt: number) {
+    if (f.charge >= 0) {
+      f.charge += dt;
+      if (f.stun > 0 || !f.onGround) f.charge = -1;
+      else if (f.charge > 1.2) {
+        f.heavyReq = true;
+        f.atkReq = true;
+      }
+    }
     if (f.move) {
       f.moveT += dt;
       if (f.moveT >= MOVES[f.move].dur) f.move = null;
@@ -448,7 +523,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       f.y += f.plat.dy ?? 0;
     }
     const control = f.stun <= 0;
-    const mx = control && Math.abs(f.inp.x) > 0.25 ? Math.sign(f.inp.x) : 0;
+    const mx = control && f.charge < 0 && Math.abs(f.inp.x) > 0.25 ? Math.sign(f.inp.x) : 0;
     if (control && !f.move && mx) f.dir = mx as 1 | -1;
     const speed = RUN * (f.star > 0 ? 1.35 : 1);
     if (control) {
@@ -511,7 +586,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     f.plat = plat;
     f.jumps = 2;
     f.upUsed = false;
-    if (f.move === 'spike') f.move = null;
+    if (f.move === 'spike' || f.move === 'nair' || f.move === 'fair' || f.move === 'bair' || f.move === 'uair' || f.move === 'recover') f.move = null;
   }
 
   function stepItems(dt: number) {
@@ -611,6 +686,19 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         f.superReq = true;
         f.atkReq = true;
       }
+      // X : attaque lourde. Au sol on maintient pour charger, on relâche pour frapper ; en l'air = remontée.
+      if (m.c && !f.lastC) {
+        if (f.onGround && !f.move && f.stun <= 0) f.charge = 0;
+        else {
+          f.heavyReq = true;
+          f.atkReq = true;
+        }
+      }
+      if (!m.c && f.lastC && f.charge >= 0) {
+        f.heavyReq = true;
+        f.atkReq = true;
+      }
+      f.lastC = !!m.c;
       f.lastD = !!m.d;
       f.lastA = m.a;
       f.lastB = m.b;
@@ -708,6 +796,45 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.stroke();
         }
         g.save();
+        // Pose du coup : on se penche, s'accroupit, s'étire, tourne…
+        if (f.move && MOVES[f.move].pose && f.stun <= 0) {
+          const d = MOVES[f.move];
+          const k = Math.min(1, f.moveT / d.dur);
+          const wind = f.moveT < d.from ? f.moveT / d.from : Math.max(0, 1 - (f.moveT - d.from) / (d.dur - d.from));
+          g.translate(f.x, f.y - 40);
+          switch (d.pose) {
+            case 'lean':
+              g.rotate(f.dir * (f.moveT < d.from ? -0.25 * wind : 0.3 * wind));
+              g.translate(f.dir * 18 * wind, 0);
+              break;
+            case 'crouch':
+              g.translate(0, 18 * wind);
+              g.scale(1 + 0.12 * wind, 1 - 0.22 * wind);
+              break;
+            case 'stretch':
+              g.scale(1 - 0.12 * wind, 1 + 0.2 * wind);
+              break;
+            case 'spin':
+              g.rotate(f.dir * k * Math.PI * 2);
+              break;
+            case 'flip':
+              g.rotate(-f.dir * 0.5 * wind);
+              g.scale(f.moveT > d.from ? -1 : 1, 1);
+              break;
+            case 'slam':
+              g.rotate(f.dir * 0.6 * wind);
+              g.scale(1 + 0.1 * wind, 1 - 0.1 * wind);
+              break;
+          }
+          g.translate(-f.x, -(f.y - 40));
+        }
+        // Charge : le perso tremble et grossit un peu
+        if (f.charge >= 0) {
+          const c = Math.min(1, f.charge);
+          g.translate(f.x + Math.sin(t * 70) * 3 * c, f.y);
+          g.scale(1 + 0.08 * c, 1 - 0.06 * c);
+          g.translate(-f.x, -f.y);
+        }
         if (f.stun > 0.15) {
           g.translate(f.x, f.y - 40);
           g.rotate(Math.sin(t * 30) * 0.5 + (f.stun > 0.6 ? t * 12 * Math.sign(f.vx || 1) : 0));
@@ -739,6 +866,32 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             g.beginPath();
             g.ellipse(hb.cx, hb.cy, (d.w / 2) * k, (d.h / 2) * k, 0, 0, Math.PI * 2);
             g.fill();
+          } else if (d.arc) {
+            // Arc de balayage : blanc au cœur, couleur du joueur autour
+            const [a0, a1] = d.arc;
+            const prog = Math.max(0, Math.min(1, (f.moveT - d.from * 0.6) / (d.to - d.from * 0.6)));
+            if (prog > 0 && f.moveT < d.to + 0.08) {
+              const rad = (d.r ?? 90) * (f.move.endsWith('smash') ? f.power : 1);
+              const cx0 = f.x;
+              const cy0 = f.y - BH / 2 - (d.pose === 'stretch' ? 30 : 0);
+              const a = (deg: number) => (f.dir > 0 ? (deg * Math.PI) / 180 : Math.PI - (deg * Math.PI) / 180);
+              const end = a0 + (a1 - a0) * prog;
+              const ccw = f.dir > 0 ? a1 < a0 : a1 > a0;
+              const fade = f.moveT > d.to ? 1 - (f.moveT - d.to) / 0.08 : 1;
+              g.globalAlpha = 0.85 * fade;
+              g.lineCap = 'round';
+              g.strokeStyle = f.profile.color;
+              g.lineWidth = active ? 26 : 14;
+              g.beginPath();
+              g.arc(cx0, cy0, rad, a(a0), a(end), ccw);
+              g.stroke();
+              g.strokeStyle = '#fff';
+              g.lineWidth = active ? 10 : 5;
+              g.beginPath();
+              g.arc(cx0, cy0, rad, a(a0), a(end), ccw);
+              g.stroke();
+              g.globalAlpha = 1;
+            }
           } else {
             g.save();
             g.translate(hb.cx, hb.cy);
@@ -764,6 +917,17 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             g.restore();
           }
         }
+        if (f.charge >= 0) {
+          const c = Math.min(1, f.charge);
+          g.strokeStyle = c >= 1 ? '#fff' : SOLEIL;
+          g.lineWidth = 6 + c * 6;
+          g.globalAlpha = 0.5 + Math.sin(t * 30) * 0.3;
+          g.beginPath();
+          g.arc(f.x, f.y - BH / 2, 50 + c * 30, 0, Math.PI * 2);
+          g.stroke();
+          g.globalAlpha = 1;
+          if (Math.random() < 0.4) parts.push({ x: f.x + rnd(-50, 50), y: f.y - rnd(0, BH), vx: 0, vy: -120, t: 0, max: 0.4, size: 8, color: SOLEIL, kind: 'star' });
+        }
         // Pseudo au-dessus de la tête
         g.font = '700 28px Fredoka, sans-serif';
         g.textAlign = 'center';
@@ -782,7 +946,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       for (const p of parts) {
         const k = p.t / p.max;
         g.globalAlpha = 1 - k;
-        if (p.kind === 'ring') {
+        if (p.kind === 'line') {
+          const sp = Math.hypot(p.vx, p.vy) || 1;
+          g.strokeStyle = p.color;
+          g.lineCap = 'round';
+          g.lineWidth = 7 * (1 - k) + 2;
+          g.beginPath();
+          g.moveTo(p.x, p.y);
+          g.lineTo(p.x - (p.vx / sp) * p.size, p.y - (p.vy / sp) * p.size);
+          g.stroke();
+        } else if (p.kind === 'ring') {
           g.strokeStyle = p.color;
           g.lineWidth = 10 * (1 - k) + 2;
           g.beginPath();
@@ -1224,8 +1397,8 @@ export const clash: GameBase = {
   emoji: '🥊',
   name: { fr: 'Coussin Clash', en: 'Cushion Clash' },
   how: {
-    fr: 'A saute · B frappe (+ stick pour varier) · objets à ramasser · bas + B jauge pleine = super !',
-    en: 'A jumps · B hits (+ stick to vary) · grab items · down + B with full meter = super!',
+    fr: 'A saute · B coup normal (stick = direction) · X attaque lourde à charger (en l’air : remontée) · Y super coup',
+    en: 'A jumps · B normal attack (stick = direction) · X charged heavy attack (in the air: recovery) · Y super',
   },
   inspired: 'Smash Bros',
   layout: 'stick',
