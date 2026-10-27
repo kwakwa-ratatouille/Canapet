@@ -2395,3 +2395,36 @@ h3,
   line-height: 1;
   padding: 6px 12px;
 }
+
+/* Réflexes Éclair (manette) */
+.reflex {
+  align-items: center;
+  justify-content: center;
+}
+.reflex-btn {
+  width: min(70vw, 280px) !important;
+  height: min(70vw, 280px) !important;
+  font-size: 44px;
+}
+.reflex-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.reflex-choice {
+  min-height: 110px;
+  border: 4px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: var(--cp-reflet), 0 6px 0 var(--ink);
+  background-image: var(--cp-bonbon);
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 24px;
+  color: #fff;
+  -webkit-text-stroke: 4px var(--ink);
+  paint-order: stroke fill;
+}
+.reflex-choice:disabled {
+  opacity: 0.4;
+}

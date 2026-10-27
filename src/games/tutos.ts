@@ -151,21 +151,39 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
-  cuisine: {
+  reflexes: {
     fr: {
-      goal: 'En équipe : servez un maximum de commandes !',
+      goal: '7 épreuves éclair : le plus rapide marque le plus de points !',
       steps: [
-        ['🍅', 'A : prendre un ingrédient dans une caisse, le poser'],
-        ['🔪', 'Pose-le sur une planche et garde B appuyé pour couper. Le steak se cuit sur le feu'],
-        ['🍽️', 'Mets tout sur une assiette et apporte-la au passe-plat 🛎️'],
+        ['🟢', 'Attends que l’écran passe au VERT pour taper. Trop tôt = piégé !'],
+        ['🔎', 'Trouve l’intrus, compte les bonbons, touche la COULEUR du mot…'],
+        ['🔨', 'Martèle le bouton, puis arrête la jauge pile sur la ligne'],
       ],
     },
     en: {
-      goal: 'As a team: serve as many orders as you can!',
+      goal: '7 lightning rounds: the fastest scores the most!',
       steps: [
-        ['🍅', 'A: grab an ingredient from a crate, drop it'],
-        ['🔪', 'Put it on a board and hold B to chop. Steak cooks on the stove'],
-        ['🍽️', 'Put everything on a plate and bring it to the pass 🛎️'],
+        ['🟢', 'Wait for the screen to turn GREEN to tap. Too early = gotcha!'],
+        ['🔎', 'Find the odd one, count the candies, tap the word’s COLOR…'],
+        ['🔨', 'Mash the button, then stop the bar right on the line'],
+      ],
+    },
+  },
+  foot: {
+    fr: {
+      goal: 'Deux équipes, un ballon-coussin : marque dans le but adverse !',
+      steps: [
+        ['🕹️', 'Stick : courir. Le ballon colle à tes pieds quand tu cours dessus'],
+        ['🅰️', 'A : tirer dans la direction du stick'],
+        ['💨', 'B : sprint ! Fonce dans un adversaire pour le faire tomber'],
+      ],
+    },
+    en: {
+      goal: 'Two teams, one cushion ball: score in the other goal!',
+      steps: [
+        ['🕹️', 'Stick: run. The ball sticks to your feet when you run into it'],
+        ['🅰️', 'A: shoot in the stick’s direction'],
+        ['💨', 'B: sprint! Ram an opponent to knock them over'],
       ],
     },
   },

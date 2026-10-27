@@ -6,7 +6,8 @@ import { bombsGame } from './bombs';
 import { brawl } from './brawl';
 import { clash } from './clash';
 import { kart } from './kart';
-import { kitchen } from './kitchen';
+import { foot } from './foot';
+import { reflex } from './reflex';
 import { scribble } from './scribble';
 import { sumo } from './sumo';
 import { thumbRace } from './thumbRace';
@@ -26,7 +27,8 @@ const ART: Record<string, string> = {
   kart: 'mini-bolides',
   archers: 'fleches-a-ventouse',
   bagarre: 'bagarre-molle',
-  cuisine: 'cuisine-en-panique',
+  reflexes: 'reflexes-eclair',
+  foot: 'coussin-foot',
   traitre: 'le-traitre-du-frigo',
   dessin: 'gribouillis',
   plateau: 'le-grand-plateau',
@@ -36,7 +38,7 @@ const ART: Record<string, string> = {
 };
 
 /** Couleur des jeux ajoutés après la DA. */
-const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f' };
+const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b' };
 
 const withArt = (g: GameBase): GameDef => {
   const slug = ART[g.id];
@@ -53,7 +55,8 @@ export const GAMES: GameDef[] = [
   kart,
   archers,
   brawl,
-  kitchen,
+  reflex,
+  foot,
   traitor,
   undercover,
   roulette,

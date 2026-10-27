@@ -37,7 +37,8 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 8. ✅ Le Traître du Frigo (`traitor.ts` + `TraitorPad.tsx`) : rôle caché 4-12, nuit/débat/vote, Goûteur dès 5.
 9. ✅ Coussin Clash (`clash.ts`) : combat de plateforme sur un canapé, % de dégâts, 3 vies, 4 coups + super coup (bas + B jauge pleine).
 10. ✅ Bagarre Molle (`brawl.ts`) : persos mous, baffe / attraper / jeter, sonné après 4 baffes.
-11. ✅ Cuisine en Panique (`kitchen.ts`) : coop 1-8, caisses/planche/feux/assiettes/passe-plat, 3 recettes, bots commis.
+11. ✅ Réflexes Éclair (`reflex.ts` + `ReflexPad.tsx`, remplace Cuisine en Panique, supprimée) : 7 épreuves (vert, intrus, compte, couleur piège, marteau, jauge), 5/3/2/1 pts. Touche X.
+11 bis. ✅ Coussin Foot (`foot.ts`) : match vu de dessus, 2 équipes (celles du mode équipes sinon un sur deux), A = tir, B = sprint/tacle, ballon qui colle au pied. Touche O.
 12. ✅ Le Grand Plateau (`board.ts` + `BoardPad.tsx`) : dé sur le téléphone, bonbons, Coussins d’or, mini-jeux Tapotage et Réflexe.
 13. ✅ Mode famille : interrupteur sur le téléphone de l’hôte (salon), mémorisé sur la télé (`session.family`, `ctx.family`), badge à la télé, « pet » → « pouic », PROUT → POUF, mots limites retirés de Gribouillis. Touche H en aperçu.
 14. ✅ Undercover (`undercover.ts` + `UndercoverPad.tsx`, mots dans `undercoverWords.ts`) : indices tapés sur le téléphone et affichés à la télé, Mr White peut deviner, 10 thèmes (le piquant caché en mode famille). Touche U.
