@@ -65,39 +65,69 @@ function relief(str){
 
 /* ===== Visage ===== */
 function face(cx,cy,m='happy',s=1){
-  const e=12.5*s,r=10*s,p=5.4*s,ch=m==='toot'?.85:.6;let g='';
-  g+=`<ellipse cx="${cx-20*s}" cy="${cy+10*s}" rx="${6*s}" ry="${3.6*s}" fill="#ff7fb3" opacity="${ch}"/><ellipse cx="${cx+20*s}" cy="${cy+10*s}" rx="${6*s}" ry="${3.6*s}" fill="#ff7fb3" opacity="${ch}"/>`;
-  for(const x of [cx-e,cx+e]){
-    if(m==='win'||m==='toot') g+=`<path d="M${x-6*s} ${cy+2*s}Q${x} ${cy-7*s} ${x+6*s} ${cy+2*s}" fill="none" ${sw(3.5*s)}/>`;
-    else{const py=m==='sad'?cy+2.5*s:cy,ry=m==='wow'?r*1.2:r;
-      g+=`<ellipse cx="${x}" cy="${cy}" rx="${r}" ry="${ry}" fill="#fff" ${sw(3*s)}/><circle cx="${x+s}" cy="${py+1.2*s}" r="${p}" fill="${P}"/><circle cx="${x+3*s}" cy="${py-1.4*s}" r="${2.1*s}" fill="#fff"/><circle cx="${x-1.4*s}" cy="${py+3.2*s}" r="${1*s}" fill="#fff" opacity=".85"/>`;}
+  const e=12.5*s,r=10*s,p=4.8*s;let g='';
+  const ch=m==='toot'?.5:.28;
+  g+=`<ellipse cx="${cx-20*s}" cy="${cy+11*s}" rx="${5.5*s}" ry="${3*s}" fill="#ff7fb3" opacity="${ch}"/><ellipse cx="${cx+20*s}" cy="${cy+11*s}" rx="${5.5*s}" ry="${3*s}" fill="#ff7fb3" opacity="${ch}"/>`;
+  for(const [k,x] of [[-1,cx-e],[1,cx+e]]){
+    if(m==='win'||m==='toot'){
+      g+=`<path d="M${x-6.5*s} ${cy+2*s}Q${x} ${cy-7*s} ${x+6.5*s} ${cy+2*s}" fill="none" ${sw(3.8*s)}/>`;
+    }else{
+      const py=m==='sad'?cy+2.5*s:cy+1*s,ry=m==='wow'?r*1.25:r;
+      g+=`<ellipse cx="${x}" cy="${cy}" rx="${r}" ry="${ry}" fill="#fff" ${sw(3*s)}/><circle cx="${x+1.5*s*k*-1+1.5*s}" cy="${py+1.5*s}" r="${p}" fill="${P}"/><circle cx="${x+3.2*s}" cy="${py-0.8*s}" r="${1.8*s}" fill="#fff"/>`;
+      // Paupière mi-close (regard assuré) sauf quand on est surpris
+      if(m==='happy') g+=`<path d="M${x-r-1*s} ${cy-1*s}Q${x} ${cy-ry-6*s} ${x+r+1*s} ${cy-1*s}Q${x} ${cy-5*s} ${x-r-1*s} ${cy-1*s}Z" fill="${P}"/>`;
+    }
   }
-  const my=cy+13*s;
+  // Sourcils
+  if(m==='happy') g+=`<path d="M${cx-e-8*s} ${cy-14*s}L${cx-e+6*s} ${cy-12*s}M${cx+e-6*s} ${cy-15*s}Q${cx+e+2*s} ${cy-19*s} ${cx+e+9*s} ${cy-15*s}" fill="none" ${sw(3.6*s)}/>`;
+  if(m==='wow') g+=`<path d="M${cx-e-7*s} ${cy-17*s}Q${cx-e} ${cy-22*s} ${cx-e+7*s} ${cy-17*s}M${cx+e-7*s} ${cy-17*s}Q${cx+e} ${cy-22*s} ${cx+e+7*s} ${cy-17*s}" fill="none" ${sw(3.4*s)}/>`;
+  if(m==='win') g+=`<path d="M${cx-e-7*s} ${cy-12*s}L${cx-e+6*s} ${cy-15*s}M${cx+e-6*s} ${cy-15*s}L${cx+e+7*s} ${cy-12*s}" fill="none" ${sw(3.4*s)}/>`;
+  const my=cy+14*s;
   if(m==='sad') g+=`<path d="M${cx-e-7*s} ${cy-11*s}L${cx-e+5*s} ${cy-15*s}M${cx+e+7*s} ${cy-11*s}L${cx+e-5*s} ${cy-15*s}" fill="none" ${sw(3*s)}/>`;
-  if(m==='happy') g+=`<path d="M${cx-7*s} ${my}Q${cx} ${my+8*s} ${cx+7*s} ${my}" fill="none" ${sw(3.5*s)}/>`;
+  // Sourire en coin
+  if(m==='happy') g+=`<path d="M${cx-8*s} ${my+1*s}Q${cx+1*s} ${my+6*s} ${cx+9*s} ${my-3*s}" fill="none" ${sw(3.6*s)}/>`;
   if(m==='wow') g+=`<ellipse cx="${cx}" cy="${my+3*s}" rx="${4.5*s}" ry="${5.5*s}" fill="${P}"/>`;
   if(m==='sad') g+=`<path d="M${cx-6*s} ${my+6*s}Q${cx} ${my} ${cx+6*s} ${my+6*s}" fill="none" ${sw(3.5*s)}/><path d="M${cx+e+2*s} ${cy+8*s}Q${cx+e+7*s} ${cy+15*s} ${cx+e+2*s} ${cy+17*s}Q${cx+e-3*s} ${cy+15*s} ${cx+e+2*s} ${cy+8*s}Z" fill="${CIEL}" ${sw(2*s)}/>`;
-  if(m==='win') g+=`<path d="M${cx-10*s} ${my-1*s}Q${cx} ${my+16*s} ${cx+10*s} ${my-1*s}Z" fill="${P}" ${sw(3*s)}/><path d="M${cx-4.5*s} ${my+7*s}Q${cx} ${my+3*s} ${cx+4.5*s} ${my+7*s}Z" fill="#ff7fb3"/>`;
-  if(m==='toot') g+=`<ellipse cx="${cx}" cy="${my+2*s}" rx="${3.5*s}" ry="${3*s}" fill="${P}"/>`;
+  if(m==='win') g+=`<path d="M${cx-11*s} ${my-2*s}Q${cx} ${my+15*s} ${cx+11*s} ${my-2*s}Z" fill="${P}" ${sw(3*s)}/><path d="M${cx-7*s} ${my-1*s}H${cx+7*s}" stroke="#fff" stroke-width="${3*s}" stroke-linecap="round"/>`;
+  if(m==='toot') g+=`<path d="M${cx-6*s} ${my+1*s}Q${cx+1*s} ${my+5*s} ${cx+7*s} ${my-1*s}" fill="none" ${sw(3.4*s)}/>`;
   return g;
 }
 function selfie(cx,cy,s){
   return `<circle cx="${cx}" cy="${cy+2*s}" r="${25*s}" fill="#fff" ${sw(3.5*s)}/><circle cx="${cx}" cy="${cy+2*s}" r="${20*s}" fill="#bfe6ff"/><circle cx="${cx}" cy="${cy-3*s}" r="${7.5*s}" fill="#7da6d4"/><path d="M${cx-13*s} ${cy+17*s}Q${cx} ${cy-1*s} ${cx+13*s} ${cy+17*s}Z" fill="#7da6d4"/><circle cx="${cx}" cy="${cy+2*s}" r="${20*s}" fill="none" ${sw(3*s)}/>`;
 }
 function feet(c){
-  return `<path d="M46 112V127M74 112V127" fill="none" ${sw(4.5)}/>`+
-  `<path d="M28 138C27 128 34 123 44 123C53 123 57 128 57 134V138Z" fill="${c}" ${sw(3.5)}/>`+
-  `<path d="M63 138V134C63 128 67 123 76 123C86 123 93 128 92 138Z" fill="${c}" ${sw(3.5)}/>`+
-  `<path d="M31 134H54M66 134H89" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`;
+  const shoe=(x,dir)=>{
+    const t=dir<0?`M${x+13} 139H${x-17}C${x-19} 129 ${x-12} 123 ${x-2} 123C${x+8} 123 ${x+13} 128 ${x+13} 134Z`:`M${x-13} 139H${x+17}C${x+19} 129 ${x+12} 123 ${x+2} 123C${x-8} 123 ${x-13} 128 ${x-13} 134Z`;
+    return `<path d="${t}" fill="${c}" ${sw(3.5)}/><path d="M${x-16} 135.5H${x+16}" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><path d="M${x-4} 127L${x+3} 125M${x-3} 131L${x+4} 129" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`;
+  };
+  return shoe(46,-1)+shoe(74,1);
+}
+/** Jambes « tuyau » : de la hanche (cachée sous le corps) jusqu'aux baskets. */
+function legs(){
+  return `<path d="M54 86Q50 106 46 125M66 86Q70 106 74 125" fill="none" ${sw(5)}/>`;
+}
+/** Bras « tuyau » avec gants blancs, posés selon l'humeur. sx = demi-largeur aux épaules, sy = hauteur des épaules. */
+function arms(m,sx,sy){
+  const L=60-sx,R=60+sx;let d='',hands=[];
+  const glove=(x,y)=>`<circle cx="${x}" cy="${y}" r="6.5" fill="#fff" ${sw(3.5)}/><path d="M${x-5} ${y-3}Q${x-9} ${y-6} ${x-7} ${y-9}" fill="#fff" ${sw(3)}/>`;
+  if(m==='win'){d=`M${L} ${sy}Q${L-14} ${sy-12} ${L-12} ${sy-32}M${R} ${sy}Q${R+14} ${sy-12} ${R+12} ${sy-32}`;hands=[[L-12,sy-35],[R+12,sy-35]];}
+  else if(m==='wow'){d=`M${L} ${sy}Q${L-16} ${sy-4} ${L-14} ${sy-20}M${R} ${sy}Q${R+16} ${sy-4} ${R+14} ${sy-20}`;hands=[[L-14,sy-23],[R+14,sy-23]];}
+  else if(m==='sad'){d=`M${L} ${sy}Q${L-6} ${sy+14} ${L-4} ${sy+26}M${R} ${sy}Q${R+6} ${sy+14} ${R+4} ${sy+26}`;hands=[[L-4,sy+29],[R+4,sy+29]];}
+  else{
+    // Main sur la hanche à gauche, l'autre bras décontracté
+    d=`M${L} ${sy}Q${L-18} ${sy+6} ${L-2} ${sy+20}M${R} ${sy}Q${R+12} ${sy+12} ${R+10} ${sy+26}`;
+    hands=[[L+1,sy+21],[R+10,sy+29]];
+  }
+  return `<path d="${d}" fill="none" ${sw(5)}/>`+hands.map(([x,y])=>glove(x,y)).join('');
 }
 
 /* ===== Les 13 corps (repère 120 × 150, sol à y = 138) ===== */
 const K={
  coussin:{n:'Coussin péteur',fy:90,top:56,hx:78,b:()=>`<path d="M50 60L40 30Q39 25 44 25H55Q60 25 58 30L63 60Z" fill="#ff86bd" ${sw()}/><ellipse cx="49.5" cy="26" rx="10.5" ry="4.5" fill="#ff86bd" ${sw(3.5)}/><ellipse cx="60" cy="88" rx="48" ry="33" fill="${ROSE}" ${sw()}/><ellipse cx="36" cy="72" rx="12" ry="4.5" fill="#ffa2cf" transform="rotate(-18 36 72)"/>`},
  tartine:{n:'Tartine',fy:84,top:24,b:()=>`<path d="M24 122V62C10 56 12 26 38 28C46 16 74 16 82 28C108 26 110 56 96 62V122Z" fill="#d9883e" ${sw()}/><path d="M32 115V59C23 53 25 36 40 36C48 27 72 27 80 36C95 36 97 53 88 59V115Z" fill="#ffd590"/><path d="M38 42C50 34 70 34 82 42C84 50 77 49 75 55C73 61 66 56 62 50C56 48 50 56 46 52C40 48 34 48 38 42Z" fill="#ff3b6b" ${sw(3)}/>`},
- cornichon:{n:'Cornichon',fy:72,top:26,b:()=>`<ellipse cx="60" cy="74" rx="30" ry="50" fill="#7bb33b" ${sw()}/>`+[[44,42],[77,54],[42,102],[79,96],[60,32],[64,112]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3.2" fill="#5a9228"/>`).join('')},
+ cornichon:{n:'Cornichon',fy:72,top:26,aw:27,b:()=>`<ellipse cx="60" cy="74" rx="30" ry="50" fill="#7bb33b" ${sw()}/>`+[[44,42],[77,54],[42,102],[79,96],[60,32],[64,112]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3.2" fill="#5a9228"/>`).join('')},
  beignet:{n:'Beignet',fy:98,fs:.9,top:30,b:()=>`<path d="M12 76a48 48 0 1 0 96 0a48 48 0 1 0 -96 0ZM51 64a9 9 0 1 0 18 0a9 9 0 1 0 -18 0Z" fill="#e8a35a" fill-rule="evenodd" ${sw()}/><path d="M22 72C20 44 40 34 60 34C82 34 100 46 98 72C98 82 92 80 90 86C86 92 80 84 74 86C66 90 58 84 50 88C42 92 36 84 30 86C24 88 22 80 22 72ZM50 64a10 10 0 1 0 20 0a10 10 0 1 0 -20 0Z" fill="#ff9ccf" fill-rule="evenodd" ${sw(3)}/>`+[[34,56,ROSE,30],[44,44,SOL,-20],[76,44,CIEL,40],[86,60,MEN,-30],[62,44,VIO,10],[38,70,SOL,60],[82,74,ROSE,-50]].map(([x,y,c,a])=>`<rect x="${x-4}" y="${y-1.6}" width="8" height="3.2" rx="1.6" fill="${c}" transform="rotate(${a} ${x} ${y})"/>`).join('')},
- oeuf:{n:'Œuf',fy:82,top:22,b:()=>`<path d="M60 20C88 20 100 70 100 90C100 112 82 122 60 122C38 122 20 112 20 90C20 70 32 20 60 20Z" fill="#fffaf0" ${sw()}/><ellipse cx="44" cy="46" rx="6" ry="11" fill="#fff" transform="rotate(20 44 46)"/>`},
+ oeuf:{n:'Œuf',fy:82,top:22,aw:38,b:()=>`<path d="M60 20C88 20 100 70 100 90C100 112 82 122 60 122C38 122 20 112 20 90C20 70 32 20 60 20Z" fill="#fffaf0" ${sw()}/><ellipse cx="44" cy="46" rx="6" ry="11" fill="#fff" transform="rotate(20 44 46)"/>`},
  fromage:{n:'Fromage',fy:92,top:40,hx:72,b:()=>`<path d="M14 66L106 50V120H14Z" fill="#ffd23a" ${sw()}/><path d="M14 66L80 30L106 50Z" fill="#ffe680" ${sw()}/><circle cx="28" cy="108" r="6" fill="#efb515"/><circle cx="94" cy="66" r="5" fill="#efb515"/><circle cx="96" cy="106" r="7" fill="#efb515"/><circle cx="80" cy="44" r="3.5" fill="#f3c93a"/>`},
  tomate:{n:'Tomate',fy:82,top:40,b:()=>`<circle cx="60" cy="80" r="44" fill="#ff4a3a" ${sw()}/><ellipse cx="40" cy="58" rx="9" ry="5" fill="#ff8a7a" transform="rotate(-30 40 58)"/><path d="M60 44L46 34L57 37L60 24L64 37L76 33Z" fill="#4fae3e" ${sw(3.5)}/>`},
  brocoli:{n:'Brocoli',fy:96,fs:.8,top:16,b:()=>`<rect x="36" y="66" width="48" height="58" rx="16" fill="#c4ea86" ${sw()}/><circle cx="34" cy="58" r="22" fill="#3fa34a" ${sw()}/><circle cx="86" cy="58" r="22" fill="#3fa34a" ${sw()}/><circle cx="60" cy="40" r="26" fill="#3fa34a" ${sw()}/><circle cx="60" cy="64" r="16" fill="#3fa34a"/><circle cx="48" cy="32" r="5" fill="#5fc066"/><circle cx="26" cy="52" r="4" fill="#5fc066"/>`},
@@ -105,13 +135,13 @@ const K={
  sushi:{n:'Sushi',fy:98,fs:.8,top:44,b:()=>`<rect x="20" y="66" width="80" height="56" rx="24" fill="#fffaf2" ${sw()}/><path d="M14 74C14 50 40 42 60 44C84 42 108 50 106 74C90 82 30 82 14 74Z" fill="#ff8a5a" ${sw()}/><path d="M30 56Q36 66 32 76M52 50Q58 62 54 78M76 50Q82 62 78 78" fill="none" stroke="#ffd2bd" stroke-width="3.5" stroke-linecap="round"/><rect x="88" y="62" width="11" height="58" rx="3" fill="#2b4a3e" ${sw(3)}/>`},
  frites:{n:'Frites',fy:94,fs:.82,top:26,b:()=>[[30,32],[42,22],[54,28],[66,18],[77,28],[86,36],[37,40],[72,38]].map(([x,y])=>`<rect x="${x}" y="${y}" width="11" height="50" rx="3" fill="#ffd23a" ${sw(3)}/>`).join('')+`<path d="M22 66H98L87 122H33Z" fill="#ff3b3b" ${sw()}/><path d="M30 76H90" stroke="#fff" stroke-width="3" opacity=".45" stroke-linecap="round"/>`},
  bonbon:{n:'Bonbon',fy:80,fs:.8,top:46,b:()=>`<path d="M32 78L6 58L10 98Z" fill="${SOL}" ${sw()}/><path d="M88 78L114 58L110 98Z" fill="${SOL}" ${sw()}/><circle cx="60" cy="78" r="33" fill="#9b5cff" ${sw()}/><path d="M38 56Q60 70 52 110M66 46Q84 70 88 92" fill="none" stroke="#c9a8ff" stroke-width="6" stroke-linecap="round"/>`},
- chaussette:{n:'Chaussette',fy:68,fs:.9,top:22,b:()=>`<path d="M36 22H84V86C84 92 88 96 96 98C110 102 110 122 94 122H48C32 122 34 106 36 96Z" fill="#fff" ${sw()}/><path d="M36 22H84V42H36Z" fill="${CIEL}" ${sw()}/><path d="M38 32H82" stroke="#fff" stroke-width="4"/><path d="M86 104C92 104 100 106 102 114" fill="none" stroke="${ROSE}" stroke-width="6" stroke-linecap="round"/>`},
+ chaussette:{n:'Chaussette',fy:68,fs:.9,top:22,aw:24,b:()=>`<path d="M36 22H84V86C84 92 88 96 96 98C110 102 110 122 94 122H48C32 122 34 106 36 96Z" fill="#fff" ${sw()}/><path d="M36 22H84V42H36Z" fill="${CIEL}" ${sw()}/><path d="M38 32H82" stroke="#fff" stroke-width="4"/><path d="M86 104C92 104 100 106 102 114" fill="none" stroke="${ROSE}" stroke-width="6" stroke-linecap="round"/>`},
  // —— Nouveaux personnages (ajoutés au catalogue d'origine, même style) ——
- pizza:{n:'Pizza',fy:74,fs:.8,top:26,b:()=>`<path d="M18 42Q60 18 102 42L64 124Q60 130 56 124Z" fill="#ffcf6b" ${sw()}/><path d="M18 42Q60 18 102 42L98 52Q60 30 22 52Z" fill="#d9883e" ${sw()}/><circle cx="44" cy="62" r="7" fill="#e8453c" ${sw(2.5)}/><circle cx="80" cy="68" r="6" fill="#e8453c" ${sw(2.5)}/><circle cx="60" cy="100" r="6" fill="#e8453c" ${sw(2.5)}/><path d="M86 56Q90 70 86 78" fill="none" stroke="#ffe7a8" stroke-width="4" stroke-linecap="round"/>`},
- glace:{n:'Glace',fy:64,fs:.85,top:22,b:()=>`<path d="M34 84H86L62 128Q60 132 58 128Z" fill="#e8a35a" ${sw()}/><path d="M42 92L70 120M56 88L78 104M50 104L66 90" stroke="#c97a35" stroke-width="3" stroke-linecap="round"/><path d="M24 80C14 74 18 56 30 56C26 34 46 24 60 28C76 22 96 34 92 54C104 56 106 76 96 82C90 92 84 82 80 90C74 96 70 86 64 92C56 98 52 86 46 92C38 96 34 84 24 80Z" fill="#ff9ccf" ${sw()}/><ellipse cx="44" cy="44" rx="8" ry="4" fill="#ffc6e3" transform="rotate(-25 44 44)"/><circle cx="62" cy="22" r="8" fill="#ff3b3b" ${sw(3.5)}/>`},
- avocat:{n:'Avocat',fy:62,fs:.82,top:20,b:()=>`<path d="M60 20C90 20 102 70 102 92C102 120 82 128 60 128C38 128 18 120 18 92C18 70 30 20 60 20Z" fill="#4f8f34" ${sw()}/><path d="M60 30C84 30 92 72 92 92C92 112 78 118 60 118C42 118 28 112 28 92C28 72 36 30 60 30Z" fill="#d8f0a0"/><circle cx="60" cy="98" r="15" fill="#a0643a" ${sw(3.5)}/><ellipse cx="55" cy="93" rx="5" ry="3" fill="#c98a5a"/>`},
+ pizza:{n:'Pizza',fy:74,fs:.8,top:26,aw:24,b:()=>`<path d="M18 42Q60 18 102 42L64 124Q60 130 56 124Z" fill="#ffcf6b" ${sw()}/><path d="M18 42Q60 18 102 42L98 52Q60 30 22 52Z" fill="#d9883e" ${sw()}/><circle cx="44" cy="62" r="7" fill="#e8453c" ${sw(2.5)}/><circle cx="80" cy="68" r="6" fill="#e8453c" ${sw(2.5)}/><circle cx="60" cy="100" r="6" fill="#e8453c" ${sw(2.5)}/><path d="M86 56Q90 70 86 78" fill="none" stroke="#ffe7a8" stroke-width="4" stroke-linecap="round"/>`},
+ glace:{n:'Glace',fy:64,fs:.85,top:22,aw:34,b:()=>`<path d="M34 84H86L62 128Q60 132 58 128Z" fill="#e8a35a" ${sw()}/><path d="M42 92L70 120M56 88L78 104M50 104L66 90" stroke="#c97a35" stroke-width="3" stroke-linecap="round"/><path d="M24 80C14 74 18 56 30 56C26 34 46 24 60 28C76 22 96 34 92 54C104 56 106 76 96 82C90 92 84 82 80 90C74 96 70 86 64 92C56 98 52 86 46 92C38 96 34 84 24 80Z" fill="#ff9ccf" ${sw()}/><ellipse cx="44" cy="44" rx="8" ry="4" fill="#ffc6e3" transform="rotate(-25 44 44)"/><circle cx="62" cy="22" r="8" fill="#ff3b3b" ${sw(3.5)}/>`},
+ avocat:{n:'Avocat',fy:62,fs:.82,top:20,aw:34,b:()=>`<path d="M60 20C90 20 102 70 102 92C102 120 82 128 60 128C38 128 18 120 18 92C18 70 30 20 60 20Z" fill="#4f8f34" ${sw()}/><path d="M60 30C84 30 92 72 92 92C92 112 78 118 60 118C42 118 28 112 28 92C28 72 36 30 60 30Z" fill="#d8f0a0"/><circle cx="60" cy="98" r="15" fill="#a0643a" ${sw(3.5)}/><ellipse cx="55" cy="93" rx="5" ry="3" fill="#c98a5a"/>`},
  macaron:{n:'Macaron',fy:64,fs:.82,top:38,b:()=>`<ellipse cx="60" cy="108" rx="48" ry="20" fill="#ff9ccf" ${sw()}/><rect x="16" y="84" width="88" height="18" rx="9" fill="#fff3d6" ${sw()}/><path d="M14 88C14 56 34 42 60 42C86 42 106 56 106 88Z" fill="#ff9ccf" ${sw()}/><path d="M20 88Q30 82 40 88Q50 82 60 88Q70 82 80 88Q90 82 100 88" fill="none" stroke="#e86fae" stroke-width="3"/><ellipse cx="38" cy="56" rx="9" ry="4" fill="#ffc6e3" transform="rotate(-20 38 56)"/>`},
- banane:{n:'Banane',fy:66,fs:.82,top:18,b:()=>`<path d="M50 22L56 12H66L70 22Z" fill="#7a5a2a" ${sw(3.5)}/><path d="M48 22H72C92 44 96 92 76 124C70 130 50 130 44 124C24 92 28 44 48 22Z" fill="#ffe066" ${sw()}/><path d="M56 30C48 60 48 96 56 120" fill="none" stroke="#f2c230" stroke-width="4" stroke-linecap="round"/><ellipse cx="78" cy="58" rx="4" ry="10" fill="#fff3a8"/>`},
+ banane:{n:'Banane',fy:66,fs:.82,top:18,aw:26,b:()=>`<path d="M50 22L56 12H66L70 22Z" fill="#7a5a2a" ${sw(3.5)}/><path d="M48 22H72C92 44 96 92 76 124C70 130 50 130 44 124C24 92 28 44 48 22Z" fill="#ffe066" ${sw()}/><path d="M56 30C48 60 48 96 56 120" fill="none" stroke="#f2c230" stroke-width="4" stroke-linecap="round"/><ellipse cx="78" cy="58" rx="4" ry="10" fill="#fff3a8"/>`},
  nuage:{n:'Nuage',fy:84,fs:.85,top:44,b:()=>`<path d="${cloudD(60,92,54)}" fill="#ffffff" ${sw()}/><ellipse cx="38" cy="72" rx="10" ry="5" fill="#e3f2ff" transform="rotate(-20 38 72)"/><path d="M20 112Q60 124 100 112" fill="none" stroke="#cfe7ff" stroke-width="5" stroke-linecap="round"/>`},
 };
 const KEYS=Object.keys(K);
@@ -150,14 +180,20 @@ function acc(t,cx,cy,s){
   }
   return '';
 }
+const SC=.84,DY=10,X0=60*(1-SC);
+/** Position d'un point du corps (repère d'origine) dans le dessin final. */
+const BY=y=>y*SC-DY;
 function perso(kind,c=ROSE,o={}){
   const k=K[kind],s=k.fs||1;let g='';
   if(o.toot) g+=cloud(14,116,20,'#fff',3.5)+cloud(-2,96,11,'#fff',3)+star(30,92,6,SOL,2.5)+star(-2,124,4,SOL,2);
-  if(o.arms) g+=`<path d="M22 ${k.fy+6}Q6 ${k.fy-4} 8 ${k.fy-24}M98 ${k.fy+6}Q114 ${k.fy-4} 112 ${k.fy-24}" fill="none" ${sw(4.5)}/><circle cx="8" cy="${k.fy-27}" r="6.5" fill="#fff" ${sw(3.5)}/><circle cx="112" cy="${k.fy-27}" r="6.5" fill="#fff" ${sw(3.5)}/>`;
-  g+=relief(feet(c)+k.b(c));
-  g+=o.selfie?selfie(60,k.fy,s):face(60,k.fy,o.mood||'happy',s);
-  if(o.acc) g+=acc(o.acc,60,k.fy,s);
-  if(o.hat) g+=relief(hat(o.hat,k.hx||60,k.top,c));
+  const mood=o.arms?'win':o.mood||'happy';
+  g+=legs()+relief(feet(c));
+  let body=relief(k.b(c));
+  body+=o.selfie?selfie(60,k.fy,s):face(60,k.fy,o.mood||'happy',s);
+  if(o.acc) body+=acc(o.acc,60,k.fy,s);
+  if(o.hat) body+=relief(hat(o.hat,k.hx||60,k.top,c));
+  g+=`<g transform="translate(${X0} ${-DY}) scale(${SC})">${body}</g>`;
+  g+=arms(mood==='toot'?'happy':mood,(k.aw||36)*SC,BY(k.fy+20));
   return g;
 }
 const VB='-6 -36 132 180';
@@ -428,7 +464,7 @@ export function characterSvg(kind, color = ROSE, opts = {}) { return persoSvg(ki
 /** Même chose sans balise <svg>, à placer dans un <g> d'un SVG plus grand (repère 120×150, sol à y=138). */
 export function characterGroup(kind, color = ROSE, opts = {}) { return perso(kind, color, opts); }
 /** Pour un selfie : remplace le visage par un cercle. Coordonnées et rayon du visage de chaque perso. */
-export function faceSlot(kind) { const k = K[kind], s = k.fs || 1; return { cx: 60, cy: K[kind].fy + 2 * s, r: 20 * s }; }
+export function faceSlot(kind) { const k = K[kind], s = k.fs || 1; return { cx: 60, cy: BY(k.fy + 2 * s), r: 20 * s * SC }; }
 export const CHARACTER_VIEWBOX = VB;
 export { coussinTQ as mascotThreeQuarterGroup, sofa as sofaGroup, cloudD as cloudPath, star as starGroup, heart as heartGroup, wmText as stickerText };
 /** Monogramme C'p (viewBox 0 0 200 200). */
