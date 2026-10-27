@@ -219,13 +219,13 @@ export class Session {
         return;
       case 'host':
         if (pid !== this.hostPid()) return;
-        this.hostAction(m.action, m.game);
+        this.hostAction(m.action, m.game, m.opts);
         return;
     }
   }
 
   /** Commandes de l'hôte (téléphone) ou du clavier de la télé. */
-  hostAction(action: string, game?: string) {
+  hostAction(action: string, game?: string, opts?: Record<string, number>) {
     switch (action) {
       case 'tournament': {
         // Seulement les jeux jouables avec le nombre de joueurs présents (les bots complètent quand le jeu le permet).
@@ -247,7 +247,7 @@ export class Session {
       case 'pick':
         if (game && gameById(game) && !gameById(game)!.soon) {
           this.mode = 'host';
-          this.startGame(game);
+          this.startGame(game, opts);
         }
         break;
       case 'replay':
@@ -320,7 +320,10 @@ export class Session {
 
   // ——— Partie ———
 
-  startGame(id: string) {
+  /** Options du dernier lancement (gardées pour « Rejouer »). */
+  private opts: Record<string, number> = {};
+
+  startGame(id: string, opts?: Record<string, number>) {
     const def = gameById(id);
     if (!def?.create) return;
     const humans = this.list().filter((p) => p.connected).slice(0, def.max);
@@ -352,6 +355,13 @@ export class Session {
       family: this.family,
       buzz: (pid, ms) => this.net.send(pid, { t: 'buzz', ms }),
       refresh: () => this.pushScreens(),
+      opts: (() => {
+        if (opts) this.opts = opts;
+        else if (this.def?.id !== id) this.opts = {};
+        const o: Record<string, number> = {};
+        for (const op of def.options ?? []) o[op.id] = this.opts[op.id] ?? op.choices[0].v;
+        return o;
+      })(),
     });
     this.phase = 'game';
     this.leadPid = '';
@@ -432,6 +442,7 @@ export class Session {
     while (this.acc >= STEP) {
       this.acc -= STEP;
       this.clock += STEP;
+      if (this.clock - STEP < this.intro && this.clock >= this.intro) this.pushScreens();
       const c = Math.ceil(this.intro + COUNT - this.clock);
       if (this.clock > this.intro && c !== this.lastCount && c >= 0) {
         this.lastCount = c;
@@ -529,6 +540,7 @@ export class Session {
     if (this.ready.has(pid) || !this.runners.some((r) => r.pid === pid && !r.bot)) return;
     this.ready.add(pid);
     sfx.join();
+    this.pushScreens();
     const humans = this.runners.filter((r) => !r.bot);
     if (humans.every((r) => this.ready.has(r.pid)) && this.clock < this.intro - 0.8) this.clock = this.intro - 0.8;
     this.changed();
@@ -600,7 +612,9 @@ export class Session {
         };
       case 'game':
         if (this.paused) return { s: 'paused', host, game: this.def!.id };
-        return playing ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid), host } : { s: 'wait', game: this.def!.id };
+        return playing
+          ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid), host, tuto: this.clock < this.intro && !this.ready.has(p.pid) }
+          : { s: 'wait', game: this.def!.id };
       case 'results': {
         const row = this.results.find((r) => r.pid === p.pid);
         if (!row && !host) return { s: 'wait', game: this.def?.id ?? '' };

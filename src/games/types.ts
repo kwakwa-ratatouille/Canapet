@@ -17,6 +17,8 @@ export interface GameCtx {
   buzz(pid: string, ms: number): void;
   /** Renvoie aux téléphones leur écran (à appeler quand padData change). */
   refresh(): void;
+  /** Options choisies par l'hôte au lancement (sinon le premier choix de chaque option). */
+  opts: Record<string, number>;
 }
 
 /** Une partie en cours. La télé l'appelle à 60 Hz (update) et à chaque image (render). */
@@ -54,6 +56,8 @@ export interface GameBase {
   /** Chrono en haut de l'écran (quand le bas est pris par l'interface du jeu). */
   timerTop?: boolean;
   soon?: boolean;
+  /** Réglages proposés à l'hôte avant de lancer ce jeu. */
+  options?: { id: string; label: Record<Lang, string>; choices: { v: number; label: Record<Lang, string> }[] }[];
   create?(runners: Runner[], ctx: GameCtx): GameInstance;
 }
 

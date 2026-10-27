@@ -4,7 +4,8 @@ import type { Lang, ToTv } from '../shared/protocol';
 
 const TXT = {
   fr: {
-    pick: 'Sélectionne plein de photos et vidéos de ta galerie (tout si tu veux !) : on en tire 16 au hasard 🤭',
+    pick: 'Ouvre ta galerie et sélectionne TOUT (ou un maximum) : on en pioche au hasard, même toi tu ne sais pas lesquelles 🤭',
+    pickVideo: 'Ouvre ta galerie de vidéos et sélectionne-en un maximum : on en pioche au hasard 🤭',
     add: '📷 Choisir dans ma galerie',
     reroll: '🔀 Retirer au hasard',
     swap: 'Touche une image pour la changer',
@@ -14,7 +15,7 @@ const TXT = {
     sent: (n: number) => `${n} reçue(s) par la télé`,
     ready: 'Je suis prêt !',
     waitReady: 'C’est noté ! On attend les autres…',
-    tooBig: 'Vidéo trop longue ou trop lourde (20 s / 8 Mo max) : ignorée',
+    tooBig: 'Certaines vidéos trop longues ou trop lourdes ont été sautées',
     vote: 'À qui est-ce ?',
     owner: 'C’est à toi ! 🤫 Fais semblant de chercher…',
     right: 'Bien vu ! 🎉',
@@ -24,7 +25,8 @@ const TXT = {
     privacy: 'Tes fichiers vont directement à la télé et ne sont gardés nulle part.',
   },
   en: {
-    pick: 'Select lots of photos and videos from your gallery (all of them if you like!): we draw 16 at random 🤭',
+    pick: 'Open your gallery and select EVERYTHING (or as many as you can): we pick at random, even you won’t know which 🤭',
+    pickVideo: 'Open your video gallery and select as many as you can: we pick at random 🤭',
     add: '📷 Pick from my gallery',
     reroll: '🔀 Draw again',
     swap: 'Tap a picture to swap it',
@@ -152,7 +154,7 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
   if (data.phase === 'upload')
     return (
       <div className="traitor">
-        <p className="pad-title">{T.pick}</p>
+        <p className="pad-title">{data.video ? T.pickVideo : T.pick}</p>
         {data.ready ? (
           <p className="pad-title pulse">{T.waitReady}</p>
         ) : busy ? (
@@ -162,7 +164,7 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
             <button className="btn big sun" onClick={() => fileRef.current?.click()}>
               {T.add}
             </button>
-            {pool.length > 0 && (
+            {false && pool.length > 0 && (
               <>
                 <p className="pad-small">
                   {T.pool(pool.length)} · {T.swap}
@@ -188,14 +190,16 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
         <input
           ref={fileRef}
           type="file"
-          accept="image/*,video/*"
+          accept={data.video ? 'video/*' : 'image/*'}
           multiple
           hidden
           onChange={(e) => {
-            const all = [...(e.target.files ?? [])];
+            const all = [...(e.target.files ?? [])].filter((f) => f.type.startsWith(data.video ? 'video/' : 'image/'));
             if (!all.length) return;
             setPool(all);
-            draw(all);
+            // Tirage au hasard puis envoi direct : surprise totale
+            const mixed = [...all].sort(() => Math.random() - 0.5).slice(0, data.video ? 8 : MAX_MEDIA);
+            void upload(mixed);
           }}
         />
         {warn && <p className="pad-small uc-note">{warn}</p>}

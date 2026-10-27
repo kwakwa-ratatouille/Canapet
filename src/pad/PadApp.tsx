@@ -189,9 +189,9 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   }, []);
 
   const send = (m: ToTv) => netRef.current?.send(m);
-  const host = (action: HostAction, game?: string) => {
+  const host = (action: HostAction, game?: string, opts?: Record<string, number>) => {
     sfx.click();
-    send({ t: 'host', action, game });
+    send({ t: 'host', action, game, opts });
   };
 
   if (editing) {
@@ -282,12 +282,51 @@ function PadScreenView({
   code: string;
   myColor: string;
   send: (m: ToTv) => void;
-  host: (a: HostAction, g?: string) => void;
+  host: (a: HostAction, g?: string, o?: Record<string, number>) => void;
   edit: () => void;
 }) {
   const [picking, setPicking] = useState(false);
+  const [optFor, setOptFor] = useState<string | null>(null);
+  const [opts, setOpts] = useState<Record<string, number>>({});
   switch (screen.s) {
     case 'lobby':
+      if (optFor && screen.host) {
+        const def = gameById(optFor)!;
+        return (
+          <div className="pad-body top">
+            <img className="opt-game-icon" src={gameIcon(def.slug)} alt="" />
+            <p className="pad-title">{def.name[lang]}</p>
+            {def.options!.map((op) => (
+              <div key={op.id} className="team-box">
+                <p className="opt-title">{op.label[lang]}</p>
+                <div className="team-pick">
+                  {op.choices.map((c) => {
+                    const on = (opts[op.id] ?? op.choices[0].v) === c.v;
+                    return (
+                      <button key={c.v} className={on ? 'on' : ''} style={{ ['--tc' as string]: def.color }} onClick={() => setOpts((o) => ({ ...o, [op.id]: c.v }))}>
+                        <span>{c.label[lang]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <button
+              className="btn big mint"
+              onClick={() => {
+                host('pick', optFor, opts);
+                setOptFor(null);
+                setPicking(false);
+              }}
+            >
+              ▶ {t(lang, 'launch')}
+            </button>
+            <button className="btn ghost" onClick={() => setOptFor(null)}>
+              {t(lang, 'back')}
+            </button>
+          </div>
+        );
+      }
       if (picking && screen.host)
         return (
           <div className="pad-body top">
@@ -302,6 +341,11 @@ function PadScreenView({
                     style={{ ['--g' as string]: def.color }}
                     disabled={g.soon}
                     onClick={() => {
+                      if (def.options?.length) {
+                        setOpts({});
+                        setOptFor(g.id);
+                        return;
+                      }
                       setPicking(false);
                       host('pick', g.id);
                     }}
@@ -418,6 +462,15 @@ function PadScreenView({
         </div>
       );
     case 'play':
+      if (screen.tuto)
+        return (
+          <div className="pad-body">
+            <p className="pad-title">📺 {t(lang, 'readTuto')}</p>
+            <button className="round-btn rose reflex-btn" onClick={() => send({ t: 'act', a: 'tuto' })}>
+              ✋ {t(lang, 'imReady')}
+            </button>
+          </div>
+        );
       if (screen.game === 'plateau' && screen.data) return <BoardPad data={screen.data as BoardPadData} lang={lang} send={send} />;
       if (screen.game === 'reflexes' && screen.data) return <ReflexPad data={screen.data as ReflexPadData} lang={lang} send={send} />;
       if (screen.game === 'roulette' && screen.data) return <RoulettePad data={screen.data as RoulettePadData} lang={lang} send={send} />;

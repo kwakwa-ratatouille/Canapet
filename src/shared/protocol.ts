@@ -24,7 +24,7 @@ export interface GameInfo {
 
 export type PadScreen =
   | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number }
-  | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean }
+  | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }
   | { s: 'wait'; game: string }
@@ -60,7 +60,7 @@ export type ToTv =
   | { t: 'in'; x: number; y: number; a: boolean; b: boolean; c?: boolean; d?: boolean }
   /** Action propre à un jeu (poser des cartes, voter…). */
   | { t: 'act'; a: string; n?: number[]; s?: string }
-  | { t: 'host'; action: HostAction; game?: string }
+  | { t: 'host'; action: HostAction; game?: string; opts?: Record<string, number> }
   /** Mode équipes : le joueur choisit son camp (0 ou 1). */
   | { t: 'team'; n: number }
   | { t: 'ping'; ts: number };

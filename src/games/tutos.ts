@@ -174,16 +174,16 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Deux équipes, un ballon-coussin : marque dans le but adverse !',
       steps: [
         ['🕹️', 'Stick : courir. Le ballon colle à tes pieds quand tu cours dessus'],
-        ['🅰️', 'A : tirer dans la direction du stick'],
-        ['💨', 'B : sprint ! Fonce dans un adversaire pour le faire tomber'],
+        ['🅰️', 'A : tirer · X : attraper une passe ou un ballon, puis A pour le lancer'],
+        ['💨', 'B : sprint ! Il envoie le ballon très loin et vole le ballon d’un porteur'],
       ],
     },
     en: {
       goal: 'Two teams, one cushion ball: score in the other goal!',
       steps: [
         ['🕹️', 'Stick: run. The ball sticks to your feet when you run into it'],
-        ['🅰️', 'A: shoot in the stick’s direction'],
-        ['💨', 'B: sprint! Ram an opponent to knock them over'],
+        ['🅰️', 'A: shoot · X: catch a pass or a ball, then A to throw it'],
+        ['💨', 'B: sprint! It sends the ball flying and steals it from a carrier'],
       ],
     },
   },

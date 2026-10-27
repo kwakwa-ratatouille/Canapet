@@ -69,7 +69,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let idx = -1;
   let showT = 0;
   let botT = rnd(1, 3);
-  let headline = fr ? 'Choisissez vos photos et vidéos sur votre téléphone' : 'Pick your photos and videos on your phone';
+  const videoMode = ctx.opts.kind === 1;
+  let headline = videoMode ? (fr ? 'Ouvrez votre galerie de vidéos sur votre téléphone' : 'Open your video gallery on your phone') : fr ? 'Ouvrez votre galerie sur votre téléphone' : 'Open your gallery on your phone';
   const urls: string[] = [];
 
   function addMedia(p: Pl, i: number, data: string, video: boolean) {
@@ -376,6 +377,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       return {
         phase,
         sent: p.media.length,
+        video: videoMode,
         ready: p.ready,
         act,
         options: act === 'vote' ? pls.map((x, k) => ({ i: k, name: x.profile.name, color: x.profile.color })).filter((o) => o.i !== i) : [],
@@ -402,6 +404,16 @@ export const roulette: GameBase = {
   min: 3,
   max: 12,
   botFill: 0,
+  options: [
+    {
+      id: 'kind',
+      label: { fr: 'Version', en: 'Version' },
+      choices: [
+        { v: 0, label: { fr: '📸 Photo Roulette', en: '📸 Photo Roulette' } },
+        { v: 1, label: { fr: '🎬 Vidéo Roulette', en: '🎬 Video Roulette' } },
+      ],
+    },
+  ],
   music: 'lobby',
   create,
 };
