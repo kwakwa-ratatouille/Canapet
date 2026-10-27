@@ -54,6 +54,8 @@ const THEMES = [
   { name: { fr: 'Le Jardin', en: 'The Garden' }, sky: ['#9ee4ff', '#e9ffd9'], sun: '#ffe66b', hills: ['#a5e08c', '#7cc96a'], ground: '#f6e3c4', top: '#7bd13b' },
   { name: { fr: 'La Nuit Pyjama', en: 'Pyjama Night' }, sky: ['#2a1838', '#6a4bd8'], sun: '#fff6c2', hills: ['#43306e', '#5b3f8c'], ground: '#c9b6ff', top: '#9b72ff' },
   { name: { fr: 'La Plage', en: 'The Beach' }, sky: ['#7fd6ff', '#fff1c9'], sun: '#ffe066', hills: ['#9fe3ff', '#ffe3a8'], ground: '#ffe9b8', top: '#ffb84d' },
+  { name: { fr: 'Le Pays des Glaces', en: 'Ice Cream Land' }, sky: ['#d9f7ff', '#ffe3f1'], sun: '#fff3a8', hills: ['#ffc6e0', '#c9f5e3'], ground: '#fff6e0', top: '#ff9ccf' },
+  { name: { fr: 'Le Volcan en chocolat', en: 'The Chocolate Volcano' }, sky: ['#ffb38a', '#ffe08a'], sun: '#fff3a8', hills: ['#c98a5a', '#a0643a'], ground: '#e8b98a', top: '#7a4a2a' },
 ];
 type Theme = (typeof THEMES)[number];
 

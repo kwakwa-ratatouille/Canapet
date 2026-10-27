@@ -32,6 +32,8 @@ const THEMES = [
   { name: { fr: 'La Plage', en: 'The Beach' }, sky: ['#7fd6ff', '#fff1c9'], lanes: ['#ffe9b8', '#fff3d1'], mud: '#d9a066', boost: '#2ec5ff' },
   { name: { fr: 'La Neige', en: 'The Snow' }, sky: ['#bfe3ff', '#f4f9ff'], lanes: ['#ffffff', '#eef6ff'], mud: '#9fb4d6', boost: '#ff4f9a' },
   { name: { fr: 'Le Parc', en: 'The Park' }, sky: ['#8fd8ff', '#ffd6ec'], lanes: ['#ffd3e8', '#ffe6f2'], mud: '#a0643a', boost: '#ffd60a' },
+  { name: { fr: 'La Nuit étoilée', en: 'The Starry Night' }, sky: ['#2a1838', '#6a4bd8'], lanes: ['#c9b6ff', '#ddd0ff'], mud: '#6b5573', boost: '#ffd60a' },
+  { name: { fr: 'Le Gâteau', en: 'The Cake' }, sky: ['#ffd6ec', '#fff1c9'], lanes: ['#fff0f7', '#ffe1ef'], mud: '#a0643a', boost: '#1fc9a0' },
 ];
 const MUD: [number, number] = [0.3, 0.45];
 const BOOST: [number, number] = [0.65, 0.78];

@@ -65,7 +65,16 @@ interface Ball {
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
+/** Terrains tirés au hasard : couleurs, et ballon qui glisse plus ou moins. */
+const PITCHES = [
+  { name: { fr: 'La Pelouse', en: 'The Lawn' }, a: '#7bd13b', b: '#8fe04a', bg: '#ffe3f1', fric: 0.45 },
+  { name: { fr: 'La Plage', en: 'The Beach' }, a: '#ffd98a', b: '#ffe3a8', bg: '#bfe9ff', fric: 0.3 },
+  { name: { fr: 'La Patinoire', en: 'The Ice Rink' }, a: '#cdeeff', b: '#e3f6ff', bg: '#e9e3ff', fric: 0.75 },
+  { name: { fr: 'Le Tapis du salon', en: 'The Living-room Rug' }, a: '#c9a8ff', b: '#d9c2ff', bg: '#fff1c9', fric: 0.5 },
+];
+
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
+  const pitch = PITCHES[Math.floor(Math.random() * PITCHES.length)];
   const fr = ctx.lang === 'fr';
   const nTeams = ctx.opts.teams === 4 ? 4 : 2;
   const nBalls = Math.max(1, Math.min(3, ctx.opts.balls ?? 1));
@@ -443,7 +452,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         b.x += b.vx * dt;
         b.y += b.vy * dt;
-        const fric = Math.pow(0.45, dt);
+        const fric = Math.pow(pitch.fric, dt);
         b.vx *= fric;
         b.vy *= fric;
         b.spin += Math.hypot(b.vx, b.vy) * dt * 0.02;
@@ -498,14 +507,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     render(g, t) {
       g.save();
       if (shake) g.translate(rnd(-shake, shake), rnd(-shake, shake));
-      g.fillStyle = '#ffe3f1';
+      g.fillStyle = pitch.bg;
       g.fillRect(0, 0, 1920, 1080);
       g.save();
       g.beginPath();
       g.roundRect(F.x, F.y, F.w, F.h, CORNER);
       g.clip();
       for (let i = 0; i < 10; i++) {
-        g.fillStyle = i % 2 ? '#7bd13b' : '#8fe04a';
+        g.fillStyle = i % 2 ? pitch.a : pitch.b;
         g.fillRect(F.x + (i * F.w) / 10, F.y, F.w / 10 + 1, F.h);
       }
       g.restore();
@@ -652,6 +661,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     leader() {
       return null;
     },
+    mapName: pitch.name,
   };
   return game;
 }

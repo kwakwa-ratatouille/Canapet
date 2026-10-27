@@ -7,8 +7,9 @@ import { candy, roundRectText } from './draw';
 import type { ReflexPadData } from './reflexShared';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 
-type Kind = 'vert' | 'intrus' | 'compte' | 'couleur' | 'marteau' | 'jauge';
-const KINDS: Kind[] = ['vert', 'intrus', 'compte', 'couleur', 'marteau', 'jauge'];
+type Kind = 'vert' | 'intrus' | 'compte' | 'couleur' | 'marteau' | 'jauge' | 'calcul' | 'plus';
+const KINDS: Kind[] = ['vert', 'intrus', 'compte', 'couleur', 'marteau', 'jauge', 'calcul', 'plus'];
+const FRUITS = ['🍓', '🍋', '🍇', '🍑'];
 const ROUNDS = 7;
 const POINTS = [5, 3, 2, 1];
 const COLS = [
@@ -51,6 +52,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let gauge = 0;
   let target = 0.7;
   let headline = '';
+  let calc = { a: 0, b: 0, opts: [] as number[] };
+  let crowd: number[] = [];
 
   const titles: Record<Kind, [string, string]> = {
     vert: ['Attends le VERT… puis tape !', 'Wait for GREEN… then tap!'],
@@ -59,6 +62,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     couleur: ['Touche la COULEUR du mot (pas ce qui est écrit !)', 'Tap the word’s COLOR (not what it says!)'],
     marteau: ['Martèle le bouton !', 'Mash the button!'],
     jauge: ['Arrête la jauge sur la ligne !', 'Stop the bar on the line!'],
+    calcul: ['Calcul éclair !', 'Quick maths!'],
+    plus: ['Lequel est le plus nombreux ?', 'Which one is the most?'],
   };
 
   function next() {
@@ -107,6 +112,23 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       ink = (word + 1 + Math.floor(Math.random() * 3)) % 4;
       correct = ink;
     }
+    if (kind === 'calcul') {
+      const a = 3 + Math.floor(Math.random() * 17);
+      const b = 2 + Math.floor(Math.random() * 12);
+      const set = new Set([a + b]);
+      while (set.size < 4) set.add(a + b + Math.floor(rnd(-5, 6)));
+      const opts = [...set].sort(() => Math.random() - 0.5);
+      calc = { a, b, opts };
+      correct = opts.indexOf(a + b);
+    }
+    if (kind === 'plus') {
+      // 4 fruits, l’un un peu plus nombreux que les autres
+      const win = Math.floor(Math.random() * 4);
+      crowd = [];
+      for (let f = 0; f < 4; f++) for (let k = 0; k < (f === win ? 8 : 4 + Math.floor(Math.random() * 3)); k++) crowd.push(f);
+      crowd.sort(() => Math.random() - 0.5);
+      correct = win;
+    }
     if (kind === 'jauge') {
       gauge = 0;
       target = rnd(0.45, 0.85);
@@ -143,7 +165,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         p.answer = 0;
         p.at = t0 - goAt;
       }
-      if ((kind === 'intrus' || kind === 'compte' || kind === 'couleur') && t0 > rnd(1.5, 5) && Math.random() < 0.05) {
+      if ((kind === 'intrus' || kind === 'compte' || kind === 'couleur' || kind === 'calcul' || kind === 'plus') && t0 > rnd(1.5, 5) && Math.random() < 0.05) {
         p.answer = Math.random() < 0.6 ? correct : Math.floor(Math.random() * 4);
         p.at = t0;
       }
@@ -279,6 +301,24 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillStyle = COLS[ink].c;
         g.fillText(COLS[word][fr ? 'fr' : 'en'], 960, 620);
       }
+      if (showPlay && kind === 'calcul') {
+        g.font = '700 220px Fredoka, sans-serif';
+        g.fillStyle = INK;
+        g.fillText(`${calc.a} + ${calc.b}`, 960, 600);
+        if (phase === 'result') {
+          g.font = '700 90px Fredoka, sans-serif';
+          g.fillText(`= ${calc.a + calc.b}`, 960, 760);
+        }
+      }
+      if (showPlay && kind === 'plus') {
+        if (phase === 'result' || t0 < 2.5) {
+          g.font = '80px sans-serif';
+          crowd.forEach((f, i) => g.fillText(FRUITS[f], 260 + ((i * 397) % 1400), 300 + ((i * 211) % 520)));
+        } else {
+          g.font = '700 90px Fredoka, sans-serif';
+          g.fillText('?', 960, 560);
+        }
+      }
       if (showPlay && kind === 'marteau') {
         g.font = '700 180px Fredoka, sans-serif';
         g.fillText(phase === 'play' ? `${Math.ceil(Math.max(0, timer))}` : '🔨', 960, 560);
@@ -360,6 +400,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (play && kind === 'compte') {
         k = 'choice';
         options = countOpts.map((n, i) => ({ label: String(n), color: QUAD[i] }));
+      }
+      if (play && kind === 'calcul') {
+        k = 'choice';
+        options = calc.opts.map((n, i) => ({ label: String(n), color: QUAD[i] }));
+      }
+      if (play && kind === 'plus') {
+        k = 'choice';
+        options = FRUITS.map((e, i) => ({ label: e, color: QUAD[i] }));
       }
       if (play && kind === 'couleur') {
         k = 'choice';

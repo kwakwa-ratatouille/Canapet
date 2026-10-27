@@ -27,7 +27,8 @@ const LAYOUTS: { name: { fr: string; en: string }; pillar: (x: number, y: number
     crates: 0.55,
     free: (x, y) => Math.abs(x - 7) <= 2 && Math.abs(y - 5) <= 1,
     floor: ['#f1edff', '#e4dcff'],
-  },
+  },  { name: { fr: 'Le Grand Vide', en: 'The Big Empty' }, pillar: (x, y) => x % 6 === 0 && y % 4 === 0, crates: 0.5, floor: ['#fff6e0', '#ffeec2'] },
+  { name: { fr: 'La Jungle de caisses', en: 'The Crate Jungle' }, pillar: (x, y) => x % 2 === 0 && y % 2 === 0, crates: 0.85, floor: ['#e9fff4', '#d4f7e6'] },
 ];
 
 interface Bomb {
