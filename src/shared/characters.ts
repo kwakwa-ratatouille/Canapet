@@ -22,6 +22,12 @@ const EN: Record<string, string> = {
   frites: 'Fries',
   bonbon: 'Candy',
   chaussette: 'Sock',
+  pizza: 'Pizza',
+  glace: 'Ice cream',
+  avocat: 'Avocado',
+  macaron: 'Macaron',
+  banane: 'Banana',
+  nuage: 'Cloud',
 };
 
 export const FOODS: { id: string; name: Name }[] = Object.entries(CHARACTERS).map(([id, fr]) => ({
@@ -53,7 +59,7 @@ export const ACCS: { id: string; name: Name }[] = [
   { id: 'bisou', name: { fr: 'Bisou', en: 'Kiss' } },
 ];
 
-export type Mood = 'happy' | 'sad' | 'wow' | 'win';
+export type Mood = 'happy' | 'sad' | 'wow' | 'win' | 'toot';
 
 export interface DrawOpts {
   food: string;
@@ -123,7 +129,9 @@ export function preloadCharacter(o: Omit<DrawOpts, 't'>) {
 }
 
 export function drawCharacter(g: CanvasRenderingContext2D, x: number, y: number, s: number, o: DrawOpts) {
-  const img = sprite(o);
+  // Clignement des yeux de temps en temps (le visage « yeux fermés » de la DA), décalé pour chacun.
+  const blink = (!o.mood || o.mood === 'happy') && o.t > 0 && o.t % 4.3 < 0.13;
+  const img = sprite(blink ? { ...o, mood: 'toot' } : o);
   const k = s / BODY;
   const run = o.run ?? 0;
   const step = o.t * (8 + run * 14);
