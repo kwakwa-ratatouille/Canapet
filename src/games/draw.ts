@@ -1,3 +1,4 @@
+import { INK } from '../shared/palette';
 // Petits outils de dessin partagés par les jeux.
 
 export function drawSky(g: CanvasRenderingContext2D, t: number, light: boolean) {
@@ -33,16 +34,17 @@ export function roundRectText(
   size: number,
   color: string,
 ) {
-  const h = size * 1.35;
+  const font = Math.max(28, size * 0.8);
+  const h = Math.max(size * 1.35, font * 1.3);
   g.fillStyle = color;
-  g.strokeStyle = '#3a2140';
+  g.strokeStyle = INK;
   g.lineWidth = 3;
   g.beginPath();
   g.roundRect(x, cy - h / 2, w, h, h / 2);
   g.fill();
   g.stroke();
-  g.fillStyle = luminance(color) > 0.6 ? '#3a2140' : '#fff';
-  g.font = `700 ${size * 0.8}px Fredoka, sans-serif`;
+  g.fillStyle = luminance(color) > 0.6 ? INK : '#fff';
+  g.font = `700 ${font}px Fredoka, sans-serif`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   let s = text;

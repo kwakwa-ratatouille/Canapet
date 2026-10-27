@@ -30,7 +30,8 @@ export interface GameInstance {
   padData?(pid: string): unknown;
 }
 
-export interface GameDef {
+/** Ce que chaque fichier de jeu définit ; le catalogue y ajoute l'icône et la couleur de la DA. */
+export interface GameBase {
   id: string;
   emoji: string;
   name: Record<Lang, string>;
@@ -44,4 +45,10 @@ export interface GameDef {
   music: 'race' | 'lobby' | 'tumble';
   soon?: boolean;
   create?(runners: Runner[], ctx: GameCtx): GameInstance;
+}
+
+export interface GameDef extends GameBase {
+  /** Icône (public/da/jeux/<slug>.svg) et couleur du jeu, venues de la DA. */
+  slug: string;
+  color: string;
 }

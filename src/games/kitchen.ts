@@ -3,7 +3,8 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const MAP = [
   '##T#S#F#P#V#####',
@@ -27,7 +28,6 @@ const GAME_TIME = 150;
 const CHOP_TIME = 1.3;
 const COOK = 4.5;
 const BURN = 11;
-const INK = '#3a2140';
 
 type Kind = 'tomate' | 'salade' | 'fromage' | 'pain' | 'steak';
 interface Ing {
@@ -392,9 +392,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.textAlign = 'left';
         g.fillStyle = INK;
         g.fillText(r.emoji, x + 12, 76);
-        g.font = '700 26px Fredoka, sans-serif';
+        g.font = '700 28px Fredoka, sans-serif';
         g.fillText(r.name[ctx.lang], x + 72, 58);
-        g.font = '24px sans-serif';
+        g.font = '28px sans-serif';
         g.fillText(r.items.map((k) => EMOJI[k.split(':')[0] as Kind]).join(''), x + 72, 92);
         const k = o.t / o.max;
         g.fillStyle = k > 0.5 ? '#7bd13b' : k > 0.25 ? '#ffb020' : '#ff3b3b';
@@ -430,7 +430,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const kitchen: GameDef = {
+export const kitchen: GameBase = {
   id: 'cuisine',
   emoji: '🍳',
   name: { fr: 'Cuisine en Panique', en: 'Kitchen Panic' },

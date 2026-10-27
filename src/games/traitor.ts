@@ -4,7 +4,8 @@ import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { roundRectText } from './draw';
 import type { Role, TraitorPadData } from './traitorShared';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const T_ROLES = 9;
 const T_NIGHT = 22;
@@ -12,7 +13,6 @@ const T_MORNING = 6;
 const T_DEBATE = 75;
 const T_VOTE = 25;
 const T_VERDICT = 6;
-const INK = '#3a2140';
 
 type Phase = TraitorPadData['phase'];
 
@@ -286,7 +286,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         roundRectText(g, p.profile.name, x - 80, y - 4, 160, 26, p.profile.color);
         const revealed = !p.alive || phase === 'end';
         if (revealed) {
-          g.font = '600 22px Fredoka, sans-serif';
+          g.font = '600 28px Fredoka, sans-serif';
           g.fillStyle = night ? '#fff' : INK;
           g.fillText(roleName(p.role), x, y + 30);
         }
@@ -346,7 +346,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const traitor: GameDef = {
+export const traitor: GameBase = {
   id: 'traitre',
   emoji: '🕵️',
   name: { fr: 'Le Traître du Frigo', en: 'Fridge Traitor' },

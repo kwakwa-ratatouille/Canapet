@@ -1,0 +1,50 @@
+:root {
+  /* Marque */
+  --cp-rose: #ff4f9a;
+  --cp-violet: #7b4dff;      /* le canapé */
+  --cp-violet-clair: #9b72ff;
+  --cp-soleil: #ffd60a;      /* le nuage, les étoiles */
+  --cp-menthe: #1fc9a0;      /* validation, « prêt » */
+  --cp-ciel: #2ec5ff;
+  --cp-prune: #3a2140;       /* contours, texte */
+  --cp-prune-doux: #6b5573;  /* texte secondaire */
+  --cp-nuit: #2a1838;        /* fond « soirée » */
+  --cp-blanc: #ffffff;
+
+  /* Fonds */
+  --cp-fond-1: #ffe3f1;
+  --cp-fond-2: #e3f2ff;
+  --cp-fond: linear-gradient(160deg, var(--cp-fond-1), var(--cp-fond-2));
+
+  /* Couleurs des joueurs */
+  --cp-joueur-1: #ff4f9a;   /* Rose */
+  --cp-joueur-2: #ff3b3b;   /* Rouge */
+  --cp-joueur-3: #ff9a1f;   /* Orange */
+  --cp-joueur-4: #ffd60a;   /* Jaune */
+  --cp-joueur-5: #7bd13b;   /* Vert */
+  --cp-joueur-6: #1fc9a0;   /* Menthe */
+  --cp-joueur-7: #2ec5ff;   /* Ciel */
+  --cp-joueur-8: #3a6bff;   /* Bleu */
+  --cp-joueur-9: #9b5cff;   /* Violet */
+  --cp-joueur-10: #e08bff;  /* Lilas */
+  --cp-joueur-11: #a0643a;  /* Noisette */
+  --cp-joueur-12: #f2f2f2;  /* Blanc */
+
+  /* Dessin */
+  --cp-contour: 4px;
+  --cp-contour-tv: 6px;
+  --cp-ombre: 0 5px 0 var(--cp-prune);
+  --cp-ombre-tv: 0 10px 0 var(--cp-prune);
+  --cp-rayon: 24px;
+  --cp-rayon-pilule: 999px;
+  --cp-autocollant: 0 0 0 6px var(--cp-blanc);
+
+  /* Typographie */
+  --cp-font-titre: 'Fredoka', 'Nunito', system-ui, sans-serif;  /* 700 titres, 600 boutons */
+  --cp-font-texte: 'Nunito', system-ui, sans-serif;
+  --cp-tv-titre: 72px;
+  --cp-tv-texte: 32px;
+  --cp-tv-mini: 28px;        /* jamais plus petit à la télé */
+  --cp-tel-bouton: 24px;
+  --cp-tel-texte: 17px;
+}

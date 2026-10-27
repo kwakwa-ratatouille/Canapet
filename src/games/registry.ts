@@ -1,41 +1,42 @@
-import { thumbRace } from './thumbRace';
-import { tumble } from './tumble';
-import { bluff } from './bluff';
-import { sumo } from './sumo';
-import { bombsGame } from './bombs';
-import { kart } from './kart';
+import { GAME_LIST } from '../shared/art/canapet-art.js';
 import { archers } from './archers';
-import { scribble } from './scribble';
-import { traitor } from './traitor';
-import { clash } from './clash';
-import { brawl } from './brawl';
-import { kitchen } from './kitchen';
+import { bluff } from './bluff';
 import { board } from './board';
-import type { GameDef } from './types';
+import { bombsGame } from './bombs';
+import { brawl } from './brawl';
+import { clash } from './clash';
+import { kart } from './kart';
+import { kitchen } from './kitchen';
+import { scribble } from './scribble';
+import { sumo } from './sumo';
+import { thumbRace } from './thumbRace';
+import { traitor } from './traitor';
+import { tumble } from './tumble';
+import type { GameBase, GameDef } from './types';
 
-const soon = (
-  id: string,
-  emoji: string,
-  fr: string,
-  en: string,
-  inspired: string,
-  max: number,
-  layout: GameDef['layout'] = 'stick',
-): GameDef => ({
-  id,
-  emoji,
-  name: { fr, en },
-  how: { fr: '', en: '' },
-  inspired,
-  layout,
-  min: 2,
-  max,
-  botFill: 4,
-  music: 'race',
-  soon: true,
-});
+/** Icône et couleur de chaque jeu (fichiers de la DA : public/da/jeux/<slug>.svg). */
+const ART: Record<string, string> = {
+  pouces: 'course-de-pouces',
+  obstacles: 'la-degringolade',
+  bluff: 'le-bar-des-bobards',
+  bombes: 'petards-mouilles',
+  sumo: 'sumo-tamponneur',
+  kart: 'mini-bolides',
+  archers: 'fleches-a-ventouse',
+  bagarre: 'bagarre-molle',
+  cuisine: 'cuisine-en-panique',
+  traitre: 'le-traitre-du-frigo',
+  dessin: 'gribouillis',
+  plateau: 'le-grand-plateau',
+  combat: 'coussin-clash',
+};
 
-/** Catalogue complet, dans l'ordre de fabrication prévu. */
+const withArt = (g: GameBase): GameDef => {
+  const slug = ART[g.id];
+  return { ...g, slug, color: GAME_LIST.find((x) => x.slug === slug)?.color ?? '#ff4f9a' };
+};
+
+/** Catalogue complet, dans l'ordre de la DA. */
 export const GAMES: GameDef[] = [
   thumbRace,
   tumble,
@@ -50,7 +51,7 @@ export const GAMES: GameDef[] = [
   scribble,
   board,
   clash,
-];
+].map(withArt);
 
 export const gameById = (id: string) => GAMES.find((g) => g.id === id);
 export const playable = () => GAMES.filter((g) => !g.soon);

@@ -3,7 +3,8 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const GRAV = 2300;
 const RUN = 430;
@@ -12,7 +13,6 @@ const HW = 22;
 const BH = 70;
 const STOCKS = 3;
 const MAX_TIME = 180;
-const INK = '#3a2140';
 const MAIN = { x: 460, y: 700, w: 1000, h: 130 };
 const PLATS = [
   { x: 560, y: 530, w: 240 },
@@ -505,7 +505,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.lineWidth = 6;
         g.strokeText(`${Math.round(f.dmg)}%`, x + w / 2, 1025);
         g.fillText(`${Math.round(f.dmg)}%`, x + w / 2, 1025);
-        g.font = '20px sans-serif';
+        g.font = '28px sans-serif';
         g.fillStyle = INK;
         g.fillText('❤️'.repeat(f.stocks), x + w / 2, 1052);
         g.fillStyle = '#ddd';
@@ -526,7 +526,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const clash: GameDef = {
+export const clash: GameBase = {
   id: 'combat',
   emoji: '🥊',
   name: { fr: 'Coussin Clash', en: 'Cushion Clash' },

@@ -4,11 +4,11 @@ import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { roundRectText } from './draw';
 import { INK_COLORS, norm, type ScribblePadData } from './scribbleShared';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const DRAW_TIME = 70;
 const MAX_TURNS = 8;
-const INK = '#3a2140';
 
 const WORDS: [string, string][] = [
   ['banane', 'banana'], ['pizza', 'pizza'], ['fantôme', 'ghost'], ['dragon', 'dragon'], ['vélo', 'bike'],
@@ -282,7 +282,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const scribble: GameDef = {
+export const scribble: GameBase = {
   id: 'dessin',
   emoji: '✏️',
   name: { fr: 'Gribouillis', en: 'Scribbles' },

@@ -3,7 +3,8 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const LAPS = 3;
 const ROAD = 150;
@@ -14,7 +15,6 @@ const TURN = 3.4;
 const KART_R = 28;
 const MAX_TIME = 200;
 const AFTER_FIRST = 22;
-const INK = '#3a2140';
 
 const CTRL: [number, number][] = [
   [240, 330], [620, 170], [1100, 240], [1600, 170], [1760, 430], [1480, 560], [1160, 470],
@@ -349,7 +349,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fill();
         g.stroke();
         g.fillStyle = '#fff';
-        g.font = '700 26px Fredoka, sans-serif';
+        g.font = '700 28px Fredoka, sans-serif';
         g.textAlign = 'center';
         g.fillText('?', 0, 9);
         g.restore();
@@ -423,12 +423,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.stroke();
       ranked.forEach((k, r) => {
         g.fillStyle = INK;
-        g.font = '700 26px Fredoka, sans-serif';
+        g.font = '700 28px Fredoka, sans-serif';
         g.textAlign = 'left';
         g.fillText(`${r + 1}`, 350, 342 + r * 44);
         roundRectText(g, k.profile.name, 385, 333 + r * 44, 200, 26, k.profile.color);
         g.fillStyle = INK;
-        g.font = '600 24px Fredoka, sans-serif';
+        g.font = '600 28px Fredoka, sans-serif';
         g.textAlign = 'left';
         const lapTxt = k.done ? '🏁' : `${fr ? 'Tour' : 'Lap'} ${Math.max(1, Math.min(LAPS, k.lap + 1))}/${LAPS}`;
         g.fillText(lapTxt, 600, 342 + r * 44);
@@ -448,7 +448,7 @@ function mag0(k: K) {
   return Math.hypot(k.inp.x, k.inp.y) < 0.25 && !k.inp.b;
 }
 
-export const kart: GameDef = {
+export const kart: GameBase = {
   id: 'kart',
   emoji: '🏎️',
   name: { fr: 'Mini Bolides', en: 'Tiny Racers' },

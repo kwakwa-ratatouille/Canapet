@@ -3,14 +3,14 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const GRAV = 2200;
 const RUN = 330;
 const JUMP = 820;
 const HW = 24;
 const MAX_TIME = 150;
-const INK = '#3a2140';
 const PLATS = [
   { x: 360, y: 760, w: 1200 },
   { x: 110, y: 560, w: 270 },
@@ -368,11 +368,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         });
         g.restore();
         if (b.ko > 0 || b.dizzy > 2) {
-          g.font = '26px sans-serif';
+          g.font = '28px sans-serif';
           g.textAlign = 'center';
           g.fillText(b.ko > 0 ? '💫💫' : '💫', b.x, b.y - 118);
         }
-        g.font = '700 22px Fredoka, sans-serif';
+        g.font = '700 28px Fredoka, sans-serif';
         g.textAlign = 'center';
         g.lineWidth = 5;
         g.strokeStyle = INK;
@@ -402,7 +402,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const brawl: GameDef = {
+export const brawl: GameBase = {
   id: 'bagarre',
   emoji: '🤼',
   name: { fr: 'Bagarre Molle', en: 'Wobbly Brawl' },

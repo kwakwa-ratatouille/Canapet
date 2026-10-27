@@ -3,7 +3,8 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const R0 = 520;
 const R_MIN = 280;
@@ -19,7 +20,6 @@ const SX = 1.32;
 const SY = 0.78;
 const CX = 960;
 const CY = 600;
-const INK = '#3a2140';
 
 interface S extends Runner {
   x: number;
@@ -327,7 +327,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const x = 40 + i * w;
         g.globalAlpha = s.lives > 0 ? 1 : 0.4;
         roundRectText(g, s.profile.name, x, 40, w - 10, 26, s.profile.color);
-        g.font = '24px sans-serif';
+        g.font = '28px sans-serif';
         g.textAlign = 'center';
         g.fillText('❤️'.repeat(Math.max(0, s.lives)) || '💨', x + (w - 10) / 2, 92);
         g.globalAlpha = 1;
@@ -351,7 +351,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const sumo: GameDef = {
+export const sumo: GameBase = {
   id: 'sumo',
   emoji: '🛞',
   name: { fr: 'Sumo Tamponneur', en: 'Bumper Sumo' },

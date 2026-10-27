@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { GAMES, gameById } from '../games/registry';
+import { GAMES, gameById, playable } from '../games/registry';
 import { CharCanvas } from '../shared/CharCanvas';
 import { ACCS, COLORS, FOODS, HATS } from '../shared/characters';
 import { IS_IOS, newId, save, store } from '../shared/device';
 import { defaultLang, ordinal, t } from '../shared/i18n';
+import { gameIcon, Wordmark } from '../shared/Logo';
 import type { HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
 import { sfx, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
@@ -29,9 +30,9 @@ function defaultProfile(): Profile {
 }
 
 const DEMO: Record<string, PadScreen> = {
-  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 3 },
+  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4 },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
-  stick: { s: 'play', layout: 'stick', game: 'pouces' },
+  stick: { s: 'play', layout: 'stick', game: 'kart' },
   results: { s: 'results', host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
   podium: { s: 'podium', host: true, rank: 1, total: 42 },
 };
@@ -102,23 +103,20 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   }
 
   const playing = screen?.s === 'play' && status === 'ok';
+  const gameName = screen && 'game' in screen ? gameById(screen.game)?.name[lang] : '';
 
   return (
     <div className={`pad ${playing ? 'pad-play' : ''}`} style={{ ['--c' as string]: profile.color }} onPointerDown={unlockAudio}>
-      {!playing && (
-        <header className="pad-head">
-          <CharCanvas profile={profile} size={56} />
-          <div className="pad-me">
-            <b>{profile.name || '???'}</b>
-            <small>
-              {code} · {status === 'ok' ? t(lang, 'ping', { ms: rtt }) : '…'}
-            </small>
-          </div>
-          <button className="pill" onClick={() => setEditing(true)}>
+      <header className={`pad-head ${playing ? 'slim' : ''}`}>
+        <CharCanvas profile={profile} size={playing ? 34 : 46} still />
+        <b className="pad-name">{profile.name || '???'}</b>
+        <span className="pad-info">{playing ? gameName : `${code} · ${status === 'ok' ? t(lang, 'ping', { ms: rtt }) : '…'}`}</span>
+        {!playing && (
+          <button className="pill" onClick={() => setEditing(true)} aria-label={t(lang, 'editChar')}>
             ✏️
           </button>
-        </header>
-      )}
+        )}
+      </header>
 
       {status !== 'ok' ? (
         <div className="pad-status">
@@ -138,7 +136,15 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           <p className="pulse">{t(lang, 'connectingTv')}</p>
         </div>
       ) : (
-        <PadScreenView screen={screen} lang={lang} send={send} host={host} edit={() => setEditing(true)} />
+        <PadScreenView
+          screen={screen}
+          lang={lang}
+          code={code}
+          myColor={profile.color}
+          send={send}
+          host={host}
+          edit={() => setEditing(true)}
+        />
       )}
     </div>
   );
@@ -147,12 +153,16 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
 function PadScreenView({
   screen,
   lang,
+  code,
+  myColor,
   send,
   host,
   edit,
 }: {
   screen: PadScreen;
   lang: Lang;
+  code: string;
+  myColor: string;
   send: (m: ToTv) => void;
   host: (a: HostAction, g?: string) => void;
   edit: () => void;
@@ -162,7 +172,8 @@ function PadScreenView({
     case 'lobby':
       if (picking && screen.host)
         return (
-          <div className="pad-body">
+          <div className="pad-body top">
+            <p className="pad-title">{t(lang, 'pickGame')}</p>
             <div className="game-list">
               {screen.games.map((g) => {
                 const def = gameById(g.id)!;
@@ -170,13 +181,14 @@ function PadScreenView({
                   <button
                     key={g.id}
                     className="game-card"
+                    style={{ ['--g' as string]: def.color }}
                     disabled={g.soon}
                     onClick={() => {
                       setPicking(false);
                       host('pick', g.id);
                     }}
                   >
-                    <span className="emoji">{def.emoji}</span>
+                    <img src={gameIcon(def.slug)} alt="" />
                     <b>{def.name[lang]}</b>
                     {g.soon && <small>{t(lang, 'soon')}</small>}
                   </button>
@@ -189,23 +201,60 @@ function PadScreenView({
           </div>
         );
       return (
-        <div className="pad-body">
+        <div className="pad-body host">
+          <Wordmark className="pad-wordmark" />
+          <div className="code-card">
+            <div>
+              <small>{t(lang, 'codeLabel')}</small>
+              <b>{code}</b>
+            </div>
+            <div className="code-players">
+              <small>{t(lang, 'players', { n: screen.count })}</small>
+              <span className="dots">
+                {[myColor, ...screen.taken].slice(0, 12).map((c, i) => (
+                  <i key={i} style={{ background: c }} />
+                ))}
+              </span>
+            </div>
+          </div>
           {screen.host ? (
             <>
-              <p className="pad-title">👑 {t(lang, 'youHost')}</p>
-              <button className="btn big" onClick={() => host('tournament')}>
-                🏆 {t(lang, 'tournament')}
-                <small>{t(lang, 'tournamentSub')}</small>
+              <p className="pad-title">{t(lang, 'hostAsk')}</p>
+              <button className="big-card rose" onClick={() => host('tournament')}>
+                <svg viewBox="0 0 60 60" className="bc-icon" aria-hidden>
+                  <path
+                    d="M30 4l7.6 16.4 17.4 2-12.9 12 3.4 17.6L30 43.3 14.5 52l3.4-17.6L5 22.4l17.4-2z"
+                    fill="#ffd60a"
+                    stroke="#3a2140"
+                    strokeWidth="4"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>
+                  <b>{t(lang, 'tournament')}</b>
+                  <small>{t(lang, 'tournamentSub')}</small>
+                </span>
               </button>
-              <button className="btn big alt" onClick={() => setPicking(true)}>
-                🎮 {t(lang, 'pickGame')}
-                <small>{t(lang, 'pickGameSub')}</small>
+              <button className="big-card violet" onClick={() => setPicking(true)}>
+                <svg viewBox="0 0 60 60" className="bc-icon" aria-hidden>
+                  {[
+                    [6, 6, '#ffd60a'],
+                    [32, 6, '#1fc9a0'],
+                    [6, 32, '#2ec5ff'],
+                    [32, 32, '#ff4f9a'],
+                  ].map(([x, y, c]) => (
+                    <rect key={`${x}${y}`} x={x} y={y} width="22" height="22" rx="6" fill={c as string} stroke="#3a2140" strokeWidth="3.5" />
+                  ))}
+                </svg>
+                <span>
+                  <b>{t(lang, 'pickGame')}</b>
+                  <small>{t(lang, 'catalogue', { n: playable().length })}</small>
+                </span>
               </button>
             </>
           ) : (
             <p className="pad-title pulse">{t(lang, 'waitHost', { name: screen.hostName })}</p>
           )}
-          <p className="pad-small">{t(lang, 'players', { n: screen.count })}</p>
           <button className="btn ghost" onClick={edit}>
             ✏️ {t(lang, 'editChar')}
           </button>
@@ -227,16 +276,17 @@ function PadScreenView({
       return (
         <div className="pad-body">
           {screen.rank > 0 && (
-            <>
-              <p className="pad-big">{screen.rank === 1 ? '🥇' : screen.rank === 2 ? '🥈' : screen.rank === 3 ? '🥉' : '🎉'}</p>
-              <p className="pad-title">{t(lang, 'yourRank', { rank: ordinal(lang, screen.rank) })}</p>
-              <p className="pad-small">{t(lang, 'plusPts', { p: screen.points, t: screen.total })}</p>
-            </>
+            <div className="rank-card">
+              <span className={`rank-disc r${Math.min(4, screen.rank)}`}>{screen.rank}</span>
+              <div>
+                <p className="pad-title">{t(lang, 'yourRank', { rank: ordinal(lang, screen.rank) })}</p>
+                <p className="pad-small">{t(lang, 'plusPts', { p: screen.points, t: screen.total })}</p>
+              </div>
+            </div>
           )}
           {screen.host && (
             <>
-              <button className="btn big" onClick={() => host('next')}>
-                ⏭{' '}
+              <button className="btn big mint" onClick={() => host('next')}>
                 {screen.step
                   ? screen.step.index >= screen.step.count
                     ? t(lang, 'toPodium')
@@ -244,10 +294,10 @@ function PadScreenView({
                   : t(lang, 'nextGame')}
               </button>
               <button className="btn alt" onClick={() => host('replay')}>
-                🔁 {t(lang, 'replay')}
+                {t(lang, 'replay')}
               </button>
               <button className="btn ghost" onClick={() => host('lobby')}>
-                🏠 {t(lang, 'toLobby')}
+                {t(lang, 'toLobby')}
               </button>
             </>
           )}
@@ -256,14 +306,16 @@ function PadScreenView({
     case 'podium':
       return (
         <div className="pad-body">
-          <p className="pad-big">{screen.rank === 1 ? '🏆' : '🎉'}</p>
-          <p className="pad-title">{t(lang, 'yourRank', { rank: ordinal(lang, screen.rank) })}</p>
-          <p className="pad-small">
-            {screen.total} pts
-          </p>
+          <div className="rank-card">
+            <span className={`rank-disc r${Math.min(4, screen.rank)}`}>{screen.rank}</span>
+            <div>
+              <p className="pad-title">{t(lang, 'yourRank', { rank: ordinal(lang, screen.rank) })}</p>
+              <p className="pad-small">{screen.total} pts</p>
+            </div>
+          </div>
           {screen.host && (
-            <button className="btn big" onClick={() => host('lobby')}>
-              🏠 {t(lang, 'toLobby')}
+            <button className="btn big mint" onClick={() => host('lobby')}>
+              {t(lang, 'toLobby')}
             </button>
           )}
         </div>
@@ -282,21 +334,23 @@ function TapPad({ lang, send }: { lang: Lang; send: (m: ToTv) => void }) {
   };
   return (
     <div className="tap-pad">
-      <p className="tap-hint">{t(lang, 'tapHint')}</p>
       {[0, 1].map((s) => (
         <button
           key={s}
-          className={`tap-btn ${down === s ? 'down' : ''}`}
+          className={`round-btn ${s ? 'sun' : 'rose'} ${down === s ? 'down' : ''}`}
           onPointerDown={tap(s as 0 | 1)}
           onPointerUp={() => setDown(null)}
           onPointerCancel={() => setDown(null)}
         >
-          {s === 0 ? `◀ ${t(lang, 'left')}` : `${t(lang, 'right')} ▶`}
+          {s === 0 ? t(lang, 'left') : t(lang, 'right')}
         </button>
       ))}
+      <p className="tap-hint">{t(lang, 'tapHint')}</p>
     </div>
   );
 }
+
+type Tab = 'perso' | 'color' | 'hat' | 'deco';
 
 function Editor({
   profile,
@@ -311,7 +365,9 @@ function Editor({
 }) {
   const lang = profile.lang;
   const fileRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab] = useState<Tab>('perso');
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
+  const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 
   const onSelfie = (file?: File) => {
     if (!file) return;
@@ -326,35 +382,78 @@ function Editor({
     };
     img.src = URL.createObjectURL(file);
   };
+  const randomize = () =>
+    set({
+      food: pick(FOODS).id,
+      color: pick(COLORS.filter((c) => !taken.includes(c))) ?? profile.color,
+      hat: pick(HATS).id,
+      acc: pick(ACCS).id,
+    });
+
+  const labels = lang === 'fr' ? ['Perso', 'Couleur', 'Chapeau', 'Déco'] : ['Character', 'Color', 'Hat', 'Extras'];
+  const tabs: [Tab, string][] = (['perso', 'color', 'hat', 'deco'] as Tab[]).map((k, i) => [k, labels[i]]);
 
   return (
     <div className="pad editor" style={{ ['--c' as string]: profile.color }}>
+      <h2 className="editor-title">{t(lang, 'myChar')}</h2>
       <div className="editor-preview">
-        <CharCanvas profile={profile} size={130} />
+        <CharCanvas profile={profile} size={150} />
       </div>
-      <label className="field">
-        {t(lang, 'yourName')}
-        <input
-          value={profile.name}
-          maxLength={14}
-          autoComplete="off"
-          onChange={(e) => set({ name: e.target.value })}
-          placeholder="Pseudo"
-        />
-      </label>
-
-      <h3>{t(lang, 'character')}</h3>
-      <div className="chips foods">
-        {FOODS.map((f) => (
-          <button key={f.id} className={`chip ${profile.food === f.id ? 'on' : ''}`} onClick={() => set({ food: f.id })}>
-            <CharCanvas profile={{ ...profile, food: f.id, selfie: undefined, hat: 'aucun', acc: 'aucun' }} size={48} still />
-            <small>{f.name[lang]}</small>
+      <input
+        className="name-input"
+        value={profile.name}
+        maxLength={14}
+        autoComplete="off"
+        onChange={(e) => set({ name: e.target.value })}
+        placeholder={t(lang, 'yourName')}
+      />
+      <div className="tabs">
+        {tabs.map(([k, label]) => (
+          <button key={k} className={`tab ${tab === k ? 'on' : ''}`} onClick={() => setTab(k)}>
+            {label}
           </button>
         ))}
       </div>
 
-      <h3>{t(lang, 'color')}</h3>
-      <div className="chips colors">
+      {tab === 'perso' && (
+        <div className="pick-grid">
+          {FOODS.map((f) => (
+            <button key={f.id} className={`pick ${profile.food === f.id ? 'on' : ''}`} onClick={() => set({ food: f.id })}>
+              <CharCanvas profile={{ ...profile, food: f.id, selfie: undefined, hat: 'aucun', acc: 'aucun' }} size={52} still />
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === 'hat' && (
+        <div className="pick-grid">
+          {HATS.map((h) => (
+            <button key={h.id} className={`pick ${profile.hat === h.id ? 'on' : ''}`} onClick={() => set({ hat: h.id })}>
+              <CharCanvas profile={{ ...profile, selfie: undefined, acc: 'aucun', hat: h.id }} size={52} still />
+              <small>{h.name[lang]}</small>
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === 'deco' && (
+        <>
+          <div className="pick-grid">
+            {ACCS.map((a) => (
+              <button key={a.id} className={`pick ${profile.acc === a.id ? 'on' : ''}`} onClick={() => set({ acc: a.id })}>
+                <CharCanvas profile={{ ...profile, selfie: undefined, hat: 'aucun', acc: a.id }} size={52} still />
+                <small>{a.name[lang]}</small>
+              </button>
+            ))}
+          </div>
+          <div className="lang-row">
+            {(['fr', 'en'] as Lang[]).map((l) => (
+              <button key={l} className={`tab ${lang === l ? 'on' : ''}`} onClick={() => set({ lang: l })}>
+                {l === 'fr' ? 'Français' : 'English'}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <div className="color-row">
         {COLORS.map((c) => (
           <button
             key={c}
@@ -366,55 +465,19 @@ function Editor({
           />
         ))}
       </div>
+      {tab === 'color' && <p className="pad-small center">{t(lang, 'colorHint')}</p>}
 
-      <h3>{t(lang, 'hat')}</h3>
-      <div className="chips">
-        {HATS.map((h) => (
-          <button key={h.id} className={`chip txt ${profile.hat === h.id ? 'on' : ''}`} onClick={() => set({ hat: h.id })}>
-            {h.name[lang]}
-          </button>
-        ))}
-      </div>
-
-      <h3>{t(lang, 'acc')}</h3>
-      <div className="chips">
-        {ACCS.map((a) => (
-          <button key={a.id} className={`chip txt ${profile.acc === a.id ? 'on' : ''}`} onClick={() => set({ acc: a.id })}>
-            {a.name[lang]}
-          </button>
-        ))}
-      </div>
-
-      <div className="row">
-        <button className="btn alt" onClick={() => fileRef.current?.click()}>
-          📸 {t(lang, 'selfie')}
+      <div className="editor-actions">
+        <button className="btn ghost" onClick={() => (profile.selfie ? set({ selfie: undefined }) : fileRef.current?.click())}>
+          📷 {profile.selfie ? t(lang, 'removeSelfie') : t(lang, 'selfie')}
         </button>
-        {profile.selfie && (
-          <button className="btn ghost" onClick={() => set({ selfie: undefined })}>
-            {t(lang, 'removeSelfie')}
-          </button>
-        )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="user"
-          hidden
-          onChange={(e) => onSelfie(e.target.files?.[0])}
-        />
+        <button className="btn sun" onClick={randomize}>
+          {t(lang, 'random')}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" capture="user" hidden onChange={(e) => onSelfie(e.target.files?.[0])} />
       </div>
-
-      <h3>{t(lang, 'language')}</h3>
-      <div className="chips">
-        {(['fr', 'en'] as Lang[]).map((l) => (
-          <button key={l} className={`chip txt ${lang === l ? 'on' : ''}`} onClick={() => set({ lang: l })}>
-            {l === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'}
-          </button>
-        ))}
-      </div>
-
-      <button className="btn big sticky" disabled={!profile.name.trim()} onClick={onDone}>
-        {t(lang, 'ok')} ✓
+      <button className="btn big mint" disabled={!profile.name.trim()} onClick={onDone}>
+        {t(lang, 'itsMe')}
       </button>
     </div>
   );

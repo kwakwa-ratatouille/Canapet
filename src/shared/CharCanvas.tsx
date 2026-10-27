@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { drawCharacter, selfieImage, type DrawOpts } from './characters';
+import { drawCharacter, onSpriteReady, selfieImage, type Mood } from './characters';
 import { LIGHT } from './device';
 import type { Profile } from './protocol';
 
@@ -8,11 +8,12 @@ interface Props {
   size: number;
   ghost?: boolean;
   still?: boolean;
-  mood?: DrawOpts['mood'];
+  mood?: Mood;
+  arms?: boolean;
 }
 
-/** Un personnage animé dans un petit canvas (salon, résultats, manette). */
-export function CharCanvas({ profile, size, ghost, still, mood }: Props) {
+/** Un personnage dans un petit canvas (salon, résultats, manette). */
+export function CharCanvas({ profile, size, ghost, still, mood, arms }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const opts = useRef(profile);
   opts.current = profile;
@@ -24,6 +25,7 @@ export function CharCanvas({ profile, size, ghost, still, mood }: Props) {
     cv.height = size * 1.25 * dpr;
     const g = cv.getContext('2d')!;
     let raf = 0;
+    const animated = !still && !LIGHT;
     const draw = (now: number) => {
       const p = opts.current;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -34,20 +36,23 @@ export function CharCanvas({ profile, size, ghost, still, mood }: Props) {
         hat: p.hat,
         acc: p.acc,
         selfie: selfieImage(p.selfie),
-        t: now / 1000 + size,
+        t: animated ? now / 1000 + size : 0,
         ghost,
         mood,
+        arms,
       });
-      if (!still && !LIGHT) raf = requestAnimationFrame(draw);
+      if (animated) raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
-    // En mode immobile on redessine quand même un peu après, le temps que le selfie se charge.
+    // Vignettes immobiles : on redessine quand le dessin ou le selfie est prêt.
+    const off = onSpriteReady(() => !animated && requestAnimationFrame(draw));
     const late = setTimeout(() => requestAnimationFrame(draw), 400);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(late);
+      off();
     };
-  }, [size, ghost, still, mood, profile.food, profile.color, profile.hat, profile.acc, profile.selfie]);
+  }, [size, ghost, still, mood, arms, profile.food, profile.color, profile.hat, profile.acc, profile.selfie]);
 
   return <canvas ref={ref} style={{ width: size, height: size * 1.25 }} className="char" />;
 }

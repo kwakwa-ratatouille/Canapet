@@ -1,7 +1,7 @@
 // Course de pouces : on tapote gauche/droite le plus vite possible. Sert à valider la latence télé ↔ téléphones.
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { drawSky, roundRectText } from './draw';
 
 const STEPS = 60;
@@ -146,7 +146,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           mood: r.done === 1 ? 'wow' : 'happy',
         });
         if (r.done) {
-          g.font = `700 ${Math.min(48, h * 0.45)}px Fredoka, sans-serif`;
+          g.font = `700 ${Math.max(28, Math.min(48, h * 0.45))}px Fredoka, sans-serif`;
           g.textAlign = 'left';
           g.fillStyle = r.done === 1 ? '#ff9a1f' : '#3a2140';
           g.fillText(ctx.lang === 'fr' ? (r.done === 1 ? '1er' : `${r.done}e`) : `#${r.done}`, FINISH_X + 50, y + h / 2 + 14);
@@ -166,7 +166,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const thumbRace: GameDef = {
+export const thumbRace: GameBase = {
   id: 'pouces',
   emoji: '👍',
   name: { fr: 'Course de pouces', en: 'Thumb Dash' },

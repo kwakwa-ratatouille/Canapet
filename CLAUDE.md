@@ -16,6 +16,13 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 - Téléphones : mélange iPhone/Android. Langues : **FR + EN** (chaque joueur choisit ; la télé suit l'hôte).
 - Firebase : **nouveau projet** dédié (à créer par le propriétaire).
 
+## Direction artistique « Le salon du dimanche » (oct. 2026)
+
+- Source : dossier `canapet-da` du propriétaire, copié dans `public/da/` (logos, mascotte Pouet, persos, icônes de jeux `jeux/<slug>.svg`, maquettes) et `src/tokens.css` (couleurs, contours, ombres, typo = source de vérité). Brief : `public/da/BRIEF-CLAUDE-CODE.md`.
+- Dessin : `src/shared/art/canapet-art.js` (+ `.d.ts`). Les persos passent par `characterSvg()` puis sont convertis UNE fois en image (cache dans `characters.ts`) ; selfie posé sur `faceSlot()`. Humeurs : happy, wow, sad, win (+ bras sur le podium).
+- Canvas : couleurs via `src/shared/palette.ts`. Écrans HTML : variables `--cp-*` (alias `--ink`, `--pink`… dans `styles.css`). Télé : unité `--u` = 1 px d’un écran 1920, aucun texte sous 28 px, contours 6 px ; téléphone : contours 4 px. Ombres plates prune, jamais de flou ni de filter (Chromecast).
+- Typo : Fredoka 600/700 (titres, boutons), Nunito (texte). Logo principal = monogramme C’p ; logotype à apostrophe-nuage (`<Wordmark/>`) en tête de la télé et de l’accueil ; favicon `icone-claire.svg`. Icône PC : `desktop/make-icon.js` (rendu par Electron avec Fredoka chargée).
+
 ## Catalogue (ordre de fabrication)
 
 1. ✅ Course de pouces (`src/games/thumbRace.ts`) : test de latence.

@@ -3,7 +3,8 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { drawSky } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const GRAV = 2600;
 const RUN = 430;
@@ -18,7 +19,6 @@ const DEATH_Y = 1250;
 const BASE_Y = 860;
 const MAX_TIME = 150;
 const AFTER_FIRST = 25;
-const INK = '#3a2140';
 
 type Kind = 'ground' | 'block' | 'tile' | 'bounce' | 'conveyor' | 'mover';
 
@@ -872,7 +872,7 @@ function drawPlayer(g: CanvasRenderingContext2D, p: P, t: number) {
     }
   }
   // Pseudo au-dessus de la tête
-  g.font = '700 22px Fredoka, sans-serif';
+  g.font = '700 28px Fredoka, sans-serif';
   g.textAlign = 'center';
   g.lineWidth = 5;
   g.strokeStyle = INK;
@@ -912,7 +912,7 @@ function drawHud(g: CanvasRenderingContext2D, ps: P[], L: Level, time: number, d
   g.fillText(`${lang === 'fr' ? 'Arrivés' : 'Finished'} ${done}/${ps.length}`, 1880, 62);
 }
 
-export const tumble: GameDef = {
+export const tumble: GameBase = {
   id: 'obstacles',
   emoji: '🏃',
   name: { fr: 'La Dégringolade', en: 'Tumble Run' },

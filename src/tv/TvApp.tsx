@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { gameById } from '../games/registry';
+import { sofaGroup, characterGroup, starGroup } from '../shared/art/canapet-art.js';
 import { CharCanvas } from '../shared/CharCanvas';
 import { LIGHT, PREVIEW } from '../shared/device';
 import { ordinal, t } from '../shared/i18n';
+import { gameIcon, tint, Wordmark } from '../shared/Logo';
+import { INK, MENTHE, ROSE, SOLEIL, VIOLET } from '../shared/palette';
 import { joinUrl } from '../shared/protocol';
 import { QR } from '../shared/QR';
 import { audioLocked, isMuted, setMuted, unlockAudio } from '../shared/sound';
@@ -10,6 +13,7 @@ import { Session, TOURNAMENT_LEN, type Player } from './session';
 
 const W = 1920;
 const H = 1080;
+const CODE_TILES = [ROSE, VIOLET, MENTHE, '#ff9a1f'];
 
 export function TvApp() {
   const session = useMemo(() => new Session(PREVIEW), []);
@@ -40,20 +44,23 @@ export function TvApp() {
     const keys = (e: KeyboardEvent) => {
       unlock();
       const k = e.key.toLowerCase();
+      const pick: Record<string, string> = {
+        d: 'obstacles',
+        b: 'bluff',
+        s: 'sumo',
+        p: 'bombes',
+        k: 'kart',
+        a: 'archers',
+        g: 'dessin',
+        v: 'traitre',
+        c: 'combat',
+        w: 'bagarre',
+        o: 'cuisine',
+        y: 'plateau',
+      };
       if (k === 'enter') session.hostAction(session.phase === 'results' ? 'next' : 'pick', 'pouces');
+      if (pick[k]) session.hostAction('pick', pick[k]);
       if (k === 't') session.hostAction('tournament');
-      if (k === 'd') session.hostAction('pick', 'obstacles');
-      if (k === 'b') session.hostAction('pick', 'bluff');
-      if (k === 's') session.hostAction('pick', 'sumo');
-      if (k === 'p') session.hostAction('pick', 'bombes');
-      if (k === 'k') session.hostAction('pick', 'kart');
-      if (k === 'a') session.hostAction('pick', 'archers');
-      if (k === 'g') session.hostAction('pick', 'dessin');
-      if (k === 'v') session.hostAction('pick', 'traitre');
-      if (k === 'c') session.hostAction('pick', 'combat');
-      if (k === 'w') session.hostAction('pick', 'bagarre');
-      if (k === 'o') session.hostAction('pick', 'cuisine');
-      if (k === 'y') session.hostAction('pick', 'plateau');
       if (k === 'n') session.hostAction('next');
       if (k === 'r') session.hostAction('replay');
       if (k === 'l' || k === 'escape') session.hostAction('lobby');
@@ -74,20 +81,18 @@ export function TvApp() {
 
   const players = session.list();
   const hostPid = session.hostPid();
+  const def = session.def;
 
   return (
     <div className="tv">
-      {session.phase === 'lobby' ? (
-        <Lobby session={session} players={players} hostPid={hostPid} />
-      ) : (
-        <GameView session={session} />
-      )}
+      {session.phase === 'lobby' ? <Lobby session={session} players={players} hostPid={hostPid} /> : <GameView session={session} />}
 
       {session.phase !== 'lobby' && code && (
         <div className="corner-join">
           <QR text={joinUrl(code)} size={120} />
           <div>
-            <small>{t(lang, 'joinCorner')}</small>
+            {def && <small>{def.name[lang]}</small>}
+            {session.mode === 'tournament' && <small>{t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN })}</small>}
             <b>{code}</b>
           </div>
         </div>
@@ -132,40 +137,50 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
   const url = joinUrl(code);
   const shortUrl = url.replace(/^https?:\/\//, '').replace(/#.*$/, '');
   const slots = Array.from({ length: 12 }, (_, i) => players[i]);
+  const host = players.find((p) => p.pid === hostPid);
+  const connected = players.filter((p) => p.connected).length;
   return (
     <div className="lobby">
-      <div className="lobby-left">
-        <h1 className="logo">
-          Cana<span>’</span>pet
-        </h1>
-        <p className="lobby-sub">{t(lang, 'joinWith')}</p>
-        <div className="qr-card">{code ? <QR text={url} size={360} /> : <div className="qr-wait" />}</div>
-        <p className="lobby-url">
-          {t(lang, 'scanOr')} <b>{shortUrl}</b> {t(lang, 'andType')}
-        </p>
-        <div className="code">{code ? code.split('').map((c, i) => <span key={i}>{c}</span>) : '····'}</div>
-      </div>
-      <div className="lobby-right">
+      <header className="tv-top">
+        <Wordmark className="tv-wordmark" />
+        <span className="count-pill">{t(lang, 'playersCount', { n: connected })}</span>
+      </header>
+      <div className="lobby-main">
+        <div className="join-card">
+          <div className="qr-box">{code ? <QR text={url} size={360} /> : <div className="qr-wait" />}</div>
+          <p className="join-title">{t(lang, 'scanWith')}</p>
+          <p className="join-sub">{t(lang, 'orType', { url: shortUrl })}</p>
+          <div className="code">
+            {(code || '····').split('').map((c, i) => (
+              <span key={i} style={{ background: CODE_TILES[i % 4] }}>
+                {c}
+              </span>
+            ))}
+          </div>
+        </div>
         <div className="slots">
           {slots.map((p, i) =>
             p ? (
-              <div key={p.pid} className={`slot ${p.connected ? '' : 'off'}`} style={{ ['--c' as string]: p.color }}>
-                {p.pid === hostPid && <span className="crown">👑</span>}
-                <CharCanvas profile={p} size={150} ghost={!p.connected} />
+              <div key={p.pid} className={`slot ${p.connected ? '' : 'off'}`}>
+                {p.pid === hostPid && <span className="slot-badge">👑</span>}
+                <div className="slot-disc" style={{ background: tint(p.color, 0.35) }}>
+                  <CharCanvas profile={p} size={140} ghost={!p.connected} />
+                </div>
                 <div className="slot-name">{p.name}</div>
               </div>
             ) : (
               <div key={'e' + i} className="slot empty">
-                <span>{i + 1}</span>
+                <span>+</span>
+                <small>{t(lang, 'freeSlot')}</small>
               </div>
             ),
           )}
         </div>
-        <p className="lobby-hint">
-          {players.length === 0 ? t(lang, 'waitingPlayers') : t(lang, 'hostStarts', { crown: '👑' })}
-          {PREVIEW && <span className="kbd"> · Entrée = Course de pouces · D = Dégringolade · B = Bar des Bobards · T = Tournoi</span>}
-        </p>
       </div>
+      <p className="lobby-hint">
+        {host ? t(lang, 'hostLaunches', { name: host.name }) : t(lang, 'waitingPlayers')}
+        {PREVIEW && <span className="kbd"> · Entrée, D, B, S, P, K, A, W, O, V, G, Y, C = jeux · T = Tournoi</span>}
+      </p>
     </div>
   );
 }
@@ -184,7 +199,7 @@ function GameView({ session }: { session: Session }) {
       g.setTransform(scale, 0, 0, scale, 0, 0);
       const tt = now / 1000;
       if (session.game) session.game.render(g, tt);
-      drawIntro(g, session, tt);
+      drawIntro(g, session);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -193,27 +208,69 @@ function GameView({ session }: { session: Session }) {
   return <canvas ref={ref} className="game-canvas" />;
 }
 
-function drawIntro(g: CanvasRenderingContext2D, session: Session, now: number) {
+/** Icônes de jeux chargées une seule fois pour l'écran d'intro. */
+const icons = new Map<string, HTMLImageElement>();
+function iconImage(slug: string) {
+  let img = icons.get(slug);
+  if (!img) {
+    img = new Image();
+    img.src = gameIcon(slug);
+    icons.set(slug, img);
+  }
+  return img;
+}
+
+/** Texte « autocollant » : ombre prune décalée, rebord blanc, puis la couleur. */
+export function stickerText(g: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, fill: string) {
+  g.save();
+  g.font = `700 ${size}px Fredoka, sans-serif`;
+  g.textAlign = 'center';
+  g.lineJoin = 'round';
+  g.lineWidth = size * 0.28;
+  g.strokeStyle = INK;
+  g.strokeText(text, x, y + size * 0.08);
+  g.fillStyle = INK;
+  g.fillText(text, x, y + size * 0.08);
+  g.strokeStyle = '#fff';
+  g.strokeText(text, x, y);
+  g.lineWidth = size * 0.1;
+  g.strokeStyle = INK;
+  g.strokeText(text, x, y);
+  g.fillStyle = fill;
+  g.fillText(text, x, y);
+  g.restore();
+}
+
+function drawIntro(g: CanvasRenderingContext2D, session: Session) {
   if (session.phase !== 'game' || !session.def) return;
   const { title, count } = session.introState();
   const lang = session.lang();
+  const def = session.def;
   if (title > 0) {
     const a = Math.min(1, title * 3);
-    g.fillStyle = `rgba(255,79,154,${0.92 * a})`;
-    g.fillRect(0, 0, W, H);
     g.globalAlpha = a;
+    g.fillStyle = def.color;
+    g.fillRect(0, 0, W, H);
+    // Carte blanche au contour prune, ombre plate
+    g.fillStyle = INK;
+    g.beginPath();
+    g.roundRect(560, 170, 800, 700, 48);
+    g.fill();
     g.fillStyle = '#fff';
+    g.strokeStyle = INK;
+    g.lineWidth = 6;
+    g.beginPath();
+    g.roundRect(560, 155, 800, 700, 48);
+    g.fill();
+    g.stroke();
+    const img = iconImage(def.slug);
+    if (img.complete && img.naturalWidth) g.drawImage(img, 810, 195, 300, 300);
+    stickerText(g, def.name[lang], W / 2, 620, 92, ROSE);
+    g.fillStyle = INK;
+    g.font = '700 38px Nunito, sans-serif';
     g.textAlign = 'center';
-    g.font = '160px sans-serif';
-    g.fillText(session.def.emoji, W / 2, 400);
-    g.font = '700 130px Fredoka, sans-serif';
-    g.fillText(session.def.name[lang], W / 2, 580);
-    g.font = '600 56px Fredoka, sans-serif';
-    g.fillText(session.def.how[lang], W / 2, 700);
-    if (session.mode === 'tournament') {
-      g.font = '600 44px Fredoka, sans-serif';
-      g.fillText(t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN }), W / 2, 200);
-    }
+    wrap(g, def.how[lang], W / 2, 700, 720, 46);
+    if (session.mode === 'tournament') stickerText(g, t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN }), W / 2, 110, 56, SOLEIL);
     g.globalAlpha = 1;
     return;
   }
@@ -221,92 +278,132 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session, now: number) {
     const n = Math.ceil(count);
     const frac = count - Math.floor(count);
     const label = n > 0 ? String(n) : t(lang, 'go');
-    const s = 1 + (n > 0 ? frac : (count + 0.8) / 0.8) * 0.5;
+    const s = 1 + (n > 0 ? frac : (count + 0.8) / 0.8) * 0.4;
     g.save();
-    g.translate(W / 2, H / 2);
+    g.translate(W / 2, H / 2 + 70);
     g.scale(s, s);
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.font = '700 200px Fredoka, sans-serif';
-    g.lineWidth = 16;
-    g.strokeStyle = '#3a2140';
-    g.strokeText(label, 0, 0);
-    g.fillStyle = n > 0 ? '#ffd60a' : '#7bd13b';
-    g.fillText(label, 0, 0);
+    stickerText(g, label, 0, 0, 200, n > 0 ? SOLEIL : MENTHE);
     g.restore();
   }
-  void now;
+}
+
+function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lh: number) {
+  const words = text.split(' ');
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (g.measureText(test).width > maxW && line) {
+      g.fillText(line, x, y);
+      line = w;
+      y += lh;
+    } else line = test;
+  }
+  if (line) g.fillText(line, x, y);
 }
 
 function Results({ session }: { session: Session }) {
   const lang = session.lang();
-  const def = session.def ? gameById(session.def.id) : null;
+  const def = session.def;
+  const rows = session.results;
+  const maxTotal = Math.max(1, ...rows.map((r) => session.players.get(r.pid)?.total ?? 0));
+  const tournament = session.mode === 'tournament';
+  const nextId = tournament ? session.plan[session.step + 1] : null;
+  const next = nextId ? gameById(nextId) : null;
+  const compact = rows.length > 7;
   return (
-    <div className="overlay">
-      <div className="results card">
-        <h2>
-          {def?.emoji} {t(lang, 'results')}
-          {session.mode === 'tournament' && (
-            <small> · {t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN })}</small>
-          )}
-        </h2>
-        <ol className={session.results.length > 6 ? 'two-cols' : ''}>
-          {session.results.map((r) => {
-            const p = session.players.get(r.pid);
+    <div className="overlay results-bg">
+      <h2 className="sticker title">{t(lang, 'roundResults')}</h2>
+      <p className="results-sub">
+        {tournament ? `${t(lang, 'roundOf', { i: session.step + 1, n: TOURNAMENT_LEN })} · ` : ''}
+        {def?.name[lang]}
+      </p>
+      <div className="results-wrap">
+        <ol className={`results-list ${compact ? 'compact' : ''}`}>
+          {rows.map((r) => {
+            const total = session.players.get(r.pid)?.total ?? 0;
             return (
-              <li key={r.pid} style={{ ['--c' as string]: r.profile.color }}>
-                <span className="rank">{ordinal(lang, r.rank)}</span>
-                <CharCanvas profile={r.profile} size={70} still />
+              <li key={r.pid} className="res-row">
+                <span className={`rank-disc r${Math.min(4, r.rank)}`}>{r.rank}</span>
+                <CharCanvas profile={r.profile} size={compact ? 52 : 64} still mood={r.rank === 1 ? 'win' : 'happy'} />
                 <span className="who">{r.profile.name}</span>
                 {!r.bot && (
-                  <span className="pts">
-                    +{r.points} <small>({p?.total ?? 0})</small>
-                  </span>
+                  <>
+                    <span className="bar">
+                      <i style={{ width: `${(total / maxTotal) * 100}%`, background: r.profile.color }} />
+                    </span>
+                    <span className="total">{total}</span>
+                    <span className="plus">+{r.points}</span>
+                  </>
                 )}
               </li>
             );
           })}
         </ol>
-        <p className="hint">{t(lang, 'hostChooses')}</p>
+        <aside className="next-card">
+          {next ? (
+            <>
+              <b>{t(lang, 'nextUp')}</b>
+              <img src={gameIcon(next.slug)} alt="" />
+              <span>{next.name[lang]}</span>
+            </>
+          ) : (
+            <span className="next-hint">{t(lang, 'hostChooses')}</span>
+          )}
+        </aside>
       </div>
     </div>
   );
 }
+
+const SOFA = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${sofaGroup()}<g transform="translate(44 24) scale(.88)">${characterGroup('coussin', SOLEIL, { mood: 'win' })}</g></svg>`;
+const CONFETTI = Array.from({ length: 34 }, (_, i) => ({
+  x: (i * 53) % 100,
+  y: (i * 37) % 70,
+  r: (i * 47) % 180,
+  c: [ROSE, SOLEIL, MENTHE, VIOLET, '#2ec5ff'][i % 5],
+}));
+const STAR = `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">${starGroup(20, 20, 16, SOLEIL, 3)}</svg>`;
 
 function Podium({ players, lang }: { players: Player[]; lang: 'fr' | 'en' }) {
   const ranked = [...players].sort((a, b) => b.total - a.total);
   const top = [ranked[1], ranked[0], ranked[2]];
   return (
     <div className="overlay podium-bg">
-      <h2 className="podium-title">🏆 {t(lang, 'podium')}</h2>
+      {CONFETTI.map((c, i) => (
+        <i key={i} className="confetti" style={{ left: `${c.x}%`, top: `${c.y}%`, background: c.c, transform: `rotate(${c.r}deg)` }} />
+      ))}
+      <h2 className="sticker title sun">{t(lang, 'champions')}</h2>
       <div className="podium">
-        {top.map((p, i) =>
-          p ? (
-            <div key={p.pid} className={`step step${[2, 1, 3][i]}`}>
-              <CharCanvas profile={p} size={[200, 260, 180][i]} mood="wow" />
-              <div className="slot-name">{p.name}</div>
-              <div className="block" style={{ background: p.color }}>
-                <b>{[2, 1, 3][i]}</b>
-                <span>
+        {top.map((p, i) => {
+          const place = [2, 1, 3][i];
+          return p ? (
+            <div key={p.pid} className={`step step${place}`}>
+              {place === 1 && <span className="podium-star" dangerouslySetInnerHTML={{ __html: STAR }} />}
+              <CharCanvas profile={p} size={[180, 210, 165][i]} mood="win" arms />
+              <div className="block">
+                <b>{place}</b>
+                <span>{p.name}</span>
+                <small>
                   {p.total} {t(lang, 'pts')}
-                </span>
+                </small>
               </div>
             </div>
           ) : (
             <div key={i} className="step" />
-          ),
-        )}
+          );
+        })}
       </div>
       {ranked.length > 3 && (
         <p className="podium-rest">
           {ranked.slice(3).map((p, i) => (
             <span key={p.pid}>
-              {ordinal(lang, i + 4)} {p.name} ({p.total})
+              {ordinal(lang, i + 4)} {p.name} · {p.total}
             </span>
           ))}
         </p>
       )}
-      <p className="hint">{t(lang, 'hostChooses')}</p>
+      <div className="podium-sofa" dangerouslySetInnerHTML={{ __html: SOFA }} />
+      <p className="hint">{t(lang, 'podiumHint')}</p>
     </div>
   );
 }

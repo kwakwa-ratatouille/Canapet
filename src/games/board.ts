@@ -4,12 +4,12 @@ import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import type { BoardPadData } from './boardShared';
 import { roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const ROUNDS = 5;
 const SPACES = 26;
 const STAR_PRICE = 20;
-const INK = '#3a2140';
 
 type Space = 'bleu' | 'rouge' | 'vert';
 type Phase = 'roll' | 'dice' | 'move' | 'land' | 'miniIntro' | 'tap' | 'react' | 'miniEnd' | 'end';
@@ -385,7 +385,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const board: GameDef = {
+export const board: GameBase = {
   id: 'plateau',
   emoji: '🎲',
   name: { fr: 'Le Grand Plateau', en: 'The Big Board' },

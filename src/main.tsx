@@ -4,6 +4,7 @@ import { PadApp } from './pad/PadApp';
 import { Help } from './pages/Help';
 import { Home } from './pages/Home';
 import { TvApp } from './tv/TvApp';
+import './tokens.css';
 import './styles.css';
 
 // Navigation par « # » : marche sur GitHub Pages, Chromecast et l'appli PC sans réglage serveur.

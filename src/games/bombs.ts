@@ -3,14 +3,14 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const GW = 15;
 const GH = 11;
 const FUSE = 2.5;
 const FLAME = 0.55;
 const MAX_TIME = 150;
-const INK = '#3a2140';
 
 type Cell = 0 | 1 | 2; // vide, pilier, gelée
 type Bonus = 'bomb' | 'fire' | 'speed';
@@ -461,7 +461,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       players.forEach((p, i) => {
         g.globalAlpha = p.alive ? 1 : 0.35;
         roundRectText(g, `${p.profile.name}`, 40 + i * w, 46, w - 10, 28, p.profile.color);
-        g.font = '20px sans-serif';
+        g.font = '28px sans-serif';
         g.textAlign = 'center';
         g.fillStyle = INK;
         g.fillText(p.alive ? `🧨${p.bombs} 💦${p.range} 👟${Math.round((p.speed - 3.1) * 2)}` : '💦 KO', 40 + i * w + (w - 10) / 2, 96);
@@ -479,7 +479,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const bombsGame: GameDef = {
+export const bombsGame: GameBase = {
   id: 'bombes',
   emoji: '🧨',
   name: { fr: 'Pétards Mouillés', en: 'Soggy Bangers' },

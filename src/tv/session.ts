@@ -270,8 +270,9 @@ export class Session {
       rank++;
       const points = POINTS[rank - 1] ?? 1;
       const p = this.players.get(pid);
-      if (p && !r.bot) p.total += points;
-      return { pid, profile: r.profile, bot: r.bot, rank, points };
+      // Les faux joueurs de l'aperçu marquent comme des vrais (ils sont pilotés par l'ordinateur, mais présents dans la soirée).
+      if (p) p.total += points;
+      return { pid, profile: r.profile, bot: !p, rank, points };
     });
     this.phase = 'results';
     playMusic('lobby');

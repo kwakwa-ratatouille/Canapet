@@ -3,7 +3,8 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { drawSky, roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const T = 60;
 const W = 1920;
@@ -16,7 +17,6 @@ const BH = 56;
 const ARROW_V = 1350;
 const WIN_ROUNDS = 3;
 const MAX_TIME = 170;
-const INK = '#3a2140';
 
 const RECTS: [number, number, number, number][] = [
   [0, 0, 10, 1], [22, 0, 10, 1], [0, 17, 10, 1], [22, 17, 10, 1],
@@ -355,7 +355,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.globalAlpha = p.alive ? 1 : 0.45;
         roundRectText(g, p.profile.name, x, 100, w - 12, 24, p.profile.color);
         g.globalAlpha = 1;
-        g.font = '22px sans-serif';
+        g.font = '28px sans-serif';
         g.textAlign = 'center';
         g.fillText('⭐'.repeat(p.wins) || '·', x + (w - 12) / 2, 140);
       });
@@ -380,7 +380,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
-export const archers: GameDef = {
+export const archers: GameBase = {
   id: 'archers',
   emoji: '🏹',
   name: { fr: 'Flèches à Ventouse', en: 'Sucker Arrows' },

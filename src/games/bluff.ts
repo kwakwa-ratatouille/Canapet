@@ -4,12 +4,12 @@ import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { CARD_NAMES, type BluffPadData, type Card } from './bluffShared';
 import { roundRectText } from './draw';
-import type { GameCtx, GameDef, GameInstance, Runner } from './types';
+import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { INK } from '../shared/palette';
 
 const TYPES: Card[] = ['tartine', 'cornichon', 'fromage'];
 const HAND = 5;
 const TURN_TIME = 30;
-const INK = '#3a2140';
 
 interface Seat extends Runner {
   hand: Card[];
@@ -300,7 +300,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         });
         if (!s.alive) drawCloud(g, p.x, p.y - 30, 0.8, t);
         roundRectText(g, s.profile.name, p.x - 95, p.y + 115, 190, 34, s.profile.color);
-        g.font = '600 26px Fredoka, sans-serif';
+        g.font = '600 28px Fredoka, sans-serif';
         g.textAlign = 'center';
         g.fillStyle = '#fff';
         g.fillText(s.alive ? `🃏 ${s.hand.length}   💨 ${s.shots}/6` : 'KO', p.x, p.y - 112);
@@ -397,10 +397,10 @@ function drawBar(g: CanvasRenderingContext2D, t: number, light: boolean) {
   g.save();
   g.font = '700 74px Fredoka, sans-serif';
   g.textAlign = 'center';
-  if (!light) {
-    g.shadowColor = '#ff4f9a';
-    g.shadowBlur = 30 + Math.sin(t * 3) * 8;
-  }
+  // Pas de flou (Chromecast) : un contour prune fait office de néon.
+  g.lineWidth = 10;
+  g.strokeStyle = INK;
+  g.strokeText('Le Bar des Bobards', 960, 90);
   g.fillStyle = '#ffd1ea';
   g.fillText('Le Bar des Bobards', 960, 90);
   g.restore();
@@ -440,7 +440,7 @@ function drawCloud(g: CanvasRenderingContext2D, x: number, y: number, s: number,
   }
 }
 
-export const bluff: GameDef = {
+export const bluff: GameBase = {
   id: 'bluff',
   emoji: '🃏',
   name: { fr: 'Le Bar des Bobards', en: 'Fibbers’ Bar' },

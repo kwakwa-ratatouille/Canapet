@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { castAndGetCode, loadCast } from '../shared/cast';
 import { CharCanvas } from '../shared/CharCanvas';
+import { Wordmark } from '../shared/Logo';
 import { CODE_LETTERS, type Lang } from '../shared/protocol';
 import { save, store, IS_PHONE } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
@@ -107,9 +108,8 @@ export function Home() {
           <CharCanvas key={i} profile={m} size={IS_PHONE ? 70 : 110} />
         ))}
       </div>
-      <h1 className="logo">
-        Cana<span>’</span>pet
-      </h1>
+      <h1 className="sr-only">Cana’pet</h1>
+      <Wordmark className="home-wordmark" />
       <p className="home-tag">{t(lang, 'tagline')}</p>
       <div className="home-cards">
         {IS_PHONE ? (
