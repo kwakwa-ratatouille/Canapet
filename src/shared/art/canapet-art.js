@@ -63,6 +63,57 @@ function relief(str){
   return (defs?`<defs>${defs}</defs>`:'')+out;
 }
 
+/* ===== Look de chaque perso : [regard, pose] ===== */
+const LOOK={coussin:['cool','hip'],tartine:['sleepy','cross'],cornichon:['angry','flex'],beignet:['round','wave'],oeuf:['round','shy'],fromage:['wink','thumbs'],tomate:['angry','cross'],brocoli:['cool','flex'],cupcake:['round','wave'],sushi:['sleepy','hip'],frites:['wink','thumbs'],bonbon:['star','wave'],chaussette:['sleepy','shy'],pizza:['cool','thumbs'],glace:['round','hip'],avocat:['wink','cross'],macaron:['star','shy'],banane:['angry','wave'],nuage:['sleepy','hip']};
+
+/** Visage « content », différent selon le regard du perso. */
+function faceLook(cx,cy,s,look){
+  const e=12.5*s,r=10*s;let g='';
+  g+=`<ellipse cx="${cx-20*s}" cy="${cy+11*s}" rx="${5.5*s}" ry="${3*s}" fill="#ff7fb3" opacity=".28"/><ellipse cx="${cx+20*s}" cy="${cy+11*s}" rx="${5.5*s}" ry="${3*s}" fill="#ff7fb3" opacity=".28"/>`;
+  const eye=(x,big=1,pupil='dot')=>{
+    const rr=r*big;
+    let o=`<ellipse cx="${x}" cy="${cy}" rx="${rr}" ry="${rr*1.05}" fill="#fff" ${sw(3*s)}/>`;
+    if(pupil==='star') o+=star(x+1*s,cy+1*s,5.5*s*big,SOL,2*s);
+    else o+=`<circle cx="${x+1.5*s}" cy="${cy+1.5*s}" r="${4.8*s*big}" fill="${P}"/><circle cx="${x+3.2*s}" cy="${cy-0.8*s}" r="${1.8*s*big}" fill="#fff"/>`;
+    return o;
+  };
+  const lid=(x,depth)=>`<path d="M${x-r-1*s} ${cy+(depth-1)*s}Q${x} ${cy-r-6*s} ${x+r+1*s} ${cy+(depth-1)*s}Q${x} ${cy+(depth-4)*s} ${x-r-1*s} ${cy+(depth-1)*s}Z" fill="${P}"/>`;
+  const my=cy+14*s;
+  switch(look){
+  case 'round':
+    g+=eye(cx-e,1.15)+eye(cx+e,1.15);
+    g+=`<path d="M${cx-e-6*s} ${cy-17*s}Q${cx-e} ${cy-21*s} ${cx-e+6*s} ${cy-17*s}M${cx+e-6*s} ${cy-17*s}Q${cx+e} ${cy-21*s} ${cx+e+6*s} ${cy-17*s}" fill="none" ${sw(3*s)}/>`;
+    g+=`<path d="M${cx-8*s} ${my-1*s}Q${cx} ${my+11*s} ${cx+8*s} ${my-1*s}Z" fill="${P}" ${sw(2.5*s)}/><path d="M${cx-4*s} ${my+5*s}Q${cx} ${my+2*s} ${cx+4*s} ${my+5*s}Z" fill="#ff7fb3"/>`;
+    break;
+  case 'sleepy':
+    g+=eye(cx-e)+eye(cx+e);
+    // Paupières lourdes, à plat
+    for(const x of [cx-e,cx+e]) g+=`<path d="M${x-r-1*s} ${cy+1*s}H${x+r+1*s}V${cy-r-2*s}H${x-r-1*s}Z" fill="${P}"/>`;
+    g+=`<path d="M${cx-6*s} ${my+1*s}H${cx+6*s}" ${sw(3.5*s)}/>`;
+    break;
+  case 'angry':
+    g+=eye(cx-e)+eye(cx+e);
+    g+=`<path d="M${cx-e-r} ${cy-6*s}L${cx-e+r} ${cy-1*s}L${cx-e+r} ${cy-r-3*s}L${cx-e-r} ${cy-r-3*s}ZM${cx+e+r} ${cy-6*s}L${cx+e-r} ${cy-1*s}L${cx+e-r} ${cy-r-3*s}L${cx+e+r} ${cy-r-3*s}Z" fill="${P}"/>`;
+    g+=`<path d="M${cx-e-8*s} ${cy-17*s}L${cx-e+7*s} ${cy-11*s}M${cx+e+8*s} ${cy-17*s}L${cx+e-7*s} ${cy-11*s}" fill="none" ${sw(4*s)}/>`;
+    g+=`<rect x="${cx-9*s}" y="${my-3*s}" width="${18*s}" height="${8*s}" rx="${3*s}" fill="#fff" ${sw(2.8*s)}/><path d="M${cx-3*s} ${my-3*s}V${my+5*s}M${cx+3*s} ${my-3*s}V${my+5*s}" ${sw(2*s)}/>`;
+    break;
+  case 'wink':
+    g+=`<path d="M${cx-e-6.5*s} ${cy+1*s}Q${cx-e} ${cy-6*s} ${cx-e+6.5*s} ${cy+1*s}" fill="none" ${sw(3.8*s)}/>`+eye(cx+e)+lid(cx+e,0);
+    g+=`<path d="M${cx+e-6*s} ${cy-16*s}Q${cx+e+2*s} ${cy-20*s} ${cx+e+9*s} ${cy-15*s}" fill="none" ${sw(3.6*s)}/>`;
+    g+=`<path d="M${cx-8*s} ${my+1*s}Q${cx+1*s} ${my+7*s} ${cx+9*s} ${my-3*s}" fill="none" ${sw(3.6*s)}/><path d="M${cx+2*s} ${my+4*s}Q${cx+6*s} ${my+11*s} ${cx+8*s} ${my+2*s}Z" fill="#ff5a7a" ${sw(2.2*s)}/>`;
+    break;
+  case 'star':
+    g+=eye(cx-e,1.1,'star')+eye(cx+e,1.1,'star');
+    g+=`<path d="M${cx-10*s} ${my-2*s}Q${cx} ${my+14*s} ${cx+10*s} ${my-2*s}Z" fill="${P}" ${sw(2.5*s)}/><path d="M${cx-7*s} ${my-1*s}H${cx+7*s}" stroke="#fff" stroke-width="${2.6*s}" stroke-linecap="round"/>`;
+    break;
+  default: // cool
+    g+=eye(cx-e)+eye(cx+e)+lid(cx-e,0)+lid(cx+e,0);
+    g+=`<path d="M${cx-e-8*s} ${cy-14*s}L${cx-e+6*s} ${cy-12*s}M${cx+e-6*s} ${cy-15*s}Q${cx+e+2*s} ${cy-19*s} ${cx+e+9*s} ${cy-15*s}" fill="none" ${sw(3.6*s)}/>`;
+    g+=`<path d="M${cx-8*s} ${my+1*s}Q${cx+1*s} ${my+6*s} ${cx+9*s} ${my-3*s}" fill="none" ${sw(3.6*s)}/>`;
+  }
+  return g;
+}
+
 /* ===== Visage ===== */
 function face(cx,cy,m='happy',s=1){
   const e=12.5*s,r=10*s,p=4.8*s;let g='';
@@ -107,13 +158,34 @@ function legs(){
   return `<path d="M54 86Q50 106 46 125M66 86Q70 106 74 125" fill="none" ${sw(5)}/>`;
 }
 /** Bras « tuyau » avec gants blancs, posés selon l'humeur. sx = demi-largeur aux épaules, sy = hauteur des épaules. */
-function arms(m,sx,sy){
+function arms(m,sx,sy,pose='hip'){
   const L=60-sx,R=60+sx;let d='',hands=[];
   const glove=(x,y)=>`<circle cx="${x}" cy="${y}" r="6.5" fill="#fff" ${sw(3.5)}/><path d="M${x-5} ${y-3}Q${x-9} ${y-6} ${x-7} ${y-9}" fill="#fff" ${sw(3)}/>`;
   if(m==='win'){d=`M${L} ${sy}Q${L-14} ${sy-12} ${L-12} ${sy-32}M${R} ${sy}Q${R+14} ${sy-12} ${R+12} ${sy-32}`;hands=[[L-12,sy-35],[R+12,sy-35]];}
   else if(m==='wow'){d=`M${L} ${sy}Q${L-16} ${sy-4} ${L-14} ${sy-20}M${R} ${sy}Q${R+16} ${sy-4} ${R+14} ${sy-20}`;hands=[[L-14,sy-23],[R+14,sy-23]];}
   else if(m==='sad'){d=`M${L} ${sy}Q${L-6} ${sy+14} ${L-4} ${sy+26}M${R} ${sy}Q${R+6} ${sy+14} ${R+4} ${sy+26}`;hands=[[L-4,sy+29],[R+4,sy+29]];}
-  else{
+  else if(pose==='cross'){
+    // Bras croisés devant soi
+    d=`M${L} ${sy}Q${L-6} ${sy+18} ${66} ${sy+14}M${R} ${sy}Q${R+6} ${sy+20} ${54} ${sy+18}`;
+    hands=[[68,sy+13],[52,sy+18]];
+  }else if(pose==='flex'){
+    // Biceps !
+    d=`M${L} ${sy}Q${L-20} ${sy+2} ${L-16} ${sy-20}M${R} ${sy}Q${R+20} ${sy+2} ${R+16} ${sy-20}`;
+    hands=[[L-16,sy-23],[R+16,sy-23]];
+  }else if(pose==='wave'){
+    // Un petit coucou
+    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+20} ${sy-6} ${R+16} ${sy-30}`;
+    hands=[[L-8,sy+29],[R+16,sy-33]];
+  }else if(pose==='thumbs'){
+    // Pouce levé
+    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+18} ${sy+8} ${R+20} ${sy-6}`;
+    hands=[[L-8,sy+29]];
+    return `<path d="${d}" fill="none" ${sw(5)}/>`+glove(L-8,sy+29)+`<ellipse cx="${R+20}" cy="${sy-8}" rx="9" ry="7" fill="#fff" ${sw(3.5)}/><path d="M${R+14} ${sy-12}Q${R+8} ${sy-19} ${R+11} ${sy-23}Q${R+15} ${sy-25} ${R+19} ${sy-14}" fill="#fff" ${sw(3)}/>`;
+  }else if(pose==='shy'){
+    // Mains jointes devant, timide
+    d=`M${L} ${sy}Q${L-4} ${sy+20} ${56} ${sy+26}M${R} ${sy}Q${R+4} ${sy+20} ${64} ${sy+26}`;
+    hands=[[55,sy+27],[65,sy+27]];
+  }else{
     // Main sur la hanche à gauche, l'autre bras décontracté
     d=`M${L} ${sy}Q${L-18} ${sy+6} ${L-2} ${sy+20}M${R} ${sy}Q${R+12} ${sy+12} ${R+10} ${sy+26}`;
     hands=[[L+1,sy+21],[R+10,sy+29]];
@@ -189,11 +261,12 @@ function perso(kind,c=ROSE,o={}){
   const mood=o.arms?'win':o.mood||'happy';
   g+=legs()+relief(feet(c));
   let body=relief(k.b(c));
-  body+=o.selfie?selfie(60,k.fy,s):face(60,k.fy,o.mood||'happy',s);
+  const look=LOOK[kind]||['cool','hip'];
+  body+=o.selfie?selfie(60,k.fy,s):(o.mood||'happy')==='happy'?faceLook(60,k.fy,s,look[0]):face(60,k.fy,o.mood,s);
   if(o.acc) body+=acc(o.acc,60,k.fy,s);
   if(o.hat) body+=relief(hat(o.hat,k.hx||60,k.top,c));
   g+=`<g transform="translate(${X0} ${-DY}) scale(${SC})">${body}</g>`;
-  g+=arms(mood==='toot'?'happy':mood,(k.aw||36)*SC,BY(k.fy+20));
+  g+=arms(mood==='toot'?'happy':mood,(k.aw||36)*SC,BY(k.fy+20),look[1]);
   return g;
 }
 const VB='-6 -36 132 180';
