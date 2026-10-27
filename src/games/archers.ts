@@ -3,6 +3,7 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { drawSky, roundRectText } from './draw';
+import { TEAMS, allies, side, sidesLeft, winnerName } from './teams';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
 
@@ -11,12 +12,15 @@ const W = 1920;
 const H = 1080;
 const GRAV = 2400;
 const RUN = 390;
-const JUMP = 880;
+const JUMP = 1200;
 const HW = 18;
 const BH = 56;
 const ARROW_V = 1350;
 const WIN_ROUNDS = 3;
-const MAX_TIME = 170;
+const MAX_TIME = 150;
+/** Chrono d'une manche : mort subite à 30 s, fin à 45 s (plus de camping sans fin). */
+const SUDDEN = 30;
+const ROUND_TIME = 45;
 
 // Bords communs : plafond et sol troués au milieu, murs troués (on passe d'un côté à l'autre).
 const BORDERS: [number, number, number, number][] = [
@@ -127,9 +131,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let banner = '';
   let endDelay = -1;
   let roundOver = false;
+  let roundTime = 0;
+  let suddenSaid = false;
 
   function startRound() {
     round++;
+    roundTime = 0;
+    suddenSaid = false;
     arrows = [];
     const spots = [...SPAWNS].sort(() => Math.random() - 0.5);
     ps.forEach((p, i) => {
@@ -189,7 +197,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const a = arrows.filter((a) => a.stuck).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
       if (a) target = a;
     }
-    const foes = ps.filter((o, j) => j !== i && o.alive);
+    const foes = ps.filter((o, j) => j !== i && o.alive && !allies(o, p));
     const foe = foes.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
     if (!target && foe) target = foe;
     if (!target) return;
@@ -304,7 +312,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           }
           if (a.owner < 0) continue;
           for (const [j, p] of ps.entries()) {
-            if (!p.alive || (j === a.owner && a.age < 0.15)) continue;
+            if (!p.alive || (j === a.owner && a.age < 0.15) || a.owner < 0 || allies(p, ps[a.owner])) continue;
             if (Math.abs(a.x - p.x) < HW + 6 && a.y > p.y - BH - 4 && a.y < p.y + 4) {
               kill(p, a.owner);
               a.stuck = true;
@@ -317,21 +325,40 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       // Saut sur la tête
       for (const [i, a] of ps.entries())
         for (const [j, b] of ps.entries()) {
-          if (i === j || !a.alive || !b.alive || a.vy <= 100) continue;
+          if (i === j || !a.alive || !b.alive || a.vy <= 100 || allies(a, b)) continue;
           if (Math.abs(a.x - b.x) < HW * 2 && a.y > b.y - BH - 6 && a.y < b.y - BH + 18) {
             kill(b, i);
             a.vy = -JUMP * 0.7;
           }
         }
+      roundTime += dt;
+      if (roundTime > SUDDEN && !suddenSaid) {
+        suddenSaid = true;
+        banner = fr ? 'Mort subite !' : 'Sudden death!';
+        speak(banner, ctx.lang);
+        setTimeout(() => banner === (fr ? 'Mort subite !' : 'Sudden death!') && (banner = ''), 1600);
+        // Tout le monde recharge : ça va vite se finir
+        ps.forEach((p) => p.alive && (p.arrows = 5));
+      }
       const alive = ps.filter((p) => p.alive);
-      if (alive.length <= 1 && pause <= 0) {
-        const w = alive[0];
+      const timeUp = roundTime > ROUND_TIME;
+      if ((sidesLeft(alive) <= 1 || timeUp) && pause <= 0) {
+        // Temps écoulé : le camp avec le plus de survivants gagne, sinon égalité
+        let w: P | undefined = alive[0];
+        if (timeUp && sidesLeft(alive) > 1) {
+          const n = new Map<string, number>();
+          alive.forEach((p) => n.set(side(p), (n.get(side(p)) ?? 0) + 1));
+          const best = [...n.entries()].sort((a, b) => b[1] - a[1]);
+          w = best[0][1] > best[1][1] ? alive.find((p) => side(p) === best[0][0]) : undefined;
+        }
         if (w) {
-          w.wins++;
-          banner = fr ? `${w.profile.name} gagne la manche !` : `${w.profile.name} wins the round!`;
+          const wn = w;
+          ps.forEach((p) => (p === wn || allies(p, wn)) && p.wins++);
+          const name = winnerName(w, ctx.lang);
+          banner = fr ? `${name} gagne la manche !` : `${name} wins the round!`;
           speak(banner, ctx.lang);
           sfx.win();
-        } else banner = fr ? 'Égalité !' : 'Draw!';
+        } else banner = timeUp ? (fr ? 'Temps écoulé : égalité !' : 'Time up: draw!') : fr ? 'Égalité !' : 'Draw!';
         pause = 2.4;
         roundOver = true;
         if ((w && w.wins >= WIN_ROUNDS) || time > MAX_TIME) endDelay = 0;
@@ -371,6 +398,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       ps.forEach((p, i) => {
         if (!p.alive) return;
+        if (p.team !== undefined) {
+          g.fillStyle = TEAMS[p.team].color;
+          g.strokeStyle = INK;
+          g.lineWidth = 4;
+          g.beginPath();
+          g.ellipse(p.x, p.y + 2, 30, 9, 0, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+        }
         drawCharacter(g, p.x, p.y, 72, {
           food: p.profile.food,
           color: p.profile.color,
@@ -388,12 +424,27 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       ps.forEach((p, i) => {
         const x = 110 + i * w;
         g.globalAlpha = p.alive ? 1 : 0.45;
-        roundRectText(g, p.profile.name, x, 100, w - 12, 24, p.profile.color);
+        roundRectText(g, p.profile.name, x, 100, w - 12, 24, p.team !== undefined ? TEAMS[p.team].color : p.profile.color);
         g.globalAlpha = 1;
         g.font = '28px sans-serif';
         g.textAlign = 'center';
         g.fillText('⭐'.repeat(p.wins) || '·', x + (w - 12) / 2, 140);
       });
+      if (pause <= 0) {
+        const left = Math.max(0, Math.ceil(ROUND_TIME - roundTime));
+        const hot = roundTime > SUDDEN;
+        g.font = '700 44px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.fillStyle = hot ? '#ff4f9a' : '#fff';
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.roundRect(890, 168, 140, 64, 32);
+        g.fill();
+        g.stroke();
+        g.fillStyle = hot ? '#fff' : INK;
+        g.fillText(`⏱ ${left}`, 960, 215);
+      }
       if (banner) {
         g.font = '700 90px Fredoka, sans-serif';
         g.textAlign = 'center';
@@ -409,7 +460,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       return [...ps].sort((a, b) => b.wins - a.wins || b.kills - a.kills).map((p) => p.pid);
     },
     leader() {
-      return ps.find((p) => p.wins >= WIN_ROUNDS)?.profile.name ?? null;
+      const w = ps.find((p) => p.wins >= WIN_ROUNDS);
+      return w ? winnerName(w, ctx.lang) : null;
     },
   };
   startRound();

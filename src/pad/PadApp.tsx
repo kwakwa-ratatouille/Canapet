@@ -1,3 +1,4 @@
+import { TEAMS } from '../games/teams';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GAMES, gameById, playable } from '../games/registry';
 import { CharCanvas } from '../shared/CharCanvas';
@@ -30,7 +31,7 @@ function defaultProfile(): Profile {
 }
 
 const DEMO: Record<string, PadScreen> = {
-  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false },
+  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0 },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
   results: { s: 'results', host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
@@ -217,6 +218,20 @@ function PadScreenView({
               </span>
             </div>
           </div>
+          {screen.teams && (
+            <div className="team-pick">
+              {TEAMS.map((tm, k) => (
+                <button
+                  key={k}
+                  className={screen.team === k ? 'on' : ''}
+                  style={{ background: screen.team === k ? tm.color : '#fff' }}
+                  onClick={() => send({ t: 'team', n: k })}
+                >
+                  {tm.emoji} {tm.name[lang]}
+                </button>
+              ))}
+            </div>
+          )}
           {screen.host ? (
             <>
               <p className="pad-title">{t(lang, 'hostAsk')}</p>
@@ -256,6 +271,13 @@ function PadScreenView({
                 <span>
                   <b>{t(lang, 'family')}</b>
                   <small>{t(lang, screen.family ? 'familyOn' : 'familyOff')}</small>
+                </span>
+              </button>
+              <button className={`family-toggle ${screen.teams ? 'on' : ''}`} onClick={() => host('teams')}>
+                <span className="switch" />
+                <span>
+                  <b>{t(lang, 'teams')}</b>
+                  <small>{t(lang, screen.teams ? 'teamsOn' : 'teamsOff')}</small>
                 </span>
               </button>
             </>

@@ -21,7 +21,7 @@ export interface GameInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean }
+  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown }
   | { s: 'wait'; game: string }
   | {
@@ -41,7 +41,7 @@ export type ToPad =
   | { t: 'buzz'; ms: number }
   | { t: 'pong'; ts: number };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family';
+export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams';
 
 /** Téléphone → télé */
 export type ToTv =
@@ -52,6 +52,8 @@ export type ToTv =
   /** Action propre à un jeu (poser des cartes, voter…). */
   | { t: 'act'; a: string; n?: number[]; s?: string }
   | { t: 'host'; action: HostAction; game?: string }
+  /** Mode équipes : le joueur choisit son camp (0 ou 1). */
+  | { t: 'team'; n: number }
   | { t: 'ping'; ts: number };
 
 export const PEER_PREFIX = 'canapet-v1-';

@@ -5,6 +5,8 @@ export interface Runner {
   profile: Profile;
   bot: boolean;
   selfie: HTMLImageElement | null;
+  /** Mode équipes : 0 ou 1. Absent = mêlée générale. */
+  team?: number;
 }
 
 export interface GameCtx {

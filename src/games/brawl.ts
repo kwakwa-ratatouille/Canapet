@@ -224,7 +224,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     let best = -1;
     let bd = range;
     bs.forEach((o, j) => {
-      if (j === i || !o.alive || o.heldBy >= 0) return;
+      if (j === i || !o.alive || o.heldBy >= 0 || allies(o, b)) return;
       const d = Math.hypot(o.x - b.x, (o.y - b.y) * 1.5);
       if (d < bd && Math.sign(o.x - b.x || b.dir) === b.dir) {
         bd = d;
@@ -302,7 +302,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     let best = -1;
     let bd = 1e9;
     bs.forEach((o, j) => {
-      if (j === i || !o.alive || o.heldBy >= 0) return;
+      if (j === i || !o.alive || o.heldBy >= 0 || allies(o, b)) return;
       const d = Math.hypot(o.x - b.x, o.y - b.y) - (o.ko > 0 ? 300 : 0);
       if (d < bd) {
         bd = d;
@@ -568,11 +568,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
       });
       const left = bs.filter((b) => b.alive);
-      if (left.length <= 1 && !roundOver) {
+      if (sidesLeft(left) <= 1 && !roundOver) {
         const w = left[0];
         if (w) {
-          w.wins++;
-          banner = fr ? `${w.profile.name} gagne la manche !` : `${w.profile.name} wins the round!`;
+          bs.forEach((o) => (o === w || allies(o, w)) && o.wins++);
+          const name = winnerName(w, ctx.lang);
+          banner = fr ? `${name} gagne la manche !` : `${name} wins the round!`;
           sfx.win();
         } else banner = fr ? 'Égalité !' : 'Draw!';
         speak(banner, ctx.lang);
@@ -747,7 +748,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.lineWidth = 6;
         g.strokeStyle = INK;
         g.strokeText(b.profile.name, b.x, b.y - 142);
-        g.fillStyle = b.profile.color;
+        g.fillStyle = b.team !== undefined ? TEAMS[b.team].color : b.profile.color;
         g.fillText(b.profile.name, b.x, b.y - 142);
       });
       // Particules
@@ -826,7 +827,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           t,
           mood: !b.alive ? 'sad' : b.ko > 0 ? 'wow' : 'happy',
         });
-        roundRectText(g, b.profile.name, x + 80, 44, w - 96, 22, b.profile.color);
+        roundRectText(g, b.profile.name, x + 80, 44, w - 96, 22, b.team !== undefined ? TEAMS[b.team].color : b.profile.color);
         for (let k = 0; k < WIN_ROUNDS; k++) {
           g.fillStyle = k < b.wins ? SOLEIL : '#eee3f3';
           g.strokeStyle = INK;
@@ -858,7 +859,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       return [...bs].sort((a, b) => b.wins - a.wins || Number(b.alive) - Number(a.alive) || b.out - a.out || b.kos - a.kos).map((b) => b.pid);
     },
     leader() {
-      return bs.find((b) => b.wins >= WIN_ROUNDS)?.profile.name ?? null;
+      const w = bs.find((b) => b.wins >= WIN_ROUNDS);
+      return w ? winnerName(w, ctx.lang) : null;
     },
   };
   startRound();
@@ -880,4 +882,5 @@ export const brawl: GameBase = {
   botFill: 4,
   music: 'tumble',
   create,
-};
+};import { TEAMS, allies, sidesLeft, winnerName } from './teams';
+

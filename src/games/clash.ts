@@ -330,7 +330,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (f.moveT < d.from || f.moveT > d.to) return;
     const hb = hitbox(f);
     fs.forEach((o, j) => {
-      if (f.hitSet.has(j) || !alive(o) || o.invuln > 0) return;
+      if (f.hitSet.has(j) || !alive(o) || o.invuln > 0 || allies(o, f)) return;
       if (o.x + HW < hb.x || o.x - HW > hb.x + hb.w || o.y < hb.y || o.y - BH > hb.y + hb.h) return;
       f.hitSet.add(j);
       let dirX: number = f.dir;
@@ -347,7 +347,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     burst(it.x, it.y, 10, 'star', SOLEIL, 700, 14);
     sfx.pet();
     fs.forEach((o, j) => {
-      if (!alive(o) || o.invuln > 0) return;
+      if (!alive(o) || o.invuln > 0 || (it.thrownBy >= 0 && allies(o, fs[it.thrownBy]))) return;
       const dx = o.x - it.x;
       const dy = o.y - BH / 2 - it.y;
       if (Math.hypot(dx, dy) < 170) strike(o, j, it.thrownBy, { dmg: 15, base: 440, growth: 6.5 }, 0.9, dx >= 0 ? 1 : -1);
@@ -394,7 +394,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     let best = -1;
     let bd = 1e9;
     fs.forEach((o, j) => {
-      if (j === i || !alive(o)) return;
+      if (j === i || !alive(o) || allies(o, f)) return;
       const d = Math.hypot(o.x - f.x, o.y - f.y);
       if (d < bd) {
         bd = d;
@@ -666,7 +666,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       fs.forEach((f, i) => alive(f) && applyHits(f, i));
       stepItems(dt);
       stepCamera(dt);
-      const left = fs.filter((f) => f.stocks > 0).length;
+      const left = sidesLeft(fs.filter((f) => f.stocks > 0));
       if (endDelay < 0 && (left <= 1 || time > MAX_TIME)) endDelay = 2.4;
       if (endDelay >= 0 && (endDelay -= dt) <= 0) game.over = true;
     },
@@ -758,7 +758,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.lineWidth = 6;
         g.strokeStyle = INK;
         g.strokeText(f.profile.name, f.x, f.y - SIZE - 34);
-        g.fillStyle = f.profile.color;
+        g.fillStyle = f.team !== undefined ? TEAMS[f.team].color : f.profile.color;
         g.fillText(f.profile.name, f.x, f.y - SIZE - 34);
         if (f.meter >= 100) {
           g.font = '36px sans-serif';
@@ -825,7 +825,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     leader() {
       const left = fs.filter((f) => f.stocks > 0);
-      return left.length === 1 ? left[0].profile.name : null;
+      return left.length && sidesLeft(left) === 1 ? winnerName(left[0], ctx.lang) : null;
     },
   };
   return game;
@@ -1170,7 +1170,7 @@ function drawHud(g: CanvasRenderingContext2D, fs: F[], t: number) {
       t,
       mood: f.stocks <= 0 ? 'sad' : f.stun > 0 ? 'wow' : 'happy',
     });
-    roundRectText(g, f.profile.name, x + 16, 944, w - 32, 22, f.profile.color);
+    roundRectText(g, f.profile.name, x + 16, 944, w - 32, 22, f.team !== undefined ? TEAMS[f.team].color : f.profile.color);
     const heat = Math.min(1, f.dmg / 150);
     g.fillStyle = `rgb(${Math.round(255)},${Math.round(214 - heat * 180)},${Math.round(10 + heat * 50)})`;
     g.font = `700 ${50 + Math.min(14, f.dmg / 12)}px Fredoka, sans-serif`;
@@ -1219,4 +1219,5 @@ export const clash: GameBase = {
   botFill: 4,
   music: 'tumble',
   create,
-};
+};import { TEAMS, allies, sidesLeft, winnerName } from './teams';
+

@@ -30,7 +30,7 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 3. ✅ Le Bar des Bobards (`src/games/bluff.ts` + `src/pad/BluffPad.tsx`) : bluff 2-6 joueurs, main privée sur le téléphone (`padData` + `ctx.refresh()`), roulette du coussin péteur.
 4. ✅ Sumo Tamponneur (`sumo.ts`, 12 joueurs, 3 vies, assiette qui rétrécit) et Pétards Mouillés (`bombs.ts`, 8 joueurs, grille, bonus, bots qui fuient le danger).
 5. ✅ Mini Bolides (`kart.ts`, 8 karts, 3 tours, objets turbo/sirop/pétard).
-6. ✅ Flèches à Ventouse (`archers.ts`, 8 joueurs, bords qui se rejoignent, premier à 3 manches).
+6. ✅ Flèches à Ventouse (`archers.ts`, 8 joueurs, bords qui se rejoignent, premier à 3 manches, saut assez haut pour toutes les plateformes, manche de 45 s avec mort subite à 30 s).
 7. ✅ Gribouillis (`scribble.ts` + `ScribblePad.tsx`) : dessin en direct du téléphone vers la télé, devinettes tapées, seuls les humains dessinent.
 8. ✅ Le Traître du Frigo (`traitor.ts` + `TraitorPad.tsx`) : rôle caché 4-12, nuit/débat/vote, Goûteur dès 5.
 9. ✅ Coussin Clash (`clash.ts`) : combat de plateforme sur un canapé, % de dégâts, 3 vies, 4 coups + super coup (bas + B jauge pleine).
@@ -65,6 +65,11 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Personnages dessinés par le code : `src/shared/characters.ts`. Sons : `src/shared/sound.ts`. Textes FR/EN : `src/shared/i18n.ts`.
 - Mode léger automatique (`LIGHT`, Chromecast et petits Android) : canvas en 1280×720, moins d'effets.
 
+## Mode équipes et musique
+
+- **Équipes** (interrupteur de l’hôte, touche E) : Fraise 🍓 contre Menthe 🌿 (`src/games/teams.ts`), chacun choisit son camp sur sa manette, les bots équilibrent. Tous les jeux : chaque équipe marque la moyenne des places de ses joueurs (juste à 3 contre 2), l’équipe gagnante prend 10 pts chacun, l’autre 4 (égalité 7). Sumo, Pétards, Bagarre, Clash, Flèches : pas de coups entre coéquipiers (sauf Pétards), fin quand il reste un seul camp (`allies`, `sidesLeft`). Sans équipes = mêlée générale.
+- **Musique** (`sound.ts`) : compositeur maison, grille couplet + pont par ambiance, mélodie réinventée à chaque tour (A A' B A, 32 mesures), basse, batterie, nappe, bus musique filtré et plus bas que les bruitages.
+
 ## Chromecast et appli PC
 
 - **Chromecast** : récepteur `public/cast.html` (SDK CAF, iframe vers `index.html?cast=1#/tv`, bandeau de diagnostic). La page télé envoie son code au récepteur (postMessage), qui le renvoie aux téléphones sur le canal `urn:x-cast:com.canapet`. Bouton « Lancer sur le Chromecast » sur l’accueil (`src/shared/cast.ts`), caché tant que `CAST_APP_ID` est vide : le propriétaire doit enregistrer l’appli (Custom Receiver, URL `https://kwakwa-ratatouille.github.io/Canapet/cast.html`) dans la console Google Cast, la **publier**, et donner l’identifiant.
@@ -73,7 +78,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 ## Tester
 
 - `npm run dev` (port 5180, déclaré dans `.claude/launch.json`).
-- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, G = Gribouillis, V = Traître, C = Clash, W = Bagarre, O = Cuisine, Y = Plateau, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
+- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : E = équipes, Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, G = Gribouillis, V = Traître, C = Clash, W = Bagarre, O = Cuisine, Y = Plateau, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
 - `#/m/TEST?s=lobby|tap|stick|results|podium` : la manette sans connexion.
 - En aperçu, `window.__session` donne la session télé : `__session.game.input(pid, {t:'in', …})` pour piloter un joueur. Attention : un onglet manette au premier plan met la télé en pause (onglet en arrière-plan) ; mettre la manette dans une iframe de la page télé pour tester.
 

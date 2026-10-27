@@ -3,6 +3,7 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { roundRectText } from './draw';
+import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
 
@@ -378,7 +379,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if (!p.bot) ctx.buzz(p.pid, 500);
         }
       });
-      const left = players.filter((p) => p.alive).length;
+      const left = sidesLeft(players.filter((p) => p.alive));
       if (endDelay < 0 && (left <= 1 || time > MAX_TIME)) endDelay = 2;
       if (endDelay >= 0 && (endDelay -= dt) <= 0) game.over = true;
     },
@@ -506,7 +507,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const w = Math.min(220, 1840 / players.length);
       players.forEach((p, i) => {
         g.globalAlpha = p.alive ? 1 : 0.35;
-        roundRectText(g, `${p.profile.name}`, 40 + i * w, 46, w - 10, 28, p.profile.color);
+        roundRectText(g, `${p.profile.name}`, 40 + i * w, 46, w - 10, 28, p.team !== undefined ? TEAMS[p.team].color : p.profile.color);
         g.font = '28px sans-serif';
         g.textAlign = 'center';
         g.fillStyle = INK;
@@ -520,7 +521,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     leader() {
       const left = players.filter((p) => p.alive);
-      return left.length === 1 ? left[0].profile.name : null;
+      return left.length && sidesLeft(left) === 1 ? winnerName(left[0], ctx.lang) : null;
     },
   };
   return game;

@@ -1,5 +1,6 @@
 // La soirée côté télé : joueurs, enchaînement des jeux, scores. La télé fait autorité.
 import { GAMES, gameById, playable } from '../games/registry';
+import { TEAMS } from '../games/teams';
 import { TUTOS } from '../games/tutos';
 import type { GameDef, GameInstance, Runner } from '../games/types';
 import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
@@ -16,6 +17,8 @@ export interface Player extends Profile {
   joinedAt: number;
   total: number;
   lastSeen: number;
+  /** Camp choisi pour le mode équipes (0 ou 1). */
+  team: number;
 }
 
 export type Phase = 'lobby' | 'game' | 'results' | 'podium';
@@ -26,6 +29,7 @@ export interface ResultRow {
   bot: boolean;
   rank: number;
   points: number;
+  team?: number;
 }
 
 const POINTS = [10, 7, 5, 4, 3, 2];
@@ -43,6 +47,10 @@ export class Session {
   mode: 'host' | 'tournament' = 'host';
   /** Mode famille (mémorisé sur la télé). */
   family = store('family', false);
+  /** Mode équipes (Fraise contre Menthe) ; sinon mêlée générale. */
+  teams = store('teams', false);
+  /** Score des équipes à la dernière partie (moyenne des points de chaque camp). */
+  teamScore: { avg: [number, number]; winner: number } | null = null;
   plan: string[] = [];
   step = 0;
   def: GameDef | null = null;
@@ -127,12 +135,19 @@ export class Session {
       joinedAt: existing?.joinedAt ?? performance.now() + this.players.size,
       total: existing?.total ?? 0,
       lastSeen: performance.now(),
+      team: existing?.team ?? this.smallerTeam(),
     };
     this.players.set(pid, p);
     if (!existing) sfx.join();
     if (!fake) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code });
     this.changed();
     this.pushScreens();
+  }
+
+  /** L'équipe qui a le moins de joueurs (pour équilibrer les arrivées). */
+  private smallerTeam(): number {
+    const l = this.list().filter((p) => p.connected);
+    return l.filter((p) => p.team === 1).length < l.filter((p) => p.team === 0).length ? 1 : 0;
   }
 
   private onLeave(pid: string) {
@@ -163,6 +178,13 @@ export class Session {
       case 'in':
       case 'act':
         if (this.phase === 'game' && this.game && this.clock >= this.intro + COUNT) this.game.input(pid, m);
+        return;
+      case 'team':
+        if (!p || this.phase !== 'lobby') return;
+        p.team = m.n ? 1 : 0;
+        sfx.click();
+        this.changed();
+        this.pushScreens();
         return;
       case 'host':
         if (pid !== this.hostPid()) return;
@@ -217,6 +239,14 @@ export class Session {
         this.changed();
         this.pushScreens();
         break;
+      case 'teams':
+        if (this.phase !== 'lobby') break;
+        this.teams = !this.teams;
+        save('teams', this.teams);
+        speak(this.lang() === 'fr' ? (this.teams ? 'Mode équipes : Fraise contre Menthe !' : 'Mêlée générale !') : this.teams ? 'Teams: Strawberry versus Mint!' : 'Free for all!', this.lang());
+        this.changed();
+        this.pushScreens();
+        break;
       case 'lobby':
         this.toLobby();
         break;
@@ -245,7 +275,10 @@ export class Session {
     const def = gameById(id);
     if (!def?.create) return;
     const humans = this.list().filter((p) => p.connected).slice(0, def.max);
-    const runners: Runner[] = humans.map((p) => ({ pid: p.pid, profile: p, bot: p.fake, selfie: selfieImage(p.selfie) }));
+    const runners: Runner[] = humans.map((p) => ({ pid: p.pid, profile: p, bot: p.fake, selfie: selfieImage(p.selfie), team: this.teams ? p.team : undefined }));
+    // Une équipe vide alors qu'il y a du monde : on répartit un sur deux.
+    if (this.teams && runners.length >= 2 && new Set(runners.map((r) => r.team)).size < 2) runners.forEach((r, i) => (r.team = i % 2));
+    const count = (k: number) => runners.filter((r) => r.team === k).length;
     const used = new Set(runners.map((r) => r.profile.color));
     const foods = FOODS.map((f) => f.id).sort(() => Math.random() - 0.5);
     for (let i = 0; runners.length < Math.min(def.botFill, def.max); i++) {
@@ -257,6 +290,7 @@ export class Session {
         bot: true,
         selfie: null,
         profile: { name: `${t(this.lang(), 'bot')} ${i + 1}`, food, color, hat: 'aucun', acc: 'aucun', lang: 'fr' },
+        team: this.teams ? (count(1) < count(0) ? 1 : 0) : undefined,
       });
     }
     // Tuto la première fois ; pour « Rejouer » le même jeu, intro courte.
@@ -283,16 +317,33 @@ export class Session {
 
   private endGame() {
     if (!this.game) return;
-    const order = this.game.ranking();
+    let order = this.game.ranking();
+    // Mode équipes : chaque camp marque la moyenne des places de ses joueurs (équitable même à 3 contre 2).
+    const teamOf = (pid: string) => this.runners.find((x) => x.pid === pid)?.team;
+    this.teamScore = null;
+    if (this.runners.some((r) => r.team === 1) && this.runners.some((r) => r.team === 0)) {
+      const avg = [0, 1].map((k) => {
+        const pts = order.map((pid, i) => (teamOf(pid) === k ? POINTS[i] ?? 1 : -1)).filter((v) => v >= 0);
+        return Math.round((pts.reduce((a, b) => a + b, 0) / Math.max(1, pts.length)) * 10) / 10;
+      }) as [number, number];
+      const winner = avg[0] === avg[1] ? -1 : avg[0] > avg[1] ? 0 : 1;
+      this.teamScore = { avg, winner };
+      if (winner >= 0) order = [...order.filter((pid) => teamOf(pid) === winner), ...order.filter((pid) => teamOf(pid) !== winner)];
+      const fr = this.lang() === 'fr';
+      speak(winner < 0 ? (fr ? 'Égalité entre les équipes !' : 'The teams are tied!') : `${TEAMS[winner].name[this.lang()]} ${fr ? 'gagne' : 'wins'} !`, this.lang());
+    }
     let rank = 0;
     this.results = order.map((pid) => {
       const r = this.runners.find((x) => x.pid === pid)!;
       rank++;
-      const points = POINTS[rank - 1] ?? 1;
+      const ts = this.teamScore;
+      const team = ts ? r.team : undefined;
+      const points = ts && team !== undefined ? (ts.winner < 0 ? 7 : ts.winner === team ? 10 : 4) : POINTS[rank - 1] ?? 1;
+      if (ts && team !== undefined) rank = ts.winner < 0 || ts.winner === team ? 1 : 2;
       const p = this.players.get(pid);
       // Les faux joueurs de l'aperçu marquent comme des vrais (ils sont pilotés par l'ordinateur, mais présents dans la soirée).
       if (p) p.total += points;
-      return { pid, profile: r.profile, bot: !p, rank, points };
+      return { pid, profile: r.profile, bot: !p, rank, points, team: r.team };
     });
     this.phase = 'results';
     playMusic('lobby');
@@ -374,6 +425,8 @@ export class Session {
           games: GAMES_INFO(),
           count: this.list().filter((x) => x.connected).length,
           family: this.family,
+          teams: this.teams,
+          team: p.team,
         };
       case 'game':
         return playing ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid) } : { s: 'wait', game: this.def!.id };

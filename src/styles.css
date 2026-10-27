@@ -1729,3 +1729,67 @@ h3,
 .family-toggle.on .switch::after {
   left: 25px;
 }
+
+/* Mode équipes : choix du camp sur la manette, badge sur la télé */
+.team-pick {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+}
+.team-pick button {
+  flex: 1;
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 17px;
+  padding: 12px 6px;
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ink);
+  color: var(--ink);
+}
+.team-pick button.on {
+  color: #fff;
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.slot-team {
+  position: absolute;
+  top: calc(-14 * var(--u));
+  left: calc(-14 * var(--u));
+  width: calc(60 * var(--u));
+  height: calc(60 * var(--u));
+  border-radius: 50%;
+  border: calc(5 * var(--u)) solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: calc(30 * var(--u));
+  z-index: 2;
+}
+.slot.team0 { box-shadow: 0 0 0 calc(6 * var(--u)) #ff4f9a; }
+.slot.team1 { box-shadow: 0 0 0 calc(6 * var(--u)) #1fc9a0; }
+.teams-pill { background: var(--pink) !important; }
+.team-score {
+  display: flex;
+  justify-content: center;
+  gap: calc(30 * var(--u));
+  margin: calc(-6 * var(--u)) 0 calc(18 * var(--u));
+}
+.team-score span {
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: calc(40 * var(--u));
+  color: #fff;
+  padding: calc(8 * var(--u)) calc(30 * var(--u));
+  border: calc(6 * var(--u)) solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 calc(6 * var(--u)) 0 var(--ink);
+}
+.team-score span.lose { opacity: 0.55; }
+.res-row .team-dot {
+  width: calc(28 * var(--u));
+  height: calc(28 * var(--u));
+  border-radius: 50%;
+  border: calc(4 * var(--u)) solid var(--ink);
+  flex: none;
+}

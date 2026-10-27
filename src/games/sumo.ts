@@ -165,7 +165,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       let best = -1;
       let score = -1e9;
       ss.forEach((o, j) => {
-        if (j === i || !inPlay(o)) return;
+        if (j === i || !inPlay(o) || allies(o, s)) return;
         const sc = Math.hypot(o.x, o.y) * 1.2 - Math.hypot(o.x - s.x, o.y - s.y);
         if (sc > score) {
           score = sc;
@@ -426,7 +426,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         return;
       }
       step(dt);
-      const left = ss.filter((s) => s.lives > 0).length;
+      const left = sidesLeft(ss.filter((s) => s.lives > 0));
       if (endDelay < 0 && (left <= 1 || time > MAX_TIME)) endDelay = 2;
       if (endDelay >= 0 && (endDelay -= dt) <= 0) game.over = true;
     },
@@ -649,7 +649,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.lineWidth = 6;
           g.strokeStyle = INK;
           g.strokeText(s.profile.name, px, py - 120 * big);
-          g.fillStyle = s.profile.color;
+          g.fillStyle = s.team !== undefined ? TEAMS[s.team].color : s.profile.color;
           g.fillText(s.profile.name, px, py - 120 * big);
         }
       }
@@ -730,7 +730,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           t,
           mood: s.lives <= 0 ? 'sad' : s.falling > 0 ? 'wow' : 'happy',
         });
-        roundRectText(g, s.profile.name, x + 76, 40, w - 92, 22, s.profile.color);
+        roundRectText(g, s.profile.name, x + 76, 40, w - 92, 22, s.team !== undefined ? TEAMS[s.team].color : s.profile.color);
         for (let k = 0; k < LIVES; k++) {
           g.fillStyle = k < s.lives ? '#ff3b6b' : '#eee3f3';
           g.strokeStyle = INK;
@@ -770,7 +770,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     leader() {
       const left = ss.filter((s) => s.lives > 0);
-      return left.length === 1 ? left[0].profile.name : null;
+      return left.length && sidesLeft(left) === 1 ? winnerName(left[0], ctx.lang) : null;
     },
   };
   return game;
@@ -791,4 +791,5 @@ export const sumo: GameBase = {
   botFill: 4,
   music: 'race',
   create,
-};
+};import { TEAMS, allies, sidesLeft, winnerName } from './teams';
+

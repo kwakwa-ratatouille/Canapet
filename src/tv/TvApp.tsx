@@ -1,3 +1,4 @@
+import { TEAMS } from '../games/teams';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { gameById } from '../games/registry';
 import { TUTOS } from '../games/tutos';
@@ -60,6 +61,7 @@ export function TvApp() {
         y: 'plateau',
       };
       if (k === 'h') session.hostAction('family');
+      if (k === 'e') session.hostAction('teams');
       if (k === 'enter') session.hostAction(session.phase === 'results' ? 'next' : 'pick', 'pouces');
       if (pick[k]) session.hostAction('pick', pick[k]);
       if (k === 't') session.hostAction('tournament');
@@ -147,6 +149,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
         <Wordmark className="tv-wordmark" />
         <span className="tv-top-right">
           {session.family && <span className="family-pill">👨‍👩‍👧 {t(lang, 'family')}</span>}
+          {session.teams && <span className="family-pill teams-pill">🍓 {t(lang, 'teams')} 🌿</span>}
           <span className="count-pill">{t(lang, 'playersCount', { n: connected })}</span>
         </span>
       </header>
@@ -166,8 +169,13 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
         <div className="slots">
           {slots.map((p, i) =>
             p ? (
-              <div key={p.pid} className={`slot ${p.connected ? '' : 'off'}`}>
+              <div key={p.pid} className={`slot ${p.connected ? '' : 'off'} ${session.teams ? 'team' + p.team : ''}`}>
                 {p.pid === hostPid && <span className="slot-badge">👑</span>}
+                {session.teams && (
+                  <span className="slot-team" style={{ background: TEAMS[p.team].color }}>
+                    {TEAMS[p.team].emoji}
+                  </span>
+                )}
                 <div className="slot-disc" style={{ background: tint(p.color, 0.35) }}>
                   <CharCanvas profile={p} size={160} ghost={!p.connected} />
                 </div>
@@ -184,7 +192,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
       </div>
       <p className="lobby-hint">
         {host ? t(lang, 'hostLaunches', { name: host.name }) : t(lang, 'waitingPlayers')}
-        {PREVIEW && <span className="kbd"> · Entrée, D, B, S, P, K, A, W, O, V, G, Y, C = jeux · T = Tournoi</span>}
+        {PREVIEW && <span className="kbd"> · Entrée, D, B, S, P, K, A, W, O, V, G, Y, C = jeux · T = Tournoi · E = équipes</span>}
       </p>
     </div>
   );
@@ -405,6 +413,16 @@ function Results({ session }: { session: Session }) {
         {tournament ? `${t(lang, 'roundOf', { i: session.step + 1, n: TOURNAMENT_LEN })} · ` : ''}
         {def?.name[lang]}
       </p>
+      {session.teamScore && (
+        <div className="team-score">
+          {TEAMS.map((tm, k) => (
+            <span key={k} className={session.teamScore!.winner >= 0 && session.teamScore!.winner !== k ? 'lose' : ''} style={{ background: tm.color }}>
+              {session.teamScore!.winner === k ? '👑 ' : ''}
+              {tm.emoji} {tm.name[lang]} · {session.teamScore!.avg[k]}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="results-wrap">
         <ol className={`results-list ${compact ? 'compact' : ''}`}>
           {rows.map((r) => {
@@ -412,6 +430,7 @@ function Results({ session }: { session: Session }) {
             return (
               <li key={r.pid} className="res-row">
                 <span className={`rank-disc r${Math.min(4, r.rank)}`}>{r.rank}</span>
+                {r.team !== undefined && <span className="team-dot" style={{ background: TEAMS[r.team].color }} />}
                 <CharCanvas profile={r.profile} size={compact ? 52 : 64} still mood={r.rank === 1 ? 'win' : 'happy'} />
                 <span className="who">{r.profile.name}</span>
                 {!r.bot && (

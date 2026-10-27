@@ -121,7 +121,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🕹️', 'Stick : courir et viser (8 directions)'],
         ['🅰️', 'A : sauter · 🅱️ B : tirer'],
-        ['🏹', '3 flèches seulement : ramasse celles qui sont plantées'],
+        ['🏹', '3 flèches : ramasse celles qui sont plantées. À 30 s, mort subite !'],
       ],
     },
     en: {
@@ -129,7 +129,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🕹️', 'Stick: run and aim (8 directions)'],
         ['🅰️', 'A: jump · 🅱️ B: shoot'],
-        ['🏹', 'Only 3 arrows: pick up the stuck ones'],
+        ['🏹', '3 arrows: pick up the stuck ones. At 30 s, sudden death!'],
       ],
     },
   },
