@@ -2,7 +2,7 @@
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
-import { drawSky, roundRectText } from './draw';
+import { drawSky, roundRectText, candy } from './draw';
 import { INK } from '../shared/palette';
 
 const STEPS = 60;
@@ -125,6 +125,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.beginPath();
         g.roundRect(60, y + 4, 1800, h - 8, 18);
         g.fill();
+        candy(g, 60, y + 4, 1800, h - 8, 18);
+        g.beginPath();
+        g.roundRect(60, y + 4, 1800, h - 8, 18);
         g.strokeStyle = INK;
         g.lineWidth = 3;
         g.stroke();

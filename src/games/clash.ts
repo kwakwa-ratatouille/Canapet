@@ -5,7 +5,7 @@ import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 import { drawCharacter } from '../shared/characters';
 import { INK, MENTHE, ROSE, SOLEIL, VIOLET } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { roundRectText } from './draw';
+import { roundRectText, candy } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const GRAV = 2400;
@@ -954,6 +954,9 @@ function stickerRect(g: CanvasRenderingContext2D, x: number, y: number, w: numbe
   g.beginPath();
   g.roundRect(x, y, w, h, r);
   g.fill();
+  candy(g, x, y, w, h, r);
+  g.beginPath();
+  g.roundRect(x, y, w, h, r);
   g.stroke();
 }
 

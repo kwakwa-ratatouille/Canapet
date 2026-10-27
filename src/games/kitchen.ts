@@ -2,7 +2,7 @@
 // A = prendre / poser · B maintenu = couper sur la planche.
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
-import { roundRectText } from './draw';
+import { roundRectText, candy } from './draw';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
 
@@ -453,6 +453,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.roundRect(px + 2, py + 2, CS - 4, CS - 4, 12);
           g.fill();
           g.stroke();
+          candy(g, px + 5, py + 5, CS - 10, CS - 10, 10);
           g.font = '52px sans-serif';
           g.textAlign = 'center';
           g.textBaseline = 'middle';

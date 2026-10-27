@@ -148,3 +148,17 @@ export function luminance(hex: string): number {
   const b = n & 255;
   return (0.299 * r + 0.587 * gr + 0.114 * b) / 255;
 }
+
+/** Relief « bonbon » sur un bloc arrondi déjà peint : reflet clair en haut, bas un peu plus sombre. */
+export function candy(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  if (w < 16 || h < 12) return;
+  const rr = Math.max(2, Math.min(r * 0.7, h * 0.2));
+  g.fillStyle = 'rgba(58,33,64,0.13)';
+  g.beginPath();
+  g.roundRect(x + 4, y + h * 0.66, w - 8, h * 0.3, rr);
+  g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.42)';
+  g.beginPath();
+  g.roundRect(x + Math.min(10, w * 0.12), y + Math.min(6, h * 0.12), w - Math.min(20, w * 0.24), Math.max(5, h * 0.2), rr);
+  g.fill();
+}

@@ -5,7 +5,7 @@ import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 import { drawCharacter } from '../shared/characters';
 import { INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { drawSky, roundRectText } from './draw';
+import { drawSky, roundRectText, candy } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const GRAV = 2200;
@@ -652,11 +652,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.beginPath();
         g.roundRect(p.x, p.y + wob, p.w, 46, 22);
         g.fill();
-        g.stroke();
-        g.fillStyle = 'rgba(255,255,255,0.45)';
+        candy(g, p.x, p.y + wob, p.w, 46, 22);
         g.beginPath();
-        g.roundRect(p.x + 20, p.y + 8 + wob, p.w - 40, 8, 4);
-        g.fill();
+        g.roundRect(p.x, p.y + wob, p.w, 46, 22);
+        g.stroke();
         if (map.hazard === 'bob' && p.ay) {
           // Fleur de nénuphar
           g.fillStyle = '#ff9ccf';

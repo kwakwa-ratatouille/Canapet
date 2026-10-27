@@ -2,7 +2,7 @@
 // La caméra suit le joueur en tête. 3 vies : tomber ou se faire distancer (sortir de l'écran) en coûte une.
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
-import { drawSky } from './draw';
+import { drawSky, candy } from './draw';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
 
@@ -1048,6 +1048,7 @@ function drawSolid(g: CanvasRenderingContext2D, s: Solid, time: number, light: b
       g.roundRect(s.x, s.y, s.w, h, s.kind === 'block' ? 12 : [14, 14, 0, 0]);
       g.fill();
       g.stroke();
+      candy(g, s.x, s.y + 16, s.w, Math.min(h - 16, 90), 12);
       g.fillStyle = theme.top;
       g.beginPath();
       g.roundRect(s.x, s.y, s.w, 20, [14, 14, 0, 0]);

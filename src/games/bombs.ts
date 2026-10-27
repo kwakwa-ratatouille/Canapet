@@ -3,7 +3,7 @@ import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 // Stick = bouger · A = poser un pétard · B = shooter dans un pétard. Le dernier au sec gagne.
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
-import { roundRectText } from './draw';
+import { roundRectText, candy } from './draw';
 
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
@@ -419,14 +419,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             g.roundRect(px + 2, py + 2, cs - 4, cs - 4, 12);
             g.fill();
             g.stroke();
-            g.fillStyle = 'rgba(255,255,255,0.3)';
-            g.fillRect(px + 10, py + 8, cs * 0.35, 6);
+            candy(g, px + 5, py + 5, cs - 10, cs - 10, 10);
           } else {
             g.fillStyle = 'rgba(123,209,59,0.85)';
             g.beginPath();
             g.roundRect(px + 6, py + 6, cs - 12, cs - 12, 16);
             g.fill();
             g.stroke();
+            candy(g, px + 9, py + 9, cs - 18, cs - 18, 12);
             g.fillStyle = 'rgba(255,255,255,0.5)';
             g.beginPath();
             g.ellipse(px + cs * 0.35, py + cs * 0.3, 8, 4, -0.4, 0, Math.PI * 2);

@@ -2,7 +2,7 @@
 // Stick = courir et viser · A = sauter · B = tirer. 3 flèches à ramasser. Premier à 3 manches.
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
-import { drawSky, roundRectText } from './draw';
+import { drawSky, roundRectText, candy } from './draw';
 import { TEAMS, allies, side, sidesLeft, winnerName } from './teams';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
@@ -321,6 +321,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.beginPath();
       g.roundRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
       g.fill();
+      candy(g, s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
       g.fillStyle = top;
       g.beginPath();
       g.roundRect(s.x + 1, s.y + 1, s.w - 2, Math.min(18, s.h - 2), [12, 12, 4, 4]);
