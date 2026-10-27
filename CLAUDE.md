@@ -28,7 +28,8 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 8. ✅ Le Traître du Frigo (`traitor.ts` + `TraitorPad.tsx`) : rôle caché 4-12, nuit/débat/vote, Goûteur dès 5.
 9. ✅ Coussin Clash (`clash.ts`) : combat de plateforme sur un canapé, % de dégâts, 3 vies, 4 coups + super coup (bas + B jauge pleine).
 10. ✅ Bagarre Molle (`brawl.ts`) : persos mous, baffe / attraper / jeter, sonné après 4 baffes.
-11. Ensuite : Pétards Mouillés (Bomberman), Sumo Tamponneur, Mini Bolides (kart), Flèches à Ventouse (TowerFall), Bagarre Molle (Gang Beasts), Cuisine en Panique (Overcooked), Le Traître du Frigo (rôle caché), Gribouillis (dessin), Le Grand Plateau (Mario Party), Coussin Clash (Smash, le jeu phare).
+11. ✅ Cuisine en Panique (`kitchen.ts`) : coop 1-8, caisses/planche/feux/assiettes/passe-plat, 3 recettes. Pas d’IA de commis : les bots restent plantés (botFill 0).
+12. Ensuite : Pétards Mouillés (Bomberman), Sumo Tamponneur, Mini Bolides (kart), Flèches à Ventouse (TowerFall), Bagarre Molle (Gang Beasts), Cuisine en Panique (Overcooked), Le Traître du Frigo (rôle caché), Gribouillis (dessin), Le Grand Plateau (Mario Party), Coussin Clash (Smash, le jeu phare).
 Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 ## Architecture
@@ -44,8 +45,9 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 ## Tester
 
 - `npm run dev` (port 5180, déclaré dans `.claude/launch.json`).
-- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, G = Gribouillis, V = Traître, C = Clash, W = Bagarre, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
+- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, G = Gribouillis, V = Traître, C = Clash, W = Bagarre, O = Cuisine, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
 - `#/m/TEST?s=lobby|tap|stick|results|podium` : la manette sans connexion.
+- En aperçu, `window.__session` donne la session télé : `__session.game.input(pid, {t:'in', …})` pour piloter un joueur. Attention : un onglet manette au premier plan met la télé en pause (onglet en arrière-plan) ; mettre la manette dans une iframe de la page télé pour tester.
 
 ## Règles de travail
 

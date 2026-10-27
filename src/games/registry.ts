@@ -9,6 +9,7 @@ import { scribble } from './scribble';
 import { traitor } from './traitor';
 import { clash } from './clash';
 import { brawl } from './brawl';
+import { kitchen } from './kitchen';
 import type { GameDef } from './types';
 
 const soon = (
@@ -43,7 +44,7 @@ export const GAMES: GameDef[] = [
   kart,
   archers,
   brawl,
-  soon('cuisine', '🍳', 'Cuisine en Panique', 'Kitchen Panic', 'Overcooked', 8),
+  kitchen,
   traitor,
   scribble,
   soon('plateau', '🎲', 'Le Grand Plateau', 'The Big Board', 'Mario Party', 8),

@@ -13,6 +13,8 @@ const H = 1080;
 
 export function TvApp() {
   const session = useMemo(() => new Session(PREVIEW), []);
+  // En aperçu, la session est accessible depuis la console pour les tests.
+  if (PREVIEW) (window as unknown as { __session: Session }).__session = session;
   useSyncExternalStore(session.subscribe, () => session.version);
   const [locked, setLocked] = useState(audioLocked());
   const [muted, setMutedState] = useState(isMuted());
@@ -40,6 +42,7 @@ export function TvApp() {
       if (k === 'v') session.hostAction('pick', 'traitre');
       if (k === 'c') session.hostAction('pick', 'combat');
       if (k === 'w') session.hostAction('pick', 'bagarre');
+      if (k === 'o') session.hostAction('pick', 'cuisine');
       if (k === 'n') session.hostAction('next');
       if (k === 'r') session.hostAction('replay');
       if (k === 'l' || k === 'escape') session.hostAction('lobby');
