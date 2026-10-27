@@ -190,7 +190,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (m === 'spike') f.vy = Math.max(f.vy, 300);
     if (m === 'super') {
       f.meter = 0;
-      speak(fr ? 'Prout cosmique !' : 'Cosmic toot!', ctx.lang);
+      speak(ctx.family ? (fr ? 'Pouf cosmique !' : 'Cosmic poof!') : fr ? 'Prout cosmique !' : 'Cosmic toot!', ctx.lang);
     }
     if (!ctx.light) sfx.step();
   }

@@ -10,6 +10,8 @@ export interface Runner {
 export interface GameCtx {
   lang: Lang;
   light: boolean;
+  /** Mode famille : textes et bruitages adoucis. */
+  family: boolean;
   buzz(pid: string, ms: number): void;
   /** Renvoie aux téléphones leur écran (à appeler quand padData change). */
   refresh(): void;

@@ -2,10 +2,10 @@
 import { GAMES, gameById, playable } from '../games/registry';
 import type { GameDef, GameInstance, Runner } from '../games/types';
 import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
-import { LIGHT, newId } from '../shared/device';
+import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
-import { playMusic, sfx, speak } from '../shared/sound';
+import { playMusic, setFamily, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
 
 export interface Player extends Profile {
@@ -38,6 +38,8 @@ export class Session {
   players = new Map<string, Player>();
   phase: Phase = 'lobby';
   mode: 'host' | 'tournament' = 'host';
+  /** Mode famille (mémorisé sur la télé). */
+  family = store('family', false);
   plan: string[] = [];
   step = 0;
   def: GameDef | null = null;
@@ -55,6 +57,7 @@ export class Session {
   version = 0;
 
   constructor(preview: boolean) {
+    setFamily(this.family);
     this.net = new TvNet({
       onMsg: (pid, m) => this.onMsg(pid, m),
       onLeave: (pid) => this.onLeave(pid),
@@ -200,6 +203,15 @@ export class Session {
           else this.showPodium();
         } else this.toLobby();
         break;
+      case 'family':
+        if (this.phase !== 'lobby') break;
+        this.family = !this.family;
+        setFamily(this.family);
+        save('family', this.family);
+        speak(this.lang() === 'fr' ? (this.family ? 'Mode famille activé' : 'Mode famille désactivé') : this.family ? 'Family mode on' : 'Family mode off', this.lang());
+        this.changed();
+        this.pushScreens();
+        break;
       case 'lobby':
         this.toLobby();
         break;
@@ -247,6 +259,7 @@ export class Session {
     this.game = def.create(runners, {
       lang: this.lang(),
       light: LIGHT,
+      family: this.family,
       buzz: (pid, ms) => this.net.send(pid, { t: 'buzz', ms }),
       refresh: () => this.pushScreens(),
     });
@@ -353,6 +366,7 @@ export class Session {
           taken: this.list().filter((x) => x.pid !== p.pid).map((x) => x.color),
           games: GAMES_INFO(),
           count: this.list().filter((x) => x.connected).length,
+          family: this.family,
         };
       case 'game':
         return playing ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid) } : { s: 'wait', game: this.def!.id };

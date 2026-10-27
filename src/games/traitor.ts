@@ -117,7 +117,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     day++;
     if (victim !== null && pls[victim].alive) {
       kill(victim);
-      headline = fr ? `${name(victim)} a été retrouvé la tête dans le frigo !` : `${name(victim)} was found head-first in the fridge!`;
+      headline = ctx.family
+        ? fr ? `${name(victim)} s'est endormi dans le frigo !` : `${name(victim)} fell asleep in the fridge!`
+        : fr ? `${name(victim)} a été retrouvé la tête dans le frigo !` : `${name(victim)} was found head-first in the fridge!`;
       sub = fr ? `C'était un ${roleName(pls[victim].role)}.` : `They were a ${roleName(pls[victim].role)}.`;
     } else {
       headline = fr ? 'Nuit calme : le frigo est intact.' : 'Quiet night: the fridge is untouched.';

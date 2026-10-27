@@ -30,7 +30,7 @@ function defaultProfile(): Profile {
 }
 
 const DEMO: Record<string, PadScreen> = {
-  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4 },
+  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
   results: { s: 'results', host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
@@ -251,9 +251,19 @@ function PadScreenView({
                   <small>{t(lang, 'catalogue', { n: playable().length })}</small>
                 </span>
               </button>
+              <button className={`family-toggle ${screen.family ? 'on' : ''}`} onClick={() => host('family')}>
+                <span className="switch" />
+                <span>
+                  <b>{t(lang, 'family')}</b>
+                  <small>{t(lang, screen.family ? 'familyOn' : 'familyOff')}</small>
+                </span>
+              </button>
             </>
           ) : (
-            <p className="pad-title pulse">{t(lang, 'waitHost', { name: screen.hostName })}</p>
+            <>
+              <p className="pad-title pulse">{t(lang, 'waitHost', { name: screen.hostName })}</p>
+              {screen.family && <p className="pad-small">👨‍👩‍👧 {t(lang, 'family')}</p>}
+            </>
           )}
           <button className="btn ghost" onClick={edit}>
             ✏️ {t(lang, 'editChar')}

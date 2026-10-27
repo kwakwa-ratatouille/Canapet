@@ -1658,3 +1658,71 @@ h3,
 .role-card.glouton {
   background: var(--cp-joueur-3);
 }
+
+/* Mode famille */
+.tv-top-right {
+  display: flex;
+  gap: calc(16 * var(--u));
+  align-items: center;
+}
+.family-pill {
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: calc(36 * var(--u));
+  background: var(--mint);
+  color: #fff;
+  border: calc(6 * var(--u)) solid var(--ink);
+  border-radius: 999px;
+  padding: calc(8 * var(--u)) calc(26 * var(--u));
+  box-shadow: 0 calc(8 * var(--u)) 0 var(--ink);
+  -webkit-text-stroke: calc(4 * var(--u)) var(--ink);
+  paint-order: stroke fill;
+}
+.family-toggle {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: var(--cp-contour) solid var(--ink);
+  border-radius: var(--cp-rayon);
+  box-shadow: var(--cp-ombre);
+  padding: 12px 16px;
+  text-align: left;
+}
+.family-toggle b {
+  display: block;
+  font-family: var(--cp-font-titre);
+  font-size: 20px;
+}
+.family-toggle small {
+  font-weight: 700;
+  color: var(--soft);
+}
+.family-toggle .switch {
+  flex: 0 0 56px;
+  height: 32px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  background: #e4e0ef;
+  position: relative;
+}
+.family-toggle .switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--ink);
+  transition: left 0.15s;
+}
+.family-toggle.on .switch {
+  background: var(--mint);
+}
+.family-toggle.on .switch::after {
+  left: 25px;
+}

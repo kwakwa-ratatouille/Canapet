@@ -57,7 +57,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const drawers = pls.map((p, i) => (p.bot ? -1 : i)).filter((i) => i >= 0);
   if (!drawers.length) drawers.push(0);
   const turns = Math.min(MAX_TURNS, drawers.length * (drawers.length <= 3 ? 2 : 1));
-  const words = [...WORDS].sort(() => Math.random() - 0.5);
+  const FAMILY_SKIP = new Set(['toilettes', 'vampire', 'zombie', 'sorcière']);
+  const words = WORDS.filter((w) => !ctx.family || !FAMILY_SKIP.has(w[0])).sort(() => Math.random() - 0.5);
   let turn = -1;
   let drawer = 0;
   let word: [string, string] = words[0];

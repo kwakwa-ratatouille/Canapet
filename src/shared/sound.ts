@@ -4,6 +4,12 @@ import type { Lang } from './protocol';
 let ac: AudioContext | null = null;
 let master: GainNode | null = null;
 let muted = false;
+let family = false;
+
+/** Mode famille : bruitages adoucis. */
+export function setFamily(f: boolean) {
+  family = f;
+}
 
 function ctx(): AudioContext | null {
   if (!ac) {
@@ -110,6 +116,11 @@ export const sfx = {
   },
   /** Le bruit signature de Cana'pet. */
   pet() {
+    if (family) {
+      tone(700, 0.12, 'sine', 0.25, 0, 1400);
+      tone(1000, 0.14, 'sine', 0.2, 0.1, 1800);
+      return;
+    }
     const c = ctx();
     if (!c || !master) return;
     const t0 = c.currentTime;

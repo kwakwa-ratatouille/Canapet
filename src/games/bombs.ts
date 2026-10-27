@@ -498,7 +498,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.font = '28px sans-serif';
         g.textAlign = 'center';
         g.fillStyle = INK;
-        g.fillText(p.alive ? `🧨${p.bombs} 💦${p.range}${p.shield ? ' 🛡️' : ''}` : '💦 KO', 40 + i * w + (w - 10) / 2, 96);
+        g.fillText(p.alive ? `🧨${p.bombs} 💦${p.range}${p.shield ? ' 🛡️' : ''}` : ctx.family ? '💦' : '💦 KO', 40 + i * w + (w - 10) / 2, 96);
         g.globalAlpha = 1;
       });
     },

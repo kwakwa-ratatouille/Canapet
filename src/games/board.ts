@@ -130,7 +130,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         say(fr ? `Jackpot ! ${name(p)} gagne 8 bonbons !` : `Jackpot! ${name(p)} wins 8 candies!`, true);
       } else {
         p.candies = Math.floor(p.candies / 2);
-        say(fr ? `Prout ! ${name(p)} perd la moitié de ses bonbons.` : `Toot! ${name(p)} loses half their candies.`, true);
+        say(
+          ctx.family
+            ? fr ? `Oups ! ${name(p)} perd la moitié de ses bonbons.` : `Oops! ${name(p)} loses half their candies.`
+            : fr ? `Prout ! ${name(p)} perd la moitié de ses bonbons.` : `Toot! ${name(p)} loses half their candies.`,
+          true,
+        );
         sfx.pet();
       }
     }

@@ -156,7 +156,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       s.hand = [];
       sfx.pet();
       setTimeout(() => sfx.pet(), 180);
-      say(fr ? `PROUUUT ! ${name(target)} est KO.` : `PFFFRRT! ${name(target)} is out.`, true);
+      say(
+        ctx.family
+          ? fr ? `POUF ! ${name(target)} est éliminé.` : `POOF! ${name(target)} is out.`
+          : fr ? `PROUUUT ! ${name(target)} est KO.` : `PFFFRRT! ${name(target)} is out.`,
+        true,
+      );
       if (!s.bot) ctx.buzz(s.pid, 700);
     } else {
       sfx.tick();
@@ -307,7 +312,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.font = '600 28px Fredoka, sans-serif';
         g.textAlign = 'center';
         g.fillStyle = '#fff';
-        g.fillText(s.alive ? `🃏 ${s.hand.length}   💨 ${s.shots}/6` : 'KO', p.x, p.y - 112);
+        g.fillText(s.alive ? `🃏 ${s.hand.length}   💨 ${s.shots}/6` : ctx.family ? (fr ? 'Éliminé' : 'Out') : 'KO', p.x, p.y - 112);
         if (phase === 'turn' && turn === i && !s.bot) {
           g.fillStyle = '#ffd60a';
           g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, p.x, p.y - 150);
@@ -334,7 +339,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.font = '700 120px Fredoka, sans-serif';
           g.lineWidth = 12;
           g.strokeStyle = INK;
-          const txt = boom ? (fr ? 'PROUUUT !' : 'PFFFRRT!') : fr ? 'Ouf…' : 'Phew…';
+          const txt = boom ? (ctx.family ? (fr ? 'POUF !' : 'POOF!') : fr ? 'PROUUUT !' : 'PFFFRRT!') : fr ? 'Ouf…' : 'Phew…';
           g.strokeText(txt, 960, 560);
           g.fillStyle = boom ? '#7bd13b' : '#fff';
           g.fillText(txt, 960, 560);

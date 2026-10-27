@@ -21,7 +21,7 @@ export interface GameInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number }
+  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown }
   | { s: 'wait'; game: string }
   | {
@@ -41,7 +41,7 @@ export type ToPad =
   | { t: 'buzz'; ms: number }
   | { t: 'pong'; ts: number };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby';
+export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family';
 
 /** Téléphone → télé */
 export type ToTv =

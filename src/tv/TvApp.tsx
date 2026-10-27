@@ -58,6 +58,7 @@ export function TvApp() {
         o: 'cuisine',
         y: 'plateau',
       };
+      if (k === 'h') session.hostAction('family');
       if (k === 'enter') session.hostAction(session.phase === 'results' ? 'next' : 'pick', 'pouces');
       if (pick[k]) session.hostAction('pick', pick[k]);
       if (k === 't') session.hostAction('tournament');
@@ -143,7 +144,10 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
     <div className="lobby">
       <header className="tv-top">
         <Wordmark className="tv-wordmark" />
-        <span className="count-pill">{t(lang, 'playersCount', { n: connected })}</span>
+        <span className="tv-top-right">
+          {session.family && <span className="family-pill">👨‍👩‍👧 {t(lang, 'family')}</span>}
+          <span className="count-pill">{t(lang, 'playersCount', { n: connected })}</span>
+        </span>
       </header>
       <div className="lobby-main">
         <div className="join-card">

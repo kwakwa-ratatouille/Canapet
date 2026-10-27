@@ -15,7 +15,7 @@ const TXT = {
     claim: '{name} prétend avoir posé {n} × {card}',
     pick: 'Choisis 1 à 3 cartes',
     roulette: 'Appuie sur ton coussin…',
-    out: 'KO 💨 Tu regardes les autres.',
+    out: 'Éliminé 💨 Tu regardes les autres.',
     danger: 'Coussin : {s}/6',
   },
   en: {

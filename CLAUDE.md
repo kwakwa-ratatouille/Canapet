@@ -37,7 +37,8 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 10. ✅ Bagarre Molle (`brawl.ts`) : persos mous, baffe / attraper / jeter, sonné après 4 baffes.
 11. ✅ Cuisine en Panique (`kitchen.ts`) : coop 1-8, caisses/planche/feux/assiettes/passe-plat, 3 recettes, bots commis.
 12. ✅ Le Grand Plateau (`board.ts` + `BoardPad.tsx`) : dé sur le téléphone, bonbons, Coussins d’or, mini-jeux Tapotage et Réflexe.
-13. Ensuite : mode famille, comptes Google (Firebase), activer le Chromecast (identifiant Google Cast à fournir).
+13. ✅ Mode famille : interrupteur sur le téléphone de l’hôte (salon), mémorisé sur la télé (`session.family`, `ctx.family`), badge à la télé, « pet » → « pouic », PROUT → POUF, mots limites retirés de Gribouillis. Touche H en aperçu.
+14. Ensuite : comptes Google (Firebase), activer le Chromecast (identifiant Google Cast à fournir).
 Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 ## Cartes et ajouts (oct. 2026)
