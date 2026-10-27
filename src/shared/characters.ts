@@ -170,7 +170,8 @@ export function drawCharacter(g: CanvasRenderingContext2D, x: number, y: number,
   const run = o.run ?? 0;
   const step = o.t * (8 + run * 14);
   const bob = run > 0.05 ? Math.abs(Math.sin(step)) * 7 * run : Math.sin(o.t * 3) * 1.5;
-  const sway = run > 0.05 ? Math.sin(step) * 0.07 * run : 0;
+  // On se penche en avant quand on court, et on respire doucement à l’arrêt
+  const sway = (run > 0.05 ? Math.sin(step) * 0.06 * run : 0) + (o.dir ?? 1) * run * 0.11;
   g.save();
   g.translate(x, y);
   if (o.ghost) g.globalAlpha *= 0.35;
@@ -181,7 +182,7 @@ export function drawCharacter(g: CanvasRenderingContext2D, x: number, y: number,
   g.fill();
   g.translate(0, -bob);
   g.rotate(sway);
-  const squash = run > 0.05 ? 1 + Math.sin(step * 2) * 0.03 * run : 1 + Math.sin(o.t * 3) * 0.015;
+  const squash = run > 0.05 ? 1 + Math.sin(step * 2) * 0.045 * run : 1 + Math.sin(o.t * 2.2) * 0.022;
   g.scale((o.dir ?? 1) / squash, squash);
   if (img) g.drawImage(img, (VB.x - CENTER_X) * k, (VB.y - FEET_Y) * k, VB.w * k, VB.h * k);
   // Selfie : la photo du joueur en rond, à la place du visage.

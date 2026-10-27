@@ -2663,3 +2663,64 @@ h3,
 .pick small {
   font-size: 11px;
 }
+
+/* ===== Transitions des écrans de résultats et du podium ===== */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-120 * var(--u)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(260 * var(--u)));
+  }
+  70% {
+    transform: translateY(calc(-14 * var(--u)));
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes title-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(-80 * var(--u))) rotate(-6deg) scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.overlay .title {
+  animation: title-drop 0.55s cubic-bezier(0.3, 1.5, 0.6, 1) both;
+}
+.res-row {
+  animation: row-in 0.45s cubic-bezier(0.2, 1.2, 0.5, 1) both;
+}
+.results-list .res-row:nth-child(1) { animation-delay: 0.15s; }
+.results-list .res-row:nth-child(2) { animation-delay: 0.25s; }
+.results-list .res-row:nth-child(3) { animation-delay: 0.35s; }
+.results-list .res-row:nth-child(4) { animation-delay: 0.45s; }
+.results-list .res-row:nth-child(5) { animation-delay: 0.55s; }
+.results-list .res-row:nth-child(6) { animation-delay: 0.65s; }
+.results-list .res-row:nth-child(n + 7) { animation-delay: 0.75s; }
+.res-row .bar i {
+  transition: width 1.2s cubic-bezier(0.3, 1, 0.4, 1) 0.6s;
+}
+/* Podium : le 3e, puis le 2e, puis le grand gagnant montent */
+.podium .step {
+  animation: rise 0.8s cubic-bezier(0.3, 1.2, 0.5, 1) both;
+}
+.podium .step3 { animation-delay: 0.3s; }
+.podium .step2 { animation-delay: 0.9s; }
+.podium .step1 { animation-delay: 1.6s; }
+.next-card {
+  animation: row-in 0.5s ease-out 0.8s both;
+}
