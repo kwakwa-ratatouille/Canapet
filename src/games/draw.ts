@@ -66,18 +66,49 @@ export function smileSun(g: CanvasRenderingContext2D, x: number, y: number, r: n
   g.fill();
 }
 
+// Le ciel est dessiné une fois dans des images en cache (dégradé, soleil, nuages), puis simplement recopié :
+// redessiner tous les arcs à chaque image coûtait ~8 ms et faisait ramer certains jeux.
+const skyCache = new Map<string, HTMLCanvasElement>();
+const sprite = (w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) => {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  draw(c.getContext('2d')!);
+  return c;
+};
+function cached(key: string, w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) {
+  let c = skyCache.get(key);
+  if (!c) {
+    c = sprite(w, h, draw);
+    skyCache.set(key, c);
+  }
+  return c;
+}
+
 export function drawSky(g: CanvasRenderingContext2D, t: number, light: boolean, top = '#8fd8ff', bottom = '#ffd6ec', sun = '#fff3a8') {
-  const sky = g.createLinearGradient(0, 0, 0, 1080);
-  sky.addColorStop(0, top);
-  sky.addColorStop(1, bottom);
-  g.fillStyle = sky;
-  g.fillRect(0, 0, 1920, 1080);
-  smileSun(g, 1700, 130, 62, sun, light ? 0 : t);
+  // Image pleine taille : la recopier est bien plus rapide que refaire le dégradé (ou l'étirer)
+  const bg = cached('bg' + top + bottom, 1920, 1080, (c) => {
+    const sky = c.createLinearGradient(0, 0, 0, 1080);
+    sky.addColorStop(0, top);
+    sky.addColorStop(1, bottom);
+    c.fillStyle = sky;
+    c.fillRect(0, 0, 1920, 1080);
+  });
+  g.drawImage(bg, 0, 0);
+  // Soleil : image en cache qu'on fait tourner
+  const sunImg = cached('sun' + sun, 260, 260, (c) => smileSun(c, 130, 130, 62, sun, 0));
+  g.save();
+  g.translate(1700, 130);
+  if (!light) g.rotate(Math.sin(t * 0.8) * 0.12);
+  g.drawImage(sunImg, -130, -130);
+  g.restore();
   if (light) return;
   for (let i = 0; i < 5; i++) {
+    const sc = 0.8 + (i % 2) * 0.25;
+    const cl = cached('cloud' + sc, 210, 140, (c) => stickerCloud(c, 42, 72, sc));
     const x = ((i * 470 + t * (14 + i * 4)) % 2300) - 200;
     const y = 70 + (i % 3) * 50;
-    stickerCloud(g, x, y, 0.8 + (i % 2) * 0.25);
+    g.drawImage(cl, x - 42, y - 72);
   }
 }
 

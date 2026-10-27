@@ -63,9 +63,21 @@ export function Stick({
   const lastSent = useRef(0);
   const R = 46;
 
+  const pending = useRef(0);
   const flush = (force = false) => {
     const now = performance.now();
-    if (!force && now - lastSent.current < 33) return;
+    if (!force && now - lastSent.current < 33) {
+      // Trop tôt : on envoie quand même la dernière position juste après (sinon elle attendait 150 ms)
+      if (!pending.current) pending.current = window.setTimeout(() => {
+        pending.current = 0;
+        flush(true);
+      }, 33 - (now - lastSent.current));
+      return;
+    }
+    if (pending.current) {
+      clearTimeout(pending.current);
+      pending.current = 0;
+    }
     lastSent.current = now;
     const s = state.current;
     send({ t: 'in', x: +s.x.toFixed(2), y: +s.y.toFixed(2), a: s.a, b: s.b, c: s.c, d: s.d });

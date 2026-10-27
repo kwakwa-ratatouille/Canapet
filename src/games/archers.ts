@@ -306,6 +306,38 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     sfx.boing();
   }
 
+  function drawPlatforms(g: CanvasRenderingContext2D) {
+    g.strokeStyle = INK;
+    g.lineWidth = 5;
+    const body = map.body ?? '#ffd9ea';
+    const top = map.top ?? '#ff7eb6';
+    for (const s of SOLIDS) {
+      // Ombre plate puis bloc avec un nappage sur le dessus
+      g.fillStyle = 'rgba(58,33,64,0.18)';
+      g.beginPath();
+      g.roundRect(s.x + 1, s.y + 7, s.w - 2, s.h - 2, 12);
+      g.fill();
+      g.fillStyle = body;
+      g.beginPath();
+      g.roundRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
+      g.fill();
+      g.fillStyle = top;
+      g.beginPath();
+      g.roundRect(s.x + 1, s.y + 1, s.w - 2, Math.min(18, s.h - 2), [12, 12, 4, 4]);
+      g.fill();
+      if (!ctx.light && s.w > 80)
+        for (let x = s.x + 24; x < s.x + s.w - 14; x += 44) {
+          g.beginPath();
+          g.arc(x, s.y + 18, 8, 0, Math.PI);
+          g.fill();
+        }
+      g.beginPath();
+      g.roundRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
+      g.stroke();
+    }
+  }
+  let platforms: HTMLCanvasElement | null = null;
+
   const game: GameInstance = {
     over: false,
     input(pid, m) {
@@ -491,32 +523,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (shake) g.translate(rnd(-shake, shake), rnd(-shake, shake));
       g.strokeStyle = INK;
       g.lineWidth = 5;
-      const body = map.body ?? '#ffd9ea';
-      const top = map.top ?? '#ff7eb6';
-      for (const s of SOLIDS) {
-        // Ombre plate puis bloc avec un nappage sur le dessus
-        g.fillStyle = 'rgba(58,33,64,0.18)';
-        g.beginPath();
-        g.roundRect(s.x + 1, s.y + 7, s.w - 2, s.h - 2, 12);
-        g.fill();
-        g.fillStyle = body;
-        g.beginPath();
-        g.roundRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
-        g.fill();
-        g.fillStyle = top;
-        g.beginPath();
-        g.roundRect(s.x + 1, s.y + 1, s.w - 2, Math.min(18, s.h - 2), [12, 12, 4, 4]);
-        g.fill();
-        if (!ctx.light && s.w > 80)
-          for (let x = s.x + 24; x < s.x + s.w - 14; x += 44) {
-            g.beginPath();
-            g.arc(x, s.y + 18, 8, 0, Math.PI);
-            g.fill();
-          }
-        g.beginPath();
-        g.roundRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
-        g.stroke();
+      // Les plateformes ne bougent pas : dessinées une fois dans une image, puis recopiées
+      if (!platforms) {
+        platforms = document.createElement('canvas');
+        platforms.width = W;
+        platforms.height = H;
+        const pg = platforms.getContext('2d')!;
+        drawPlatforms(pg);
       }
+      g.drawImage(platforms, 0, 0);
       if (chest) {
         const bob = Math.sin(chest.t * 4) * 6;
         g.save();
