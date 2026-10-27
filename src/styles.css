@@ -2463,3 +2463,88 @@ h3,
   width: 96px;
   height: 96px;
 }
+
+/* ===== Manette v3 : une vraie manette (coque, croix de 4 boutons serrés, stick fixe) ===== */
+.stick-pad {
+  margin: 10px 12px 12px;
+  border: 5px solid var(--ink);
+  border-radius: 90px;
+  background: #fff;
+  background-image: var(--cp-bonbon);
+  box-shadow: inset 0 6px 0 rgba(255, 255, 255, 0.7), 0 8px 0 var(--ink);
+  overflow: hidden;
+}
+/* Poignées : un peu de la couleur du joueur de chaque côté */
+.stick-pad::before,
+.stick-pad::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 26%;
+  background: var(--c);
+  opacity: 0.18;
+  pointer-events: none;
+}
+.stick-pad::before {
+  left: 0;
+  border-radius: 90px 0 0 90px;
+}
+.stick-pad::after {
+  right: 0;
+  border-radius: 0 90px 90px 0;
+}
+.stick-hint {
+  display: none;
+}
+.ab {
+  flex: 0 0 min(42%, 330px);
+  display: grid;
+  place-items: center;
+}
+.ab-cluster {
+  position: relative;
+  width: min(62vmin, 250px);
+  height: min(62vmin, 250px);
+}
+.ab.four .ab-btn {
+  width: 36%;
+  height: 36%;
+  font-size: clamp(10px, 2.8vmin, 13px);
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  gap: 0;
+}
+.ab.four .ab-btn i {
+  font-size: 2.3em;
+}
+.ab.four .ab-btn small {
+  font-size: 1em;
+  -webkit-text-stroke: 3px var(--ink);
+}
+.ab.four .ab-btn.c {
+  top: 18%;
+}
+.ab.four .ab-btn.b {
+  top: 82%;
+}
+.ab.four .ab-btn.d {
+  left: 18%;
+}
+.ab.four .ab-btn.a {
+  left: 82%;
+}
+.ab.four .ab-btn.down {
+  transform: translate(-50%, -50%) scale(0.93);
+}
+.ab-btn.off {
+  opacity: 0.25;
+  filter: none;
+}
+.ab-btn:not(.off) {
+  box-shadow: var(--cp-reflet), 0 6px 0 var(--ink);
+  background-image: var(--cp-bonbon);
+}

@@ -16,6 +16,8 @@ const DASH_KICK = 1650;
 const GOAL = 240;
 const MAX_TIME = 180;
 const HOLD_MAX = 4;
+/** Rayon des coins arrondis du terrain (le ballon ne peut plus s’y coincer). */
+const CORNER = 150;
 
 /** Couleurs et noms des 4 équipes (les 2 premières = celles du mode équipes). */
 const SQUADS = [
@@ -142,6 +144,27 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   kickoff();
 
   const pop = (x: number, y: number, text: string) => pops.push({ x, y, text, t: 1 });
+
+  /** Coins arrondis : si l’objet dépasse l’arc, on le remet dedans et on le fait rebondir. */
+  function corner(o: { x: number; y: number; vx: number; vy: number }, rad: number, bounce: number) {
+    const ccx = o.x < F.x + CORNER ? F.x + CORNER : o.x > F.x + F.w - CORNER ? F.x + F.w - CORNER : null;
+    const ccy = o.y < F.y + CORNER ? F.y + CORNER : o.y > F.y + F.h - CORNER ? F.y + F.h - CORNER : null;
+    if (ccx === null || ccy === null) return;
+    const dx = o.x - ccx;
+    const dy = o.y - ccy;
+    const d = Math.hypot(dx, dy);
+    const lim = CORNER - rad;
+    if (d <= lim) return;
+    const nx = dx / d;
+    const ny = dy / d;
+    o.x = ccx + nx * lim;
+    o.y = ccy + ny * lim;
+    const vn = o.vx * nx + o.vy * ny;
+    if (vn > 0) {
+      o.vx -= (1 + bounce) * vn * nx;
+      o.vy -= (1 + bounce) * vn * ny;
+    }
+  }
 
   function throwBall(p: P, b: Ball, power: number) {
     let kx = p.fx;
@@ -320,6 +343,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         p.vy += (tvy - p.vy) * k;
         p.x = Math.max(F.x + R, Math.min(F.x + F.w - R, p.x + p.vx * dt));
         p.y = Math.max(F.y + R, Math.min(F.y + F.h - R, p.y + p.vy * dt));
+        corner(p, R, 0);
         if (p.kickReq && p.stun <= 0) kick(p);
         p.kickReq = false;
       }
@@ -434,6 +458,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             b.vy = -Math.abs(b.vy) * 0.8;
           }
         }
+        corner(b, BALL_R, 0.8);
         if (scored >= 0) {
           goal(b, scored);
           break;
@@ -452,14 +477,21 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (shake) g.translate(rnd(-shake, shake), rnd(-shake, shake));
       g.fillStyle = '#ffe3f1';
       g.fillRect(0, 0, 1920, 1080);
+      g.save();
+      g.beginPath();
+      g.roundRect(F.x, F.y, F.w, F.h, CORNER);
+      g.clip();
       for (let i = 0; i < 10; i++) {
         g.fillStyle = i % 2 ? '#7bd13b' : '#8fe04a';
         g.fillRect(F.x + (i * F.w) / 10, F.y, F.w / 10 + 1, F.h);
       }
+      g.restore();
       candy(g, F.x, F.y, F.w, F.h, 30);
       g.strokeStyle = '#fff';
       g.lineWidth = 8;
-      g.strokeRect(F.x + 10, F.y + 10, F.w - 20, F.h - 20);
+      g.beginPath();
+      g.roundRect(F.x + 10, F.y + 10, F.w - 20, F.h - 20, CORNER - 10);
+      g.stroke();
       g.beginPath();
       if (nTeams === 2) {
         g.moveTo(cx, F.y + 10);
@@ -476,7 +508,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.stroke();
       g.strokeStyle = INK;
       g.lineWidth = 6;
-      g.strokeRect(F.x, F.y, F.w, F.h);
+      g.beginPath();
+      g.roundRect(F.x, F.y, F.w, F.h, CORNER);
+      g.stroke();
       // Buts aux couleurs des équipes
       goals.forEach((gl, side) => {
         const [x, y, w, h] = gl.horiz

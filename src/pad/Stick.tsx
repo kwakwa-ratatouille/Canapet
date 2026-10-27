@@ -52,7 +52,6 @@ export function Stick({
   live?: { rank: number; of: number; left: number | null } | null;
 }) {
   const [la, lb, lx, ly] = LABELS[game ?? '']?.[lang] ?? ['A', 'B'];
-  const four = !!(lx || ly);
   const state = useRef({ x: 0, y: 0, a: false, b: false, c: false, d: false });
   // Le stick est visible au repos ; s'il est touché ailleurs, il vient sous le pouce.
   const [knob, setKnob] = useState({ ox: 0, oy: 0, x: 0, y: 0, on: false });
@@ -170,7 +169,8 @@ export function Stick({
           </span>
         )}
       </div>
-      <div className={`ab ${four ? 'four' : ''}`}>
+      <div className="ab four">
+        <div className="ab-cluster">
         {(
           [
             ['c', 'X', lx],
@@ -179,19 +179,21 @@ export function Stick({
             ['a', 'A', la],
           ] as const
         ).map(([k, letter, label]) =>
-          label ? (
+          (
             <button
               key={k}
-              className={`ab-btn ${k} ${pressed[k] ? 'down' : ''}`}
+              disabled={!label}
+              className={`ab-btn ${k} ${pressed[k] ? 'down' : ''} ${label ? '' : 'off'}`}
               onPointerDown={btn(k, true)}
               onPointerUp={btn(k, false)}
               onPointerCancel={btn(k, false)}
             >
               <i>{letter}</i>
-              {label}
+              {label && <small>{label}</small>}
             </button>
-          ) : null,
+          ),
         )}
+        </div>
       </div>
     </div>
   );
