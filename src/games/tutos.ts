@@ -27,19 +27,19 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
   },
   obstacles: {
     fr: {
-      goal: 'Franchis tous les obstacles jusqu’à l’arrivée !',
+      goal: 'Seuls les premiers arrivés sont qualifiés : fonce !',
       steps: [
         ['🕹️', 'Stick : courir à gauche et à droite'],
         ['🅰️', 'A : sauter (garde appuyé pour sauter plus haut)'],
-        ['🅱️', 'B : plongeon pour passer sous les obstacles'],
+        ['🚪', 'B : plongeon. Portes « ? » : une seule casse, devine laquelle !'],
       ],
     },
     en: {
-      goal: 'Clear every obstacle to the finish!',
+      goal: 'Only the first ones to finish qualify: go go go!',
       steps: [
         ['🕹️', 'Stick: run left and right'],
         ['🅰️', 'A: jump (hold to jump higher)'],
-        ['🅱️', 'B: dive under obstacles'],
+        ['🚪', 'B: dive. “?” doors: only one breaks, guess which!'],
       ],
     },
   },

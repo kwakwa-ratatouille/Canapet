@@ -20,7 +20,7 @@ const BASE_Y = 860;
 const MAX_TIME = 150;
 const AFTER_FIRST = 25;
 
-type Kind = 'ground' | 'block' | 'tile' | 'bounce' | 'conveyor' | 'mover' | 'sink';
+type Kind = 'ground' | 'block' | 'tile' | 'bounce' | 'conveyor' | 'mover' | 'sink' | 'door';
 
 interface Solid {
   x: number;
@@ -36,6 +36,8 @@ interface Solid {
   dx?: number;
   dy?: number;
   baseY?: number;
+  /** Porte surprise : vraie (elle casse) ou fausse (on rebondit). */
+  real?: boolean;
 }
 
 interface Fan {
@@ -193,6 +195,22 @@ function buildLevel(): Level {
       solid(x, y, 260);
       x += 260;
     },
+    portes() {
+      // Un mur avec deux portes (en bas et en haut) : une vraie qui casse, une fausse qui fait rebondir.
+      entry();
+      solid(x, y, 1100);
+      solid(x + 160, y - 200, 840, 'block');
+      for (const wx of [x + 420, x + 760]) {
+        const lowReal = Math.random() < 0.5;
+        solid(wx, y - 620, 44, 'ground', 310);
+        const up = solid(wx, y - 310, 44, 'door', 110);
+        up.real = !lowReal;
+        solid(wx, y - 200, 44, 'ground', 90);
+        const low = solid(wx, y - 110, 44, 'door', 110);
+        low.real = lowReal;
+      }
+      x += 1100;
+    },
     ventilos() {
       // Des ventilateurs soufflent vers l'arrière : il faut avancer face au vent.
       entry();
@@ -301,13 +319,35 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }));
   let time = 0;
   let camX = 0;
+  // Caméra : elle dézoome quand le peloton s'étale (z = 1 : vue normale).
+  let camZ = 1;
+  const viewW = () => VIEW_W / camZ;
+  // Qualification façon émission de jeu : environ 70 % des coureurs passent.
+  const quota = ps.length <= 2 ? ps.length : Math.max(1, Math.ceil(ps.length * 0.7));
+  let banner = '';
+  let bannerT = 0;
+  let shake = 0;
+  const fr = ctx.lang === 'fr';
+  const reached = new Map<number, string>();
+  type Part = { x: number; y: number; vx: number; vy: number; t: number; max: number; size: number; color: string; kind: 'dust' | 'star' | 'drop' | 'confetti' | 'ring' };
+  const parts: Part[] = [];
+  const pops: { x: number; y: number; text: string; color: string; t: number; size: number }[] = [];
+  const maxParts = ctx.light ? 50 : 200;
+  function burst(x: number, y: number, n: number, kind: Part['kind'], color: string | string[], speed = 300, size = 10, up = 0) {
+    for (let k = 0; k < n && parts.length < maxParts; k++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = speed * rnd(0.4, 1);
+      const c = Array.isArray(color) ? color[k % color.length] : color;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - up, t: 0, max: rnd(0.4, 0.9), size: size * rnd(0.6, 1.3), color: c, kind });
+    }
+  }
   let order = 0;
   let firstAt = -1;
   let endDelay = -1;
 
   /** Plateformes fines : on les traverse par en dessous, on atterrit dessus. */
   const oneWay = (s: Solid) => s.kind === 'block' || s.kind === 'mover' || s.kind === 'tile' || s.kind === 'sink';
-  const active = (s: Solid) => !((s.kind === 'tile' || s.kind === 'sink') && s.gone !== undefined);
+  const active = (s: Solid) => !((s.kind === 'tile' || s.kind === 'sink' || s.kind === 'door') && s.gone !== undefined);
   const solidAt = (px: number, py: number) =>
     L.solids.find((s) => active(s) && px >= s.x && px <= s.x + s.w && py >= s.y && py <= s.y + s.h);
 
@@ -335,6 +375,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     p.ground = null;
     sfx.boing();
     if (!p.bot) ctx.buzz(p.pid, 120);
+    shake = Math.max(shake, 12);
+    burst(p.x, p.y - BODY_H / 2, 8, 'star', '#ffd60a', 420, 12);
+    parts.push({ x: p.x, y: p.y - BODY_H / 2, vx: 0, vy: 0, t: 0, max: 0.3, size: 70, color: '#fff', kind: 'ring' });
   }
 
   function botThink(p: P, dt: number) {
@@ -426,6 +469,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       p.onGround = false;
     }
     p.diveReq = false;
+    if (p.onGround && Math.abs(p.vx) > 300 && !ctx.light && Math.random() < 0.12) burst(p.x - p.dir * 20, p.y - 6, 1, 'dust', '#ffffff', 50, 12);
 
     // Ventilateurs : le vent pousse vers l'arrière (moins fort en l'air au ras du sol)
     for (const fan of L.fans)
@@ -440,6 +484,24 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     for (const s of L.solids) {
       if (!active(s) || oneWay(s)) continue;
       if (p.x + HALF_W > s.x && p.x - HALF_W < s.x + s.w && p.y > s.y + 2 && p.y - BODY_H < s.y + s.h) {
+        if (s.kind === 'door') {
+          if (s.real) {
+            // Vraie porte : elle vole en éclats
+            s.gone = time;
+            burst(s.x + s.w / 2, s.y + s.h / 2, 14, 'confetti', ['#c98a5a', '#e8b98a', '#fff'], 520, 14);
+            sfx.pop();
+            shake = Math.max(shake, 8);
+            continue;
+          }
+          // Fausse porte : on rebondit en arrière
+          p.x = p.x < s.x + s.w / 2 ? s.x - HALF_W : s.x + s.w + HALF_W;
+          p.vx = -p.dir * 520;
+          p.vy = -260;
+          p.stun = 0.25;
+          burst(p.x, p.y - BODY_H / 2, 5, 'star', '#fff', 300, 10);
+          sfx.boing();
+          continue;
+        }
         if (p.x < s.x + s.w / 2) p.x = s.x - HALF_W;
         else p.x = s.x + s.w + HALF_W;
         p.vx = 0;
@@ -460,6 +522,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           sfx.boing();
           continue;
         }
+        if (!wasGround && p.vy > 650 && !ctx.light) burst(p.x, s.y - 4, 5, 'dust', '#ffffff', 200, 14);
         p.vy = 0;
         p.onGround = true;
         p.ground = s;
@@ -474,10 +537,20 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (p.onGround && p.diving > 0 && Math.abs(p.vx) < 60) p.diving = 0;
 
     // Points de reprise
-    while (p.cp + 1 < L.checkpoints.length && p.x > L.checkpoints[p.cp + 1].x) p.cp++;
+    while (p.cp + 1 < L.checkpoints.length && p.x > L.checkpoints[p.cp + 1].x) {
+      p.cp++;
+      if (!reached.has(p.cp)) {
+        reached.set(p.cp, p.profile.color);
+        const c = L.checkpoints[p.cp];
+        burst(c.x - 40, c.y - 90, 10, 'star', [p.profile.color, '#ffd60a'], 320, 10, 120);
+        if (!p.bot) sfx.tick();
+      }
+    }
 
     // Chute dans le vide
     if (p.y > DEATH_Y) {
+      burst(p.x, BASE_Y + 120, 14, 'drop', '#2ec5ff', 520, 14, 300);
+      pops.push({ x: p.x, y: BASE_Y + 60, text: ctx.family ? 'Oups !' : 'PLOUF !', color: '#2ec5ff', t: 1, size: 56 });
       respawn(p, p.cp);
       if (!p.bot) ctx.buzz(p.pid, 300);
       if (!ctx.light) sfx.pet();
@@ -489,6 +562,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (firstAt < 0) firstAt = time;
       sfx.finish();
       if (!p.bot) ctx.buzz(p.pid, 300);
+      burst(p.x, p.y - 120, 24, 'confetti', ['#ff4f9a', '#ffd60a', '#2ec5ff', '#1fc9a0', '#9b5cff'], 560, 12, 300);
+      pops.push({ x: p.x, y: p.y - 150, text: fr ? 'QUALIFIÉ !' : 'QUALIFIED!', color: p.profile.color, t: 1.3, size: 52 });
+      if (order === quota) {
+        banner = fr ? 'Les places sont prises !' : 'All spots taken!';
+        bannerT = 2.5;
+      }
     }
   }
 
@@ -562,7 +641,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     }
     for (const sp of L.spawners) {
       sp.t -= dt;
-      if (sp.t <= 0 && sp.x < camX + VIEW_W + 600) {
+      if (sp.t <= 0 && sp.x < camX + viewW() + 600) {
         sp.t = sp.every * rnd(0.8, 1.3);
         const r = rnd(38, 52);
         L.balls.push({ x: sp.x, y: sp.y - r, r, vx: -rnd(360, 460), rot: 0, minX: sp.minX });
@@ -577,8 +656,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function stepCamera(dt: number) {
     const racing = ps.filter((p) => !p.done);
-    const lead = Math.max(...(racing.length ? racing : ps).map((p) => p.x));
-    const target = Math.min(L.length - VIEW_W, Math.max(0, lead - VIEW_W * 0.58));
+    const pack = racing.length ? racing : ps;
+    const lead = Math.max(...pack.map((p) => p.x));
+    // Dézoome pour garder le peloton à l'écran (jusqu'à 70 %).
+    const back = Math.min(...pack.map((p) => p.x));
+    const wantZ = Math.max(0.7, Math.min(1, VIEW_W / (lead - back + 1150)));
+    camZ += (wantZ - camZ) * Math.min(1, dt * 1.5);
+    const target = Math.min(L.length - viewW(), Math.max(0, lead - viewW() * 0.6));
     if (target > camX) camX += (target - camX) * Math.min(1, dt * 3);
     // Trop loin derrière : replacé au premier point de reprise visible.
     for (const p of ps) {
@@ -605,6 +689,21 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       time += dt;
+      shake = Math.max(0, shake - dt * 50);
+      bannerT -= dt;
+      for (const q of parts) {
+        q.t += dt;
+        q.x += q.vx * dt;
+        q.y += q.vy * dt;
+        q.vx *= Math.pow(0.2, dt);
+        q.vy = q.vy * Math.pow(0.2, dt) + (q.kind === 'confetti' || q.kind === 'drop' ? 900 * dt : 0);
+      }
+      for (let k = parts.length - 1; k >= 0; k--) if (parts[k].t >= parts[k].max) parts.splice(k, 1);
+      for (const q of pops) {
+        q.t -= dt;
+        q.y -= 50 * dt;
+      }
+      while (pops.length && pops[0].t <= 0) pops.shift();
       stepWorld(dt);
       for (const p of ps) stepPlayer(p, dt);
       for (const p of ps) hazards(p);
@@ -624,7 +723,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
       stepCamera(dt);
       const humansDone = ps.some((p) => !p.bot) ? ps.every((p) => p.bot || p.done) : ps.every((p) => p.done);
-      if (endDelay < 0 && (humansDone || time > MAX_TIME || (firstAt >= 0 && time - firstAt > AFTER_FIRST))) endDelay = 2;
+      if (endDelay < 0 && (humansDone || order >= quota || time > MAX_TIME || (firstAt >= 0 && time - firstAt > AFTER_FIRST))) endDelay = 2.5;
       if (endDelay >= 0) {
         endDelay -= dt;
         if (endDelay <= 0) game.over = true;
@@ -634,19 +733,81 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       drawSky(g, t, ctx.light, theme.sky[0], theme.sky[1], theme.sun);
       drawHills(g, camX, theme);
       g.save();
+      const sx = shake ? rnd(-shake, shake) : 0;
+      const sy = shake ? rnd(-shake, shake) : 0;
+      // Le sol reste à la même hauteur à l'écran quand on dézoome.
+      g.translate(sx, BASE_Y * (1 - camZ) + sy);
+      g.scale(camZ, camZ);
       g.translate(-Math.round(camX), 0);
       const x0 = camX - 200;
-      const x1 = camX + VIEW_W + 200;
+      const x1 = camX + viewW() + 200;
       drawFinish(g, L.finishX, L.solids, ctx.lang);
-      for (const c of L.checkpoints) if (c.x > x0 && c.x < x1) drawFlag(g, c.x - 60, c.y);
+      L.checkpoints.forEach((c, i) => {
+        if (c.x > x0 && c.x < x1) drawFlag(g, c.x - 60, c.y, reached.get(i), t);
+      });
       for (const s of L.solids) if (s.x + s.w > x0 && s.x < x1) drawSolid(g, s, time, ctx.light, theme);
       for (const fan of L.fans) if (fan.x + fan.w > x0 && fan.x < x1) drawFan(g, fan, time, ctx.light);
-      for (const h of L.hammers) if (Math.abs(h.cx - camX - VIEW_W / 2) < VIEW_W) drawHammer(g, h);
-      for (const s of L.sweepers) if (Math.abs(s.cx - camX - VIEW_W / 2) < VIEW_W) drawSweeper(g, s);
+      for (const h of L.hammers) if (Math.abs(h.cx - camX - viewW() / 2) < viewW()) drawHammer(g, h);
+      for (const s of L.sweepers) if (Math.abs(s.cx - camX - viewW() / 2) < viewW()) drawSweeper(g, s);
       for (const b of L.balls) if (b.x > x0 && b.x < x1) drawBall(g, b);
       ps.forEach((p, i) => drawPlayer(g, p, t + i * 0.3));
+      // Particules
+      for (const q of parts) {
+        const k = q.t / q.max;
+        g.globalAlpha = 1 - k;
+        g.fillStyle = q.color;
+        if (q.kind === 'ring') {
+          g.strokeStyle = q.color;
+          g.lineWidth = 8 * (1 - k) + 2;
+          g.beginPath();
+          g.arc(q.x, q.y, q.size * (0.3 + k), 0, Math.PI * 2);
+          g.stroke();
+        } else if (q.kind === 'confetti') {
+          g.save();
+          g.translate(q.x, q.y);
+          g.rotate(q.t * 10);
+          g.fillRect(-q.size / 2, -q.size / 4, q.size, q.size / 2);
+          g.restore();
+        } else if (q.kind === 'star') {
+          g.save();
+          g.translate(q.x, q.y);
+          g.rotate(q.t * 8);
+          g.beginPath();
+          for (let st = 0; st < 10; st++) {
+            const r = st % 2 ? q.size * 0.45 : q.size;
+            g.lineTo(Math.cos((st * Math.PI) / 5) * r, Math.sin((st * Math.PI) / 5) * r);
+          }
+          g.fill();
+          g.restore();
+        } else {
+          g.beginPath();
+          g.arc(q.x, q.y, q.size * (q.kind === 'dust' ? 0.6 + k : 1 - k * 0.4), 0, Math.PI * 2);
+          g.fill();
+        }
+      }
+      g.globalAlpha = 1;
+      for (const q of pops) {
+        g.globalAlpha = Math.min(1, q.t * 2);
+        g.font = `700 ${q.size}px Fredoka, sans-serif`;
+        g.textAlign = 'center';
+        g.lineWidth = q.size * 0.22;
+        g.strokeStyle = INK;
+        g.strokeText(q.text, q.x, q.y);
+        g.fillStyle = q.color;
+        g.fillText(q.text, q.x, q.y);
+      }
+      g.globalAlpha = 1;
       g.restore();
-      drawHud(g, ps, L, time, order, ctx.lang);
+      drawHud(g, ps, L, time, order, quota, ctx.lang, t);
+      if (bannerT > 0) {
+        g.font = '700 84px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.lineWidth = 18;
+        g.strokeStyle = INK;
+        g.strokeText(banner, 960, 560);
+        g.fillStyle = '#ffd60a';
+        g.fillText(banner, 960, 560);
+      }
     },
     mapName: theme.name,
     ranking() {
@@ -736,6 +897,20 @@ function drawSolid(g: CanvasRenderingContext2D, s: Solid, time: number, light: b
       g.beginPath();
       g.roundRect(s.x, s.y, s.w, h, s.kind === 'block' ? 12 : [14, 14, 0, 0]);
       g.stroke();
+      break;
+    }
+    case 'door': {
+      if (s.gone !== undefined) break;
+      // Porte en bois avec un point d'interrogation (vraie et fausse se ressemblent)
+      g.fillStyle = '#c98a5a';
+      g.beginPath();
+      g.roundRect(s.x - 4, s.y, s.w + 8, s.h, 10);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#fff';
+      g.font = '700 40px Fredoka, sans-serif';
+      g.textAlign = 'center';
+      g.fillText('?', s.x + s.w / 2, s.y + s.h / 2 + 14);
       break;
     }
     case 'sink': {
@@ -903,18 +1078,26 @@ function drawBall(g: CanvasRenderingContext2D, b: Ball) {
   g.restore();
 }
 
-function drawFlag(g: CanvasRenderingContext2D, x: number, y: number) {
+function drawFlag(g: CanvasRenderingContext2D, x: number, y: number, by: string | undefined, t: number) {
+  // Drapeau de point de reprise : il monte et prend la couleur du premier qui passe.
   g.strokeStyle = INK;
-  g.lineWidth = 4;
+  g.lineWidth = 5;
   g.beginPath();
   g.moveTo(x, y);
-  g.lineTo(x, y - 90);
+  g.lineTo(x, y - 110);
   g.stroke();
-  g.fillStyle = '#7bd13b';
+  g.fillStyle = '#fff';
   g.beginPath();
-  g.moveTo(x, y - 90);
-  g.lineTo(x + 40, y - 76);
-  g.lineTo(x, y - 62);
+  g.arc(x, y - 114, 7, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  const top = by ? y - 108 : y - 60;
+  const wave = Math.sin(t * 6 + x) * 5;
+  g.fillStyle = by ?? '#e4e0ef';
+  g.beginPath();
+  g.moveTo(x, top);
+  g.quadraticCurveTo(x + 26, top + 6 + wave, x + 52, top + 16);
+  g.lineTo(x, top + 34);
   g.closePath();
   g.fill();
   g.stroke();
@@ -955,7 +1138,7 @@ function drawPlayer(g: CanvasRenderingContext2D, p: P, t: number) {
     g.rotate(p.dir * 1.2);
     g.translate(-p.x, -(p.y - 30));
   }
-  drawCharacter(g, p.x, p.y, 86, {
+  drawCharacter(g, p.x, p.y, 98, {
     food: p.profile.food,
     color: p.profile.color,
     hat: p.profile.hat,
@@ -964,59 +1147,88 @@ function drawPlayer(g: CanvasRenderingContext2D, p: P, t: number) {
     t,
     run: p.onGround ? Math.min(1, Math.abs(p.vx) / RUN) : 0.3,
     dir: p.dir,
-    mood: p.stun > 0 ? 'wow' : 'happy',
+    mood: p.done ? 'win' : p.stun > 0 ? 'wow' : 'happy',
+    arms: !!p.done,
   });
   g.restore();
   g.globalAlpha = 1;
   // Étoiles quand on est sonné
   if (p.stun > 0.05) {
     g.fillStyle = '#ffd60a';
+    g.strokeStyle = INK;
+    g.lineWidth = 2;
     for (let i = 0; i < 3; i++) {
       const a = t * 6 + (i * Math.PI * 2) / 3;
       g.beginPath();
-      g.arc(p.x + Math.cos(a) * 26, p.y - 100 + Math.sin(a) * 8, 6, 0, Math.PI * 2);
+      g.arc(p.x + Math.cos(a) * 30, p.y - 118 + Math.sin(a) * 9, 8, 0, Math.PI * 2);
       g.fill();
+      g.stroke();
     }
   }
   // Pseudo au-dessus de la tête
   g.font = '700 28px Fredoka, sans-serif';
   g.textAlign = 'center';
-  g.lineWidth = 5;
+  g.lineWidth = 6;
   g.strokeStyle = INK;
-  g.strokeText(p.profile.name, p.x, p.y - 112);
+  g.strokeText(p.profile.name, p.x, p.y - 132);
   g.fillStyle = p.profile.color;
-  g.fillText(p.profile.name, p.x, p.y - 112);
+  g.fillText(p.profile.name, p.x, p.y - 132);
 }
 
-function drawHud(g: CanvasRenderingContext2D, ps: P[], L: Level, time: number, done: number, lang: string) {
-  const x0 = 360;
-  const x1 = 1560;
-  g.fillStyle = 'rgba(255,255,255,0.85)';
-  g.strokeStyle = INK;
-  g.lineWidth = 4;
+function pill(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, fill: string) {
+  g.fillStyle = INK;
   g.beginPath();
-  g.roundRect(x0 - 30, 24, x1 - x0 + 60, 44, 22);
+  g.roundRect(x, y + 6, w, h, h / 2);
+  g.fill();
+  g.fillStyle = fill;
+  g.strokeStyle = INK;
+  g.lineWidth = 5;
+  g.beginPath();
+  g.roundRect(x, y, w, h, h / 2);
   g.fill();
   g.stroke();
-  g.fillStyle = INK;
-  g.font = '28px sans-serif';
+}
+
+function drawHud(g: CanvasRenderingContext2D, ps: P[], L: Level, time: number, done: number, quota: number, lang: string, t: number) {
+  // Barre de progression : chaque coureur est une pastille à sa couleur.
+  const x0 = 430;
+  const x1 = 1490;
+  pill(g, x0 - 40, 26, x1 - x0 + 80, 56, '#fff');
+  g.fillStyle = '#f1e6f7';
+  g.beginPath();
+  g.roundRect(x0, 46, x1 - x0, 16, 8);
+  g.fill();
+  g.font = '34px sans-serif';
   g.textAlign = 'center';
-  g.fillText('🏁', x1 + 6, 58);
-  for (const p of ps) {
+  g.fillText('🏁', x1 + 8, 68);
+  for (const p of [...ps].sort((a, b) => a.x - b.x)) {
     const k = Math.min(1, Math.max(0, p.x / L.finishX));
     g.fillStyle = p.profile.color;
+    g.strokeStyle = INK;
+    g.lineWidth = 4;
     g.beginPath();
-    g.arc(x0 + k * (x1 - x0 - 40), 46, 12, 0, Math.PI * 2);
+    g.arc(x0 + k * (x1 - x0 - 30), 54, p.bot ? 12 : 16, 0, Math.PI * 2);
     g.fill();
-    g.lineWidth = 3;
     g.stroke();
   }
-  g.font = '700 40px Fredoka, sans-serif';
-  g.textAlign = 'left';
+  // Chrono
+  pill(g, 40, 26, 170, 56, '#ffd60a');
   g.fillStyle = INK;
-  g.fillText(`${Math.floor(time)} s`, 60, 62);
-  g.textAlign = 'right';
-  g.fillText(`${lang === 'fr' ? 'Arrivés' : 'Finished'} ${done}/${ps.length}`, 1880, 62);
+  g.font = '700 36px Fredoka, sans-serif';
+  g.textAlign = 'center';
+  g.fillText(`⏱ ${Math.floor(time)}`, 125, 67);
+  // Qualifiés
+  const full = done >= quota;
+  pill(g, 1590, 26, 290, 56, full ? '#1fc9a0' : '#fff');
+  g.fillStyle = full ? '#fff' : INK;
+  g.font = '700 32px Fredoka, sans-serif';
+  const label = `${lang === 'fr' ? 'Qualifiés' : 'Qualified'} ${done}/${quota}`;
+  if (full) {
+    g.lineWidth = 6;
+    g.strokeStyle = INK;
+    g.strokeText(label, 1735, 66);
+  }
+  g.fillText(label, 1735, 66 + (full ? 0 : Math.sin(t * 4) * 0));
 }
 
 export const tumble: GameBase = {
