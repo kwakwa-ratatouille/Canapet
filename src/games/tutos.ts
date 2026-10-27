@@ -135,7 +135,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
   },
   bagarre: {
     fr: {
-      goal: 'Jette tout le monde dans la crème !',
+      goal: 'Jette tout le monde dans la crème ! Premier à 2 manches, attention aux pièges de la carte',
       steps: [
         ['👋', 'B (appui court) : une baffe. 4 baffes et l’autre est sonné'],
         ['🤲', 'B (maintenu) : attraper quelqu’un'],
@@ -143,7 +143,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
     en: {
-      goal: 'Throw everyone into the cream!',
+      goal: 'Throw everyone into the cream! First to 2 rounds, watch out for the map’s traps',
       steps: [
         ['👋', 'Tap B: a slap. 4 slaps and they’re dizzy'],
         ['🤲', 'Hold B: grab someone'],
