@@ -120,16 +120,16 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Une flèche ou un saut sur la tête, et c’est perdu. Premier à 3 manches !',
       steps: [
         ['🕹️', 'Stick : courir et viser (8 directions)'],
-        ['🅰️', 'A : sauter · 🅱️ B : tirer'],
-        ['🏹', '3 flèches : ramasse celles qui sont plantées. À 30 s, mort subite !'],
+        ['🅰️', 'A : sauter · B : tirer · X : esquive (attrape une flèche au vol !)'],
+        ['🎁', 'Ramasse tes flèches plantées et le coffre (bulle + 2 flèches). Mort subite à 30 s !'],
       ],
     },
     en: {
       goal: 'One arrow or a stomp and you’re out. First to 3 rounds!',
       steps: [
         ['🕹️', 'Stick: run and aim (8 directions)'],
-        ['🅰️', 'A: jump · 🅱️ B: shoot'],
-        ['🏹', '3 arrows: pick up the stuck ones. At 30 s, sudden death!'],
+        ['🅰️', 'A: jump · B: shoot · X: dodge (catch an arrow mid-air!)'],
+        ['🎁', 'Pick up stuck arrows and the chest (bubble + 2 arrows). Sudden death at 30 s!'],
       ],
     },
   },
