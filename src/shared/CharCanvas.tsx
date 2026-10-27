@@ -4,7 +4,7 @@ import { LIGHT } from './device';
 import type { Profile } from './protocol';
 
 interface Props {
-  profile: Pick<Profile, 'food' | 'color' | 'hat' | 'acc' | 'selfie'>;
+  profile: Pick<Profile, 'food' | 'color' | 'hat' | 'acc' | 'selfie' | 'eyes' | 'pose'>;
   size: number;
   ghost?: boolean;
   still?: boolean;
@@ -35,6 +35,8 @@ export function CharCanvas({ profile, size, ghost, still, mood, arms }: Props) {
         color: p.color,
         hat: p.hat,
         acc: p.acc,
+        eyes: p.eyes,
+        pose: p.pose,
         selfie: selfieImage(p.selfie),
         t: animated ? now / 1000 + size : 0,
         ghost,

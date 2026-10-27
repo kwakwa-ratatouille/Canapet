@@ -698,6 +698,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           color: k.profile.color,
           hat: k.profile.hat,
           acc: k.profile.acc,
+          eyes: k.profile.eyes,
+          pose: k.profile.pose,
           selfie: k.selfie,
           t: t + i,
           dir: Math.cos(k.a) >= 0 ? 1 : -1,

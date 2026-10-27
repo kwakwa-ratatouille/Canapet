@@ -261,7 +261,9 @@ function perso(kind,c=ROSE,o={}){
   const mood=o.arms?'win':o.mood||'happy';
   g+=legs()+relief(feet(c));
   let body=relief(k.b(c));
-  const look=LOOK[kind]||['cool','hip'];
+  const base=LOOK[kind]||['cool','hip'];
+  // Le joueur peut choisir son regard et sa pose (sinon ceux du perso)
+  const look=[o.eyes||base[0],o.pose||base[1]];
   body+=o.selfie?selfie(60,k.fy,s):(o.mood||'happy')==='happy'?faceLook(60,k.fy,s,look[0]):face(60,k.fy,o.mood,s);
   if(o.acc) body+=acc(o.acc,60,k.fy,s);
   if(o.hat) body+=relief(hat(o.hat,k.hx||60,k.top,c));
@@ -529,6 +531,10 @@ export const PLAYER_COLORS = COL;
 export const PLAYER_COLOR_NAMES = COLN;
 export const CHARACTERS = Object.fromEntries(KEYS.map(k => [k, K[k].n]));
 export const HATS = ['couronne','casquette','haut','bob','cornes','antenne','noeud','toque','fete','pirate','aureole','fleur','bonnet','sorciere'];
+/** Regards et poses au choix. */
+export const EYES = ['cool','round','sleepy','angry','wink','star'];
+export const POSES = ['hip','cross','flex','wave','thumbs','shy'];
+export const LOOKS = LOOK;
 export const ACCESSORIES = ['lunettes','soleil','moustache','monocle','bisou','coeurs','masque','barbe','rougir'];
 export const MOODS = ['happy','wow','sad','win','toot'];
 /** Personnage complet. kind: clé de CHARACTERS ; color: couleur des baskets ;

@@ -177,6 +177,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           color: r.profile.color,
           hat: r.profile.hat,
           acc: r.profile.acc,
+          eyes: r.profile.eyes,
+          pose: r.profile.pose,
           selfie: r.selfie,
           t: t + i * 0.37,
           run: r.done ? 0 : Math.min(1, rate / 7),

@@ -13,6 +13,9 @@ export interface Profile {
   selfie?: string;
   /** Niveau du joueur (progression gardée sur son téléphone). */
   level?: number;
+  /** Regard et pose choisis (sinon ceux du perso). */
+  eyes?: string;
+  pose?: string;
 }
 
 export type PadLayout = 'tap' | 'stick' | 'bluff' | 'buttons';

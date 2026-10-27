@@ -609,6 +609,8 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
           color: r.profile.color,
           hat: r.profile.hat,
           acc: r.profile.acc,
+          eyes: r.profile.eyes,
+          pose: r.profile.pose,
           selfie: r.selfie,
           t: el + i,
           mood: ok ? 'win' : 'happy',

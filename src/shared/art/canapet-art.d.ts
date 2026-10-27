@@ -6,7 +6,12 @@ export interface CharacterOpts {
   selfie?: boolean;
   arms?: boolean;
   toot?: boolean;
+  eyes?: string;
+  pose?: string;
 }
+export const EYES: string[];
+export const POSES: string[];
+export const LOOKS: Record<string, [string, string]>;
 export const COLORS: { P: string; ROSE: string; VIO: string; VIO2: string; SOL: string; MEN: string; CIEL: string; NUIT: string };
 export const PLAYER_COLORS: string[];
 export const PLAYER_COLOR_NAMES: string[];

@@ -1371,6 +1371,8 @@ function drawPlayer(g: CanvasRenderingContext2D, p: P, t: number) {
     color: p.profile.color,
     hat: p.profile.hat,
     acc: p.profile.acc,
+          eyes: p.profile.eyes,
+          pose: p.profile.pose,
     selfie: p.selfie,
     t,
     run: p.onGround ? Math.min(1, Math.abs(p.vx) / RUN) : 0.3,

@@ -4,7 +4,7 @@ import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRI
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GAMES, gameById, playable } from '../games/registry';
 import { CharCanvas } from '../shared/CharCanvas';
-import { ACCS, COLORS, FOODS, HATS } from '../shared/characters';
+import { ACCS, COLORS, EYE_LIST, FOODS, HATS, POSE_LIST } from '../shared/characters';
 import { IS_IOS, newId, save, store } from '../shared/device';
 import { defaultLang, ordinal, t } from '../shared/i18n';
 import { gameIcon, Wordmark } from '../shared/Logo';
@@ -662,7 +662,7 @@ function TapPad({ lang, send }: { lang: Lang; send: (m: ToTv) => void }) {
   );
 }
 
-type Tab = 'perso' | 'color' | 'hat' | 'deco';
+type Tab = 'perso' | 'color' | 'eyes' | 'pose' | 'hat' | 'deco' | 'more';
 
 function Editor({
   profile,
@@ -735,20 +735,38 @@ function Editor({
       acc: pick(ACCS.filter((a) => owned('acc', a.id))).id,
     });
 
-  const labels = lang === 'fr' ? ['Perso', 'Couleur', 'Chapeau', 'Déco'] : ['Character', 'Color', 'Hat', 'Extras'];
-  const tabs: [Tab, string][] = (['perso', 'color', 'hat', 'deco'] as Tab[]).map((k, i) => [k, labels[i]]);
+  const fr = lang === 'fr';
+  const tabs: [Tab, string, string][] = [
+    ['perso', '🍕', fr ? 'Perso' : 'Character'],
+    ['color', '🎨', fr ? 'Couleur' : 'Color'],
+    ['eyes', '👀', fr ? 'Yeux' : 'Eyes'],
+    ['pose', '🕺', fr ? 'Pose' : 'Pose'],
+    ['hat', '🎩', fr ? 'Chapeau' : 'Hat'],
+    ['deco', '🕶️', fr ? 'Déco' : 'Extras'],
+    ['more', '⚙️', fr ? 'Réglages' : 'Settings'],
+  ];
 
   return (
     <div className="pad editor" style={{ ['--c' as string]: profile.color }}>
-      <h2 className="editor-title">{t(lang, 'myChar')}</h2>
-      <div className="shop-bar">
-        <span>
-          {lang === 'fr' ? 'Niveau' : 'Level'} <b>{level}</b>
+      <div className="ed-top">
+        <h2 className="editor-title">{t(lang, 'myChar')}</h2>
+        <span className="ed-badges">
+          <span className="ed-level">{fr ? 'Niv.' : 'Lv.'} {level}</span>
+          <span className="shop-coins">🍬 {progress.coins}</span>
         </span>
-        <span className="shop-coins">🍬 {progress.coins}</span>
       </div>
-      <div className="editor-preview">
-        <CharCanvas profile={profile} size={150} />
+      <div className="ed-stage">
+        <div className="editor-preview">
+          <CharCanvas profile={profile} size={150} />
+        </div>
+        <div className="ed-quick">
+          <button className="ed-round" onClick={randomize} aria-label={t(lang, 'random')}>
+            🎲
+          </button>
+          <button className="ed-round" onClick={() => (profile.selfie ? set({ selfie: undefined }) : fileRef.current?.click())} aria-label={t(lang, 'selfie')}>
+            {profile.selfie ? '🗑️' : '📷'}
+          </button>
+        </div>
       </div>
       <input
         className="name-input"
@@ -758,13 +776,34 @@ function Editor({
         onChange={(e) => set({ name: e.target.value })}
         placeholder={t(lang, 'yourName')}
       />
-      <div className="tabs">
-        {tabs.map(([k, label]) => (
-          <button key={k} className={`tab ${tab === k ? 'on' : ''}`} onClick={() => setTab(k)}>
-            {label}
+      <div className="ed-tabs">
+        {tabs.map(([k, icon, label]) => (
+          <button key={k} className={`ed-tab ${tab === k ? 'on' : ''}`} onClick={() => setTab(k)}>
+            <span>{icon}</span>
+            <small>{label}</small>
           </button>
         ))}
       </div>
+      {tab === 'eyes' && (
+        <div className="pick-grid">
+          {EYE_LIST.map((e) => (
+            <button key={e.id} className={`pick ${(profile.eyes ?? '') === e.id ? 'on' : ''}`} onClick={() => set({ eyes: e.id || undefined })}>
+              <CharCanvas profile={{ ...profile, selfie: undefined, eyes: e.id || undefined }} size={52} still />
+              <small>{e.name[lang]}</small>
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === 'pose' && (
+        <div className="pick-grid">
+          {POSE_LIST.map((e) => (
+            <button key={e.id} className={`pick ${(profile.pose ?? '') === e.id ? 'on' : ''}`} onClick={() => set({ pose: e.id || undefined })}>
+              <CharCanvas profile={{ ...profile, selfie: undefined, pose: e.id || undefined }} size={52} still />
+              <small>{e.name[lang]}</small>
+            </button>
+          ))}
+        </div>
+      )}
 
       {tab === 'perso' && (
         <div className="pick-grid">
@@ -798,16 +837,19 @@ function Editor({
               </button>
             ))}
           </div>
-          <div className="lang-row">
-            {(['fr', 'en'] as Lang[]).map((l) => (
-              <button key={l} className={`tab ${lang === l ? 'on' : ''}`} onClick={() => set({ lang: l })}>
-                {l === 'fr' ? 'Français' : 'English'}
-              </button>
-            ))}
-          </div>
         </>
       )}
-      <div className="color-row">
+      {tab === 'more' && (
+        <div className="lang-row">
+          {(['fr', 'en'] as Lang[]).map((l) => (
+            <button key={l} className={`tab ${lang === l ? 'on' : ''}`} onClick={() => set({ lang: l })}>
+              {l === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'}
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === 'color' && (
+      <div className="color-row big">
         {COLORS.map((c) => (
           <button
             key={c}
@@ -819,20 +861,14 @@ function Editor({
           />
         ))}
       </div>
+      )}
       {tab === 'color' && <p className="pad-small center">{t(lang, 'colorHint')}</p>}
-
-      <div className="editor-actions">
-        <button className="btn ghost" onClick={() => (profile.selfie ? set({ selfie: undefined }) : fileRef.current?.click())}>
-          📷 {profile.selfie ? t(lang, 'removeSelfie') : t(lang, 'selfie')}
+      <input ref={fileRef} type="file" accept="image/*" capture="user" hidden onChange={(e) => onSelfie(e.target.files?.[0])} />
+      <div className="ed-bottom">
+        <button className="btn big mint" disabled={!profile.name.trim()} onClick={onDone}>
+          {t(lang, 'itsMe')}
         </button>
-        <button className="btn sun" onClick={randomize}>
-          {t(lang, 'random')}
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" capture="user" hidden onChange={(e) => onSelfie(e.target.files?.[0])} />
       </div>
-      <button className="btn big mint" disabled={!profile.name.trim()} onClick={onDone}>
-        {t(lang, 'itsMe')}
-      </button>
       {buying && (
         <div className="buy-veil" onClick={() => setBuying(null)}>
           <div className="buy-card" onClick={(e) => e.stopPropagation()}>

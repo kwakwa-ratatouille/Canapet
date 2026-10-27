@@ -492,6 +492,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           color: p.profile.color,
           hat: p.profile.hat,
           acc: p.profile.acc,
+          eyes: p.profile.eyes,
+          pose: p.profile.pose,
           selfie: p.selfie,
           t: t + i,
           dir: p.dir,

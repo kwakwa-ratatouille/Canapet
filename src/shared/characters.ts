@@ -70,6 +70,25 @@ export const ACCS: { id: string; name: Name }[] = [
   { id: 'coeurs', name: { fr: 'Lunettes cœur', en: 'Heart glasses' } },
 ];
 
+export const EYE_LIST: { id: string; name: Name }[] = [
+  { id: '', name: { fr: 'Celui du perso', en: 'Default' } },
+  { id: 'cool', name: { fr: 'Assuré', en: 'Cool' } },
+  { id: 'round', name: { fr: 'Grands yeux', en: 'Big eyes' } },
+  { id: 'sleepy', name: { fr: 'Endormi', en: 'Sleepy' } },
+  { id: 'angry', name: { fr: 'Énervé', en: 'Angry' } },
+  { id: 'wink', name: { fr: 'Clin d’œil', en: 'Wink' } },
+  { id: 'star', name: { fr: 'Étoiles', en: 'Stars' } },
+];
+export const POSE_LIST: { id: string; name: Name }[] = [
+  { id: '', name: { fr: 'Celle du perso', en: 'Default' } },
+  { id: 'hip', name: { fr: 'Main sur la hanche', en: 'Hand on hip' } },
+  { id: 'cross', name: { fr: 'Bras croisés', en: 'Arms crossed' } },
+  { id: 'flex', name: { fr: 'Biceps', en: 'Flex' } },
+  { id: 'wave', name: { fr: 'Coucou', en: 'Wave' } },
+  { id: 'thumbs', name: { fr: 'Pouce levé', en: 'Thumbs up' } },
+  { id: 'shy', name: { fr: 'Timide', en: 'Shy' } },
+];
+
 export type Mood = 'happy' | 'sad' | 'wow' | 'win' | 'toot';
 
 export interface DrawOpts {
@@ -77,6 +96,8 @@ export interface DrawOpts {
   color: string;
   hat?: string;
   acc?: string;
+  eyes?: string;
+  pose?: string;
   selfie?: HTMLImageElement | null;
   /** Temps en secondes, pour l'animation. */
   t: number;
@@ -111,7 +132,7 @@ function sprite(o: DrawOpts): HTMLCanvasElement | null {
   const acc = o.acc && o.acc !== 'aucun' ? o.acc : '';
   const mood = o.mood ?? 'happy';
   const selfie = !!o.selfie;
-  const key = `${o.food}|${o.color}|${hat}|${acc}|${mood}|${selfie}|${!!o.arms}`;
+  const key = `${o.food}|${o.color}|${hat}|${acc}|${mood}|${selfie}|${!!o.arms}|${o.eyes ?? ''}|${o.pose ?? ''}`;
   if (sprites.has(key)) return sprites.get(key)!;
   sprites.set(key, null);
   const svg = characterSvg(CHARACTERS[o.food] ? o.food : 'coussin', o.color, {
@@ -120,6 +141,8 @@ function sprite(o: DrawOpts): HTMLCanvasElement | null {
     mood,
     selfie,
     arms: o.arms,
+    eyes: o.eyes,
+    pose: o.pose,
   }).replace('<svg ', `<svg width="${VB.w * RES}" height="${VB.h * RES}" `);
   const img = new Image();
   img.onload = () => {

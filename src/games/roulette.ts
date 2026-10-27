@@ -276,7 +276,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const cw = Math.min(260, 1700 / pls.length);
         pls.forEach((p, i) => {
           const x = 960 + (i - (pls.length - 1) / 2) * cw;
-          drawCharacter(g, x, 640, 150, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc, selfie: p.selfie, t: t + i, mood: p.ready ? 'win' : 'happy' });
+          drawCharacter(g, x, 640, 150, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc,
+          eyes: p.profile.eyes,
+          pose: p.profile.pose, selfie: p.selfie, t: t + i, mood: p.ready ? 'win' : 'happy' });
           roundRectText(g, p.profile.name, x - 100, 680, 200, 26, p.profile.color);
           g.font = '700 40px Fredoka, sans-serif';
           g.fillStyle = INK;
@@ -338,6 +340,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           color: p.profile.color,
           hat: p.profile.hat,
           acc: p.profile.acc,
+          eyes: p.profile.eyes,
+          pose: p.profile.pose,
           selfie: p.selfie,
           t: t + i,
           mood: isOwner ? 'win' : phase === 'reveal' && p.right === false ? 'sad' : 'happy',
