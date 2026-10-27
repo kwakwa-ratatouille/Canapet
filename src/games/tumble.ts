@@ -1,5 +1,5 @@
 // La Dégringolade : course d'obstacles vue de côté, inspirée des courses de jeux télé géants.
-// La caméra suit le joueur en tête ; qui sort de l'écran par la gauche est replacé plus loin.
+// La caméra suit le joueur en tête. 3 vies : tomber ou se faire distancer (sortir de l'écran) en coûte une.
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { drawSky } from './draw';
@@ -17,10 +17,11 @@ const BODY_H = 66;
 const VIEW_W = 1920;
 const DEATH_Y = 1250;
 const BASE_Y = 860;
-const MAX_TIME = 150;
+const MAX_TIME = 210;
+const LIVES = 3;
 const AFTER_FIRST = 25;
 
-type Kind = 'ground' | 'block' | 'tile' | 'bounce' | 'conveyor' | 'mover' | 'sink' | 'door';
+type Kind = 'ground' | 'block' | 'tile' | 'bounce' | 'conveyor' | 'mover' | 'sink' | 'door' | 'ice';
 
 interface Solid {
   x: number;
@@ -92,7 +93,39 @@ interface Spawner {
   t: number;
 }
 
+/** Gant de boxe qui sort d'un poteau et repousse. */
+interface Glove {
+  x: number;
+  y: number;
+  dir: 1 | -1;
+  reach: number;
+  freq: number;
+  ph: number;
+  out: number;
+}
+
+/** Zone où tombent des bonbons du ciel. */
+interface Rain {
+  x0: number;
+  x1: number;
+  y: number;
+  every: number;
+  t: number;
+}
+
+interface Drop {
+  x: number;
+  y: number;
+  vy: number;
+  r: number;
+  ground: number;
+  c: string;
+}
+
 interface Level {
+  gloves: Glove[];
+  rains: Rain[];
+  drops: Drop[];
   solids: Solid[];
   sweepers: Sweeper[];
   hammers: Hammer[];
@@ -109,9 +142,11 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 // ——— Fabrication du parcours : une suite de tronçons tirés au hasard ———
 
 function buildLevel(): Level {
-  const L: Level = { solids: [], sweepers: [], hammers: [], spawners: [], balls: [], checkpoints: [], fans: [], finishX: 0, length: 0 };
+  const L: Level = { gloves: [], rains: [], drops: [], solids: [], sweepers: [], hammers: [], spawners: [], balls: [], checkpoints: [], fans: [], finishX: 0, length: 0 };
   let x = 0;
   let y = BASE_Y;
+  /** 1 au début, plus dur vers la fin. */
+  let diff = 1;
   const solid = (sx: number, sy: number, w: number, kind: Kind = 'ground', h?: number) => {
     const s: Solid = { x: sx, y: sy, w, h: h ?? (kind === 'ground' ? 1500 - sy : 34), kind };
     L.solids.push(s);
@@ -154,15 +189,15 @@ function buildLevel(): Level {
     moulins() {
       entry();
       solid(x, y, 1000);
-      L.sweepers.push({ cx: x + 330, cy: y - 150, len: 175, speed: 1.7, ang: rnd(0, 6) });
-      L.sweepers.push({ cx: x + 720, cy: y - 150, len: 175, speed: -1.9, ang: rnd(0, 6) });
+      L.sweepers.push({ cx: x + 330, cy: y - 150, len: 175, speed: 1.7 * diff, ang: rnd(0, 6) });
+      L.sweepers.push({ cx: x + 720, cy: y - 150, len: 175, speed: -1.9 * diff, ang: rnd(0, 6) });
       x += 1000;
     },
     marteaux() {
       entry();
       solid(x, y, 1100);
       for (let i = 0; i < 3; i++)
-        L.hammers.push({ cx: x + 280 + i * 280, cy: y - 400, len: 330, amp: 1.05, freq: rnd(1.4, 1.9), ph: rnd(0, 6), ang: 0, vel: 0 });
+        L.hammers.push({ cx: x + 280 + i * 280, cy: y - 400, len: 330, amp: 1.05, freq: rnd(1.4, 1.9) * diff, ph: rnd(0, 6), ang: 0, vel: 0 });
       x += 1100;
     },
     tapis() {
@@ -182,7 +217,7 @@ function buildLevel(): Level {
       const start = x;
       solid(x, y, 1350);
       x += 1350;
-      L.spawners.push({ x: x - 40, y, minX: start - 200, every: rnd(1.3, 1.7), t: 0.5 });
+      L.spawners.push({ x: x - 40, y, minX: start - 200, every: rnd(1.3, 1.7) / diff, t: 0.5 });
     },
     nacelles() {
       entry();
@@ -232,6 +267,34 @@ function buildLevel(): Level {
       solid(x, y, 260);
       x += 260;
     },
+    glace() {
+      // Sol glacé : on glisse, et deux petits trous à sauter
+      entry();
+      for (let i = 0; i < 3; i++) {
+        solid(x, y, 380, 'ice');
+        x += 380 + (i < 2 ? 150 : 0);
+      }
+      solid(x, y, 200);
+      x += 200;
+    },
+    gants() {
+      // Des gants de boxe sortent des poteaux pour repousser vers le vide
+      entry();
+      for (let i = 0; i < 3; i++) {
+        solid(x, y, 300);
+        L.gloves.push({ x: x + 150, y: y - 60 - (i % 2) * 70, dir: -1, reach: 150, freq: rnd(1.6, 2.2) * diff, ph: rnd(0, 6), out: 0 });
+        x += 300 + 140;
+      }
+      solid(x, y, 220);
+      x += 220;
+    },
+    pluie() {
+      // Pluie de bonbons géants : on regarde les ombres au sol
+      entry();
+      solid(x, y, 1200);
+      L.rains.push({ x0: x + 120, x1: x + 1080, y, every: 0.45 / diff, t: 0 });
+      x += 1200;
+    },
     escaliers() {
       entry();
       for (let i = 0; i < 6; i++) {
@@ -249,8 +312,13 @@ function buildLevel(): Level {
   solid(x, y, 760);
   L.checkpoints.push({ x: 200, y });
   x += 760;
-  const keys = Object.keys(segments).sort(() => Math.random() - 0.5).slice(0, 8);
-  for (const k of keys) segments[k]();
+  // Parcours long : 12 tronçons, tous différents puis quelques-uns qui reviennent, de plus en plus durs.
+  const all = Object.keys(segments).sort(() => Math.random() - 0.5);
+  const keys = [...all, ...all.sort(() => Math.random() - 0.5)].slice(0, 12);
+  keys.forEach((k, i) => {
+    diff = 1 + i * 0.05;
+    segments[k]();
+  });
   // Arrivée
   entry(500);
   L.finishX = x - 150;
@@ -278,6 +346,9 @@ interface P extends Runner {
   cp: number;
   done: number;
   falls: number;
+  lives: number;
+  /** Moment de l'élimination (0 = encore en course). */
+  out: number;
   inp: { x: number; a: boolean; b: boolean };
   lastA: boolean;
   lastB: boolean;
@@ -309,6 +380,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     cp: 0,
     done: 0,
     falls: 0,
+    lives: LIVES,
+    out: 0,
     inp: { x: 0, a: false, b: false },
     lastA: false,
     lastB: false,
@@ -362,6 +435,23 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     p.diving = 0;
     p.ground = null;
     p.falls++;
+  }
+
+  /** Une vie en moins ; à zéro, éliminé. Renvoie vrai si le joueur est éliminé. */
+  function loseLife(p: P): boolean {
+    p.lives--;
+    if (!p.bot) ctx.buzz(p.pid, p.lives > 0 ? 300 : 700);
+    if (p.lives > 0) {
+      pops.push({ x: p.x, y: p.y - 170, text: `-1 ❤️`, color: '#ff4f9a', t: 1.2, size: 46 });
+      return false;
+    }
+    p.out = time || 0.01;
+    burst(p.x, p.y - 60, 18, 'star', ['#ff4f9a', '#fff'], 500, 14, 200);
+    pops.push({ x: p.x, y: p.y - 170, text: fr ? 'ÉLIMINÉ !' : 'OUT!', color: '#ff4f9a', t: 1.6, size: 60 });
+    banner = fr ? `${p.profile.name} est éliminé !` : `${p.profile.name} is out!`;
+    bannerT = 1.8;
+    sfx.pet();
+    return true;
   }
 
   function hit(p: P, kx: number, power: number) {
@@ -426,6 +516,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }
 
   function stepPlayer(p: P, dt: number) {
+    if (p.out) return;
     if (p.bot && !p.done) botThink(p, dt);
     p.stun = Math.max(0, p.stun - dt);
     p.invuln = Math.max(0, p.invuln - dt);
@@ -450,7 +541,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (p.onGround) p.vx *= Math.pow(0.05, dt);
     } else if (p.stun <= 0) {
       const target = mx * RUN + push;
-      const a = (p.onGround ? ACC : AIR_ACC) * dt;
+      const a = (p.onGround ? (p.ground?.kind === 'ice' ? ACC * 0.16 : ACC) : AIR_ACC) * dt;
       p.vx += Math.max(-a, Math.min(a, target - p.vx));
     } else if (p.onGround) p.vx *= Math.pow(0.02, dt);
 
@@ -551,9 +642,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (p.y > DEATH_Y) {
       burst(p.x, BASE_Y + 120, 14, 'drop', '#2ec5ff', 520, 14, 300);
       pops.push({ x: p.x, y: BASE_Y + 60, text: ctx.family ? 'Oups !' : 'PLOUF !', color: '#2ec5ff', t: 1, size: 56 });
-      respawn(p, p.cp);
-      if (!p.bot) ctx.buzz(p.pid, 300);
       if (!ctx.light) sfx.pet();
+      // Les bots, maladroits, ne perdent une vie qu'une chute sur trois
+      if (p.bot && p.falls % 3 !== 2) respawn(p, p.cp);
+      else if (!loseLife(p)) respawn(p, p.cp);
     }
 
     // Arrivée
@@ -572,7 +664,20 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }
 
   function hazards(p: P) {
-    if (p.invuln > 0 || p.done) return;
+    if (p.invuln > 0 || p.done || p.out) return;
+    for (const gl of L.gloves) {
+      const gx = gl.x + gl.dir * gl.out;
+      if (gl.out > 30 && Math.abs(p.x - gx) < 50 && p.y > gl.y - 10 && p.y - BODY_H < gl.y + 40) {
+        hit(p, gl.dir === -1 ? (p.x < gl.x ? -1 : 1) : 1, 820);
+        return;
+      }
+    }
+    for (const d of L.drops)
+      if (Math.hypot(p.x - d.x, p.y - BODY_H / 2 - d.y) < d.r + 26) {
+        d.y = d.ground + 999;
+        hit(p, Math.random() < 0.5 ? -1 : 1, 380);
+        return;
+      }
     const pts = [p.y - 12, p.y - BODY_H / 2, p.y - BODY_H + 8];
     for (const s of L.sweepers) {
       const cx = Math.cos(s.ang);
@@ -634,6 +739,27 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (s.squash) s.squash = Math.max(0, s.squash - dt * 4);
     }
     for (const s of L.sweepers) s.ang += s.speed * dt;
+    // Gants : ils sortent d'un coup puis rentrent doucement
+    for (const gl of L.gloves) {
+      const ph = ((time * gl.freq + gl.ph) % (Math.PI * 2)) / (Math.PI * 2);
+      gl.out = ph < 0.12 ? (ph / 0.12) * gl.reach : ph < 0.4 ? gl.reach : Math.max(0, gl.reach * (1 - (ph - 0.4) / 0.3));
+    }
+    for (const r of L.rains) {
+      r.t -= dt;
+      if (r.t <= 0 && r.x0 < camX + viewW() + 300 && r.x1 > camX - 200) {
+        r.t = r.every * rnd(0.7, 1.3);
+        L.drops.push({ x: rnd(r.x0, r.x1), y: r.y - 1200, vy: 300, r: rnd(28, 40), ground: r.y, c: ['#ff4f9a', '#2ec5ff', '#ffd60a', '#1fc9a0'][Math.floor(Math.random() * 4)] });
+      }
+    }
+    for (const d of L.drops) {
+      d.vy += 1400 * dt;
+      d.y += d.vy * dt;
+      if (d.y > d.ground - d.r && d.y < d.ground + 100) {
+        burst(d.x, d.ground - 6, 6, 'confetti', [d.c, '#fff'], 300, 9, 200);
+        d.y = d.ground + 999;
+      }
+    }
+    L.drops = L.drops.filter((d) => d.y < d.ground + 500);
     for (const h of L.hammers) {
       const prev = h.ang;
       h.ang = Math.sin(time * h.freq + h.ph) * h.amp;
@@ -655,7 +781,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }
 
   function stepCamera(dt: number) {
-    const racing = ps.filter((p) => !p.done);
+    const racing = ps.filter((p) => !p.done && !p.out);
     const pack = racing.length ? racing : ps;
     const lead = Math.max(...pack.map((p) => p.x));
     // Dézoome pour garder le peloton à l'écran (jusqu'à 70 %).
@@ -666,11 +792,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (target > camX) camX += (target - camX) * Math.min(1, dt * 3);
     // Trop loin derrière : replacé au premier point de reprise visible.
     for (const p of ps) {
-      if (p.done || p.x > camX - 40) continue;
-      let idx = L.checkpoints.findIndex((c) => c.x > camX + 80);
+      if (p.done || p.out || p.invuln > 0 || p.x > camX - 40) continue;
+      // Distancé : une vie en moins, et on repart au premier drapeau visible
+      pops.push({ x: camX + 160, y: p.y - 120, text: fr ? 'Trop lent !' : 'Too slow!', color: '#ffd60a', t: 1, size: 44 });
+      if (loseLife(p)) continue;
+      let idx = L.checkpoints.findIndex((c) => c.x > camX + 300);
       if (idx < 0) idx = L.checkpoints.length - 1;
       respawn(p, idx);
-      p.stun = 0.9;
+      p.stun = 0.6;
+      p.invuln = 2.5;
     }
   }
 
@@ -712,7 +842,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         for (let j = i + 1; j < ps.length; j++) {
           const a = ps[i];
           const b = ps[j];
-          if (a.done || b.done) continue;
+          if (a.done || b.done || a.out || b.out) continue;
           const dx = b.x - a.x;
           if (Math.abs(dx) < 36 && Math.abs(b.y - a.y) < 20) {
             const push = (36 - Math.abs(dx)) / 2;
@@ -722,8 +852,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           }
         }
       stepCamera(dt);
-      const humansDone = ps.some((p) => !p.bot) ? ps.every((p) => p.bot || p.done) : ps.every((p) => p.done);
-      if (endDelay < 0 && (humansDone || order >= quota || time > MAX_TIME || (firstAt >= 0 && time - firstAt > AFTER_FIRST))) endDelay = 2.5;
+      const humansDone = ps.some((p) => !p.bot) ? ps.every((p) => p.bot || p.done || p.out) : ps.every((p) => p.done || p.out);
+      if (endDelay < 0 && (humansDone || ps.every((p) => p.done || p.out) || order >= quota || time > MAX_TIME || (firstAt >= 0 && time - firstAt > AFTER_FIRST))) endDelay = 2.5;
       if (endDelay >= 0) {
         endDelay -= dt;
         if (endDelay <= 0) game.over = true;
@@ -750,7 +880,18 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       for (const h of L.hammers) if (Math.abs(h.cx - camX - viewW() / 2) < viewW()) drawHammer(g, h);
       for (const s of L.sweepers) if (Math.abs(s.cx - camX - viewW() / 2) < viewW()) drawSweeper(g, s);
       for (const b of L.balls) if (b.x > x0 && b.x < x1) drawBall(g, b);
-      ps.forEach((p, i) => drawPlayer(g, p, t + i * 0.3));
+      for (const gl of L.gloves) if (gl.x > x0 && gl.x < x1) drawGlove(g, gl);
+      for (const d of L.drops) {
+        if (d.x < x0 || d.x > x1) continue;
+        // Ombre au sol qui grossit quand le bonbon approche
+        const k = Math.max(0, Math.min(1, 1 - (d.ground - d.y) / 1200));
+        g.fillStyle = 'rgba(58,33,64,0.25)';
+        g.beginPath();
+        g.ellipse(d.x, d.ground + 2, d.r * (0.4 + k), 8 + k * 6, 0, 0, Math.PI * 2);
+        g.fill();
+        drawCandy(g, d);
+      }
+      ps.forEach((p, i) => !p.out && drawPlayer(g, p, t + i * 0.3));
       // Particules
       for (const q of parts) {
         const k = q.t / q.max;
@@ -811,7 +952,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     mapName: theme.name,
     ranking() {
-      return [...ps].sort((a, b) => (a.done || 99) - (b.done || 99) || b.x - a.x).map((p) => p.pid);
+      return [...ps].sort((a, b) => (a.done || 99) - (b.done || 99) || Number(!!a.out) - Number(!!b.out) || b.out - a.out || b.x - a.x).map((p) => p.pid);
     },
     leader() {
       return ps.find((p) => p.done === 1)?.profile.name ?? null;
@@ -878,6 +1019,28 @@ function drawSolid(g: CanvasRenderingContext2D, s: Solid, time: number, light: b
   g.strokeStyle = INK;
   const h = Math.min(s.h, 1300 - s.y);
   switch (s.kind) {
+    case 'ice': {
+      g.fillStyle = '#d8f3ff';
+      g.beginPath();
+      g.roundRect(s.x, s.y, s.w, h, [14, 14, 0, 0]);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#8fdcff';
+      g.beginPath();
+      g.roundRect(s.x, s.y, s.w, 20, [14, 14, 0, 0]);
+      g.fill();
+      g.stroke();
+      g.strokeStyle = '#fff';
+      g.lineWidth = 5;
+      for (let x = s.x + 30; x < s.x + s.w - 40; x += 90) {
+        g.beginPath();
+        g.moveTo(x, s.y + 8);
+        g.lineTo(x + 34, s.y + 8);
+        g.stroke();
+      }
+      g.strokeStyle = INK;
+      break;
+    }
     case 'ground':
     case 'block': {
       g.fillStyle = theme.ground;
@@ -1056,6 +1219,64 @@ function drawHammer(g: CanvasRenderingContext2D, h: Hammer) {
   g.fill();
 }
 
+function drawGlove(g: CanvasRenderingContext2D, gl: Glove) {
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  // Poteau
+  g.fillStyle = '#b8a1d9';
+  g.beginPath();
+  g.roundRect(gl.x - 12, gl.y - 40, 24, 200, 8);
+  g.fill();
+  g.stroke();
+  // Ressort
+  const gx = gl.x + gl.dir * gl.out;
+  g.strokeStyle = '#6e5a99';
+  g.lineWidth = 5;
+  g.beginPath();
+  for (let k = 0; k <= 10; k++) g.lineTo(gl.x + ((gx - gl.x) * k) / 10, gl.y + 10 + (k % 2 ? -10 : 10));
+  g.stroke();
+  // Gant
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  g.fillStyle = '#ff3b3b';
+  g.beginPath();
+  g.roundRect(gx - 34, gl.y - 20, 68, 60, 26);
+  g.fill();
+  g.stroke();
+  g.fillStyle = '#fff';
+  g.beginPath();
+  g.roundRect(gx - (gl.dir === -1 ? -14 : 30), gl.y - 6, 16, 32, 8);
+  g.fill();
+  g.stroke();
+}
+
+function drawCandy(g: CanvasRenderingContext2D, d: Drop) {
+  g.save();
+  g.translate(d.x, d.y);
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  g.fillStyle = d.c;
+  for (const s of [-1, 1]) {
+    g.beginPath();
+    g.moveTo(s * d.r * 0.8, 0);
+    g.lineTo(s * d.r * 1.5, -d.r * 0.5);
+    g.lineTo(s * d.r * 1.5, d.r * 0.5);
+    g.closePath();
+    g.fill();
+    g.stroke();
+  }
+  g.beginPath();
+  g.arc(0, 0, d.r, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,0.8)';
+  g.lineWidth = 5;
+  g.beginPath();
+  g.arc(0, 0, d.r * 0.55, 0.3, Math.PI * 1.4);
+  g.stroke();
+  g.restore();
+}
+
 function drawBall(g: CanvasRenderingContext2D, b: Ball) {
   g.save();
   g.translate(b.x, b.y);
@@ -1138,6 +1359,12 @@ function drawPlayer(g: CanvasRenderingContext2D, p: P, t: number) {
     g.rotate(p.dir * 1.2);
     g.translate(-p.x, -(p.y - 30));
   }
+  // Vies au-dessus de la tête
+  if (!p.done) {
+    g.font = '28px sans-serif';
+    g.textAlign = 'center';
+    g.fillText('❤️'.repeat(p.lives) + '🤍'.repeat(Math.max(0, LIVES - p.lives)), p.x, p.y - 160);
+  }
   drawCharacter(g, p.x, p.y, 98, {
     food: p.profile.food,
     color: p.profile.color,
@@ -1201,7 +1428,7 @@ function drawHud(g: CanvasRenderingContext2D, ps: P[], L: Level, time: number, d
   g.font = '34px sans-serif';
   g.textAlign = 'center';
   g.fillText('🏁', x1 + 8, 68);
-  for (const p of [...ps].sort((a, b) => a.x - b.x)) {
+  for (const p of [...ps].filter((q) => !q.out).sort((a, b) => a.x - b.x)) {
     const k = Math.min(1, Math.max(0, p.x / L.finishX));
     g.fillStyle = p.profile.color;
     g.strokeStyle = INK;
@@ -1218,6 +1445,14 @@ function drawHud(g: CanvasRenderingContext2D, ps: P[], L: Level, time: number, d
   g.textAlign = 'center';
   g.fillText(`⏱ ${Math.floor(time)}`, 125, 67);
   // Qualifiés
+  const outN = ps.filter((p) => p.out).length;
+  if (outN) {
+    pill(g, 230, 26, 150, 56, '#ff4f9a');
+    g.fillStyle = '#fff';
+    g.font = '700 32px Fredoka, sans-serif';
+    g.textAlign = 'center';
+    g.fillText(`💀 ${outN}`, 305, 66);
+  }
   const full = done >= quota;
   pill(g, 1590, 26, 290, 56, full ? '#1fc9a0' : '#fff');
   g.fillStyle = full ? '#fff' : INK;
@@ -1236,7 +1471,7 @@ export const tumble: GameBase = {
   emoji: '🏃',
   name: { fr: 'La Dégringolade', en: 'Tumble Run' },
   how: {
-    fr: 'Stick pour courir · A pour sauter · B pour plonger',
+    fr: 'Stick pour courir · A pour sauter · B pour plonger · 3 vies',
     en: 'Stick to run · A to jump · B to dive',
   },
   inspired: 'Fall Guys',
@@ -1245,6 +1480,6 @@ export const tumble: GameBase = {
   max: 12,
   botFill: 4,
   music: 'tumble',
-  limit: 120,
+  limit: 180,
   create,
 };

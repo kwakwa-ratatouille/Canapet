@@ -27,7 +27,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
   },
   obstacles: {
     fr: {
-      goal: 'Seuls les premiers arrivés sont qualifiés : fonce !',
+      goal: 'Seuls les premiers arrivés sont qualifiés. 3 vies : tomber ou traîner derrière en coûte une !',
       steps: [
         ['🕹️', 'Stick : courir à gauche et à droite'],
         ['🅰️', 'A : sauter (garde appuyé pour sauter plus haut)'],
@@ -35,7 +35,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
     en: {
-      goal: 'Only the first ones to finish qualify: go go go!',
+      goal: 'Only the first ones qualify. 3 lives: falling or lagging behind costs one!',
       steps: [
         ['🕹️', 'Stick: run left and right'],
         ['🅰️', 'A: jump (hold to jump higher)'],
