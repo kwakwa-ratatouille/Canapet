@@ -41,6 +41,7 @@ const DEMO: Record<string, PadScreen> = {
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
   results: { s: 'results', gid: 1, host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
+  paused: { s: 'paused', host: true, game: 'sumo' },
   podium: { s: 'podium', gid: 1, host: true, rank: 1, total: 42 },
 };
 
@@ -206,6 +207,11 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         <CharCanvas profile={profile} size={playing ? 34 : 46} still />
         <b className="pad-name">{profile.name || '???'}</b>
         <span className="pad-info">{playing ? gameName : `${code} · ${status === 'ok' ? t(lang, 'ping', { ms: rtt }) : '…'}`}</span>
+        {playing && screen?.s === 'play' && screen.host && (
+          <button className="pill pause-btn" onClick={() => host('pause')} aria-label={t(lang, 'pause')}>
+            ⏸
+          </button>
+        )}
         {!playing && (
           <button className="pill" onClick={() => setEditing(true)} aria-label={t(lang, 'editChar')}>
             ✏️
@@ -417,6 +423,27 @@ function PadScreenView({
       if (screen.game === 'dessin' && screen.data) return <ScribblePad data={screen.data as ScribblePadData} lang={lang} send={send} />;
       if (screen.layout === 'bluff' && screen.data) return <BluffPad data={screen.data as BluffPadData} lang={lang} send={send} />;
       return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} profile={profile} live={live} />;
+    case 'paused':
+      return (
+        <div className="pad-body">
+          <p className="pad-title">⏸ {t(lang, 'pause')}</p>
+          {screen.host ? (
+            <>
+              <button className="btn big mint" onClick={() => host('resume')}>
+                ▶ {t(lang, 'resume')}
+              </button>
+              <button className="btn big alt" onClick={() => host('replay')}>
+                {t(lang, 'restart')}
+              </button>
+              <button className="btn big ghost" onClick={() => host('lobby')}>
+                🏠 {t(lang, 'toLobby')}
+              </button>
+            </>
+          ) : (
+            <p className="pad-small">{t(lang, 'pauseWait')}</p>
+          )}
+        </div>
+      );
     case 'wait':
       return (
         <div className="pad-body">

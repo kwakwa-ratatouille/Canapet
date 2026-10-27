@@ -73,6 +73,8 @@ export class Session {
   version = 0;
   /** Secondes restantes de l'écran « Temps écoulé ! » avant les résultats. */
   timeUp = 0;
+  /** Partie en pause (l'hôte l'a demandé). */
+  paused = false;
   /** Joueurs qui ont appuyé sur un bouton pendant le tuto (« prêt ! »). */
   ready = new Set<string>();
 
@@ -248,6 +250,23 @@ export class Session {
         this.changed();
         this.pushScreens();
         break;
+      case 'pause':
+        if (this.phase !== 'game' || this.paused) break;
+        this.paused = true;
+        playMusic('');
+        sfx.tick();
+        speak(this.lang() === 'fr' ? 'Pause !' : 'Paused!', this.lang());
+        this.changed();
+        this.pushScreens();
+        break;
+      case 'resume':
+        if (!this.paused) break;
+        this.paused = false;
+        if (this.def) playMusic(this.def.music);
+        sfx.go();
+        this.changed();
+        this.pushScreens();
+        break;
       case 'teams':
         if (this.phase !== 'lobby') break;
         this.teams = !this.teams;
@@ -263,6 +282,7 @@ export class Session {
   }
 
   private toLobby() {
+    this.paused = false;
     this.phase = 'lobby';
     this.game = null;
     this.mode = 'host';
@@ -314,6 +334,7 @@ export class Session {
       refresh: () => this.pushScreens(),
     });
     this.phase = 'game';
+    this.paused = false;
     this.lastStatus = 0;
     this.timeUp = 0;
     this.ready = new Set();
@@ -377,10 +398,10 @@ export class Session {
 
   /** Appelée à chaque image : avance la logique à pas fixe de 1/60 s. */
   frame(now: number) {
-    const dt = this.last ? Math.max(0, Math.min(0.25, (now - this.last) / 1000)) : 0;
+    const dt = this.last && !this.paused ? Math.max(0, Math.min(0.25, (now - this.last) / 1000)) : 0;
     this.last = now;
     this.watchdog(now);
-    if (this.phase !== 'game' || !this.game) return;
+    if (this.phase !== 'game' || !this.game || this.paused) return;
     this.acc += dt;
     while (this.acc >= STEP) {
       this.acc -= STEP;
@@ -501,7 +522,8 @@ export class Session {
           team: p.team,
         };
       case 'game':
-        return playing ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid) } : { s: 'wait', game: this.def!.id };
+        if (this.paused) return { s: 'paused', host, game: this.def!.id };
+        return playing ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid), host } : { s: 'wait', game: this.def!.id };
       case 'results': {
         const row = this.results.find((r) => r.pid === p.pid);
         if (!row && !host) return { s: 'wait', game: this.def?.id ?? '' };

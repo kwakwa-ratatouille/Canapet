@@ -2387,3 +2387,11 @@ h3,
   background-image: radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.55) 7px, transparent 8px), radial-gradient(circle at 60px 60px, rgba(255, 79, 154, 0.1) 6px, transparent 7px);
   background-size: 80px 80px;
 }
+
+/* Bouton pause de l'hôte dans la barre de la manette */
+.pause-btn {
+  margin-left: 8px;
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 12px;
+}

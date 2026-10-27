@@ -65,6 +65,7 @@ export function TvApp() {
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');
+      if (k === 'escape' || k === ' ') session.hostAction(session.paused ? 'resume' : 'pause');
       if (k === 'enter') session.hostAction(session.phase === 'results' ? 'next' : 'pick', 'pouces');
       if (pick[k]) session.hostAction('pick', pick[k]);
       if (k === 't') session.hostAction('tournament');
@@ -218,6 +219,7 @@ function GameView({ session }: { session: Session }) {
       if (session.game) session.game.render(g, tt);
       drawTimer(g, session, tt);
       drawIntro(g, session);
+      if (session.paused) drawPause(g, session, tt);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -257,6 +259,19 @@ export function stickerText(g: CanvasRenderingContext2D, text: string, x: number
   g.fillStyle = fill;
   g.fillText(text, x, y);
   g.restore();
+}
+
+/** Écran de pause (l'hôte reprend depuis son téléphone, ou touche Échap). */
+function drawPause(g: CanvasRenderingContext2D, session: Session, t: number) {
+  const fr = session.lang() === 'fr';
+  g.save();
+  g.fillStyle = 'rgba(42,24,56,0.6)';
+  g.fillRect(0, 0, 1920, 1080);
+  g.translate(960, 470);
+  g.scale(1 + Math.sin(t * 3) * 0.02, 1 + Math.sin(t * 3) * 0.02);
+  stickerText(g, '⏸ PAUSE', 0, 0, 160, SOLEIL);
+  g.restore();
+  stickerText(g, fr ? 'L’hôte reprend la partie sur son téléphone' : 'The host resumes from their phone', 960, 640, 46, '#fff');
 }
 
 /** Chrono de la partie : pastille qui se vide, rouge et qui bat sur les 10 dernières secondes. */

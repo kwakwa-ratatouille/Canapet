@@ -24,7 +24,9 @@ export interface GameInfo {
 
 export type PadScreen =
   | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number }
-  | { s: 'play'; layout: PadLayout; game: string; data?: unknown }
+  | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean }
+  /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
+  | { s: 'paused'; host: boolean; game: string }
   | { s: 'wait'; game: string }
   | {
       s: 'results';
@@ -47,7 +49,7 @@ export type ToPad =
   | { t: 'status'; rank: number; of: number; left: number | null }
   | { t: 'pong'; ts: number };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams';
+export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume';
 
 /** Téléphone → télé */
 export type ToTv =
