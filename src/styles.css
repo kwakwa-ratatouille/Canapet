@@ -187,8 +187,16 @@ button {
 .tv-card {
   background: #fff4b8;
 }
-.tv-card:hover {
-  transform: translateY(-2px);
+.pc-link {
+  display: block;
+  margin-top: 14px;
+  color: var(--purple);
+  text-decoration: none;
+  font-size: 16px;
+}
+.cast-msg {
+  margin: 10px 0 0 !important;
+  font-weight: 600;
 }
 .code-input {
   width: 150px;

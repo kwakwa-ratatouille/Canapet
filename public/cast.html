@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cana'pet · Chromecast</title>
+    <!-- Récepteur Google Cast : affiche la page télé de Cana'pet dans une iframe. -->
+    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #ffd6ea;
+        overflow: hidden;
+        font-family: sans-serif;
+      }
+      iframe {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      #diag {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        background: #3a2140;
+        color: #fff;
+        padding: 10px 22px;
+        border-radius: 14px;
+        font-size: 22px;
+        z-index: 10;
+        max-width: 80%;
+        text-align: center;
+      }
+      #diag.ok {
+        opacity: 0;
+        transition: opacity 1s 2s;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="diag">Cana'pet : en préparation…</div>
+    <iframe id="tv" allow="autoplay"></iframe>
+    <script>
+      var NS = 'urn:x-cast:com.canapet';
+      var diag = document.getElementById('diag');
+      var lastCode = '';
+      function show(text, ok) {
+        diag.textContent = text;
+        diag.className = ok ? 'ok' : '';
+      }
+      // Toute erreur s'affiche sur la télé : sans ça, impossible de savoir pourquoi l'écran reste noir.
+      window.onerror = function (msg, src, line) {
+        // « Script error. » sans détail = erreur d'un script externe : on ne masque pas une télé qui marche.
+        if (lastCode && /^Script error/.test(msg)) return;
+        show('Erreur : ' + msg + ' (' + line + ')');
+      };
+      var watchdog = setTimeout(function () {
+        if (!lastCode) show('Délai dépassé : la page télé ne répond pas. Vérifie la connexion internet du Chromecast.');
+      }, 25000);
+
+      var context = null;
+      try {
+        context = cast.framework.CastReceiverContext.getInstance();
+        context.addCustomMessageListener(NS, function (ev) {
+          // Un téléphone qui se connecte demande le code du salon.
+          if (lastCode) context.sendCustomMessage(NS, ev.senderId, { code: lastCode });
+        });
+        var options = new cast.framework.CastReceiverOptions();
+        options.skipPlayersLoad = true;
+        options.disableIdleTimeout = true;
+        options.customNamespaces = {};
+        options.customNamespaces[NS] = cast.framework.system.MessageType.JSON;
+        context.start(options);
+        show('Cana’pet : connexion au Chromecast…');
+      } catch (e) {
+        show('SDK Cast indisponible : ' + e.message);
+      }
+
+      window.addEventListener('message', function (ev) {
+        var d = ev.data || {};
+        if (d.canapet === 'code' && d.code) {
+          lastCode = d.code;
+          clearTimeout(watchdog);
+          show('Prêt ! Code ' + d.code, true);
+          if (context) context.sendCustomMessage(NS, undefined, { code: d.code });
+        }
+        if (d.canapet === 'status' && d.text) show(d.text);
+      });
+
+      document.getElementById('tv').src = 'index.html?cast=1#/tv';
+    </script>
+  </body>
+</html>

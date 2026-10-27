@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { castAndGetCode, loadCast } from '../shared/cast';
 import { CharCanvas } from '../shared/CharCanvas';
 import { CODE_LETTERS, type Lang } from '../shared/protocol';
 import { save, store, IS_PHONE } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
+
+export const PC_APP_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/pc-latest/Canapet-Setup.exe';
+const IN_APP = /Electron/.test(navigator.userAgent);
 
 const MASCOTS = [
   { food: 'coussin', color: '#ff4f9a', hat: 'couronne', acc: 'aucun' },
@@ -16,6 +20,20 @@ export function Home() {
   const [code, setCode] = useState('');
   const valid = code.length === 4;
   const go = () => valid && (location.hash = `#/m/${code}`);
+  const [canCast, setCanCast] = useState(false);
+  const [castMsg, setCastMsg] = useState('');
+  useEffect(() => {
+    void loadCast().then(setCanCast);
+  }, []);
+  const startCast = async () => {
+    setCastMsg(t(lang, 'casting'));
+    try {
+      const c = await castAndGetCode();
+      location.hash = `#/m/${c}`;
+    } catch {
+      setCastMsg(t(lang, 'castFail'));
+    }
+  };
   const switchLang = (l: Lang) => {
     setLang(l);
     const p = store<Record<string, unknown>>('profile', {});
@@ -53,10 +71,26 @@ export function Home() {
     </div>
   );
   const tv = (
-    <a className="home-card tv-card" href="#/tv">
+    <div className="home-card tv-card">
       <h2>📺 {t(lang, 'tvBtn')}</h2>
       <p>{t(lang, 'tvBtnSub')}</p>
-    </a>
+      <div className="row">
+        <a className="btn" href="#/tv">
+          {t(lang, 'tvBtn')}
+        </a>
+        {canCast && (
+          <button className="btn alt" onClick={startCast}>
+            📡 {t(lang, 'castBtn')}
+          </button>
+        )}
+      </div>
+      {castMsg && <p className="cast-msg">{castMsg}</p>}
+      {!IN_APP && !IS_PHONE && (
+        <a className="pc-link" href={PC_APP_URL}>
+          💻 <b>{t(lang, 'pcApp')}</b> · {t(lang, 'pcAppSub')}
+        </a>
+      )}
+    </div>
   );
 
   return (

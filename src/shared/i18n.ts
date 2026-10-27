@@ -8,6 +8,11 @@ const fr = {
   joinSub: 'Tape le code affiché sur la télé',
   join: 'Rejoindre',
   howTv: 'Comment afficher sur ma télé ?',
+  castBtn: 'Lancer sur le Chromecast',
+  casting: 'Connexion au Chromecast…',
+  castFail: 'Le Chromecast n’a pas répondu. Réessaie.',
+  pcApp: 'Appli PC (Windows)',
+  pcAppSub: 'S’ouvre en plein écran, toujours à jour',
   back: 'Retour',
   joinWith: 'Rejoins avec ton téléphone',
   scanOr: 'Scanne le QR code ou va sur',
@@ -65,10 +70,10 @@ const fr = {
   helpTitle: 'Comment afficher Cana’pet sur ma télé',
   helpPc: 'PC branché en HDMI',
   helpPcText:
-    'Branche le PC à la télé, ouvre ce site dans Chrome ou Edge, clique sur « Afficher sur la télé » puis sur Plein écran. Une appli PC (.exe) arrive bientôt.',
+    'Branche le PC à la télé et installe l’appli PC (bouton sur l’accueil) : elle s’ouvre en plein écran. Sans l’appli : ouvre ce site dans Chrome ou Edge, « Afficher sur la télé » puis Plein écran. Windows peut afficher « PC protégé » : clique sur « Informations complémentaires » puis « Exécuter quand même ».',
   helpCast: 'Chromecast (Android ou PC)',
   helpCastText:
-    'Bientôt : un bouton Cast sur la page télé. En attendant, dans Chrome sur le PC : menu ⋮ → Caster → choisis ton Chromecast.',
+    'Sur Android ou dans Chrome sur PC : bouton « Lancer sur le Chromecast » sur l’accueil. Ton téléphone devient ensuite la manette. Autre solution : dans Chrome, menu ⋮ → Caster → l’onglet de la télé.',
   helpIphone: 'iPhone',
   helpIphoneText:
     'Safari ne peut pas lancer un Chromecast. Utilise la recopie d’écran AirPlay (Apple TV) ou le PC en HDMI. Les manettes, elles, marchent sur tous les téléphones.',
@@ -82,6 +87,11 @@ const en: typeof fr = {
   joinSub: 'Type the code shown on the TV',
   join: 'Join',
   howTv: 'How do I show it on my TV?',
+  castBtn: 'Cast to Chromecast',
+  casting: 'Connecting to the Chromecast…',
+  castFail: 'The Chromecast didn’t answer. Try again.',
+  pcApp: 'PC app (Windows)',
+  pcAppSub: 'Opens full screen, always up to date',
   back: 'Back',
   joinWith: 'Join with your phone',
   scanOr: 'Scan the QR code or go to',
@@ -138,9 +148,9 @@ const en: typeof fr = {
   helpTitle: 'How to show Cana’pet on my TV',
   helpPc: 'PC plugged in with HDMI',
   helpPcText:
-    'Plug the PC into the TV, open this site in Chrome or Edge, click “Show on the TV” then Full screen. A PC app (.exe) is coming soon.',
+    'Plug the PC into the TV and install the PC app (button on the home page): it opens full screen. Without it: open this site in Chrome or Edge, “Show on the TV”, then Full screen. Windows may say “PC protected”: click “More info” then “Run anyway”.',
   helpCast: 'Chromecast (Android or PC)',
-  helpCastText: 'Coming soon: a Cast button on the TV page. Meanwhile, in Chrome on PC: menu ⋮ → Cast → pick your Chromecast.',
+  helpCastText: 'On Android or Chrome on PC: “Cast to Chromecast” button on the home page. Your phone then becomes the controller. Or in Chrome: menu ⋮ → Cast → the TV tab.',
   helpIphone: 'iPhone',
   helpIphoneText:
     'Safari can’t start a Chromecast. Use AirPlay screen mirroring (Apple TV) or the PC with HDMI. Controllers work on every phone.',

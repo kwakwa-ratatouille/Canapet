@@ -21,6 +21,16 @@ export function TvApp() {
   const lang = session.lang();
   const code = session.net.code;
 
+  // Dans le récepteur Chromecast (iframe), on transmet le code du salon pour que le téléphone s'y connecte.
+  useEffect(() => {
+    if (window.parent !== window && code) window.parent.postMessage({ canapet: 'code', code }, '*');
+  }, [code]);
+  useEffect(() => {
+    if (window.parent === window) return;
+    const net = session.net;
+    if (net.status === 'error') window.parent.postMessage({ canapet: 'status', text: t(lang, 'netError', { e: net.error }) }, '*');
+  });
+
   useEffect(() => {
     const id = setInterval(() => setLocked(audioLocked()), 800);
     const unlock = () => {
