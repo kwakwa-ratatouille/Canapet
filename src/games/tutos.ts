@@ -187,6 +187,24 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  undercover: {
+    fr: {
+      goal: 'Chacun a un mot secret… sauf l’Undercover (un mot proche) et Mr White (aucun mot) !',
+      steps: [
+        ['🤫', 'Regarde ton mot en secret sur ton téléphone'],
+        ['💬', 'À ton tour, tape UN mot comme indice : il s’affiche sur la télé'],
+        ['🗳️', 'Débattez puis votez. Mr White éliminé peut encore gagner en devinant le mot !'],
+      ],
+    },
+    en: {
+      goal: 'Everyone has a secret word… except the Undercover (a close word) and Mr White (no word)!',
+      steps: [
+        ['🤫', 'Check your word in secret on your phone'],
+        ['💬', 'On your turn, type ONE word as a clue: it shows on the TV'],
+        ['🗳️', 'Debate then vote. Mr White, if voted out, can still win by guessing the word!'],
+      ],
+    },
+  },
   dessin: {
     fr: {
       goal: 'Fais deviner ton dessin… ou devine celui des autres !',

@@ -1,0 +1,172 @@
+// Undercover : paires de mots proches, rangées par thème. [mot A, mot B] en français puis en anglais.
+// Les civils reçoivent un mot, l'Undercover l'autre (tiré au hasard), Mr White aucun.
+
+export interface Theme {
+  name: { fr: string; en: string };
+  emoji: string;
+  /** Réservé aux soirées entre potes (caché en mode famille). */
+  adult?: boolean;
+  pairs: [string, string, string, string][];
+}
+
+export const THEMES: Theme[] = [
+  {
+    name: { fr: 'À table !', en: 'Dinner time!' },
+    emoji: '🍕',
+    pairs: [
+      ['Pizza', 'Quiche', 'Pizza', 'Quiche'],
+      ['Croissant', 'Pain au chocolat', 'Croissant', 'Brioche'],
+      ['Ketchup', 'Mayonnaise', 'Ketchup', 'Mayonnaise'],
+      ['Crêpe', 'Gaufre', 'Pancake', 'Waffle'],
+      ['Chocolat', 'Caramel', 'Chocolate', 'Caramel'],
+      ['Fraise', 'Framboise', 'Strawberry', 'Raspberry'],
+      ['Hamburger', 'Hot-dog', 'Burger', 'Hot dog'],
+      ['Sushi', 'Ramen', 'Sushi', 'Ramen'],
+      ['Pâtes', 'Riz', 'Pasta', 'Rice'],
+      ['Fromage', 'Beurre', 'Cheese', 'Butter'],
+    ],
+  },
+  {
+    name: { fr: 'Les animaux', en: 'Animals' },
+    emoji: '🐶',
+    pairs: [
+      ['Chat', 'Chien', 'Cat', 'Dog'],
+      ['Lion', 'Tigre', 'Lion', 'Tiger'],
+      ['Dauphin', 'Requin', 'Dolphin', 'Shark'],
+      ['Abeille', 'Guêpe', 'Bee', 'Wasp'],
+      ['Poule', 'Canard', 'Chicken', 'Duck'],
+      ['Cheval', 'Âne', 'Horse', 'Donkey'],
+      ['Grenouille', 'Crapaud', 'Frog', 'Toad'],
+      ['Pingouin', 'Phoque', 'Penguin', 'Seal'],
+      ['Singe', 'Gorille', 'Monkey', 'Gorilla'],
+      ['Hibou', 'Aigle', 'Owl', 'Eagle'],
+    ],
+  },
+  {
+    name: { fr: 'À la maison', en: 'At home' },
+    emoji: '🛋️',
+    pairs: [
+      ['Canapé', 'Fauteuil', 'Sofa', 'Armchair'],
+      ['Lit', 'Hamac', 'Bed', 'Hammock'],
+      ['Douche', 'Baignoire', 'Shower', 'Bathtub'],
+      ['Frigo', 'Congélateur', 'Fridge', 'Freezer'],
+      ['Fourchette', 'Cuillère', 'Fork', 'Spoon'],
+      ['Oreiller', 'Couette', 'Pillow', 'Blanket'],
+      ['Lampe', 'Bougie', 'Lamp', 'Candle'],
+      ['Télécommande', 'Manette', 'Remote', 'Controller'],
+      ['Brosse à dents', 'Dentifrice', 'Toothbrush', 'Toothpaste'],
+      ['Rideau', 'Volet', 'Curtain', 'Shutter'],
+    ],
+  },
+  {
+    name: { fr: 'Sports et loisirs', en: 'Sports & hobbies' },
+    emoji: '⚽',
+    pairs: [
+      ['Football', 'Rugby', 'Soccer', 'Rugby'],
+      ['Tennis', 'Badminton', 'Tennis', 'Badminton'],
+      ['Ski', 'Snowboard', 'Skiing', 'Snowboarding'],
+      ['Natation', 'Plongée', 'Swimming', 'Diving'],
+      ['Vélo', 'Trottinette', 'Bike', 'Scooter'],
+      ['Boxe', 'Judo', 'Boxing', 'Judo'],
+      ['Bowling', 'Billard', 'Bowling', 'Pool'],
+      ['Basket', 'Volley', 'Basketball', 'Volleyball'],
+      ['Échecs', 'Dames', 'Chess', 'Checkers'],
+      ['Karaoké', 'Concert', 'Karaoke', 'Concert'],
+    ],
+  },
+  {
+    name: { fr: 'Les métiers', en: 'Jobs' },
+    emoji: '👩‍🚒',
+    pairs: [
+      ['Pompier', 'Policier', 'Firefighter', 'Police officer'],
+      ['Médecin', 'Dentiste', 'Doctor', 'Dentist'],
+      ['Boulanger', 'Pâtissier', 'Baker', 'Pastry chef'],
+      ['Pilote', 'Astronaute', 'Pilot', 'Astronaut'],
+      ['Prof', 'Directeur', 'Teacher', 'Principal'],
+      ['Coiffeur', 'Barbier', 'Hairdresser', 'Barber'],
+      ['Facteur', 'Livreur', 'Mail carrier', 'Courier'],
+      ['Chanteur', 'Danseur', 'Singer', 'Dancer'],
+      ['Cuisinier', 'Serveur', 'Cook', 'Waiter'],
+      ['Magicien', 'Clown', 'Magician', 'Clown'],
+    ],
+  },
+  {
+    name: { fr: 'En voyage', en: 'Travel' },
+    emoji: '✈️',
+    pairs: [
+      ['Plage', 'Piscine', 'Beach', 'Pool'],
+      ['Avion', 'Hélicoptère', 'Plane', 'Helicopter'],
+      ['Train', 'Métro', 'Train', 'Subway'],
+      ['Valise', 'Sac à dos', 'Suitcase', 'Backpack'],
+      ['Hôtel', 'Camping', 'Hotel', 'Campsite'],
+      ['Montagne', 'Volcan', 'Mountain', 'Volcano'],
+      ['Île', 'Désert', 'Island', 'Desert'],
+      ['Passeport', 'Billet', 'Passport', 'Ticket'],
+      ['Paris', 'Londres', 'Paris', 'London'],
+      ['Bateau', 'Sous-marin', 'Boat', 'Submarine'],
+    ],
+  },
+  {
+    name: { fr: 'Fêtes et soirées', en: 'Parties' },
+    emoji: '🎉',
+    pairs: [
+      ['Anniversaire', 'Mariage', 'Birthday', 'Wedding'],
+      ['Noël', 'Halloween', 'Christmas', 'Halloween'],
+      ['Cadeau', 'Surprise', 'Gift', 'Surprise'],
+      ['Ballon', 'Confettis', 'Balloon', 'Confetti'],
+      ['Déguisement', 'Masque', 'Costume', 'Mask'],
+      ['Gâteau', 'Glace', 'Cake', 'Ice cream'],
+      ['Feu d’artifice', 'Pétard', 'Fireworks', 'Firecracker'],
+      ['Sapin', 'Guirlande', 'Christmas tree', 'Tinsel'],
+      ['Pyjama', 'Peignoir', 'Pajamas', 'Bathrobe'],
+      ['Piñata', 'Chasse au trésor', 'Piñata', 'Treasure hunt'],
+    ],
+  },
+  {
+    name: { fr: 'École et bureau', en: 'School & office' },
+    emoji: '✏️',
+    pairs: [
+      ['Stylo', 'Crayon', 'Pen', 'Pencil'],
+      ['Cahier', 'Classeur', 'Notebook', 'Binder'],
+      ['Récré', 'Cantine', 'Recess', 'Lunch break'],
+      ['Ordinateur', 'Tablette', 'Computer', 'Tablet'],
+      ['Règle', 'Compas', 'Ruler', 'Compass'],
+      ['Devoirs', 'Contrôle', 'Homework', 'Test'],
+      ['Cartable', 'Trousse', 'Schoolbag', 'Pencil case'],
+      ['Tableau', 'Écran', 'Whiteboard', 'Screen'],
+      ['Imprimante', 'Photocopieuse', 'Printer', 'Copier'],
+      ['Gomme', 'Taille-crayon', 'Eraser', 'Sharpener'],
+    ],
+  },
+  {
+    name: { fr: 'Monstres et légendes', en: 'Monsters & legends' },
+    emoji: '🐉',
+    pairs: [
+      ['Vampire', 'Zombie', 'Vampire', 'Zombie'],
+      ['Sorcière', 'Fée', 'Witch', 'Fairy'],
+      ['Dragon', 'Dinosaure', 'Dragon', 'Dinosaur'],
+      ['Fantôme', 'Squelette', 'Ghost', 'Skeleton'],
+      ['Robot', 'Extraterrestre', 'Robot', 'Alien'],
+      ['Pirate', 'Viking', 'Pirate', 'Viking'],
+      ['Super-héros', 'Ninja', 'Superhero', 'Ninja'],
+      ['Licorne', 'Pégase', 'Unicorn', 'Pegasus'],
+      ['Princesse', 'Reine', 'Princess', 'Queen'],
+      ['Château', 'Palais', 'Castle', 'Palace'],
+    ],
+  },
+  {
+    name: { fr: 'Soirée piquante', en: 'Spicy night' },
+    emoji: '🌶️',
+    adult: true,
+    pairs: [
+      ['Bisou', 'Câlin', 'Kiss', 'Hug'],
+      ['Ex', 'Crush', 'Ex', 'Crush'],
+      ['Gueule de bois', 'Fatigue', 'Hangover', 'Tiredness'],
+      ['Apéro', 'Brunch', 'Happy hour', 'Brunch'],
+      ['Selfie', 'Story', 'Selfie', 'Story'],
+      ['Premier rendez-vous', 'Coup de foudre', 'First date', 'Love at first sight'],
+      ['Ronfler', 'Baver', 'Snoring', 'Drooling'],
+      ['Mensonge', 'Excuse', 'Lie', 'Excuse'],
+    ],
+  },
+];
