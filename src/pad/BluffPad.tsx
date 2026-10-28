@@ -14,7 +14,7 @@ const TXT = {
     liar: 'MENTEUR !',
     claim: '{name} prétend avoir posé {n} × {card}',
     pick: 'Choisis 1 à 3 cartes',
-    roulette: 'Appuie sur ton coussin…',
+    roulette: 'Appuie sur la détente…',
     out: 'Éliminé 💨 Tu regardes les autres.',
     danger: 'Danger pour tous : {s}/6',
   },
@@ -27,7 +27,7 @@ const TXT = {
     liar: 'LIAR!',
     claim: '{name} claims {n} × {card}',
     pick: 'Pick 1 to 3 cards',
-    roulette: 'Squeeze your cushion…',
+    roulette: 'Pull the trigger…',
     out: 'Out 💨 Watch the others.',
     danger: 'Danger for all: {s}/6',
   },
@@ -86,7 +86,8 @@ export function BluffPad({ data, lang, send }: { data: BluffPadData; lang: Lang;
 
       {data.roulette ? (
         <button className="cushion-btn" onPointerDown={() => act('pull')}>
-          <CharCanvas profile={{ food: 'coussin', color: '#ff4f9a', hat: 'aucun', acc: 'aucun' }} size={150} mood="wow" />
+          <span className="trigger-ico">🔫</span>
+          <b>{lang === 'fr' ? 'TIRER' : 'PULL'}</b>
         </button>
       ) : (
         <>

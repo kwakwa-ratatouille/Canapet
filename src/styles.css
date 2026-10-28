@@ -2991,3 +2991,16 @@ body,
   -webkit-text-stroke: 5px var(--ink);
   paint-order: stroke fill;
 }
+
+/* Bar des Bobards : la détente */
+.cushion-btn .trigger-ico {
+  font-size: 96px;
+  line-height: 1;
+}
+.cushion-btn b {
+  font-family: var(--cp-font-titre);
+  font-size: 34px;
+  color: #fff;
+  -webkit-text-stroke: 5px var(--ink);
+  paint-order: stroke fill;
+}
