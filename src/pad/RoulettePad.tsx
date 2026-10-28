@@ -6,10 +6,11 @@ import type { Lang, ToTv } from '../shared/protocol';
 const TXT = {
   fr: {
     pick: 'Sélectionne une large partie de ta galerie. Trois photos seront tirées au sort, sans que tu saches lesquelles.',
-    auto: 'Trois photos vont être tirées au sort dans ta galerie. Tu ne sauras pas lesquelles.',
+    auto: 'Seize photos sont tirées au sort dans ta galerie, puis la télé en garde trois. Tu ne sauras pas lesquelles.',
     autoBtn: 'Tirer au sort',
     orManual: 'ou sélectionner moi-même',
     digging: 'Tirage en cours…',
+    noAccess: 'Accès aux photos refusé. Autorise-le dans les réglages du téléphone, ou sélectionne-les toi-même.',
     pickVideo: 'Sélectionne plusieurs vidéos de 20 secondes maximum. Certaines seront tirées au sort.',
     add: 'Ouvrir la galerie',
     reroll: '🔀 Retirer au hasard',
@@ -31,10 +32,11 @@ const TXT = {
   },
   en: {
     pick: 'Select a large part of your gallery. Three photos will be drawn at random, without you knowing which.',
-    auto: 'Three photos will be drawn at random from your gallery. You won’t know which.',
+    auto: 'Sixteen photos are drawn at random from your gallery, then the TV keeps three. You won’t know which.',
     autoBtn: 'Draw at random',
     orManual: 'or select them myself',
     digging: 'Drawing…',
+    noAccess: 'Photo access denied. Allow it in your phone settings, or select them yourself.',
     pickVideo: 'Select several videos of 20 seconds or less. Some will be drawn at random.',
     add: 'Open gallery',
     reroll: '🔀 Draw again',
@@ -160,6 +162,27 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
     send({ t: 'act', a: 'ready' });
   };
 
+  // Appli : tirage dans la galerie (16 photos), lancé tout seul au début de la manche d'envoi
+  const fromGallery = async () => {
+    setBusy({ k: 0, n: data.video ? 8 : MAX_MEDIA });
+    setWarn('');
+    try {
+      const files = await randomFromGallery(data.video ? 8 : MAX_MEDIA, !!data.video);
+      if (files.length) return void upload(files);
+      setWarn(T.noAccess);
+    } catch {
+      setWarn(T.noAccess);
+    }
+    setBusy(null);
+  };
+  const autoDone = useRef(false);
+  useEffect(() => {
+    if (data.phase !== 'upload' || data.ready || data.sent > 0 || autoDone.current || !hasGallery()) return;
+    autoDone.current = true;
+    void fromGallery();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.phase]);
+
   if (data.phase === 'upload')
     return (
       <div className="traitor">
@@ -173,16 +196,7 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
             {hasGallery() && (
               <button
                 className="btn big mint"
-                onClick={async () => {
-                  setBusy({ k: 0, n: data.video ? 8 : MAX_MEDIA });
-                  try {
-                    const files = await randomFromGallery(data.video ? 8 : MAX_MEDIA, !!data.video);
-                    if (files.length) return void upload(files);
-                  } catch {
-                    /* autorisation refusée : on garde le choix manuel */
-                  }
-                  setBusy(null);
-                }}
+                onClick={() => void fromGallery()}
               >
                 {T.autoBtn}
               </button>

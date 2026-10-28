@@ -8,7 +8,12 @@ interface GalleryItem {
 interface GalleryPlugin {
   random(o: { count: number; video: boolean }): Promise<{ items: GalleryItem[] }>;
 }
-type Cap = { isNativePlatform?: () => boolean; Plugins?: { Gallery?: GalleryPlugin } };
+type Cap = {
+  isNativePlatform?: () => boolean;
+  Plugins?: { Gallery?: GalleryPlugin };
+  /** Appel direct d'un plugin natif (toujours présent dans l'appli, même sans @capacitor/core). */
+  nativePromise?: (plugin: string, method: string, opts: unknown) => Promise<unknown>;
+};
 const cap = () => (window as unknown as { Capacitor?: Cap }).Capacitor;
 
 /** Vrai dans l'appli Android installée. */
@@ -20,13 +25,16 @@ export const IS_INSTALLED = IS_NATIVE || matchMedia('(display-mode: standalone),
 export const IOS_IPA_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/ios-latest/Canapet.ipa';
 export const ANDROID_APK_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/android-latest/Canapet.apk';
 
-export const hasGallery = () => !!cap()?.Plugins?.Gallery;
+// Dans l'appli, le site est chargé depuis internet : le plugin s'appelle directement par le pont natif.
+export const hasGallery = () => !!cap()?.isNativePlatform?.() && (!!cap()?.nativePromise || !!cap()?.Plugins?.Gallery);
 
 /** Pioche `count` photos (ou vidéos) au hasard dans toute la galerie du téléphone. */
 export async function randomFromGallery(count: number, video: boolean): Promise<File[]> {
-  const g = cap()?.Plugins?.Gallery;
-  if (!g) return [];
-  const { items } = await g.random({ count, video });
+  const c = cap();
+  if (!c?.isNativePlatform?.()) return [];
+  const opts = { count, video };
+  const res = (c.nativePromise ? await c.nativePromise('Gallery', 'random', opts) : await c.Plugins!.Gallery!.random(opts)) as { items: GalleryItem[] };
+  const items = res?.items ?? [];
   return Promise.all(
     items.map(async (it, i) => {
       const blob = await (await fetch(`data:${it.mime};base64,${it.data}`)).blob();
