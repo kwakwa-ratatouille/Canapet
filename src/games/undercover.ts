@@ -162,8 +162,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   // Le mot des civils et celui de l'Undercover sont tirés au hasard dans la paire.
   const [civilWord, underWord] = Math.random() < 0.5 ? [wa, wb] : [wb, wa];
   const n = runners.length;
+  // Plus on est nombreux, plus il y a d'imposteurs (les civils restent toujours majoritaires)
   const nUnder = n >= 10 ? 3 : n >= 7 ? 2 : 1;
-  const nWhite = n >= 5 ? 1 : 0;
+  const nWhite = n >= 9 ? 2 : n >= 5 ? 1 : 0;
   const order = [...runners.keys()].sort(() => Math.random() - 0.5);
   const pls: Pl[] = runners.map((r) => ({ ...r, role: 'civil', word: civilWord, alive: true, clues: [], pick: -1, ready: false, diedAt: 0, note: '' }));
   order.slice(0, nUnder).forEach((i) => {
@@ -183,7 +184,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let turnOrder: number[] = [];
   let turnPos = 0;
   let headline = fr ? 'Regarde ton mot en secret…' : 'Check your word in secret…';
-  let sub = fr ? 'Ne le montre à personne !' : 'Don’t show anyone!';
+  const cast = fr
+    ? `${nUnder} Undercover${nWhite ? ` et ${nWhite} Mr White` : ''} cachés parmi vous`
+    : `${nUnder} Undercover${nWhite ? ` and ${nWhite} Mr White` : ''} among you`;
+  let sub = (fr ? 'Ne le montre à personne ! ' : 'Don’t show anyone! ') + cast;
   let winner: 'civil' | 'impo' | 'white' | null = null;
   let deaths = 0;
   let lastOut = -1;
@@ -217,15 +221,54 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     go('clues', T_CLUE);
   }
 
+  /** Deux mots trop proches : identiques, l'un dans l'autre, même début (pluriels, dérivés) ou une seule lettre de différence. */
+  function close(a: string, b: string): boolean {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    const [s, l] = a.length <= b.length ? [a, b] : [b, a];
+    if (s.length >= 4 && l.includes(s)) return true;
+    if (s.length >= 5 && l.slice(0, 5) === s.slice(0, 5)) return true;
+    if (s.length >= 4 && l.length - s.length <= 1) {
+      let d = 0;
+      for (let i = 0, j = 0; i < l.length && d <= 1; ) {
+        if (s[j] === l[i]) {
+          i++;
+          j++;
+        } else {
+          d++;
+          if (s.length === l.length) j++;
+          i++;
+        }
+      }
+      return d <= 1;
+    }
+    return false;
+  }
+  const words = (s: string) => norm(s).split(' ').filter((w) => w.length >= 3 || /^\d+$/.test(w));
+  /** Vrai si un mot de l'indice ressemble à un mot de `other`. */
+  const similar = (clue: string, other: string) => words(clue).some((a) => words(other).some((b) => close(a, b)));
+
   function giveClue(i: number, raw: string) {
     const p = pls[i];
-    let c = raw.replace(/\s+/g, ' ').trim().split(' ')[0]?.slice(0, 18) ?? '';
+    // Plusieurs mots permis (30 caractères)
+    let c = raw.replace(/\s+/g, ' ').trim().slice(0, 30);
     if (!c) c = '…';
     // Interdit de dire son propre mot
-    if (p.word && norm(c) && (norm(c).includes(norm(p.word)) || norm(p.word).includes(norm(c)))) {
-      p.note = fr ? 'Interdit de dire ton mot !' : 'You can’t say your word!';
+    if (p.word && c !== '…' && (similar(c, p.word) || norm(c) === norm(p.word))) {
+      p.note = fr ? 'Interdit de dire ton mot (ou presque) !' : 'You can’t say your word (or close to it)!';
       ctx.refresh();
       return;
+    }
+    // Interdit de répéter un indice déjà donné (même proche), par n'importe qui
+    const used = pls.flatMap((x) => x.clues).filter((x) => x && x !== '…');
+    const dup = c !== '…' && used.find((u) => norm(u) === norm(c) || similar(c, u));
+    if (dup) {
+      p.note = fr ? `Trop proche de « ${dup} », déjà dit. Trouve autre chose !` : `Too close to “${dup}”, already said. Try something else!`;
+      if (p.bot) c = '…';
+      else {
+        ctx.refresh();
+        return;
+      }
     }
     p.note = '';
     p.clues[round - 1] = c;
@@ -308,8 +351,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (!p.alive) return;
     if (phase === 'clues' && turnOrder[turnPos] === i) {
       // Les bots piochent un mot du thème (Mr White aussi, au flair)
-      const w = pool[Math.floor(Math.random() * pool.length)] ?? '…';
-      giveClue(i, w);
+      const used = pls.flatMap((x) => x.clues).filter(Boolean);
+      const free = pool.filter((w) => !used.some((u) => similar(w, u)) && !(p.word && similar(w, p.word)));
+      giveClue(i, free[Math.floor(Math.random() * free.length)] ?? '…');
     } else if (phase === 'debate') p.ready = true;
     else if (phase === 'vote' && p.pick < 0) {
       const others = alive().filter((x) => x.i !== i);

@@ -10,7 +10,7 @@ const TXT = {
     goal: 'Donne des indices sans trop en dire. Attention : quelqu’un a un mot un peu différent…',
     hide: 'Toucher pour cacher',
     show: 'Toucher pour voir mon mot',
-    yourTurn: 'À toi ! Un seul mot comme indice',
+    yourTurn: 'À toi ! Donne un indice (un ou plusieurs mots, jamais déjà dit)',
     send: 'Envoyer',
     waitTurn: (n: string) => `C’est au tour de ${n}…`,
     ready: 'J’ai fini de débattre ✋',
@@ -27,7 +27,7 @@ const TXT = {
     goal: 'Give clues without saying too much. Careful: someone has a slightly different word…',
     hide: 'Tap to hide',
     show: 'Tap to see my word',
-    yourTurn: 'Your turn! One word as a clue',
+    yourTurn: 'Your turn! Give a clue (one or more words, never already said)',
     send: 'Send',
     waitTurn: (n: string) => `${n}’s turn…`,
     ready: 'Done debating ✋',
@@ -87,7 +87,7 @@ export function UndercoverPad({ data, lang, send }: { data: UndercoverPadData; l
           }}
         >
           <p className="pad-title">{data.act === 'clue' ? T.yourTurn : T.guess}</p>
-          <input className="guess-input" value={text} maxLength={18} autoFocus autoComplete="off" onChange={(e) => setText(e.target.value)} />
+          <input className="guess-input" value={text} maxLength={30} autoFocus autoComplete="off" onChange={(e) => setText(e.target.value)} />
           {data.note && <p className="pad-small uc-note">{data.note}</p>}
           <button className="btn big mint" type="submit">
             {T.send} · {data.left}s
