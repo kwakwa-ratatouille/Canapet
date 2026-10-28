@@ -217,6 +217,11 @@ interface F extends Runner {
   /** Attaque lourde : secondes de charge (-1 = pas en train de charger). */
   charge: number;
   heavyReq: boolean;
+  /** Esquive (Y quand la jauge n'est pas pleine) : roulade au sol, esquive en l'air. */
+  dodgeReq: boolean;
+  dodge: number;
+  dodgeVx: number;
+  dodgeCd: number;
   /** Multiplicateur de puissance du coup en cours (charge). */
   power: number;
   out: number;
@@ -268,6 +273,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     lastC: false,
     charge: -1,
     heavyReq: false,
+    dodgeReq: false,
+    dodge: 0,
+    dodgeVx: 0,
+    dodgeCd: 0,
     power: 1,
     out: 0,
     kos: 0,
@@ -470,6 +479,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (it.y < f.y - 120 && f.onGround && Math.random() < 0.05) f.jumpReq = true;
         return;
       }
+    }
+    if (f.dodgeCd <= 0 && fs.some((o) => o !== f && alive(o) && o.move && !allies(o, f) && Math.abs(o.x - f.x) < 170 && Math.abs(o.y - f.y) < 140) && Math.random() < 0.04) {
+      f.dodgeReq = true;
+      f.inp.x = Math.random() < 0.5 ? -1 : 1;
     }
     let best = -1;
     let bd = 1e9;
@@ -697,7 +710,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (m.d && !f.lastD && f.meter >= 100 && f.onGround) {
         f.superReq = true;
         f.atkReq = true;
-      }
+      } else if (m.d && !f.lastD) f.dodgeReq = true;
       // X : attaque lourde. Au sol on maintient pour charger, on relâche pour frapper ; en l'air = remontée.
       if (m.c && !f.lastC) {
         if (f.onGround && !f.move && f.stun <= 0) f.charge = 0;
@@ -756,7 +769,23 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (f.bot) bot(f, i, dt);
         if (f.atkReq) startMove(f, i);
         f.atkReq = false;
+        f.dodgeCd = Math.max(0, f.dodgeCd - dt);
+        if (f.dodgeReq && f.dodgeCd <= 0 && f.stun <= 0 && !f.move) {
+          f.dodge = 0.34;
+          f.dodgeCd = 0.9;
+          f.invuln = Math.max(f.invuln, 0.34);
+          f.dodgeVx = Math.abs(f.inp.x) > 0.3 ? Math.sign(f.inp.x) * 820 : 0;
+          if (!f.onGround) f.vy = Math.min(f.vy, 60);
+          parts.push({ x: f.x, y: f.y - BH / 2, vx: 0, vy: 0, t: 0, max: 0.3, size: 120, color: '#fff', kind: 'ring' });
+          sfx.step();
+        }
+        f.dodgeReq = false;
         physics(f, dt);
+        if (f.dodge > 0) {
+          f.dodge -= dt;
+          f.x += f.dodgeVx * dt * (f.dodge / 0.34 + 0.2);
+          if (f.onGround) f.vx *= 0.5;
+        }
         if (f.x < BLAST.l || f.x > BLAST.r || f.y > BLAST.b || f.y < BLAST.t) {
           f.stocks--;
           if (f.lastHitBy >= 0) fs[f.lastHitBy].kos++;
@@ -798,7 +827,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
       fs.forEach((f, i) => {
         if (!alive(f)) return;
-        if (f.invuln > 0 && Math.floor(t * 12) % 2) g.globalAlpha = 0.5;
+        if (f.dodge > 0) g.globalAlpha = 0.45;
+        else if (f.invuln > 0 && Math.floor(t * 12) % 2) g.globalAlpha = 0.5;
         // Étoile : halo arc-en-ciel
         if (f.star > 0) {
           g.strokeStyle = `hsl(${(t * 400) % 360},90%,60%)`;

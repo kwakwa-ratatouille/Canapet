@@ -38,6 +38,9 @@ interface P extends Runner {
   fy: number;
   inp: { x: number; y: number };
   kickReq: boolean;
+  /** Tir chargé : A maintenu (secondes), relâcher pour frapper. */
+  charge: number;
+  charging: boolean;
   catchT: number;
   dash: number;
   dashCd: number;
@@ -61,6 +64,8 @@ interface Ball {
   touch: P | null;
   thrower: P | null;
   throwT: number;
+  /** Frappe de mule : ballon en feu, il traverse les joueurs. */
+  fire: number;
 }
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -102,6 +107,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     fy: 0,
     inp: { x: 0, y: 0 },
     kickReq: false,
+    charge: 0,
+    charging: false,
     catchT: 0,
     dash: 0,
     dashCd: 0,
@@ -114,7 +121,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }));
   if (nTeams === 2 && ps.length > 1 && ps.every((p) => p.side === ps[0].side)) ps.forEach((p, i) => (p.side = i % 2));
   const score = Array.from({ length: nTeams }, () => 0);
-  const balls: Ball[] = Array.from({ length: nBalls }, () => ({ x: cx, y: cy, vx: 0, vy: 0, spin: 0, holder: null, holdT: 0, touch: null, thrower: null, throwT: 0 }));
+  const balls: Ball[] = Array.from({ length: nBalls }, () => ({ x: cx, y: cy, vx: 0, vy: 0, spin: 0, fire: 0, holder: null, holdT: 0, touch: null, thrower: null, throwT: 0 }));
   let time = 0;
   let pause = 2;
   let banner = fr ? 'Coup d’envoi !' : 'Kick-off!';
@@ -193,10 +200,19 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }
 
   function kick(p: P) {
+    const c = Math.min(1, p.charge / 0.9);
+    p.charge = 0;
     const held = balls.find((b) => b.holder === p);
-    if (held) return throwBall(p, held, KICK * 1.05);
-    const b = balls.find((b) => !b.holder && Math.hypot(b.x - p.x, b.y - p.y) < R + BALL_R + 26);
-    if (b) throwBall(p, b, KICK);
+    const b = held ?? balls.find((b) => !b.holder && Math.hypot(b.x - p.x, b.y - p.y) < R + BALL_R + 26);
+    if (!b) return;
+    throwBall(p, b, KICK * (held ? 1.05 : 1) * (1 + 0.65 * c));
+    if (c >= 1) {
+      b.fire = 1.2;
+      shake = 10;
+      pop(p.x, p.y - 130, fr ? 'FRAPPE DE MULE !' : 'THUNDER SHOT!');
+      sfx.pop();
+      if (!p.bot) ctx.buzz(p.pid, 120);
+    }
   }
 
   function tryCatch(p: P) {
@@ -296,7 +312,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (m.t !== 'in') return;
       const p = ps.find((x) => x.pid === pid);
       if (!p) return;
-      if (m.a && !p.lastA) p.kickReq = true;
+      // A : appui court = tir, maintenu = tir chargé au relâcher
+      if (m.a && !p.lastA) {
+        p.charging = true;
+        p.charge = 0;
+      }
+      if (!m.a && p.lastA && p.charging) {
+        p.charging = false;
+        p.kickReq = true;
+      }
       if (m.b && !p.lastB && p.dashCd <= 0) {
         p.dash = 0.25;
         p.dashCd = 1.3;
@@ -355,6 +379,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         p.x = Math.max(F.x + R, Math.min(F.x + F.w - R, p.x + p.vx * dt));
         p.y = Math.max(F.y + R, Math.min(F.y + F.h - R, p.y + p.vy * dt));
         corner(p, R, 0);
+        if (p.charging) p.charge += dt;
+        // Le bot charge parfois une frappe de mule quand il est loin du but
+        if (p.bot && p.kickReq && balls.some((b) => b.holder === p) && Math.random() < 0.35) p.charge = 1;
+        if (p.stun > 0) p.charging = false;
         if (p.kickReq && p.stun <= 0) kick(p);
         p.kickReq = false;
       }
@@ -427,6 +455,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           continue;
         }
         b.throwT = Math.max(0, b.throwT - dt);
+        b.fire = Math.max(0, b.fire - dt);
+        if (b.fire > 0) parts.push({ x: b.x, y: b.y, vx: rnd(-80, 80), vy: rnd(-120, 0), t: 0.35, c: Math.random() < 0.5 ? '#ff8a00' : '#ffd60a' });
         const fast = Math.hypot(b.vx, b.vy) > 520;
         for (const p of ps) {
           const d = Math.hypot(b.x - p.x, b.y - p.y);
@@ -445,6 +475,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             theirs.throwT = 0.3;
             p.stun = 0.5;
             pop(p.x, p.y - 120, fr ? 'LÂCHÉ !' : 'DROPPED!');
+          }
+          if (b.fire > 0 && b.thrower !== p) {
+            p.stun = 0.6;
+            p.vx = b.vx * 0.5;
+            p.vy = b.vy * 0.5;
+            pop(p.x, p.y - 120, 'OUCH !');
+            continue;
           }
           // Sprint dans le ballon : il part très loin
           if (p.dash > 0 && b.throwT <= 0) {
@@ -586,6 +623,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.arc(p.x - p.vx * 0.06, p.y - 30 - p.vy * 0.06, 30, 0, Math.PI * 2);
           g.fill();
         }
+        if (p.charging && p.charge > 0.12) {
+          const c = Math.min(1, p.charge / 0.9);
+          g.strokeStyle = c >= 1 ? (Math.floor(t * 12) % 2 ? '#ffd60a' : '#ff8a00') : '#fff';
+          g.lineWidth = 8;
+          g.beginPath();
+          g.arc(p.x, p.y - 40, 62, -Math.PI / 2, -Math.PI / 2 + c * Math.PI * 2);
+          g.stroke();
+        }
         drawCharacter(g, p.x, p.y, 84, {
           food: p.profile.food,
           color: p.profile.color,
@@ -615,8 +660,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.save();
         g.translate(b.x, b.y);
         g.rotate(b.spin);
-        g.fillStyle = '#fff';
-        g.strokeStyle = b.holder ? SQUADS[b.holder.side].color : INK;
+        g.fillStyle = b.fire > 0 ? '#ffd60a' : '#fff';
+        g.strokeStyle = b.fire > 0 ? '#ff4b1f' : b.holder ? SQUADS[b.holder.side].color : INK;
         g.lineWidth = b.holder ? 7 : 4;
         g.beginPath();
         g.arc(0, 0, BALL_R, 0, Math.PI * 2);

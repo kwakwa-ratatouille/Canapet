@@ -174,7 +174,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Deux équipes, un ballon-coussin : marque dans le but adverse !',
       steps: [
         ['🕹️', 'Stick : courir. Le ballon colle à tes pieds quand tu cours dessus'],
-        ['🅰️', 'A : tirer · X : attraper une passe ou un ballon, puis A pour le lancer'],
+        ['🅰️', 'A : tirer (maintiens pour une frappe de mule en feu 🔥) · X : attraper une passe ou un ballon, puis A pour le lancer'],
         ['💨', 'B : sprint ! Il envoie le ballon très loin et vole le ballon d’un porteur'],
       ],
     },
@@ -182,7 +182,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Two teams, one cushion ball: score in the other goal!',
       steps: [
         ['🕹️', 'Stick: run. The ball sticks to your feet when you run into it'],
-        ['🅰️', 'A: shoot · X: catch a pass or a ball, then A to throw it'],
+        ['🅰️', 'A: shoot (hold for a fiery thunder shot 🔥) · X: catch a pass or a ball, then A to throw it'],
         ['💨', 'B: sprint! It sends the ball flying and steals it from a carrier'],
       ],
     },
@@ -283,7 +283,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🕹️', 'Stick : se déplacer · A : sauter (double saut)'],
         ['👊', 'B : coup normal, différent selon la direction, au sol comme en l’air. X : attaque lourde (maintiens pour charger) ; en l’air, X te fait remonter'],
-        ['🎁', 'Des objets tombent : touche-les pour les ramasser, B pour s’en servir'],
+        ['🌀', 'Y : esquive (roulade, intouchable un instant) ; jauge pleine = super coup. Des objets tombent : B pour s’en servir'],
       ],
     },
     en: {
@@ -291,7 +291,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🕹️', 'Stick: move · A: jump (double jump)'],
         ['👊', 'B: normal attack, different per direction, on the ground and in the air. X: heavy attack (hold to charge); in the air, X sends you back up'],
-        ['🎁', 'Items fall from the sky: touch them to pick up, B to use'],
+        ['🌀', 'Y: dodge (roll, briefly untouchable); full meter = super move. Items fall: B to use them'],
       ],
     },
   },

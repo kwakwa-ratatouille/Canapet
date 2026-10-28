@@ -10,7 +10,7 @@ const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> =
   bombes: { fr: ['PÉTARD', 'POUSSE'], en: ['BOMB', 'KICK'] },
   kart: { fr: ['OBJET', 'FREIN', 'POUET'], en: ['ITEM', 'BRAKE', 'HONK'] },
   archers: { fr: ['SAUT', 'TIR', 'ESQUIVE'], en: ['JUMP', 'SHOOT', 'DODGE'] },
-  combat: { fr: ['SAUT', 'COUP', 'LOURD', 'SUPER'], en: ['JUMP', 'HIT', 'HEAVY', 'SUPER'] },
+  combat: { fr: ['SAUT', 'COUP', 'LOURD', 'ESQUIVE'], en: ['JUMP', 'HIT', 'HEAVY', 'DODGE'] },
   bagarre: { fr: ['SAUT', 'BAFFE', 'ATTRAPE'], en: ['JUMP', 'SLAP', 'GRAB'] },
   foot: { fr: ['TIR', 'SPRINT', 'ATTRAPE'], en: ['SHOOT', 'SPRINT', 'CATCH'] },
 };
