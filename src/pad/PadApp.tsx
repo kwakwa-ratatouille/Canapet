@@ -299,6 +299,8 @@ function PadScreenView({
   edit: () => void;
 }) {
   const [picking, setPicking] = useState(false);
+  const [touring, setTouring] = useState(false);
+  const [noTour, setNoTour] = useState<string[]>(() => store<string[]>('noTour', []));
   const [optFor, setOptFor] = useState<string | null>(null);
   const [opts, setOpts] = useState<Record<string, number>>({});
   switch (screen.s) {
@@ -335,6 +337,52 @@ function PadScreenView({
               ▶ {t(lang, 'launch')}
             </button>
             <button className="btn ghost" onClick={() => setOptFor(null)}>
+              {t(lang, 'back')}
+            </button>
+          </div>
+        );
+      }
+      if (touring && screen.host) {
+        const left = screen.games.filter((g) => !g.soon && !noTour.includes(g.id)).length;
+        return (
+          <div className="pad-body top">
+            <p className="pad-title">{lang === 'fr' ? 'Jeux du tournoi' : 'Tournament games'}</p>
+            <p className="pad-small">{lang === 'fr' ? 'Touche un jeu pour l’enlever (ou le remettre)' : 'Tap a game to remove it (or bring it back)'}</p>
+            <div className="game-list">
+              {screen.games.filter((g) => !g.soon).map((g) => {
+                const def = gameById(g.id)!;
+                const off = noTour.includes(g.id);
+                return (
+                  <button
+                    key={g.id}
+                    className={`game-card ${off ? 'off' : ''}`}
+                    style={{ ['--g' as string]: def.color }}
+                    aria-pressed={!off}
+                    onClick={() => {
+                      sfx.click();
+                      const n = off ? noTour.filter((x) => x !== g.id) : [...noTour, g.id];
+                      setNoTour(n);
+                      save('noTour', n);
+                    }}
+                  >
+                    <img src={gameIcon(def.slug)} alt="" />
+                    <b>{def.name[lang]}</b>
+                    {off && <small>✕ {lang === 'fr' ? 'enlevé' : 'removed'}</small>}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              className="btn big mint"
+              disabled={left < 1}
+              onClick={() => {
+                setTouring(false);
+                host('tournament', undefined, Object.fromEntries(noTour.map((id) => [id, 1])));
+              }}
+            >
+              ▶ {t(lang, 'launch')} ({left} {lang === 'fr' ? 'jeux' : 'games'})
+            </button>
+            <button className="btn ghost" onClick={() => setTouring(false)}>
               {t(lang, 'back')}
             </button>
           </div>
@@ -416,7 +464,7 @@ function PadScreenView({
           {screen.host ? (
             <>
               <p className="pad-title">{t(lang, 'hostAsk')}</p>
-              <button className="big-card rose" onClick={() => host('tournament')}>
+              <button className="big-card rose" onClick={() => setTouring(true)}>
                 <svg viewBox="0 0 60 60" className="bc-icon" aria-hidden>
                   <path
                     d="M30 4l7.6 16.4 17.4 2-12.9 12 3.4 17.6L30 43.3 14.5 52l3.4-17.6L5 22.4l17.4-2z"

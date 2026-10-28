@@ -2917,3 +2917,9 @@ body,
   -webkit-user-drag: none;
   pointer-events: none;
 }
+
+/* Jeux enlevés du tournoi */
+.game-card.off {
+  opacity: 0.4;
+  filter: grayscale(1);
+}

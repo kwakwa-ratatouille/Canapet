@@ -230,8 +230,11 @@ export class Session {
       case 'tournament': {
         // Seulement les jeux jouables avec le nombre de joueurs présents (les bots complètent quand le jeu le permet).
         const count = this.list().filter((p) => p.connected).length;
-        const fit = playable().filter((g) => Math.max(count, g.botFill) >= g.min);
-        const pool = (fit.length ? fit : playable()).map((g) => g.id);
+        // L'hôte peut enlever des jeux (opts = { idDuJeu: 1 })
+        const allowed = playable().filter((g) => !opts?.[g.id]);
+        const base = allowed.length ? allowed : playable();
+        const fit = base.filter((g) => Math.max(count, g.botFill) >= g.min);
+        const pool = (fit.length ? fit : base).map((g) => g.id);
         this.plan = [];
         for (let i = 0; i < TOURNAMENT_LEN; i++) {
           const options = pool.filter((id) => id !== this.plan[i - 1]);
