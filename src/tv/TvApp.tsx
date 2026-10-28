@@ -63,6 +63,10 @@ export function TvApp() {
         o: 'foot',
         x: 'reflexes',
         y: 'president',
+        q: 'chaises',
+        z: 'patate',
+        i: 'pluie',
+        '1': 'lave',
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');

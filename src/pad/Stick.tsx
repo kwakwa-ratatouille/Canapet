@@ -12,6 +12,10 @@ const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> =
   archers: { fr: ['SAUT', 'TIR', 'ESQUIVE'], en: ['JUMP', 'SHOOT', 'DODGE'] },
   combat: { fr: ['SAUT', 'COUP', 'LOURD', 'ESQUIVE'], en: ['JUMP', 'HIT', 'HEAVY', 'DODGE'] },
   bagarre: { fr: ['SAUT', 'BAFFE', 'ATTRAPE', 'CHARGE'], en: ['JUMP', 'SLAP', 'GRAB', 'CHARGE'] },
+  chaises: { fr: ['', 'POUSSE'], en: ['', 'SHOVE'] },
+  patate: { fr: ['', 'POUSSE'], en: ['', 'SHOVE'] },
+  pluie: { fr: ['', 'POUSSE'], en: ['', 'SHOVE'] },
+  lave: { fr: ['SAUT', ''], en: ['JUMP', ''] },
   foot: { fr: ['TIR', 'SPRINT', 'ATTRAPE'], en: ['SHOOT', 'SPRINT', 'CATCH'] },
 };
 

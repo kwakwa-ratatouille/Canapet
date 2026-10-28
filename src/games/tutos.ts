@@ -62,6 +62,78 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  chaises: {
+    fr: {
+      goal: 'Ne sois pas celui qui reste debout !',
+      steps: [
+        ['🎵', 'Pendant la musique, promène-toi'],
+        ['🛑', 'Au STOP, des coussins sortent du sol : fonce t’asseoir, il en manque un'],
+        ['🅱️', 'B : pousser les autres pour leur piquer la place'],
+      ],
+    },
+    en: {
+      goal: 'Don’t be the one left standing!',
+      steps: [
+        ['🎵', 'While the music plays, walk around'],
+        ['🛑', 'At STOP, cushions pop out of the floor: rush to sit, one is missing'],
+        ['🅱️', 'B: shove the others to steal their spot'],
+      ],
+    },
+  },
+  patate: {
+    fr: {
+      goal: 'Ne garde pas la patate quand elle explose !',
+      steps: [
+        ['🥔', 'Celui qui a la patate doit toucher quelqu’un pour la lui refiler'],
+        ['💥', 'Elle explose au hasard : son porteur est éliminé'],
+        ['🅱️', 'B : pousser (pratique pour s’enfuir)'],
+      ],
+    },
+    en: {
+      goal: 'Don’t hold the potato when it blows!',
+      steps: [
+        ['🥔', 'Whoever has the potato must tag someone to pass it'],
+        ['💥', 'It blows at a random moment: its holder is out'],
+        ['🅱️', 'B: shove (handy to escape)'],
+      ],
+    },
+  },
+  pluie: {
+    fr: {
+      goal: 'Ramasse le plus de bonbons en 45 secondes !',
+      steps: [
+        ['🍬', 'Marche sur les bonbons : +1, les étoiles ⭐ : +5'],
+        ['🔴', 'Ombre rouge = enclume qui tombe : file ! Sinon tu perds 3 bonbons'],
+        ['🅱️', 'B : pousser les autres'],
+      ],
+    },
+    en: {
+      goal: 'Grab the most candy in 45 seconds!',
+      steps: [
+        ['🍬', 'Walk over candy: +1, stars ⭐: +5'],
+        ['🔴', 'Red shadow = falling anvil: run! Or you lose 3 candies'],
+        ['🅱️', 'B: shove the others'],
+      ],
+    },
+  },
+  lave: {
+    fr: {
+      goal: 'Sois le dernier debout !',
+      steps: [
+        ['🧱', 'Chaque dalle où tu passes s’effondre une seconde après'],
+        ['🌋', 'Tombe dans la lave et c’est fini : bouge sans arrêt'],
+        ['🅰️', 'A : sauter par-dessus un trou'],
+      ],
+    },
+    en: {
+      goal: 'Be the last one standing!',
+      steps: [
+        ['🧱', 'Every tile you step on crumbles a second later'],
+        ['🌋', 'Fall into the lava and you’re out: keep moving'],
+        ['🅰️', 'A: jump over a hole'],
+      ],
+    },
+  },
   president: {
     fr: {
       goal: 'Débarrasse-toi de toutes tes cartes en premier pour devenir Président !',

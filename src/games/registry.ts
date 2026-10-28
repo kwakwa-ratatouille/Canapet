@@ -15,6 +15,7 @@ import { tumble } from './tumble';
 import { undercover } from './undercover';
 import { roulette } from './roulette';
 import { president } from './president';
+import { chairsGame, lavaGame, potatoGame, rainGame } from './minis';
 import type { GameBase, GameDef } from './types';
 
 /** Icône et couleur de chaque jeu (fichiers de la DA : public/da/jeux/<slug>.svg). */
@@ -35,10 +36,14 @@ const ART: Record<string, string> = {
   undercover: 'undercover',
   roulette: 'photo-roulette',
   president: 'president',
+  chaises: 'chaises',
+  patate: 'patate',
+  pluie: 'pluie',
+  lave: 'lave',
 };
 
 /** Couleur des jeux ajoutés après la DA. */
-const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0' };
+const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f' };
 
 const withArt = (g: GameBase): GameDef => {
   const slug = ART[g.id];
@@ -62,6 +67,10 @@ export const GAMES: GameDef[] = [
   roulette,
   scribble,
   president,
+  chairsGame,
+  potatoGame,
+  rainGame,
+  lavaGame,
   clash,
 ].map(withArt);
 
