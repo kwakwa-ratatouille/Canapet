@@ -276,14 +276,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       banner = fr ? `BUUUT ! ${tn}` : `GOAL! ${tn}`;
       speak(fr ? `But de ${t!.profile.name} !` : `Goal by ${t!.profile.name}!`, ctx.lang);
     } else {
-      banner = fr ? 'Contre son camp ! 🙈' : 'Own goal! 🙈';
-      speak(banner, ctx.lang);
+      // Contre son camp : un point pour chacune des autres équipes (ou pour l’autre s’il n’y en a qu’une)
+      for (let k = 0; k < nTeams; k++) if (k !== side) score[k]++;
+      banner = fr ? (nTeams > 2 ? 'Contre son camp ! +1 pour les autres 🙈' : 'Contre son camp ! 🙈') : nTeams > 2 ? 'Own goal! +1 for everyone else 🙈' : 'Own goal! 🙈';
+      speak(fr ? 'Contre son camp !' : 'Own goal!', ctx.lang);
     }
     sfx.win();
     shake = 14;
     for (let k = 0; k < 40; k++)
       parts.push({ x: b.x, y: b.y, vx: rnd(-500, 500), vy: rnd(-700, -100), t: rnd(0.6, 1.2), c: SQUADS[k % nTeams].color });
-    ps.forEach((p) => !p.bot && ctx.buzz(p.pid, p.side === scorer ? 200 : 60));
+    ps.forEach((p) => !p.bot && ctx.buzz(p.pid, p.side === scorer || (scorer < 0 && p.side !== side) ? 200 : 60));
     kickoff();
     pause = 2.4;
   }
