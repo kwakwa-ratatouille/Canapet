@@ -16,7 +16,7 @@ const TXT = {
     pick: 'Choisis 1 à 3 cartes',
     roulette: 'Appuie sur ton coussin…',
     out: 'Éliminé 💨 Tu regardes les autres.',
-    danger: 'Coussin : {s}/6',
+    danger: 'Danger pour tous : {s}/6',
   },
   en: {
     table: 'Round card',
@@ -29,7 +29,7 @@ const TXT = {
     pick: 'Pick 1 to 3 cards',
     roulette: 'Squeeze your cushion…',
     out: 'Out 💨 Watch the others.',
-    danger: 'Cushion: {s}/6',
+    danger: 'Danger for all: {s}/6',
   },
 };
 

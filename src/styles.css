@@ -2972,3 +2972,7 @@ body,
   color: var(--ink);
   padding: 4px 12px;
 }
+
+.kick-btn.chief-btn {
+  background: #fff3b0;
+}

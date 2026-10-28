@@ -49,7 +49,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🃏', 'Ta main est sur ton téléphone. Pose 1 à 3 cartes « de la carte du tour »… vrai ou faux'],
         ['📣', 'Tu doutes du joueur d’avant ? Crie MENTEUR !'],
-        ['💨', 'Le perdant appuie sur son coussin : 1 sur 6 fait éliminer'],
+        ['💨', 'Le perdant appuie sur le coussin : 1 risque sur 6, puis 2, puis 3… pour tout le monde'],
       ],
     },
     en: {
@@ -57,7 +57,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🃏', 'Your hand is on your phone. Play 1 to 3 cards “of the round card”… true or not'],
         ['📣', 'Doubt the previous player? Shout LIAR!'],
-        ['💨', 'The loser squeezes their cushion: 1 in 6 knocks them out'],
+        ['💨', 'The loser squeezes the cushion: 1 in 6, then 2, then 3… for everyone'],
       ],
     },
   },

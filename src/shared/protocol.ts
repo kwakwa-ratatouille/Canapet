@@ -54,7 +54,7 @@ export type ToPad =
   /** L'hôte t'a retiré de la partie. */
   | { t: 'kicked' };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick';
+export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief';
 
 /** Téléphone → télé */
 export type ToTv =

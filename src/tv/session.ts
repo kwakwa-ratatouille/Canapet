@@ -143,7 +143,12 @@ export class Session {
     return [...this.players.values()].sort((a, b) => a.joinedAt - b.joinedAt);
   }
 
+  /** Chef choisi par l'ancien chef (sinon le premier arrivé). */
+  chief: string | null = null;
+
   hostPid(): string | null {
+    const c = this.chief && this.players.get(this.chief);
+    if (c && c.connected) return c.pid;
     return this.list().find((p) => p.connected && !p.fake)?.pid ?? this.list().find((p) => p.connected)?.pid ?? null;
   }
 
@@ -324,6 +329,16 @@ export class Session {
         this.changed();
         this.pushScreens();
         break;
+      case 'chief': {
+        if (!game || game === this.hostPid() || !this.players.get(game)?.connected) break;
+        this.chief = game;
+        const n = this.players.get(game)!.name;
+        this.toast = { text: this.lang() === 'fr' ? `👑 ${n} est le nouveau chef` : `👑 ${n} is the new host`, t: 3 };
+        sfx.join();
+        this.changed();
+        this.pushScreens();
+        break;
+      }
       case 'kick': {
         // game = identifiant du joueur à retirer (jamais l'hôte lui-même)
         if (!game || game === this.hostPid() || !this.players.has(game)) break;

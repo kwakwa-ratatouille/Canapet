@@ -516,6 +516,14 @@ function PadScreenView({
                         <i style={{ background: pl.color }} />
                         <b>{pl.name}</b>
                         <button
+                          className="kick-btn chief-btn"
+                          onClick={() => {
+                            if (confirm(lang === 'fr' ? `Donner la place de chef à ${pl.name} ?` : `Make ${pl.name} the host?`)) host('chief', pl.pid);
+                          }}
+                        >
+                          👑 {lang === 'fr' ? 'Chef' : 'Host'}
+                        </button>
+                        <button
                           className="kick-btn"
                           onClick={() => {
                             if (confirm(lang === 'fr' ? `Retirer ${pl.name} de la partie ?` : `Remove ${pl.name} from the game?`)) host('kick', pl.pid);

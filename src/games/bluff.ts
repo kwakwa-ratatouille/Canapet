@@ -199,11 +199,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     ctx.refresh();
   }
 
+  /** Danger commun à toute la table : chargés sur 6. Chaque tir raté en ajoute un, une élimination remet à 1. */
+  let danger = 1;
+
   function pull() {
     if (phase !== 'roulette') return;
     const s = seats[target];
     s.shots++;
-    boom = s.shots === s.bullet + 1;
+    boom = Math.random() < danger / 6;
     phase = 'result';
     timer = 3.4;
     if (boom) {
@@ -219,9 +222,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         true,
       );
       if (!s.bot) ctx.buzz(s.pid, 700);
+      danger = 1;
     } else {
+      danger = Math.min(5, danger + 1);
       sfx.tick();
-      say(fr ? `Pfff… ouf ! ${name(target)} s'en sort (${s.shots}/6).` : `Phew! ${name(target)} survives (${s.shots}/6).`, true);
+      say(fr ? `Pfff… ouf ! ${name(target)} s'en sort. Le coussin passe à ${danger} sur 6 pour tout le monde !` : `Phew! ${name(target)} survives. The cushion goes up to ${danger} in 6 for everyone!`, true);
     }
     ctx.refresh();
   }
@@ -375,7 +380,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.font = '600 28px Fredoka, sans-serif';
         g.textAlign = 'center';
         g.fillStyle = '#fff';
-        g.fillText(s.alive ? `🃏 ${s.hand.length}   💨 ${s.shots}/6` : ctx.family ? (fr ? 'Éliminé' : 'Out') : 'KO', p.x, p.y - 112);
+        g.fillText(s.alive ? `🃏 ${s.hand.length}` : ctx.family ? (fr ? 'Éliminé' : 'Out') : 'KO', p.x, p.y - 112);
         if (phase === 'turn' && turn === i && !s.bot) {
           g.fillStyle = '#ffd60a';
           g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, p.x, p.y - 150);
@@ -396,7 +401,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.font = '700 46px Fredoka, sans-serif';
         g.fillStyle = '#fff';
         if (phase === 'roulette')
-          g.fillText(fr ? `1 risque sur ${6 - s.shots}…` : `1 in ${6 - s.shots} chance…`, 960, 880);
+          g.fillText(fr ? `${danger} risque${danger > 1 ? 's' : ''} sur 6…` : `${danger} in 6 chance…`, 960, 880);
         if (phase === 'result') {
           if (boom) drawCloud(g, 960, 640, 2.4, t);
           g.font = '700 120px Fredoka, sans-serif';
@@ -435,7 +440,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         table,
         hand: s?.hand ?? [],
         alive: !!s?.alive,
-        shots: s?.shots ?? 0,
+        shots: danger,
         myTurn,
         canCall: myTurn && !!last && last.seat !== i,
         forced: myTurn && forced,
