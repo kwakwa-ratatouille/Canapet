@@ -93,6 +93,11 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - **Chromecast** : récepteur `public/cast.html` (SDK CAF, iframe vers `index.html?cast=1#/tv`, bandeau de diagnostic). La page télé envoie son code au récepteur (postMessage), qui le renvoie aux téléphones sur le canal `urn:x-cast:com.canapet`. Bouton « Lancer sur le Chromecast » sur l’accueil (`src/shared/cast.ts`), caché tant que `CAST_APP_ID` est vide : le propriétaire doit enregistrer l’appli (Custom Receiver, URL `https://kwakwa-ratatouille.github.io/Canapet/cast.html`) dans la console Google Cast, la **publier**, et donner l’identifiant.
 - **Appli PC** : `desktop/` (Electron). Charge `…/Canapet/#/tv` en plein écran sans cache ; page `offline.html` si pas d’internet ; F11 plein écran, F5 recharger. `npx electron . --smoke` (dans desktop/) charge la télé et affiche le code puis quitte. Le .exe est fabriqué par `.github/workflows/desktop.yml` (seulement quand desktop/** change) et publié sur la release `pc-latest` : https://github.com/kwakwa-ratatouille/Canapet/releases/download/pc-latest/Canapet-Setup.exe. Ne pas lancer l’installateur sur le PC du propriétaire pour tester.
 
+## Appli mobile (oct. 2026)
+
+- Une seule appli par téléphone. **Android** : `mobile/` (Capacitor 6), charge le site en ligne (toujours à jour), plein écran, plugin maison `GalleryPlugin.java` (Photo Roulette pioche au hasard dans toute la galerie, `src/shared/native.ts`). APK fabriqué par `.github/workflows/android.yml` (seulement si mobile/** change), release `android-latest` : https://github.com/kwakwa-ratatouille/Canapet/releases/download/android-latest/Canapet.apk. **iPhone** : ajout à l’écran d’accueil (manifest + sw.js sans cache). Carte « Installer l’appli » sur l’accueil des téléphones.
+- Bots : l’hôte règle le nombre (`session.bots`, -1 = auto) et le niveau (`botLevel`, `ctx.botSkill`, `dozing()` dans `botSkill.ts`). Tournoi : l’hôte peut enlever des jeux (`noTour` sur son téléphone).
+
 ## Tester
 
 - `npm run dev` (port 5180, déclaré dans `.claude/launch.json`).
