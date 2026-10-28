@@ -3119,3 +3119,32 @@ body,
   flex: 1;
   max-width: 220px;
 }
+
+/* Menus de réglage de l'hôte (bots, niveau, voix) */
+.menu-card {
+  max-width: 380px;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.menu-list .chip {
+  width: 100%;
+  min-height: 48px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.menu-list .chip.on {
+  background: var(--yellow);
+}
+
+.home-back {
+  margin: 0 auto 12px;
+  display: block;
+  max-width: 420px;
+}

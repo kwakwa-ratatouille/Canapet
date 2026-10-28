@@ -19,6 +19,7 @@ export class PadNet {
   private dialedAt = 0;
   private timer = 0;
   private stopped = false;
+  private lostAt = 0;
 
   constructor(private code: string, private h: Handlers) {}
 
@@ -35,6 +36,31 @@ export class PadNet {
       if (e.type === 'peer-unavailable' && this.status !== 'ok') this.set('notfound');
     });
     this.timer = window.setInterval(() => this.watch(), 2000);
+    // Retour sur l'appli (écran rallumé, appli rouverte) : on vérifie la liaison tout de suite
+    if (!this.started) {
+      this.started = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible' || this.stopped) return;
+        if (this.status === 'ok') this.ping();
+        else this.redial();
+      });
+    }
+  }
+
+  private started = false;
+
+  /** Nouvel essai : si le pair lui-même est mort ou décroché depuis longtemps, on en refait un neuf. */
+  private redial() {
+    const p = this.peer;
+    if (!p || p.destroyed || (p.disconnected && Date.now() - this.lostAt > 8000)) {
+      p?.destroy();
+      this.lostAt = Date.now();
+      clearInterval(this.timer);
+      this.start();
+      return;
+    }
+    if (p.disconnected) p.reconnect();
+    else this.dial();
   }
 
   stop() {
@@ -45,6 +71,7 @@ export class PadNet {
   }
 
   private set(s: PadStatus) {
+    if (s === 'lost' && this.status !== 'lost') this.lostAt = Date.now();
     if (this.status !== s) {
       this.status = s;
       this.h.onStatus();
@@ -90,7 +117,7 @@ export class PadNet {
       else if (Date.now() - this.lastPong > 14000) this.set('lost');
       return;
     }
-    if (Date.now() - this.dialedAt > 4000) this.dial();
+    if (Date.now() - this.dialedAt > 3000) this.redial();
   }
 
   send(m: ToTv) {

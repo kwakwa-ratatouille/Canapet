@@ -131,6 +131,10 @@ export function Home() {
     </div>
   );
 
+  // Dernière partie rejointe il y a moins de 4 h : bouton pour y revenir
+  const last = store<{ code: string; at: number } | null>('lastGame', null);
+  const back = last && Date.now() - last.at < 4 * 3600 * 1000 ? last.code : '';
+
   return (
     <div className="home">
       <div className="lang-switch">
@@ -148,6 +152,11 @@ export function Home() {
       <h1 className="sr-only">Cana’pet</h1>
       <Wordmark className="home-wordmark" />
       <p className="home-tag">{t(lang, 'tagline')}</p>
+      {back && (
+        <button className="btn big mint home-back" onClick={() => (location.hash = `#/m/${back}`)}>
+          ↩️ {lang === 'fr' ? `Revenir dans la partie ${back}` : `Back to game ${back}`}
+        </button>
+      )}
       <div className="home-cards">
         {IS_PHONE ? (
           <>

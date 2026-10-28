@@ -141,6 +141,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         }
         if (m.t === 'status') setLive({ rank: m.rank, of: m.of, left: m.left });
         if (m.t === 'cool') setCools((c) => ({ ...c, [m.b]: m.s > 0 ? { at: performance.now(), s: m.s } : undefined }));
+        if (m.t === 'welcome') save('lastGame', { code, at: Date.now() });
         if (m.t === 'welcome' && m.color !== profileRef.current.color) setProfile((p) => ({ ...p, color: m.color }));
         if (m.t === 'buzz') {
           if (navigator.vibrate) navigator.vibrate(m.ms);
@@ -324,6 +325,8 @@ function PadScreenView({
   const [touring, setTouring] = useState(false);
   const [noTour, setNoTour] = useState<string[]>(() => store<string[]>('noTour', []));
   const [optFor, setOptFor] = useState<string | null>(null);
+  /** Menu de réglage ouvert (bots, niveau des bots, voix). */
+  const [menu, setMenu] = useState<null | 'bots' | 'botlevel' | 'voice'>(null);
   const [opts, setOpts] = useState<Record<string, number>>({});
   switch (screen.s) {
     case 'lobby':
@@ -562,25 +565,25 @@ function PadScreenView({
                 </button>
               </div>
               <div className="opt-row">
-                <button className="opt violet on" onClick={() => host('bots')}>
+                <button className="opt violet on" onClick={() => setMenu('bots')}>
                   <span className="opt-ico">🤖</span>
                   <b>{lang === 'fr' ? 'Bots' : 'Bots'}</b>
                   <small>{screen.bots < 0 ? (lang === 'fr' ? 'Auto (selon le jeu)' : 'Auto (per game)') : screen.bots === 0 ? (lang === 'fr' ? 'Aucun bot' : 'No bots') : `+ ${screen.bots}`}</small>
-                  <span className="opt-state">{t(lang, 'tapToChange')}</span>
+                  <span className="opt-state">{lang === 'fr' ? 'Choisir ▸' : 'Choose ▸'}</span>
                 </button>
-                <button className="opt sun on" onClick={() => host('botlevel')}>
+                <button className="opt sun on" onClick={() => setMenu('botlevel')}>
                   <span className="opt-ico">{['🐣', '😎', '🔥'][screen.botLevel] ?? '😎'}</span>
                   <b>{lang === 'fr' ? 'Niveau des bots' : 'Bot level'}</b>
                   <small>{(lang === 'fr' ? ['Facile', 'Normal', 'Fort'] : ['Easy', 'Normal', 'Hard'])[screen.botLevel] ?? ''}</small>
-                  <span className="opt-state">{t(lang, 'tapToChange')}</span>
+                  <span className="opt-state">{lang === 'fr' ? 'Choisir ▸' : 'Choose ▸'}</span>
                 </button>
               </div>
               <div className="opt-row">
-                <button className="opt mint on" onClick={() => host('voice')}>
+                <button className="opt mint on" onClick={() => setMenu('voice')}>
                   <span className="opt-ico">🎙️</span>
                   <b>{lang === 'fr' ? 'Voix du présentateur' : 'Announcer voice'}</b>
                   <small>{VOICES[screen.voice ?? 0]?.[lang] ?? ''}</small>
-                  <span className="opt-state">{t(lang, 'tapToChange')}</span>
+                  <span className="opt-state">{lang === 'fr' ? 'Choisir ▸' : 'Choose ▸'}</span>
                 </button>
               </div>
             </>
@@ -589,6 +592,43 @@ function PadScreenView({
               <p className="pad-title pulse">{t(lang, 'waitHost', { name: screen.hostName })}</p>
               {screen.family && <p className="pad-small">👨‍👩‍👧 {t(lang, 'family')}</p>}
             </>
+          )}
+          {menu && screen.s === 'lobby' && (
+            <div className="buy-veil" onClick={() => setMenu(null)}>
+              <div className="buy-card menu-card" onClick={(e) => e.stopPropagation()}>
+                <b>
+                  {menu === 'bots'
+                    ? lang === 'fr' ? '🤖 Combien de bots ?' : '🤖 How many bots?'
+                    : menu === 'botlevel'
+                      ? lang === 'fr' ? 'Niveau des bots' : 'Bot level'
+                      : lang === 'fr' ? '🎙️ Voix du présentateur' : '🎙️ Announcer voice'}
+                </b>
+                <div className="menu-list">
+                  {(menu === 'bots'
+                    ? [-1, 0, 1, 2, 3, 4, 5, 6, 7].map((v) => ({ v, label: v < 0 ? (lang === 'fr' ? 'Auto (selon le jeu)' : 'Auto (per game)') : v === 0 ? (lang === 'fr' ? 'Aucun bot' : 'No bots') : `+ ${v} bot${v > 1 ? 's' : ''}`, on: screen.bots === v }))
+                    : menu === 'botlevel'
+                      ? [0, 1, 2].map((v) => ({ v, label: `${['🐣', '😎', '🔥'][v]} ${(lang === 'fr' ? ['Facile', 'Normal', 'Fort'] : ['Easy', 'Normal', 'Hard'])[v]}`, on: screen.botLevel === v }))
+                      : VOICES.map((x, v) => ({ v, label: x[lang], on: screen.voice === v }))
+                  ).map((o) => (
+                    <button
+                      key={o.v}
+                      className={`chip txt ${o.on ? 'on' : ''}`}
+                      onClick={() => {
+                        host(menu, undefined, { v: o.v });
+                        // La voix : on reste dans le menu pour en écouter d'autres
+                        if (menu !== 'voice') setMenu(null);
+                      }}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                {menu === 'voice' && <p className="pad-small">{lang === 'fr' ? 'La télé fait écouter chaque voix.' : 'The TV plays each voice.'}</p>}
+                <button className="btn" onClick={() => setMenu(null)}>
+                  OK
+                </button>
+              </div>
+            </div>
           )}
           <button className="btn ghost" onClick={edit}>
             ✏️ {t(lang, 'editChar')}

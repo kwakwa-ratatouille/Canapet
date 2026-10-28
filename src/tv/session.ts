@@ -320,20 +320,20 @@ export class Session {
         break;
       case 'bots':
         if (this.phase !== 'lobby') break;
-        this.bots = this.bots >= 7 ? -1 : this.bots + 1;
+        this.bots = opts && typeof opts.v === 'number' ? Math.max(-1, Math.min(7, opts.v)) : this.bots >= 7 ? -1 : this.bots + 1;
         save('bots', this.bots);
         this.changed();
         this.pushScreens();
         break;
       case 'botlevel':
         if (this.phase !== 'lobby') break;
-        this.botLevel = (this.botLevel + 1) % 3;
+        this.botLevel = opts && typeof opts.v === 'number' ? Math.max(0, Math.min(2, opts.v)) : (this.botLevel + 1) % 3;
         save('botLevel', this.botLevel);
         this.changed();
         this.pushScreens();
         break;
       case 'voice': {
-        this.voice = (this.voice + 1) % VOICES.length;
+        this.voice = opts && typeof opts.v === 'number' ? Math.max(0, Math.min(VOICES.length - 1, opts.v)) : (this.voice + 1) % VOICES.length;
         setVoice(this.voice);
         save('voice', this.voice);
         const fr = this.lang() === 'fr';
