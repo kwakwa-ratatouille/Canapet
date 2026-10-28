@@ -1,4 +1,6 @@
 import { TEAMS } from '../games/teams';
+import { PresidentPad } from './PresidentPad';
+import type { PresidentPadData } from '../games/presidentShared';
 import { VOICES } from '../shared/sound';
 import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
 import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRICES, rewardFor, saveProgress, type Kind, type Progress } from '../shared/progress';
@@ -41,6 +43,7 @@ const DEMO: Record<string, PadScreen> = {
   lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1, voice: 0, players: [{ pid: 'a', name: 'Lulu', color: COLORS[1] }] },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
+  president: { s: 'play', layout: 'buttons', game: 'president', data: { hand: [0, 5, 9, 10, 11, 22, 23, 30, 37, 44, 46, 49, 51], phase: 'play', myTurn: true, need: 2, min: 2, give: 0, giveTo: '', role: '🎩 Vice-président', turnName: 'Moi', pile: [8, 10], pileBy: 'Lulu', note: '', done: 0 } },
   results: { s: 'results', gid: 1, host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
   paused: { s: 'paused', host: true, game: 'sumo' },
   podium: { s: 'podium', gid: 1, host: true, rank: 1, total: 42 },
@@ -606,6 +609,7 @@ function PadScreenView({
       if (screen.game === 'roulette' && screen.data) return <RoulettePad data={screen.data as RoulettePadData} lang={lang} send={send} />;
       if (screen.game === 'undercover' && screen.data) return <UndercoverPad data={screen.data as UndercoverPadData} lang={lang} send={send} />;
       if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
+      if (screen.game === 'president' && screen.data) return <PresidentPad data={screen.data as PresidentPadData} lang={lang} send={send} />;
       if (screen.game === 'dessin' && screen.data) return <ScribblePad data={screen.data as ScribblePadData} lang={lang} send={send} />;
       if (screen.layout === 'bluff' && screen.data) return <BluffPad data={screen.data as BluffPadData} lang={lang} send={send} />;
       return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} profile={profile} live={live} cools={cools} />;

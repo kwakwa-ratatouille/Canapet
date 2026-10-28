@@ -3023,3 +3023,99 @@ body,
     grid-row: 2 / 4;
   }
 }
+
+/* Le Président (manette) */
+.pres {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  color: var(--ink);
+  overflow-y: auto;
+}
+.pres-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+}
+.pres-role,
+.pres-pile {
+  background: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 18px;
+}
+.pres-pile i {
+  font-style: normal;
+  margin-left: 4px;
+}
+.pres-pile i.red,
+.pcard.red {
+  color: #e8233f;
+}
+.pres-status {
+  margin: 0;
+  text-align: center;
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 20px;
+}
+.pres-status.hot {
+  color: #fff;
+  background: var(--pink);
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+  padding: 8px 12px;
+}
+.pres-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.pcard {
+  width: 58px;
+  height: 82px;
+  border-radius: 10px;
+  border: 4px solid var(--ink);
+  background: #fffaf0;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 4px 0 var(--ink);
+  transition: transform 0.12s;
+}
+.pcard b {
+  font-family: var(--cp-font-titre);
+  font-size: 26px;
+}
+.pcard span {
+  font-size: 24px;
+}
+.pcard.on {
+  transform: translateY(-14px);
+  background: var(--yellow);
+}
+.pcard.dim {
+  opacity: 0.4;
+}
+.pres-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: auto;
+}
+.pres-actions .btn {
+  flex: 1;
+  max-width: 220px;
+}

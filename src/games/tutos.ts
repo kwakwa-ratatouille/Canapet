@@ -61,6 +61,24 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  president: {
+    fr: {
+      goal: 'Débarrasse-toi de toutes tes cartes en premier pour devenir Président !',
+      steps: [
+        ['📱', 'Ta main est sur ton téléphone. Pose autant de cartes que le joueur d’avant, d’une valeur égale ou plus forte, ou passe'],
+        ['2️⃣', 'Ordre : 3, 4… Roi, As, puis 2 (le plus fort, il ferme le pli)'],
+        ['🤡', 'Manche suivante : le Bouffon donne ses 2 meilleures cartes au Président, le Vice-bouffon 1 au Vice-président'],
+      ],
+    },
+    en: {
+      goal: 'Get rid of all your cards first to become President!',
+      steps: [
+        ['📱', 'Your hand is on your phone. Play as many cards as the previous player, equal or higher, or pass'],
+        ['2️⃣', 'Order: 3, 4… King, Ace, then 2 (the highest, it closes the trick)'],
+        ['🤡', 'Next round: the Fool gives their 2 best cards to the President, the Vice-fool 1 to the Vice-president'],
+      ],
+    },
+  },
   bombes: {
     fr: {
       goal: 'Sois le dernier au sec dans l’arène !',
