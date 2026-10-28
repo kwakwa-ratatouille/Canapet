@@ -179,6 +179,19 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     return () => clearTimeout(id);
   }, [profile]);
 
+  // Pas de menu « copier / rechercher », de sélection ni de glisser sur la manette (sauf dans les champs de texte)
+  useEffect(() => {
+    const block = (e: Event) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+    };
+    for (const ev of ['contextmenu', 'selectstart', 'dragstart', 'gesturestart']) document.addEventListener(ev, block);
+    return () => {
+      for (const ev of ['contextmenu', 'selectstart', 'dragstart', 'gesturestart']) document.removeEventListener(ev, block);
+    };
+  }, []);
+
   // Écran toujours allumé pendant la partie.
   useEffect(() => {
     const nav = navigator as Navigator & { wakeLock?: { request(type: 'screen'): Promise<unknown> } };

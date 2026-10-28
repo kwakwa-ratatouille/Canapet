@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '../shared/i18n';
-import { CharCanvas } from '../shared/CharCanvas';
 import { ordinal } from '../shared/i18n';
 import type { Lang, Profile, ToTv } from '../shared/protocol';
 
@@ -155,17 +154,18 @@ export function Stick({
         </div>
         {!knob.on && <span className="stick-hint">{t(lang, 'stickHint')}</span>}
       </div>
-      <div className="stick-mid">
+      <div className="stick-mid" style={{ ['--pc' as string]: profile?.color }}>
         {live && live.of > 1 && (
           <span className={`mid-rank r${Math.min(4, live.rank)}`}>
+            {live.rank === 1 && <i>👑</i>}
             <b>{ordinal(lang, live.rank)}</b>
             <small>/ {live.of}</small>
           </span>
         )}
-        {profile && <CharCanvas profile={profile} size={110} mood={pressed.a || pressed.b ? 'wow' : live?.rank === 1 ? 'win' : 'happy'} />}
         {live?.left != null && (
           <span className={`mid-time ${live.left <= 10 ? 'hot' : ''}`}>
-            ⏱ {Math.floor(live.left / 60)}:{String(live.left % 60).padStart(2, '0')}
+            <small>⏱</small>
+            {Math.floor(live.left / 60)}:{String(live.left % 60).padStart(2, '0')}
           </span>
         )}
       </div>
