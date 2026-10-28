@@ -372,7 +372,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             b.y += (dy / d) * o;
             for (const [x, y, sgn] of [[a, b, 1], [b, a, -1]] as [P, P, number][])
               if (x.dash > 0 && x.side !== y.side && y.stun <= 0) {
-                y.stun = 0.7;
+                y.stun = 0.45;
                 y.vx = (dx / d) * 500 * sgn;
                 y.vy = (dy / d) * 500 * sgn;
                 sfx.boing();
@@ -396,7 +396,17 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           bl.holder = x;
           bl.holdT = 0;
           bl.touch = x;
-          y.stun = 0.7;
+          // Le voleur garde son élan, la victime est poussée sur le côté (pas d’arrêt net des deux)
+          const ax = y.x - x.x;
+          const ay = y.y - x.y;
+          const al = Math.hypot(ax, ay) || 1;
+          const sx = -x.vy / (Math.hypot(x.vx, x.vy) || 1);
+          const sy = x.vx / (Math.hypot(x.vx, x.vy) || 1);
+          const side = ax * sx + ay * sy >= 0 ? 1 : -1;
+          y.vx = (sx * side + ax / al) * 380;
+          y.vy = (sy * side + ay / al) * 380;
+          y.stun = 0.35;
+          x.dash = Math.max(x.dash, 0.12);
           pop(x.x, x.y - 120, fr ? 'VOLÉ !' : 'STOLEN!');
           sfx.boing();
           break;
