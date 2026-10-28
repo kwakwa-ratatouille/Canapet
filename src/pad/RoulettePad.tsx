@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { hasGallery, randomFromGallery } from '../shared/native';
+import { hasGallery, openAppSettings, randomFromGallery } from '../shared/native';
 import { CHUNK, MAX_MEDIA, MAX_VIDEO_BYTES, MAX_VIDEOS, MAX_VIDEO_SECONDS, type RoulettePadData } from '../games/rouletteShared';
 import type { Lang, ToTv } from '../shared/protocol';
 
@@ -10,7 +10,9 @@ const TXT = {
     autoBtn: 'Tirer au sort',
     orManual: 'ou sélectionner moi-même',
     digging: 'Tirage en cours…',
-    noAccess: 'Accès aux photos refusé. Autorise-le dans les réglages du téléphone, puis touche Tirer au sort.',
+    noAccess: 'Le jeu n’a pas accès à tes photos.',
+    askAgain: 'Autoriser l’accès aux photos',
+    settings: 'Ouvrir les réglages du téléphone',
     pickVideo: 'Sélectionne plusieurs vidéos de 20 secondes maximum. Certaines seront tirées au sort.',
     add: 'Ouvrir la galerie',
     reroll: 'Relancer le tirage',
@@ -36,7 +38,9 @@ const TXT = {
     autoBtn: 'Draw at random',
     orManual: 'or select them myself',
     digging: 'Drawing…',
-    noAccess: 'Photo access denied. Allow it in your phone settings, then tap Draw at random.',
+    noAccess: 'The game can’t access your photos.',
+    askAgain: 'Allow photo access',
+    settings: 'Open phone settings',
     pickVideo: 'Select several videos of 20 seconds or less. Some will be drawn at random.',
     add: 'Open gallery',
     reroll: 'Draw again',
@@ -168,13 +172,24 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
     setWarn('');
     try {
       const files = await randomFromGallery(data.video ? 8 : MAX_MEDIA, !!data.video);
-      if (files.length) setPicks(files);
-      else setWarn(T.noAccess);
+      if (files.length) {
+        setPicks(files);
+        setDenied(false);
+      } else setDenied(true);
     } catch {
-      setWarn(T.noAccess);
+      setDenied(true);
     }
     setBusy(null);
   };
+  const [denied, setDenied] = useState(false);
+  // Retour des réglages du téléphone : on retente tout seul
+  useEffect(() => {
+    if (!denied) return;
+    const back = () => document.visibilityState === 'visible' && void fromGallery();
+    document.addEventListener('visibilitychange', back);
+    return () => document.removeEventListener('visibilitychange', back);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [denied]);
   const autoDone = useRef(false);
   useEffect(() => {
     if (data.phase !== 'upload' || data.ready || data.sent > 0 || autoDone.current || !hasGallery()) return;
@@ -191,6 +206,16 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
           <p className="pad-title pulse">{T.waitReady}</p>
         ) : busy ? (
           <p className="pad-title pulse">{busy.k ? T.sending(busy.k, busy.n) : T.digging}</p>
+        ) : hasGallery() && denied ? (
+          <>
+            <p className="pad-small uc-note">{T.noAccess}</p>
+            <button className="btn big mint" onClick={() => void fromGallery()}>
+              {T.askAgain}
+            </button>
+            <button className="btn alt" onClick={() => void openAppSettings()}>
+              {T.settings}
+            </button>
+          </>
         ) : hasGallery() ? (
           <>
             {picks.length > 0 && (

@@ -1,6 +1,8 @@
 package com.canapet.app;
 
 import android.Manifest;
+import android.content.Intent;
+import android.provider.Settings;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.database.Cursor;
@@ -49,6 +51,15 @@ public class GalleryPlugin extends Plugin {
             return;
         }
         pick(call);
+    }
+
+    /** Ouvre la page de l'appli dans les réglages (quand l'accès a été refusé pour de bon). */
+    @PluginMethod
+    public void openSettings(PluginCall call) {
+        Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName()));
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(i);
+        call.resolve();
     }
 
     @PermissionCallback

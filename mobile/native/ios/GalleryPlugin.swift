@@ -9,7 +9,8 @@ public class GalleryPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "GalleryPlugin"
     public let jsName = "Gallery"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "random", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "random", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func random(_ call: CAPPluginCall) {
@@ -32,6 +33,14 @@ public class GalleryPlugin: CAPPlugin, CAPBridgedPlugin {
             PHPhotoLibrary.requestAuthorization { status in
                 done(status == .authorized)
             }
+        }
+    }
+
+    /// Ouvre la page de l'appli dans Réglages (quand l'accès a été refusé).
+    @objc func openSettings(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if let u = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(u) }
+            call.resolve()
         }
     }
 

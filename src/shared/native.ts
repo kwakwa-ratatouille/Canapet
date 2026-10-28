@@ -43,6 +43,13 @@ export async function randomFromGallery(count: number, video: boolean): Promise<
   );
 }
 
+/** Ouvre les réglages de l'appli (accès aux photos refusé pour de bon). */
+export async function openAppSettings() {
+  const c = cap();
+  if (!c?.isNativePlatform?.() || !c.nativePromise) return;
+  await c.nativePromise('Gallery', 'openSettings', {}).catch(() => {});
+}
+
 // Installation de l'appli web (Android Chrome) : on garde l'invitation du navigateur pour un bouton.
 type InstallPrompt = Event & { prompt(): Promise<void> };
 let deferred: InstallPrompt | null = null;
