@@ -2,7 +2,7 @@
 // le jour, on débat à voix haute puis on vote sur son téléphone.
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
-import { roundRectText } from './draw';
+import { candy, roundRectText } from './draw';
 import type { Role, TraitorPadData } from './traitorShared';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
@@ -26,6 +26,164 @@ interface Pl extends Runner {
 }
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+
+/** Décor de cuisine (jour / nuit), dessiné une seule fois puis gardé en image. */
+const kitchenCache: Record<string, HTMLCanvasElement> = {};
+function kitchen(night: boolean): HTMLCanvasElement {
+  const key = night ? 'n' : 'd';
+  if (kitchenCache[key]) return kitchenCache[key];
+  const c = document.createElement('canvas');
+  c.width = 1920;
+  c.height = 1080;
+  const g = c.getContext('2d')!;
+  const rr = (x: number, y: number, w: number, h: number, r: number, fill: string, lw = 8) => {
+    g.fillStyle = fill;
+    g.strokeStyle = INK;
+    g.lineWidth = lw;
+    g.beginPath();
+    g.roundRect(x, y, w, h, r);
+    g.fill();
+    candy(g, x, y, w, h, r);
+    g.strokeStyle = INK;
+    g.lineWidth = lw;
+    g.beginPath();
+    g.roundRect(x, y, w, h, r);
+    g.stroke();
+  };
+  // Mur : papier peint à rayures
+  const wall = g.createLinearGradient(0, 0, 0, 720);
+  wall.addColorStop(0, night ? '#2b1d52' : '#ffe2c4');
+  wall.addColorStop(1, night ? '#3d2a6b' : '#ffd2a8');
+  g.fillStyle = wall;
+  g.fillRect(0, 0, 1920, 720);
+  g.fillStyle = night ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.35)';
+  for (let x = 0; x < 1920; x += 80) g.fillRect(x, 0, 36, 720);
+  // Fenêtre avec lune ou soleil
+  rr(180, 170, 360, 300, 26, night ? '#1a1236' : '#9fe0ff');
+  g.fillStyle = night ? '#fff6c8' : '#fff3a8';
+  g.beginPath();
+  g.arc(440, 260, 46, 0, Math.PI * 2);
+  g.fill();
+  if (night) {
+    g.fillStyle = '#1a1236';
+    g.beginPath();
+    g.arc(462, 246, 40, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#fff';
+    for (const [x, y] of [[250, 220], [320, 350], [500, 400], [380, 210], [230, 420]]) g.fillRect(x, y, 6, 6);
+  }
+  g.strokeStyle = INK;
+  g.lineWidth = 8;
+  g.beginPath();
+  g.moveTo(360, 170);
+  g.lineTo(360, 470);
+  g.moveTo(180, 320);
+  g.lineTo(540, 320);
+  g.stroke();
+  // Rideaux
+  g.fillStyle = '#ff7eb6';
+  for (const [x, d] of [[150, 1], [520, -1]]) {
+    g.beginPath();
+    g.moveTo(x, 150);
+    g.lineTo(x + 70, 150);
+    g.quadraticCurveTo(x + 35 + d * 30, 320, x + 35 + d * 10, 500);
+    g.lineTo(x + 35 - d * 40, 500);
+    g.quadraticCurveTo(x + 35 - d * 30, 320, x, 150);
+    g.closePath();
+    g.fill();
+    g.stroke();
+  }
+  // Étagère avec bocaux
+  rr(1300, 270, 460, 28, 10, '#c98a52', 6);
+  ['#ff4f9a', '#1fc9a0', '#ffd60a', '#2ec5ff'].forEach((col, k) => {
+    const x = 1330 + k * 110;
+    rr(x, 180, 76, 90, 18, col, 6);
+    rr(x + 8, 166, 60, 22, 8, '#fff', 5);
+  });
+  // Plans de travail
+  for (const x of [-20, 1180]) {
+    rr(x, 560, 760, 160, 0, night ? '#6b4fa0' : '#ffb27a');
+    rr(x, 540, 760, 40, 12, night ? '#c9b8ff' : '#fff2e0', 6);
+  }
+  g.strokeStyle = INK;
+  g.lineWidth = 6;
+  for (const x of [60, 340, 1300, 1580]) {
+    g.strokeRect(x, 600, 220, 100);
+    g.fillStyle = INK;
+    g.fillRect(x + 90, 620, 40, 10);
+  }
+  // Sol : damier en perspective
+  g.fillStyle = night ? '#24183f' : '#ffe9d2';
+  g.fillRect(0, 720, 1920, 360);
+  g.fillStyle = night ? '#33245a' : '#ffcfa8';
+  const rows = 6;
+  for (let r = 0; r < rows; r++) {
+    const y0 = 720 + 360 * (r / rows) ** 1.3;
+    const y1 = 720 + 360 * ((r + 1) / rows) ** 1.3;
+    const w0 = ((y0 - 560) * 1.4) / 6;
+    const w1 = ((y1 - 560) * 1.4) / 6;
+    for (let k = -14; k < 14; k++) {
+      if ((k + r + 100) % 2) continue;
+      g.beginPath();
+      g.moveTo(960 + k * w0, y0);
+      g.lineTo(960 + (k + 1) * w0, y0);
+      g.lineTo(960 + (k + 1) * w1, y1);
+      g.lineTo(960 + k * w1, y1);
+      g.fill();
+    }
+  }
+  g.strokeStyle = INK;
+  g.lineWidth = 8;
+  g.beginPath();
+  g.moveTo(0, 720);
+  g.lineTo(1920, 720);
+  g.stroke();
+  // Le frigo, la star
+  g.fillStyle = 'rgba(58,33,64,0.25)';
+  g.beginPath();
+  g.ellipse(960, 720, 220, 26, 0, 0, Math.PI * 2);
+  g.fill();
+  rr(800, 180, 320, 540, 40, night ? '#a9b8e6' : '#eaf6ff');
+  g.strokeStyle = INK;
+  g.lineWidth = 8;
+  g.beginPath();
+  g.moveTo(800, 370);
+  g.lineTo(1120, 370);
+  g.stroke();
+  rr(1068, 210, 18, 100, 9, '#d8e2f2', 5);
+  rr(1068, 410, 18, 150, 9, '#d8e2f2', 5);
+  // Aimants
+  for (const [x, y, col] of [[860, 240, '#ff4f9a'], [930, 290, '#ffd60a'], [870, 450, '#1fc9a0'], [1010, 530, '#2ec5ff'], [890, 640, '#ff8a00']] as [number, number, string][]) {
+    g.fillStyle = col;
+    g.strokeStyle = INK;
+    g.lineWidth = 5;
+    g.beginPath();
+    g.arc(x, y, 18, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+  }
+  // Petit mot sur la porte
+  g.save();
+  g.translate(960, 520);
+  g.rotate(-0.06);
+  rr(-80, -50, 160, 100, 6, '#fff7a8', 5);
+  g.fillStyle = INK;
+  g.font = '700 30px Fredoka, sans-serif';
+  g.textAlign = 'center';
+  g.fillText(night ? '???' : 'PAS', 0, -6);
+  g.fillText(night ? '' : 'TOUCHE !', 0, 30);
+  g.restore();
+  // Vignette sombre la nuit
+  if (night) {
+    const v = g.createRadialGradient(960, 520, 300, 960, 540, 1150);
+    v.addColorStop(0, 'rgba(10,5,30,0)');
+    v.addColorStop(1, 'rgba(10,5,30,0.6)');
+    g.fillStyle = v;
+    g.fillRect(0, 0, 1920, 1080);
+  }
+  kitchenCache[key] = c;
+  return c;
+}
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
@@ -246,41 +404,60 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     render(g, t) {
       const night = phase === 'night' || phase === 'roles';
-      g.fillStyle = night ? '#2a1b4a' : '#ffe9c7';
-      g.fillRect(0, 0, 1920, 1080);
-      // Carrelage
-      g.fillStyle = night ? '#33245a' : '#ffdcae';
-      for (let x = 0; x < 1920; x += 120) for (let y = 700; y < 1080; y += 120) if (((x + y) / 120) % 2 === 0) g.fillRect(x, y, 120, 120);
-      // Frigo
-      g.strokeStyle = INK;
-      g.lineWidth = 8;
-      g.fillStyle = night ? '#9fb0d8' : '#e8f4ff';
-      g.beginPath();
-      g.roundRect(820, 180, 280, 500, 30);
-      g.fill();
-      g.stroke();
-      g.beginPath();
-      g.moveTo(820, 360);
-      g.lineTo(1100, 360);
-      g.stroke();
-      g.fillStyle = '#b8c6dd';
-      g.fillRect(1060, 210, 14, 70);
-      g.fillRect(1060, 380, 14, 110);
+      g.drawImage(kitchen(night), 0, 0, 1920, 1080);
       if (night && !ctx.light) {
-        g.fillStyle = `rgba(255,240,150,${0.15 + Math.sin(t * 3) * 0.05})`;
+        // La porte du frigo laisse filer une lumière qui vacille… et deux yeux brillent
+        g.fillStyle = `rgba(255,240,150,${0.18 + Math.sin(t * 3) * 0.05})`;
         g.beginPath();
-        g.moveTo(1100, 340);
-        g.lineTo(1500, 700);
-        g.lineTo(1100, 660);
+        g.moveTo(1120, 380);
+        g.lineTo(1700, 1080);
+        g.lineTo(1120, 1080);
         g.fill();
+        if (Math.sin(t * 0.7) > 0.3) {
+          const blink = Math.sin(t * 9) > 0.95 ? 1 : 7;
+          g.fillStyle = '#ffd60a';
+          g.beginPath();
+          g.ellipse(1138, 480, 7, blink, 0, 0, Math.PI * 2);
+          g.ellipse(1162, 480, 7, blink, 0, 0, Math.PI * 2);
+          g.fill();
+        }
+      } else if (!night && !ctx.light) {
+        // Poussières dorées dans le soleil de la fenêtre
+        g.fillStyle = 'rgba(255,240,180,0.7)';
+        for (let k = 0; k < 14; k++) {
+          g.beginPath();
+          g.arc(200 + ((k * 137 + t * 20) % 380), 190 + ((k * 89 + t * 12) % 280), 4, 0, Math.PI * 2);
+          g.fill();
+        }
       }
-      g.fillStyle = night ? '#fff' : INK;
+      // Titre en pastille
       g.textAlign = 'center';
       g.font = '700 54px Fredoka, sans-serif';
-      g.fillText(headline, 960, 90);
+      const hw = Math.max(420, g.measureText(headline).width + 80);
+      g.fillStyle = night ? '#ff4f9a' : '#fff';
+      g.strokeStyle = INK;
+      g.lineWidth = 8;
+      g.beginPath();
+      g.roundRect(960 - hw / 2, 28, hw, 84, 42);
+      g.fill();
+      g.stroke();
+      g.fillStyle = night ? '#fff' : INK;
+      g.fillText(headline, 960, 88);
       g.font = '600 34px Fredoka, sans-serif';
-      if (sub) g.fillText(sub, 960, 140);
-      if (phase !== 'end' && phase !== 'morning' && phase !== 'verdict') g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 1780, 90);
+      if (sub) {
+        g.strokeText(sub, 960, 152);
+        g.fillStyle = '#fff';
+        g.fillText(sub, 960, 152);
+      }
+      if (phase !== 'end' && phase !== 'morning' && phase !== 'verdict') {
+        g.fillStyle = '#ffd60a';
+        g.beginPath();
+        g.roundRect(1690, 36, 180, 70, 35);
+        g.fill();
+        g.stroke();
+        g.fillStyle = INK;
+        g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 1780, 84);
+      }
 
       // Joueurs en arc de cercle
       const cnt = pls.length;
