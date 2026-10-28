@@ -1,6 +1,6 @@
 // Côté téléphone : connexion directe à la télé dont l'identifiant contient le code.
 import Peer, { type DataConnection } from 'peerjs';
-import { PEER_PREFIX, type ToPad, type ToTv } from '../shared/protocol';
+import { ICE_SERVERS, PEER_PREFIX, type ToPad, type ToTv } from '../shared/protocol';
 
 export type PadStatus = 'connecting' | 'ok' | 'lost' | 'notfound';
 
@@ -13,6 +13,10 @@ interface Handlers {
 export class PadNet {
   status: PadStatus = 'connecting';
   rtt = 0;
+  /** Pourquoi la dernière coupure (affiché en petit pour comprendre les soucis). */
+  why = '';
+  /** Moment où la liaison a été perdue (0 = pas perdue). */
+  lostSince = 0;
   private peer?: Peer;
   private conn?: DataConnection;
   private lastPong = 0;
@@ -24,7 +28,7 @@ export class PadNet {
   constructor(private code: string, private h: Handlers) {}
 
   start() {
-    const peer = new Peer({ debug: 1 });
+    const peer = new Peer({ debug: 1, config: { iceServers: ICE_SERVERS } });
     this.peer = peer;
     peer.on('open', () => this.dial());
     peer.on('disconnected', () => {
@@ -70,8 +74,15 @@ export class PadNet {
     this.peer?.destroy();
   }
 
-  private set(s: PadStatus) {
-    if (s === 'lost' && this.status !== 'lost') this.lostAt = Date.now();
+  private set(s: PadStatus, why = '') {
+    if (s === 'lost' && this.status !== 'lost') {
+      this.lostAt = Date.now();
+      this.lostSince = Date.now();
+      this.why = `${why} · ${new Date().toLocaleTimeString()}`;
+      // On retente tout de suite, sans attendre la prochaine vérification
+      setTimeout(() => !this.stopped && this.status === 'lost' && this.redial(), 300);
+    }
+    if (s === 'ok') this.lostSince = 0;
     if (this.status !== s) {
       this.status = s;
       this.h.onStatus();
@@ -100,7 +111,10 @@ export class PadNet {
       } else this.h.onMsg(m);
     });
     c.on('close', () => {
-      if (this.conn === c && this.status === 'ok') this.set('lost');
+      if (this.conn === c && this.status === 'ok') this.set('lost', 'canal fermé');
+    });
+    c.on('error', (e) => {
+      if (this.conn === c && this.status === 'ok') this.set('lost', `erreur canal ${String((e as Error)?.message ?? e).slice(0, 40)}`);
     });
   }
 
@@ -113,8 +127,8 @@ export class PadNet {
     if (this.stopped) return;
     if (this.status === 'ok') {
       this.ping();
-      if (Date.now() - this.lastPong > 10000 && !this.conn?.open) this.set('lost');
-      else if (Date.now() - this.lastPong > 14000) this.set('lost');
+      if (Date.now() - this.lastPong > 10000 && !this.conn?.open) this.set('lost', 'canal mort');
+      else if (Date.now() - this.lastPong > 14000) this.set('lost', 'la télé ne répond plus');
       return;
     }
     if (Date.now() - this.dialedAt > 3000) this.redial();

@@ -73,6 +73,22 @@ export type ToTv =
   | { t: 'ping'; ts: number };
 
 export const PEER_PREFIX = 'canapet-v1-';
+
+/**
+ * Serveurs pour établir la liaison directe télé ↔ téléphone. Sur le même Wi-Fi, les iPhone cachent leur adresse locale :
+ * la liaison passe alors souvent par un relais (TURN). On en donne plusieurs, dont un qui passe aussi par le port 443.
+ */
+export const ICE_SERVERS: RTCIceServer[] = [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'turn:eu-0.turn.peerjs.com:3478', username: 'peerjs', credential: 'peerjsp' },
+  { urls: 'turn:us-0.turn.peerjs.com:3478', username: 'peerjs', credential: 'peerjsp' },
+  {
+    urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+];
 export const CODE_LETTERS = 'ABCDEFGHJKLMNPRSTUVWXYZ';
 
 export function randomCode(): string {

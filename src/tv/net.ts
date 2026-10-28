@@ -1,7 +1,7 @@
 // Côté télé : un « pair » PeerJS dont l'identifiant contient le code du salon.
 // Les téléphones s'y connectent en direct (WebRTC DataChannel).
 import Peer, { type DataConnection } from 'peerjs';
-import { PEER_PREFIX, randomCode, type ToPad, type ToTv } from '../shared/protocol';
+import { ICE_SERVERS, PEER_PREFIX, randomCode, type ToPad, type ToTv } from '../shared/protocol';
 
 export type NetStatus = 'connecting' | 'ready' | 'error';
 
@@ -41,7 +41,7 @@ export class TvNet {
     }
     this.status = 'connecting';
     this.h.onStatus();
-    const peer = new Peer(PEER_PREFIX + code, { debug: 1 });
+    const peer = new Peer(PEER_PREFIX + code, { debug: 1, config: { iceServers: ICE_SERVERS } });
     this.peer = peer;
     peer.on('open', () => {
       this.tries = 0;

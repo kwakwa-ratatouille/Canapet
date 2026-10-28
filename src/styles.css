@@ -3148,3 +3148,24 @@ body,
   display: block;
   max-width: 420px;
 }
+
+/* Petite coupure réseau : bandeau discret, la manette reste à l'écran */
+.net-blip {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+}
+.net-why {
+  opacity: 0.7;
+  font-size: 13px;
+}

@@ -120,6 +120,16 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const profileRef = useRef(profile);
   profileRef.current = profile;
   const netRef = useRef<PadNet | null>(null);
+  // Coupure de moins de 4 s : on garde l'écran de jeu avec un petit bandeau
+  const [lostLong, setLostLong] = useState(false);
+  useEffect(() => {
+    if (status !== 'lost') {
+      setLostLong(false);
+      return;
+    }
+    const id = setTimeout(() => setLostLong(true), 4000);
+    return () => clearTimeout(id);
+  }, [status]);
   const [cools, setCools] = useState<Cools>({});
   const lang = profile.lang;
 
@@ -231,6 +241,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   return (
     // Manettes stick et tapotage : toujours en paysage, même si le téléphone reste droit (on tourne l'écran).
     <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (screen.layout === 'stick' || screen.layout === 'tap') && !['traitre', 'dessin'].includes(screen.game) ? 'turn' : ''}`} style={{ ['--c' as string]: profile.color }} onPointerDown={unlockAudio}>
+      {status === 'lost' && !lostLong && screen && <div className="net-blip">⚡ {lang === 'fr' ? 'Reconnexion…' : 'Reconnecting…'}</div>}
       <header className={`pad-head ${playing ? 'slim' : ''}`}>
         <CharCanvas profile={profile} size={playing ? 34 : 46} still />
         <b className="pad-name">{profile.name || '???'}</b>
@@ -254,7 +265,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
             {t(lang, 'back')}
           </a>
         </div>
-      ) : status !== 'ok' ? (
+      ) : status !== 'ok' && !(status === 'lost' && screen && lostLong === false) ? (
         <div className="pad-status">
           {status === 'notfound' ? (
             <>
@@ -264,7 +275,10 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
               </a>
             </>
           ) : (
-            <p className="pulse">{status === 'lost' ? t(lang, 'lost') : t(lang, 'connectingTv')}</p>
+            <>
+              <p className="pulse">{status === 'lost' ? t(lang, 'lost') : t(lang, 'connectingTv')}</p>
+              {status === 'lost' && netRef.current?.why && <p className="pad-small net-why">{netRef.current.why}</p>}
+            </>
           )}
         </div>
       ) : !screen ? (
