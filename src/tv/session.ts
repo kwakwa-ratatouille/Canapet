@@ -59,6 +59,8 @@ export class Session {
   mode: 'host' | 'tournament' = 'host';
   /** Mode famille (mémorisé sur la télé). */
   family = store('family', false);
+  /** Joueurs retirés par l'hôte : ils ne peuvent plus revenir sur cette télé. */
+  kicked = new Set<string>();
   /** Bots ajoutés : -1 = auto (selon le jeu), sinon ce nombre en plus des humains. */
   bots = store('bots', -1);
   /** Niveau des bots : 0 facile, 1 normal, 2 fort. */
@@ -197,6 +199,11 @@ export class Session {
     if (p) p.lastSeen = performance.now();
     switch (m.t) {
       case 'hello':
+        if (this.kicked.has(pid)) {
+          this.net.send(pid, { t: 'kicked' });
+          setTimeout(() => this.net.drop(pid), 300);
+          return;
+        }
         if (!p && this.players.size >= MAX_PLAYERS && this.phase === 'lobby') this.removeStale(true);
         this.addPlayer(pid, m.profile);
         return;
@@ -317,6 +324,20 @@ export class Session {
         this.changed();
         this.pushScreens();
         break;
+      case 'kick': {
+        // game = identifiant du joueur à retirer (jamais l'hôte lui-même)
+        if (!game || game === this.hostPid() || !this.players.has(game)) break;
+        const name = this.players.get(game)!.name;
+        this.kicked.add(game);
+        this.net.send(game, { t: 'kicked' });
+        setTimeout(() => this.net.drop(game), 300);
+        this.players.delete(game);
+        sfx.leave();
+        this.toast = { text: this.lang() === 'fr' ? `${name} a été retiré de la partie` : `${name} was removed`, t: 3 };
+        this.changed();
+        this.pushScreens();
+        break;
+      }
       case 'lobby':
         this.toLobby();
         break;
@@ -635,6 +656,7 @@ export class Session {
           teams: this.teams,
           bots: this.bots,
           botLevel: this.botLevel,
+          players: host ? this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color })) : [],
           team: p.team,
         };
       case 'game':

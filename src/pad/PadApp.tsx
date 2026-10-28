@@ -39,7 +39,7 @@ function defaultProfile(): Profile {
 }
 
 const DEMO: Record<string, PadScreen> = {
-  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1 },
+  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1, players: [{ pid: 'a', name: 'Lulu', color: COLORS[1] }] },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
   results: { s: 'results', gid: 1, host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
@@ -57,6 +57,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const [editing, setEditing] = useState(() => !store<Profile | null>('profile', null)?.name && !demo);
   const [screen, setScreen] = useState<PadScreen | null>(demo ? DEMO[demo] ?? DEMO.lobby : null);
   const [status, setStatus] = useState<PadStatus>(demo ? 'ok' : 'connecting');
+  const [kicked, setKicked] = useState(false);
   const [rtt, setRtt] = useState(0);
   // Progression : la première fois, ce que le joueur porte déjà lui appartient.
   const [progress, setProgress] = useState<Progress>(() => {
@@ -127,6 +128,10 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         if (m.t === 'screen') {
           setScreen(m.screen);
           if (m.screen.s !== 'play') setLive(null);
+        }
+        if (m.t === 'kicked') {
+          setKicked(true);
+          net.stop();
         }
         if (m.t === 'status') setLive({ rank: m.rank, of: m.of, left: m.left });
         if (m.t === 'welcome' && m.color !== profileRef.current.color) setProfile((p) => ({ ...p, color: m.color }));
@@ -234,7 +239,14 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         )}
       </header>
 
-      {status !== 'ok' ? (
+      {kicked ? (
+        <div className="pad-status">
+          <p>{lang === 'fr' ? 'L’hôte t’a retiré de la partie.' : 'The host removed you from the game.'}</p>
+          <a className="btn" href="#/">
+            {t(lang, 'back')}
+          </a>
+        </div>
+      ) : status !== 'ok' ? (
         <div className="pad-status">
           {status === 'notfound' ? (
             <>
@@ -495,6 +507,27 @@ function PadScreenView({
                   <small>{t(lang, 'catalogue', { n: playable().length })}</small>
                 </span>
               </button>
+              {screen.players.length > 0 && (
+                <>
+                  <p className="opt-title">{lang === 'fr' ? 'Joueurs' : 'Players'}</p>
+                  <div className="kick-list">
+                    {screen.players.map((pl) => (
+                      <div key={pl.pid} className="kick-row">
+                        <i style={{ background: pl.color }} />
+                        <b>{pl.name}</b>
+                        <button
+                          className="kick-btn"
+                          onClick={() => {
+                            if (confirm(lang === 'fr' ? `Retirer ${pl.name} de la partie ?` : `Remove ${pl.name} from the game?`)) host('kick', pl.pid);
+                          }}
+                        >
+                          {lang === 'fr' ? 'Retirer' : 'Remove'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
               <p className="opt-title">{t(lang, 'options')}</p>
               <div className="opt-row">
                 <button className={`opt mint ${screen.family ? 'on' : ''}`} onClick={() => host('family')} aria-pressed={screen.family}>

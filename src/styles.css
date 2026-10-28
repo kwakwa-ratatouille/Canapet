@@ -2935,3 +2935,40 @@ body,
 .opt.sun.on small {
   color: var(--ink);
 }
+
+/* Liste des joueurs pour l'hôte (retirer quelqu'un) */
+.kick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.kick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  padding: 6px 8px 6px 12px;
+}
+.kick-row i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+}
+.kick-row b {
+  flex: 1;
+  font-family: var(--cp-font-titre);
+}
+.kick-btn {
+  font-family: var(--cp-font-titre);
+  font-weight: 700;
+  font-size: 14px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: #ffd9d9;
+  color: var(--ink);
+  padding: 4px 12px;
+}
