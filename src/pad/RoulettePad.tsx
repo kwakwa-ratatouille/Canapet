@@ -10,7 +10,7 @@ const TXT = {
     autoBtn: 'Tirer au sort',
     orManual: 'ou sélectionner moi-même',
     digging: 'Tirage en cours…',
-    noAccess: 'Accès aux photos refusé. Autorise-le dans les réglages du téléphone, ou sélectionne-les toi-même.',
+    noAccess: 'Accès aux photos refusé. Autorise-le dans les réglages du téléphone, puis touche Tirer au sort.',
     pickVideo: 'Sélectionne plusieurs vidéos de 20 secondes maximum. Certaines seront tirées au sort.',
     add: 'Ouvrir la galerie',
     reroll: '🔀 Retirer au hasard',
@@ -36,7 +36,7 @@ const TXT = {
     autoBtn: 'Draw at random',
     orManual: 'or select them myself',
     digging: 'Drawing…',
-    noAccess: 'Photo access denied. Allow it in your phone settings, or select them yourself.',
+    noAccess: 'Photo access denied. Allow it in your phone settings, then tap Draw at random.',
     pickVideo: 'Select several videos of 20 seconds or less. Some will be drawn at random.',
     add: 'Open gallery',
     reroll: '🔀 Draw again',
@@ -201,10 +201,12 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
                 {T.autoBtn}
               </button>
             )}
-            {hasGallery() && <p className="pad-small">{T.orManual}</p>}
-            <button className="btn big sun" onClick={() => fileRef.current?.click()}>
-              {T.add}
-            </button>
+            {/* Dans l'appli : seulement le tirage au hasard, pas de choix à la main */}
+            {!hasGallery() && (
+              <button className="btn big sun" onClick={() => fileRef.current?.click()}>
+                {T.add}
+              </button>
+            )}
             {false && pool.length > 0 && (
               <>
                 <p className="pad-small">
