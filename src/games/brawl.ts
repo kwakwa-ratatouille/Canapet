@@ -1,7 +1,8 @@
 import { TEAMS, allies, sidesLeft, winnerName } from './teams';
 import { dozing } from './botSkill';
 // Bagarre Molle : persos tout mous qui se baffent, s'attrapent et se jettent dans la mer de crème.
-// A = saut · B court = baffe · B maintenu = attraper, relâcher = jeter (direction du stick). Trop de baffes = sonné.
+// A = saut · B court = baffe (3 de suite = MANDALE) · B en l'air + bas = plongeon fessier · X = attraper/jeter
+// Y = charge épaule (recharge 1,6 s). Trop de baffes = sonné.
 // Premier à 2 manches. Chaque carte a son piège : vent, gouttes de sirop, plateformes qui bougent.
 import { drawCharacter } from '../shared/characters';
 import { INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
@@ -123,6 +124,16 @@ interface B extends Runner {
   lastHitBy: number;
   botCd: number;
   flying: number;
+  /** Charge épaule en cours (s) et recharge. */
+  dash: number;
+  dashCd: number;
+  dashHit: Set<number>;
+  lastD: boolean;
+  /** Baffes réussies d'affilée (la 3e est une mandale). */
+  combo: number;
+  comboT: number;
+  /** Plongeon fessier en cours. */
+  pound: boolean;
 }
 
 interface Part {
@@ -184,7 +195,38 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     lastHitBy: -1,
     botCd: rnd(0.3, 0.8),
     flying: 0,
+    dash: 0,
+    dashCd: 0,
+    dashHit: new Set<number>(),
+    lastD: false,
+    combo: 0,
+    comboT: 0,
+    pound: false,
   }));
+  const DASH_CD = 1.6;
+  /** Charge épaule : on fonce droit devant, ceux qu'on percute s'envolent. */
+  function dashGo(i: number) {
+    const b = bs[i];
+    if (b.dashCd > 0 || b.ko > 0 || b.heldBy >= 0 || b.holding >= 0) return;
+    b.dash = 0.26;
+    b.dashCd = DASH_CD;
+    b.dashHit.clear();
+    if (Math.abs(b.inp.x) > 0.3) b.dir = Math.sign(b.inp.x) as 1 | -1;
+    b.vx = b.dir * 1250;
+    b.vy = Math.min(b.vy, -120);
+    b.tiltV += b.dir * 10;
+    sfx.whoosh();
+    if (!b.bot) ctx.cool(b.pid, 'd', DASH_CD);
+  }
+  /** Plongeon fessier : on tombe comme une pierre, onde de choc à l'atterrissage. */
+  function poundGo(i: number) {
+    const b = bs[i];
+    if (b.onGround || b.pound || b.ko > 0 || b.heldBy >= 0 || b.holding >= 0) return;
+    b.pound = true;
+    b.vx *= 0.2;
+    b.vy = 1500;
+    b.tiltV += b.dir * 8;
+  }
   const parts: Part[] = [];
   const pops: { x: number; y: number; text: string; color: string; t: number; size: number }[] = [];
   let drops: Drop[] = [];
@@ -234,6 +276,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       b.ko = b.dizzy = 0;
       b.tilt = b.tiltV = 0;
       b.flying = 0;
+      b.dash = 0;
+      b.pound = false;
+      b.combo = 0;
       b.dir = b.x < 960 ? 1 : -1;
       void n;
     });
@@ -292,6 +337,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     // Pas de prise en rafale : 1,2 s entre deux essais
     if (b.holding >= 0 || b.ko > 0 || b.heldBy >= 0 || time - b.grabAt < 1.2) return;
     b.grabAt = time;
+    if (!b.bot) ctx.cool(b.pid, 'c', 1.2);
     const j = nearest(i, 100);
     if (j < 0) return;
     const o = bs[j];
@@ -346,6 +392,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       else b.inp.x = 0;
     }
     if (o.y < b.y - 120 && b.onGround && Math.random() < 0.03) b.jumpReq = true;
+    if (b.dashCd <= 0 && Math.abs(dx) > 120 && Math.abs(dx) < 380 && Math.abs(o.y - b.y) < 40 && Math.random() < 0.02 * (0.4 + ctx.botSkill)) dashGo(i);
+    if (!b.onGround && o.y > b.y + 60 && Math.abs(dx) < 80 && Math.random() < 0.05) poundGo(i);
     if (b.botCd <= 0 && Math.abs(dx) < 100 && Math.abs(o.y - b.y) < 60) {
       b.botCd = rnd(0.3, 0.8);
       if (o.ko > 0 || o.dizzy > 2.2 || Math.random() < 0.15) {
@@ -432,10 +480,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         b.bDown = 0;
         if (b.heldBy >= 0) b.grip -= 1;
       }
-      if (!m.b && b.lastB) {
+      if (m.b && !b.lastB && !b.onGround && m.y > 0.5) poundGo(i);
+      else if (!m.b && b.lastB) {
         if (b.holding >= 0) release(i, true);
-        else if (b.bDown < 0.22) punch(i);
+        else if (b.bDown < 0.22 && !b.pound) punch(i);
       }
+      // Y : charge épaule
+      if (m.d && !b.lastD) dashGo(i);
+      b.lastD = !!m.d;
       // X : attraper (relâcher pour lancer)
       if (m.c && !b.lastC) {
         if (b.heldBy >= 0) b.grip -= 1;
@@ -499,6 +551,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         b.ko = Math.max(0, b.ko - dt);
         b.punchT = Math.max(0, b.punchT - dt);
         b.flying = Math.max(0, b.flying - dt);
+        b.dashCd = Math.max(0, b.dashCd - dt);
+        b.comboT = Math.max(0, b.comboT - dt);
+        if (b.comboT <= 0) b.combo = 0;
         if (b.bHeld) {
           b.bDown += dt;
           if (b.bDown > 0.22 && b.holding < 0 && b.heldBy < 0) grab(i);
@@ -527,7 +582,33 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (mx) b.dir = mx as 1 | -1;
         const speed = RUN * (b.holding >= 0 ? 0.6 : 1) * (b.dizzy > 2 ? 0.6 : 1);
         const acc = (b.onGround ? 2600 : 1400) * dt;
-        if (control && b.flying <= 0) b.vx += Math.max(-acc, Math.min(acc, mx * speed - b.vx));
+        if (b.dash > 0) {
+          b.dash -= dt;
+          b.vx = b.dir * 1250;
+          b.vy = Math.min(b.vy, 60);
+          if (!ctx.light && Math.random() < 0.8) parts.push({ x: b.x - b.dir * 30, y: b.y - 50, vx: -b.dir * 120, vy: 0, t: 0, max: 0.35, size: 26, color: b.profile.color, kind: 'smoke' });
+          bs.forEach((o, j) => {
+            if (j === i || !o.alive || o.heldBy >= 0 || allies(o, b) || b.dashHit.has(j)) return;
+            if (Math.abs(o.x - b.x) < 70 && Math.abs(o.y - b.y) < 90) {
+              b.dashHit.add(j);
+              o.vx = b.dir * 1050;
+              o.vy = -560;
+              o.tiltV += b.dir * 18;
+              o.dizzy += 1.5;
+              o.flying = 0.7;
+              o.lastHitBy = i;
+              if (o.holding >= 0) release(j, false);
+              freeze = Math.max(freeze, 0.08);
+              shake = Math.max(shake, 16);
+              burst(o.x, o.y - 60, 12, 'star', SOLEIL, 480, 13);
+              parts.push({ x: o.x, y: o.y - 60, vx: 0, vy: 0, t: 0, max: 0.3, size: 90, color: '#fff', kind: 'ring' });
+              pop(o.x, o.y - 160, fr ? 'BOUM !' : 'BAM!', ROSE, 58);
+              sfx.boing();
+              if (!o.bot) ctx.buzz(o.pid, 260);
+            }
+          });
+          if (b.dash <= 0) b.vx *= 0.35;
+        } else if (control && b.flying <= 0 && !b.pound) b.vx += Math.max(-acc, Math.min(acc, mx * speed - b.vx));
         else if (b.onGround) b.vx *= Math.pow(0.2, dt);
         if (b.jumpReq && control && b.onGround) {
           b.vy = -JUMP;
@@ -549,6 +630,29 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
               burst(b.x, p.y, 4, 'smoke', '#ffffff', 160, 14);
               b.tiltV += b.dir * 6;
             }
+            if (b.pound) {
+              b.pound = false;
+              freeze = Math.max(freeze, 0.06);
+              shake = Math.max(shake, 20);
+              burst(b.x, p.y, 14, 'smoke', '#ffffff', 420, 18, 120);
+              parts.push({ x: b.x, y: p.y - 10, vx: 0, vy: 0, t: 0, max: 0.4, size: 220, color: '#fff', kind: 'ring' });
+              pop(b.x, p.y - 170, fr ? 'BOUM FESSIER !' : 'BUTT SLAM!', SOLEIL, 54);
+              sfx.boing();
+              bs.forEach((o, j) => {
+                if (j === i || !o.alive || o.heldBy >= 0 || allies(o, b)) return;
+                const d = Math.abs(o.x - b.x);
+                if (d < 210 && Math.abs(o.y - p.y) < 60) {
+                  const dir = o.x >= b.x ? 1 : -1;
+                  o.vx = dir * (720 - d * 1.5);
+                  o.vy = -640;
+                  o.flying = 0.5;
+                  o.dizzy += 1;
+                  o.tiltV += dir * 14;
+                  o.lastHitBy = i;
+                  if (!o.bot) ctx.buzz(o.pid, 180);
+                }
+              });
+            }
             b.y = p.y;
             b.vy = 0;
             b.onGround = true;
@@ -565,11 +669,25 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if (j >= 0) {
             const o = bs[j];
             b.punchHit = true;
-            o.vx += b.dir * 420;
-            o.vy -= 180;
-            o.tiltV += b.dir * 12;
-            o.dizzy += 1;
+            b.combo = b.comboT > 0 ? b.combo + 1 : 1;
+            b.comboT = 0.9;
+            const mandale = b.combo >= 3;
+            o.vx += b.dir * (mandale ? 1050 : 420);
+            o.vy -= mandale ? 720 : 180;
+            o.tiltV += b.dir * (mandale ? 24 : 12);
+            o.dizzy += mandale ? 2 : 1;
             o.lastHitBy = i;
+            if (mandale) {
+              b.combo = 0;
+              b.comboT = 0;
+              o.flying = 0.8;
+              freeze = Math.max(freeze, 0.11);
+              shake = Math.max(shake, 22);
+              burst(o.x, o.y - 60, 16, 'star', ROSE, 560, 14);
+              parts.push({ x: o.x, y: o.y - 60, vx: 0, vy: 0, t: 0, max: 0.35, size: 130, color: '#fff', kind: 'ring' });
+              pop(o.x, o.y - 170, fr ? 'MANDALE !' : 'MEGA SLAP!', ROSE, 66);
+              sfx.boing();
+            }
             freeze = Math.max(freeze, 0.045);
             shake = Math.max(shake, 6);
             burst(o.x - b.dir * 10, o.y - 60, 6, 'star', SOLEIL, 360, 11);
@@ -908,15 +1026,15 @@ export const brawl: GameBase = {
   emoji: '🤼',
   name: { fr: 'Bagarre Molle', en: 'Wobbly Brawl' },
   how: {
-    fr: 'B court = baffe · B maintenu = attraper puis jeter · A = saut · premier à 2 manches',
-    en: 'Tap B = slap · Hold B = grab then throw · A = jump · first to 2 rounds',
+    fr: 'B = baffe (3 d’affilée = mandale) · Y = charge · en l’air bas + B = plongeon · X = attraper puis jeter',
+    en: 'B = slap (3 in a row = mega slap) · Y = charge · in the air down + B = butt slam · X = grab then throw',
   },
   inspired: 'Gang Beasts',
   layout: 'stick',
   min: 2,
   max: 8,
   botFill: 4,
-  music: 'tumble',
+  music: 'fight',
   limit: 150,
   create,
 };

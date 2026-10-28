@@ -822,7 +822,7 @@ export const sumo: GameBase = {
   min: 2,
   max: 12,
   botFill: 4,
-  music: 'race',
+  music: 'fight',
   limit: 100,
   create,
 };

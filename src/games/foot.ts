@@ -740,7 +740,7 @@ export const foot: GameBase = {
   min: 2,
   max: 12,
   botFill: 4,
-  music: 'race',
+  music: 'sport',
   limit: 150,
   options: [
     {

@@ -62,7 +62,6 @@ export function TvApp() {
         w: 'bagarre',
         o: 'foot',
         x: 'reflexes',
-        y: 'plateau',
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');
@@ -96,7 +95,8 @@ export function TvApp() {
     <div className="tv">
       {session.phase === 'lobby' ? <Lobby session={session} players={players} hostPid={hostPid} /> : <GameView session={session} />}
 
-      {session.phase !== 'lobby' && code && (
+      {/* Pendant le jeu, le QR code se cache (il gênait les joueurs) : il revient en pause et aux résultats */}
+      {session.phase !== 'lobby' && code && (session.phase !== 'game' || session.paused) && (
         <div className="corner-join">
           <QR text={joinUrl(code)} size={120} />
           <div>
@@ -390,9 +390,28 @@ function drawTimer(g: CanvasRenderingContext2D, session: Session, t: number) {
   const warm = left <= 30;
   const x = 960;
   const y = def.timerTop ? 74 : 1006;
-  const beat = hot ? 1 + 0.14 * Math.pow(left % 1, 3) : 1;
+  const beat = hot ? 1 + 0.22 * Math.pow(left % 1, 3) : warm ? 1 + 0.05 * Math.pow(left % 1, 4) : 1;
+  // Alarme : bords de l'écran qui clignotent en rouge, de plus en plus fort
+  if (hot) {
+    const k = (1 - left / 10) * 0.5 + 0.2;
+    const a = Math.pow(left % 1, 2) * k;
+    g.save();
+    g.globalAlpha = a;
+    g.strokeStyle = '#ff2a2a';
+    g.lineWidth = 46;
+    g.strokeRect(0, 0, 1920, 1080);
+    g.globalAlpha = a * 0.5;
+    g.lineWidth = 110;
+    g.strokeRect(0, 0, 1920, 1080);
+    g.restore();
+  }
   g.save();
   g.translate(x, y);
+  if (hot) {
+    const sh = 3 + (10 - left) * 0.9;
+    g.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
+    g.rotate(Math.sin(t * 40) * 0.04);
+  }
   g.scale(beat, beat);
   const w = 250;
   const h = 86;
@@ -401,7 +420,7 @@ function drawTimer(g: CanvasRenderingContext2D, session: Session, t: number) {
   g.beginPath();
   g.roundRect(-w / 2, -h / 2 + 8, w, h, h / 2);
   g.fill();
-  g.fillStyle = hot ? ROSE : warm ? SOLEIL : '#fff';
+  g.fillStyle = hot ? (Math.floor(t * 4) % 2 ? '#ff2a2a' : '#c4002b') : warm ? SOLEIL : '#fff';
   g.strokeStyle = INK;
   g.lineWidth = 6;
   g.beginPath();
@@ -440,6 +459,17 @@ function drawTimer(g: CanvasRenderingContext2D, session: Session, t: number) {
     g.strokeText(label, 34, 3);
   }
   g.fillText(label, 34, 3);
+  // Petites ondes d'alarme autour de la pastille
+  if (hot) {
+    const r = (left % 1) * 60;
+    g.globalAlpha = Math.max(0, 1 - r / 60) * 0.8;
+    g.strokeStyle = '#ff2a2a';
+    g.lineWidth = 6;
+    g.beginPath();
+    g.roundRect(-w / 2 - r, -h / 2 - r, w + r * 2, h + r * 2, h / 2 + r);
+    g.stroke();
+    g.globalAlpha = 1;
+  }
   g.restore();
   g.textBaseline = 'alphabetic';
 }

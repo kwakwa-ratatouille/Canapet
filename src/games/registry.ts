@@ -1,7 +1,6 @@
 import { GAME_LIST } from '../shared/art/canapet-art.js';
 import { archers } from './archers';
 import { bluff } from './bluff';
-import { board } from './board';
 import { bombsGame } from './bombs';
 import { brawl } from './brawl';
 import { clash } from './clash';
@@ -31,7 +30,6 @@ const ART: Record<string, string> = {
   foot: 'coussin-foot',
   traitre: 'le-traitre-du-frigo',
   dessin: 'gribouillis',
-  plateau: 'le-grand-plateau',
   combat: 'coussin-clash',
   undercover: 'undercover',
   roulette: 'photo-roulette',
@@ -61,7 +59,6 @@ export const GAMES: GameDef[] = [
   undercover,
   roulette,
   scribble,
-  board,
   clash,
 ].map(withArt);
 

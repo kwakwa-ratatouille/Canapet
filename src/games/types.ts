@@ -1,3 +1,4 @@
+import type { MusicId } from '../shared/sound';
 import type { Lang, PadLayout, Profile, ToTv } from '../shared/protocol';
 
 export interface Runner {
@@ -21,6 +22,8 @@ export interface GameCtx {
   opts: Record<string, number>;
   /** Habileté des bots, de 0 (facile) à 1 (fort). */
   botSkill: number;
+  /** Affiche un temps de recharge sur un bouton de la manette de ce joueur (ignoré pour les bots). */
+  cool(pid: string, b: 'a' | 'b' | 'c' | 'd', s: number): void;
 }
 
 /** Une partie en cours. La télé l'appelle à 60 Hz (update) et à chaque image (render). */
@@ -52,7 +55,7 @@ export interface GameBase {
   max: number;
   /** Nombre de participants minimum : on complète avec des bots. */
   botFill: number;
-  music: 'race' | 'lobby' | 'tumble';
+  music: MusicId;
   /** Temps de jeu maximum (s) : chrono à l'écran, la partie s'arrête à zéro avec le classement du moment. */
   limit?: number;
   /** Chrono en haut de l'écran (quand le bas est pris par l'interface du jeu). */

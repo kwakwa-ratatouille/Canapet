@@ -441,7 +441,7 @@ export const reflex: GameBase = {
   min: 1,
   max: 12,
   botFill: 3,
-  music: 'race',
+  music: 'party',
   limit: 150,
   create,
 };

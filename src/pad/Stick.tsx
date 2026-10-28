@@ -11,7 +11,7 @@ const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> =
   kart: { fr: ['OBJET', 'FREIN', 'POUET'], en: ['ITEM', 'BRAKE', 'HONK'] },
   archers: { fr: ['SAUT', 'TIR', 'ESQUIVE'], en: ['JUMP', 'SHOOT', 'DODGE'] },
   combat: { fr: ['SAUT', 'COUP', 'LOURD', 'ESQUIVE'], en: ['JUMP', 'HIT', 'HEAVY', 'DODGE'] },
-  bagarre: { fr: ['SAUT', 'BAFFE', 'ATTRAPE'], en: ['JUMP', 'SLAP', 'GRAB'] },
+  bagarre: { fr: ['SAUT', 'BAFFE', 'ATTRAPE', 'CHARGE'], en: ['JUMP', 'SLAP', 'GRAB', 'CHARGE'] },
   foot: { fr: ['TIR', 'SPRINT', 'ATTRAPE'], en: ['SHOOT', 'SPRINT', 'CATCH'] },
 };
 
@@ -36,6 +36,9 @@ function toPad(el: HTMLElement, cx: number, cy: number): { x: number; y: number 
   return { x: cy - ox, y: window.innerWidth - cx - oy };
 }
 
+/** Boutons en recharge : moment du début et durée (s). */
+export type Cools = Partial<Record<'a' | 'b' | 'c' | 'd', { at: number; s: number }>>;
+
 /** Manette « stick + 2 boutons » : le stick apparaît là où le pouce se pose. */
 export function Stick({
   send,
@@ -43,13 +46,27 @@ export function Stick({
   game,
   profile,
   live,
+  cools,
 }: {
   send: (m: ToTv) => void;
   lang: Lang;
   game?: string;
   profile?: Profile;
   live?: { rank: number; of: number; left: number | null } | null;
+  cools?: Cools;
 }) {
+  // Recharge : on redessine tant qu'un bouton recharge
+  const [now, setNow] = useState(() => performance.now());
+  useEffect(() => {
+    if (!cools || !Object.values(cools).some((c) => c && performance.now() < c.at + c.s * 1000)) return;
+    let raf = 0;
+    const loop = () => {
+      setNow(performance.now());
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [cools]);
   const [la, lb, lx, ly] = LABELS[game ?? '']?.[lang] ?? ['A', 'B'];
   const state = useRef({ x: 0, y: 0, a: false, b: false, c: false, d: false });
   // Le stick est visible au repos ; s'il est touché ailleurs, il vient sous le pouce.
@@ -178,21 +195,28 @@ export function Stick({
             ['b', 'B', lb],
             ['a', 'A', la],
           ] as const
-        ).map(([k, letter, label]) =>
-          (
+        ).map(([k, letter, label]) => {
+          const c = cools?.[k];
+          const left = c ? Math.max(0, c.at + c.s * 1000 - now) / 1000 : 0;
+          return (
             <button
               key={k}
               disabled={!label}
-              className={`ab-btn ${k} ${pressed[k] ? 'down' : ''} ${label ? '' : 'off'}`}
+              className={`ab-btn ${k} ${pressed[k] ? 'down' : ''} ${label ? '' : 'off'} ${left > 0 ? 'cooling' : ''}`}
               onPointerDown={btn(k, true)}
               onPointerUp={btn(k, false)}
               onPointerCancel={btn(k, false)}
             >
               <i>{letter}</i>
               {label && <small>{label}</small>}
+              {left > 0 && (
+                <span className="ab-cool" style={{ ['--p' as string]: `${(left / c!.s) * 360}deg` }}>
+                  <b>{left >= 1 ? Math.ceil(left) : left.toFixed(1)}</b>
+                </span>
+              )}
             </button>
-          ),
-        )}
+          );
+        })}
         </div>
       </div>
     </div>

@@ -14,6 +14,9 @@ const GH = 11;
 const FUSE = 2.5;
 const FLAME = 0.55;
 const MAX_TIME = 150;
+const LIMIT = 120;
+/** Les dernières secondes : chaque pétard éclabousse toute sa ligne et toute sa colonne. */
+const MEGA = 20;
 
 type Cell = 0 | 1 | 2; // vide, pilier, gelée
 type Bonus = 'bomb' | 'fire' | 'speed' | 'shield';
@@ -119,6 +122,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let time = 0;
   let outCount = 0;
   let endDelay = -1;
+  let shake = 0;
+  let lastBoost = 0;
+  let megaSaid = false;
+  let banner: { text: string; t: number } | null = null;
 
   const bombAt = (x: number, y: number) => bombs.find((b) => Math.round(b.x) === x && Math.round(b.y) === y);
   const solid = (x: number, y: number) => x < 0 || y < 0 || x >= GW || y >= GH || grid[y][x] !== 0;
@@ -126,24 +133,35 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   /** Cases que les pétards vont éclabousser (pour les bots). */
   function dangerMap(): Set<string> {
     const d = new Set<string>(flames.keys());
-    for (const b of bombs) for (const c of blast(Math.round(b.x), Math.round(b.y), b.range, false)) d.add(c);
+    for (const b of bombs) for (const c of blast(Math.round(b.x), Math.round(b.y), reach(b.range), false)) d.add(c);
     return d;
   }
 
+  /** La portée grandit avec le chrono (+1 toutes les 25 s), puis toute la croix à la fin. */
+  const boost = () => Math.floor(time / 25);
+  const mega = () => time >= LIMIT - MEGA;
+  const reach = (r: number) => (mega() ? 99 : r + boost());
+
   function blast(bx: number, by: number, range: number, apply: boolean): string[] {
     const cells = [key(bx, by)];
+    const pierce = range >= 99;
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       for (let k = 1; k <= range; k++) {
         const x = bx + dx * k;
         const y = by + dy * k;
-        if (x < 0 || y < 0 || x >= GW || y >= GH || grid[y][x] === 1) break;
+        if (x <= 0 || y <= 0 || x >= GW - 1 || y >= GH - 1) break;
+        if (grid[y][x] === 1) {
+          if (pierce) continue;
+          break;
+        }
         cells.push(key(x, y));
         if (grid[y][x] === 2) {
           if (apply) {
             grid[y][x] = 0;
             if (Math.random() < 0.32) bonuses.set(key(x, y), (['bomb', 'fire', 'speed', 'bomb', 'fire', 'shield'] as Bonus[])[Math.floor(Math.random() * 6)]);
           }
-          break;
+          if (!pierce) break;
+          continue;
         }
         if (apply) bonuses.delete(key(x, y));
       }
@@ -155,12 +173,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     bombs = bombs.filter((x) => x !== b);
     const bx = Math.round(b.x);
     const by = Math.round(b.y);
-    for (const c of blast(bx, by, b.range, true)) {
+    const big = mega();
+    if (big) shake = 0.35;
+    for (const c of blast(bx, by, reach(b.range), true)) {
       flames.set(c, FLAME);
       const other = bombs.find((o) => key(Math.round(o.x), Math.round(o.y)) === c);
       if (other) other.t = Math.min(other.t, 0.06);
     }
     sfx.pop();
+    if (big) sfx.boom();
     if (!ctx.light) sfx.step();
   }
 
@@ -313,6 +334,18 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       time += dt;
+      shake = Math.max(0, shake - dt);
+      if (banner && (banner.t -= dt) <= 0) banner = null;
+      if (boost() > lastBoost && !mega()) {
+        lastBoost = boost();
+        banner = { text: ctx.lang === 'fr' ? `💥 Les pétards grossissent ! Portée +${lastBoost}` : `💥 Bangers are growing! Range +${lastBoost}`, t: 2.5 };
+        sfx.whoosh();
+      }
+      if (mega() && !megaSaid) {
+        megaSaid = true;
+        banner = { text: ctx.lang === 'fr' ? '🔥 MÉGA PÉTARDS : toute la ligne !' : '🔥 MEGA BANGERS: the whole line!', t: 3.5 };
+        sfx.boom();
+      }
       players.forEach((p, i) => {
         if (!p.alive) return;
         if (p.bot) {
@@ -393,8 +426,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const cs = Math.min(1840 / GW, 940 / GH);
       const ox = (1920 - cs * GW) / 2;
       const oy = 120 + (940 - cs * GH) / 2;
-      g.fillStyle = '#d7f0ff';
+      g.fillStyle = mega() ? '#ffd9d9' : '#d7f0ff';
       g.fillRect(0, 0, 1920, 1080);
+      g.save();
+      if (shake > 0) g.translate((Math.random() - 0.5) * 24 * shake, (Math.random() - 0.5) * 24 * shake);
       for (let y = 0; y < GH; y++)
         for (let x = 0; x < GW; x++) {
           const px = ox + x * cs;
@@ -443,7 +478,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const cxp = ox + (x + 0.5) * cs;
         const cyp = oy + (y + 0.5) * cs;
         const s = (v / FLAME) * cs * 0.55;
-        g.fillStyle = '#2ec5ff';
+        g.fillStyle = megaSaid ? '#ff7a2e' : '#2ec5ff';
         g.strokeStyle = INK;
         g.lineWidth = 3;
         g.beginPath();
@@ -467,11 +502,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       for (const b of bombs) {
         const px = ox + (b.x + 0.5) * cs;
         const py = oy + (b.y + 0.5) * cs;
-        const pulse = 1 + Math.sin(t * (b.t < 0.8 ? 30 : 10)) * 0.06;
+        const pulse = (1 + Math.min(0.35, boost() * 0.08) + (megaSaid ? 0.15 : 0)) * (1 + Math.sin(t * (b.t < 0.8 ? 30 : 10)) * 0.06);
         g.save();
         g.translate(px, py);
         g.scale(pulse, pulse);
-        g.fillStyle = '#ff3b3b';
+        g.fillStyle = megaSaid && Math.floor(t * 8) % 2 ? '#ffd60a' : '#ff3b3b';
         g.beginPath();
         g.roundRect(-cs * 0.22, -cs * 0.3, cs * 0.44, cs * 0.6, 8);
         g.fill();
@@ -512,6 +547,24 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.stroke();
         }
       }
+      g.restore();
+      if (banner) {
+        const a = Math.min(1, banner.t * 2);
+        g.globalAlpha = a;
+        g.font = '700 54px Fredoka, sans-serif';
+        const tw = g.measureText(banner.text).width + 80;
+        g.fillStyle = megaSaid ? '#ff3b3b' : '#ffd60a';
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.roundRect(960 - tw / 2, 470, tw, 100, 50);
+        g.fill();
+        g.stroke();
+        g.fillStyle = megaSaid ? '#fff' : INK;
+        g.textAlign = 'center';
+        g.fillText(banner.text, 960, 538);
+        g.globalAlpha = 1;
+      }
       const w = Math.min(220, 1840 / players.length);
       players.forEach((p, i) => {
         g.globalAlpha = p.alive ? 1 : 0.35;
@@ -519,7 +572,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.font = '28px sans-serif';
         g.textAlign = 'center';
         g.fillStyle = INK;
-        g.fillText(p.alive ? `🧨${p.bombs} 💦${p.range}${p.shield ? ' 🛡️' : ''}` : ctx.family ? '💦' : '💦 KO', 40 + i * w + (w - 10) / 2, 96);
+        g.fillText(p.alive ? `🧨${p.bombs} 💦${mega() ? '∞' : reach(p.range)}${p.shield ? ' 🛡️' : ''}` : ctx.family ? '💦' : '💦 KO', 40 + i * w + (w - 10) / 2, 96);
         g.globalAlpha = 1;
       });
     },
@@ -548,7 +601,7 @@ export const bombsGame: GameBase = {
   min: 2,
   max: 8,
   botFill: 4,
-  music: 'tumble',
-  limit: 120,
+  music: 'arcade',
+  limit: LIMIT,
   create,
 };

@@ -418,6 +418,6 @@ export const roulette: GameBase = {
       ],
     },
   ],
-  music: 'lobby',
+  music: 'party',
   create,
 };

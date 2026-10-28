@@ -174,6 +174,45 @@ export const sfx = {
     tone(midi(79), 0.12, 'square', 0.12);
     tone(midi(84), 0.25, 'square', 0.12, 0.1);
   },
+  /** Grosse explosion. */
+  boom() {
+    tone(120, 0.6, 'sawtooth', 0.22, 0, 35);
+    noise(0.7, 0.4, 260, 0, 0.6);
+    noise(0.3, 0.2, 1200, 0.02, 0.8);
+  },
+  whoosh() {
+    noise(0.35, 0.18, 900, 0, 0.5);
+    tone(300, 0.3, 'sine', 0.08, 0, 900);
+  },
+  /** Alarme du chrono (dernières secondes) : deux bips qui piquent. */
+  alarm() {
+    tone(1560, 0.1, 'square', 0.13);
+    tone(1560, 0.1, 'square', 0.13, 0.16);
+  },
+  /** Barillet qui tourne. */
+  spin() {
+    for (let i = 0; i < 9; i++) noise(0.03, 0.1 - i * 0.008, 4200, i * (0.05 + i * 0.012), 4);
+  },
+  /** Chien du revolver qu'on arme, puis « clic » à vide. */
+  cock() {
+    noise(0.04, 0.22, 3000, 0, 5);
+    noise(0.03, 0.18, 1800, 0.09, 5);
+  },
+  dryFire() {
+    noise(0.05, 0.3, 2600, 0, 6);
+    tone(2200, 0.03, 'square', 0.08);
+  },
+  /** Coup de feu (mais c'est un pistolet à confettis). */
+  gunshot() {
+    noise(0.5, 0.55, 700, 0, 0.4);
+    noise(0.12, 0.4, 3000, 0, 0.6);
+    tone(160, 0.35, 'sawtooth', 0.2, 0, 45);
+  },
+  /** Cartes claquées sur le comptoir. */
+  cards() {
+    noise(0.06, 0.22, 2200, 0, 1.5);
+    noise(0.05, 0.16, 1800, 0.07, 1.5);
+  },
 };
 
 // ——— Musique : un petit compositeur. Chaque ambiance a sa grille d'accords (couplet + pont) ;
@@ -190,14 +229,19 @@ interface Track {
   verse: Chord[];
   bridge: Chord[];
   lead: OscillatorType;
-  drums: 'chill' | 'pop' | 'drive' | 'march';
+  drums: 'chill' | 'pop' | 'drive' | 'march' | 'fight';
   bass: 'walk' | 'pump' | 'root';
+  /** Son de la basse (triangle par défaut ; dent de scie = plus musclé). */
+  bassWave?: OscillatorType;
+  /** Gamme mineure (ambiances tendues ou mystérieuses). */
+  minor?: boolean;
   /** Densité de la mélodie (0 à 1). */
   busy: number;
 }
 
 const QUAL: Record<Q, number[]> = { M: [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], M7: [0, 4, 7, 11], m7: [0, 3, 7, 10] };
 const PENTA = [0, 2, 4, 7, 9];
+const PENTA_MINOR = [0, 3, 5, 7, 10];
 
 const TRACKS: Record<string, Track> = {
   lobby: {
@@ -232,6 +276,83 @@ const TRACKS: Record<string, Track> = {
     drums: 'pop',
     bass: 'root',
     busy: 0.6,
+  },
+  /** Baston : mineur, rapide, basse en dent de scie. */
+  fight: {
+    bpm: 152,
+    swing: 0,
+    key: 57,
+    minor: true,
+    verse: [[0, 'm'], [0, 'm'], [8, 'M'], [10, 'M'], [0, 'm'], [0, 'm'], [5, 'm'], [7, 'M']],
+    bridge: [[5, 'm'], [8, 'M'], [3, 'M'], [10, 'M'], [5, 'm'], [8, 'M'], [7, 'M'], [7, '7']],
+    lead: 'sawtooth',
+    drums: 'fight',
+    bass: 'pump',
+    bassWave: 'sawtooth',
+    busy: 0.75,
+  },
+  /** Jeux électroniques rétro (pétards). */
+  arcade: {
+    bpm: 164,
+    swing: 0,
+    key: 64,
+    minor: true,
+    verse: [[0, 'm'], [3, 'M'], [10, 'M'], [5, 'm'], [0, 'm'], [3, 'M'], [7, 'M'], [7, '7']],
+    bridge: [[8, 'M'], [10, 'M'], [0, 'm'], [0, 'm'], [8, 'M'], [10, 'M'], [7, 'M'], [7, '7']],
+    lead: 'square',
+    drums: 'drive',
+    bass: 'pump',
+    bassWave: 'square',
+    busy: 0.85,
+  },
+  /** Enquête : jazz feutré et mystérieux (Undercover, Traître). */
+  spy: {
+    bpm: 90,
+    swing: 0.32,
+    key: 62,
+    minor: true,
+    verse: [[0, 'm7'], [0, 'm7'], [5, 'm7'], [5, 'm7'], [0, 'm7'], [0, 'm7'], [7, '7'], [7, '7']],
+    bridge: [[8, 'M7'], [7, '7'], [5, 'm7'], [0, 'm7'], [8, 'M7'], [7, '7'], [10, '7'], [7, '7']],
+    lead: 'sine',
+    drums: 'chill',
+    bass: 'walk',
+    busy: 0.35,
+  },
+  /** Saloon (Bar des Bobards) : piano bastringue qui balance. */
+  bar: {
+    bpm: 118,
+    swing: 0.36,
+    key: 60,
+    verse: [[0, 'M'], [0, '7'], [5, 'M'], [5, 'M'], [0, 'M'], [7, '7'], [0, 'M'], [7, '7']],
+    bridge: [[5, 'M'], [5, 'M'], [0, 'M'], [0, 'M'], [2, '7'], [2, '7'], [7, 'M'], [7, '7']],
+    lead: 'triangle',
+    drums: 'march',
+    bass: 'pump',
+    busy: 0.6,
+  },
+  /** Stade : entraînant (foot). */
+  sport: {
+    bpm: 134,
+    swing: 0,
+    key: 64,
+    verse: [[0, 'M'], [5, 'M'], [7, 'M'], [5, 'M'], [0, 'M'], [5, 'M'], [7, '7'], [7, '7']],
+    bridge: [[9, 'm'], [5, 'M'], [0, 'M'], [7, 'M'], [9, 'm'], [5, 'M'], [2, 'm'], [7, '7']],
+    lead: 'square',
+    drums: 'pop',
+    bass: 'root',
+    busy: 0.65,
+  },
+  /** Jeux de salon (dessin, photos, réflexes) : funk léger. */
+  party: {
+    bpm: 108,
+    swing: 0.16,
+    key: 65,
+    verse: [[0, 'm7'], [5, '7'], [0, 'm7'], [5, '7'], [3, 'M7'], [8, 'M7'], [2, 'm7'], [7, '7']],
+    bridge: [[5, 'M7'], [4, 'm7'], [2, 'm7'], [7, '7'], [5, 'M7'], [4, 'm7'], [2, 'm7'], [7, '7']],
+    lead: 'triangle',
+    drums: 'pop',
+    bass: 'walk',
+    busy: 0.55,
   },
   podium: {
     bpm: 112,
@@ -327,7 +448,7 @@ function compose(tr: Track, grid: Chord[]): (number | null)[][] {
   ];
   const motif = [0, 1].map(() => RHYTHMS[Math.floor(Math.random() * (tr.busy > 0.6 ? 6 : 5))]);
   const scale: number[] = [];
-  for (let o = 0; o < 2; o++) for (const d of PENTA) scale.push(tr.key + 12 * o + d);
+  for (let o = 0; o < 2; o++) for (const d of tr.minor ? PENTA_MINOR : PENTA) scale.push(tr.key + 12 * o + d);
   let idx = scale.indexOf(lastPitch);
   if (idx < 0) idx = 4;
   return grid.map(([root, q], bar) => {
@@ -378,14 +499,20 @@ function schedule() {
 
     // Basse
     const bassRoot = tr.key + root - 24;
-    if (tr.bass === 'walk' && s % 2 === 0) note(midi(bassRoot + [0, QUAL[q][1], 7, 9][s / 2]), eighth * 1.8, 'triangle', 0.2, at);
-    if (tr.bass === 'pump') note(midi(bassRoot + (s % 2 ? 12 : 0)), eighth * 0.8, 'triangle', 0.17, at);
-    if (tr.bass === 'root' && (s === 0 || s === 3 || s === 4 || s === 6)) note(midi(bassRoot + (s === 6 ? 7 : 0)), eighth * 1.4, 'triangle', 0.2, at);
+    const bw = tr.bassWave ?? 'triangle';
+    const bv = bw === 'triangle' ? 1 : 0.32;
+    if (tr.bass === 'walk' && s % 2 === 0) note(midi(bassRoot + [0, QUAL[q][1], 7, tr.minor ? 10 : 9][s / 2]), eighth * 1.8, bw, 0.2 * bv, at);
+    if (tr.bass === 'pump') note(midi(bassRoot + (s % 2 ? 12 : 0)), eighth * 0.8, bw, 0.17 * bv, at);
+    if (tr.bass === 'root' && (s === 0 || s === 3 || s === 4 || s === 6)) note(midi(bassRoot + (s === 6 ? 7 : 0)), eighth * 1.4, bw, 0.2 * bv, at);
 
     // Batterie (une petite relance en fin de partie)
     const d = tr.drums;
     if (fill && s >= 4) drum(s % 2 ? 'snare' : 'clap', at);
-    else {
+    else if (d === 'fight') {
+      if (s === 0 || s === 3 || s === 4 || (s === 7 && bar % 2)) drum('kick', at);
+      if (s === 2 || s === 6) drum('snare', at);
+      drum('hat', at);
+    } else {
       if ((d === 'drive' && s % 2 === 0) || (d !== 'drive' && (s === 0 || (s === 5 && d !== 'march') || (s === 4 && d === 'march')))) drum('kick', at);
       if (s === 2 || s === 6) drum(d === 'chill' ? 'clap' : 'snare', at);
       if (d === 'drive' || d === 'pop' || (d === 'chill' && s % 2 === 1) || (d === 'march' && s % 2 === 0)) drum('hat', at);
@@ -394,7 +521,7 @@ function schedule() {
     // Mélodie (+ un petit écho), qui se tait sur la première mesure du pont pour respirer
     const m = melody[bar]?.[s];
     if (m && !(section === 2 && bar % 8 === 0)) {
-      const v = tr.lead === 'square' ? 0.03 : 0.07;
+      const v = tr.lead === 'square' ? 0.03 : tr.lead === 'sawtooth' ? 0.022 : 0.07;
       const len = eighth * (melody[bar][s + 1] == null ? 1.7 : 0.9);
       note(midi(m), len, tr.lead, v, at);
       note(midi(m), len, 'sine', v * 0.35, at + eighth * 1.5);
@@ -404,7 +531,9 @@ function schedule() {
   }
 }
 
-export function playMusic(track: keyof typeof TRACKS | '') {
+export type MusicId = 'lobby' | 'race' | 'tumble' | 'podium' | 'fight' | 'arcade' | 'spy' | 'bar' | 'sport' | 'party';
+
+export function playMusic(track: MusicId | '') {
   if (track === current) return;
   current = track;
   rush = 1;
@@ -419,14 +548,42 @@ export function playMusic(track: keyof typeof TRACKS | '') {
 
 // ——— Présentateur (voix de synthèse du navigateur) ———
 
+/** Voix du présentateur, au choix de l'hôte. `accent` = langue de la voix qui lit le texte (fr, puis en). */
+export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; rate: number; pitch: number }[] = [
+  { id: 'classique', fr: 'Classique', en: 'Classic', rate: 1.05, pitch: 1.15 },
+  { id: 'naturelle', fr: 'Naturelle (IA)', en: 'Natural (AI)', nice: true, rate: 1.02, pitch: 1 },
+  { id: 'quebec', fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05 },
+  { id: 'anglais', fr: 'Accent anglais', en: 'French accent', accent: ['en-gb', 'fr-fr'], rate: 0.95, pitch: 1.05 },
+  { id: 'italien', fr: 'Accent italien', en: 'Italian accent', accent: ['it', 'it'], rate: 1.05, pitch: 1.1 },
+  { id: 'espagnol', fr: 'Accent espagnol', en: 'Spanish accent', accent: ['es', 'es'], rate: 1.05, pitch: 1.05 },
+  { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', rate: 0.9, pitch: 0.5 },
+  { id: 'ecureuil', fr: 'Écureuil', en: 'Chipmunk', rate: 1.3, pitch: 2 },
+  { id: 'robot', fr: 'Robot', en: 'Robot', rate: 0.85, pitch: 0.1 },
+];
+let voiceIdx = 0;
+export function setVoice(i: number) {
+  voiceIdx = Math.max(0, Math.min(VOICES.length - 1, i));
+}
+
+const NICE = /natural|neural|online|google|premium|enhanced|siri|wavenet/i;
+
+function findVoice(prefix: string, nice: boolean): SpeechSynthesisVoice | undefined {
+  const all = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith(prefix));
+  return (nice ? all.find((v) => NICE.test(v.name)) : undefined) ?? all[0];
+}
+
 export function speak(text: string, lang: Lang) {
   if (muted || !('speechSynthesis' in window)) return;
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang === 'fr' ? 'fr-FR' : 'en-US';
-  const voice = speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().startsWith(lang));
+  const pre = VOICES[voiceIdx] ?? VOICES[0];
+  const base = lang === 'fr' ? 'fr' : 'en';
+  // Accent : une voix d'une autre langue lit le texte (si le PC l'a, sinon voix normale)
+  const acc = pre.accent ? findVoice(pre.accent[lang === 'fr' ? 0 : 1], true) : undefined;
+  const voice = acc ?? findVoice(base, !!pre.nice);
+  u.lang = voice?.lang ?? (lang === 'fr' ? 'fr-FR' : 'en-US');
   if (voice) u.voice = voice;
-  u.rate = 1.05;
-  u.pitch = 1.15;
+  u.rate = pre.rate;
+  u.pitch = pre.pitch;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }

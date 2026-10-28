@@ -137,17 +137,17 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     fr: {
       goal: 'Jette tout le monde dans la crème ! Premier à 2 manches, attention aux pièges de la carte',
       steps: [
-        ['👋', 'B (appui court) : une baffe. 4 baffes et l’autre est sonné'],
-        ['🤲', 'B (maintenu) : attraper quelqu’un'],
-        ['🚀', 'Relâche B pour le jeter, dans la direction du stick'],
+        ['👋', 'B : baffe. 3 d’affilée = MANDALE qui fait voler'],
+        ['💨', 'Y : charge épaule ; en l’air, bas + B : plongeon fessier'],
+        ['🤲', 'X : attraper, relâche pour jeter (direction du stick)'],
       ],
     },
     en: {
       goal: 'Throw everyone into the cream! First to 2 rounds, watch out for the map’s traps',
       steps: [
-        ['👋', 'Tap B: a slap. 4 slaps and they’re dizzy'],
-        ['🤲', 'Hold B: grab someone'],
-        ['🚀', 'Release B to throw them, in the stick’s direction'],
+        ['👋', 'B: slap. 3 in a row = MEGA SLAP that sends them flying'],
+        ['💨', 'Y: shoulder charge; in the air, down + B: butt slam'],
+        ['🤲', 'X: grab, release to throw (stick direction)'],
       ],
     },
   },
@@ -256,24 +256,6 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
         ['✏️', 'The artist sees a secret word and draws with a finger'],
         ['📺', 'The drawing appears live on the TV'],
         ['⌨️', 'Everyone else types guesses: faster = more points'],
-      ],
-    },
-  },
-  plateau: {
-    fr: {
-      goal: 'Récolte le plus de Coussins d’or en 5 tours !',
-      steps: [
-        ['🎲', 'À ton tour, lance le dé sur ton téléphone'],
-        ['🍬', 'Gagne des bonbons, et passe sur l’étoile ⭐ avec 20 bonbons'],
-        ['🎮', 'Après chaque tour : un mini-jeu pour gagner des bonbons'],
-      ],
-    },
-    en: {
-      goal: 'Collect the most Golden Cushions in 5 rounds!',
-      steps: [
-        ['🎲', 'On your turn, roll the die on your phone'],
-        ['🍬', 'Earn candies, and pass the star ⭐ with 20 candies'],
-        ['🎮', 'After each round: a mini-game to win candies'],
       ],
     },
   },

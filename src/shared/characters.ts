@@ -195,14 +195,24 @@ export function drawCharacter(g: CanvasRenderingContext2D, x: number, y: number,
   if (o.selfie && o.selfie.complete && o.selfie.naturalWidth) {
     const f = faceSlot(CHARACTERS[o.food] ? o.food : 'coussin');
     const cx = (f.cx - CENTER_X) * k;
-    const cy = (f.cy - FEET_Y) * k;
-    const r = f.r * k;
+    // Photo agrandie (on voit mieux la tête), un peu remontée, avec un liseré blanc et un contour
+    const r = f.r * k * 1.5;
+    const cy = (f.cy - FEET_Y) * k - r * 0.12;
+    const fx = (o.dir ?? 1) < 0 ? -cx : cx;
     g.save();
     if ((o.dir ?? 1) < 0) g.scale(-1, 1);
+    g.fillStyle = '#3a2140';
     g.beginPath();
-    g.arc((o.dir ?? 1) < 0 ? -cx : cx, cy, r, 0, Math.PI * 2);
+    g.arc(fx, cy, r + Math.max(2, r * 0.16), 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath();
+    g.arc(fx, cy, r + Math.max(1, r * 0.08), 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.arc(fx, cy, r, 0, Math.PI * 2);
     g.clip();
-    g.drawImage(o.selfie, ((o.dir ?? 1) < 0 ? -cx : cx) - r, cy - r, r * 2, r * 2);
+    g.drawImage(o.selfie, fx - r, cy - r, r * 2, r * 2);
     g.restore();
   }
   g.restore();

@@ -8,7 +8,7 @@ import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
 import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
-import { playMusic, setFamily, setMusicRush, sfx, speak } from '../shared/sound';
+import { VOICES, playMusic, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
 
 export interface Player extends Profile {
@@ -65,6 +65,8 @@ export class Session {
   bots = store('bots', -1);
   /** Niveau des bots : 0 facile, 1 normal, 2 fort. */
   botLevel = store('botLevel', 1);
+  /** Voix du présentateur (numéro dans VOICES). */
+  voice = store('voice', 0);
   /** Mode équipes (Fraise contre Menthe) ; sinon mêlée générale. */
   teams = store('teams', false);
   /** Score des équipes à la dernière partie (moyenne des points de chaque camp). */
@@ -106,6 +108,7 @@ export class Session {
 
   constructor(preview: boolean) {
     setFamily(this.family);
+    setVoice(this.voice);
     this.net = new TvNet({
       onMsg: (pid, m) => this.onMsg(pid, m),
       onLeave: (pid) => this.onLeave(pid),
@@ -329,6 +332,16 @@ export class Session {
         this.changed();
         this.pushScreens();
         break;
+      case 'voice': {
+        this.voice = (this.voice + 1) % VOICES.length;
+        setVoice(this.voice);
+        save('voice', this.voice);
+        const fr = this.lang() === 'fr';
+        speak(fr ? `Salut ! Je suis la voix ${VOICES[this.voice].fr}. Que la fête commence !` : `Hi! I'm the ${VOICES[this.voice].en} voice. Let's party!`, this.lang());
+        this.changed();
+        this.pushScreens();
+        break;
+      }
       case 'chief': {
         if (!game || game === this.hostPid() || !this.players.get(game)?.connected) break;
         this.chief = game;
@@ -414,6 +427,9 @@ export class Session {
       light: LIGHT,
       family: this.family,
       buzz: (pid, ms) => this.net.send(pid, { t: 'buzz', ms }),
+      cool: (pid, b, s) => {
+        if (!this.players.get(pid)?.fake) this.net.send(pid, { t: 'cool', b, s });
+      },
       refresh: () => this.pushScreens(),
       botSkill: SKILLS[this.botLevel] ?? 0.7,
       opts: (() => {
@@ -625,7 +641,14 @@ export class Session {
       setMusicRush(1.18);
       speak(fr ? 'Plus que 30 secondes !' : '30 seconds left!', this.lang());
     }
-    if (left > 0 && left <= 10 && Math.ceil(left) !== Math.ceil(prev)) sfx.countdown(Math.ceil(left));
+    if (left > 0 && left <= 10 && Math.ceil(left) !== Math.ceil(prev)) {
+      sfx.countdown(Math.ceil(left));
+      if (left <= 5) sfx.alarm();
+    }
+    if (prev > 10 && left <= 10) {
+      setMusicRush(1.3);
+      speak(fr ? 'Dix secondes !' : 'Ten seconds!', this.lang());
+    }
     if (left > 0) return false;
     this.timeUp = 2.2;
     playMusic('');
@@ -671,6 +694,7 @@ export class Session {
           teams: this.teams,
           bots: this.bots,
           botLevel: this.botLevel,
+          voice: this.voice,
           players: host ? this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color })) : [],
           team: p.team,
         };

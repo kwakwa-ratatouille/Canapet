@@ -554,6 +554,6 @@ export const traitor: GameBase = {
   min: 4,
   max: 12,
   botFill: 5,
-  music: 'lobby',
+  music: 'spy',
   create,
 };

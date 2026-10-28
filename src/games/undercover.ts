@@ -99,21 +99,7 @@ function office(): HTMLCanvasElement {
     g.fillText('?', 0, 14);
     g.restore();
   }
-  // Lampe suspendue
-  g.strokeStyle = INK;
-  g.lineWidth = 6;
-  g.beginPath();
-  g.moveTo(960, 0);
-  g.lineTo(960, 250);
-  g.stroke();
-  g.fillStyle = '#1fc9a0';
-  g.beginPath();
-  g.moveTo(880, 320);
-  g.quadraticCurveTo(960, 220, 1040, 320);
-  g.closePath();
-  g.fill();
-  g.lineWidth = 8;
-  g.stroke();
+  // (La lampe suspendue est dessinée à chaque image : elle se balance avec sa lumière)
   // Sol : parquet sombre
   g.fillStyle = '#2f1d40';
   g.fillRect(0, 760, 1920, 320);
@@ -456,25 +442,55 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     render(g, t) {
       // Salle d'interrogatoire bonbon : fond violet, projecteur qui balaie
       g.drawImage(office(), 0, 0, 1920, 1080);
-      if (!ctx.light) {
-        // Cône de lumière de la lampe qui se balance + projecteur qui cherche un suspect
-        const sw = Math.sin(t * 0.9) * 0.08;
+      {
+        // Lampe suspendue qui se balance : le fil, l'abat-jour, l'ampoule et le cône de lumière bougent ensemble
+        const sw = ctx.light ? 0 : Math.sin(t * 0.9) * 0.1;
         g.save();
         g.translate(960, 0);
         g.rotate(sw);
-        g.fillStyle = 'rgba(255,240,170,0.13)';
+        if (!ctx.light) {
+          g.fillStyle = 'rgba(255,240,170,0.15)';
+          g.beginPath();
+          g.moveTo(-74, 312);
+          g.lineTo(74, 312);
+          g.lineTo(560, 1180);
+          g.lineTo(-560, 1180);
+          g.closePath();
+          g.fill();
+          g.fillStyle = 'rgba(255,240,170,0.1)';
+          g.beginPath();
+          g.moveTo(-40, 312);
+          g.lineTo(40, 312);
+          g.lineTo(300, 1180);
+          g.lineTo(-300, 1180);
+          g.closePath();
+          g.fill();
+        }
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
         g.beginPath();
-        g.moveTo(-70, 300);
-        g.lineTo(70, 300);
-        g.lineTo(520, 1080);
-        g.lineTo(-520, 1080);
-        g.closePath();
-        g.fill();
+        g.moveTo(0, 0);
+        g.lineTo(0, 250);
+        g.stroke();
         g.fillStyle = '#fff6c8';
         g.beginPath();
-        g.arc(0, 302, 20, 0, Math.PI);
+        g.arc(0, 312, 22, 0, Math.PI);
+        g.fill();
+        g.fillStyle = '#1fc9a0';
+        g.beginPath();
+        g.moveTo(-80, 320);
+        g.quadraticCurveTo(0, 220, 80, 320);
+        g.closePath();
+        g.fill();
+        g.lineWidth = 8;
+        g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.45)';
+        g.beginPath();
+        g.ellipse(-30, 282, 14, 6, -0.5, 0, Math.PI * 2);
         g.fill();
         g.restore();
+      }
+      if (!ctx.light) {
         const sx = 960 + Math.sin(t * 0.6) * 640;
         const grd = g.createRadialGradient(sx, 900, 20, sx, 900, 260);
         grd.addColorStop(0, 'rgba(255,214,10,0.25)');
@@ -645,6 +661,6 @@ export const undercover: GameBase = {
   min: 3,
   max: 12,
   botFill: 4,
-  music: 'lobby',
+  music: 'spy',
   create,
 };

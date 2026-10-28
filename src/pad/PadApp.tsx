@@ -1,4 +1,5 @@
 import { TEAMS } from '../games/teams';
+import { VOICES } from '../shared/sound';
 import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
 import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRICES, rewardFor, saveProgress, type Kind, type Progress } from '../shared/progress';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -11,7 +12,7 @@ import { gameIcon, Wordmark } from '../shared/Logo';
 import type { HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
 import { sfx, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
-import { Stick } from './Stick';
+import { Stick, type Cools } from './Stick';
 import { BluffPad } from './BluffPad';
 import { ScribblePad } from './ScribblePad';
 import { TraitorPad } from './TraitorPad';
@@ -21,8 +22,6 @@ import { ReflexPad } from './ReflexPad';
 import type { ReflexPadData } from '../games/reflexShared';
 import type { RoulettePadData } from '../games/rouletteShared';
 import type { UndercoverPadData } from '../games/undercoverShared';
-import { BoardPad } from './BoardPad';
-import type { BoardPadData } from '../games/boardShared';
 import type { TraitorPadData } from '../games/traitorShared';
 import type { ScribblePadData } from '../games/scribbleShared';
 import type { BluffPadData } from '../games/bluffShared';
@@ -39,7 +38,7 @@ function defaultProfile(): Profile {
 }
 
 const DEMO: Record<string, PadScreen> = {
-  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1, players: [{ pid: 'a', name: 'Lulu', color: COLORS[1] }] },
+  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1, voice: 0, players: [{ pid: 'a', name: 'Lulu', color: COLORS[1] }] },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
   results: { s: 'results', gid: 1, host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
@@ -118,6 +117,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const profileRef = useRef(profile);
   profileRef.current = profile;
   const netRef = useRef<PadNet | null>(null);
+  const [cools, setCools] = useState<Cools>({});
   const lang = profile.lang;
 
   useEffect(() => {
@@ -127,13 +127,17 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
       onMsg: (m) => {
         if (m.t === 'screen') {
           setScreen(m.screen);
-          if (m.screen.s !== 'play') setLive(null);
+          if (m.screen.s !== 'play') {
+            setLive(null);
+            setCools({});
+          }
         }
         if (m.t === 'kicked') {
           setKicked(true);
           net.stop();
         }
         if (m.t === 'status') setLive({ rank: m.rank, of: m.of, left: m.left });
+        if (m.t === 'cool') setCools((c) => ({ ...c, [m.b]: m.s > 0 ? { at: performance.now(), s: m.s } : undefined }));
         if (m.t === 'welcome' && m.color !== profileRef.current.color) setProfile((p) => ({ ...p, color: m.color }));
         if (m.t === 'buzz') {
           if (navigator.vibrate) navigator.vibrate(m.ms);
@@ -222,7 +226,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
 
   return (
     // Manettes stick et tapotage : toujours en paysage, même si le téléphone reste droit (on tourne l'écran).
-    <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (screen.layout === 'stick' || screen.layout === 'tap') && !['plateau', 'traitre', 'dessin'].includes(screen.game) ? 'turn' : ''}`} style={{ ['--c' as string]: profile.color }} onPointerDown={unlockAudio}>
+    <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (screen.layout === 'stick' || screen.layout === 'tap') && !['traitre', 'dessin'].includes(screen.game) ? 'turn' : ''}`} style={{ ['--c' as string]: profile.color }} onPointerDown={unlockAudio}>
       <header className={`pad-head ${playing ? 'slim' : ''}`}>
         <CharCanvas profile={profile} size={playing ? 34 : 46} still />
         <b className="pad-name">{profile.name || '???'}</b>
@@ -271,6 +275,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           myColor={profile.color}
           profile={profile}
           live={live}
+          cools={cools}
           progress={progress}
           reward={reward}
           account={account}
@@ -293,10 +298,12 @@ function PadScreenView({
   edit,
   profile,
   live,
+  cools,
   progress,
   reward,
   account,
 }: {
+  cools: Cools;
   account: Account;
   progress: Progress;
   reward: { xp: number; coins: number; level: number | null } | null;
@@ -565,6 +572,14 @@ function PadScreenView({
                   <span className="opt-state">{t(lang, 'tapToChange')}</span>
                 </button>
               </div>
+              <div className="opt-row">
+                <button className="opt mint on" onClick={() => host('voice')}>
+                  <span className="opt-ico">🎙️</span>
+                  <b>{lang === 'fr' ? 'Voix du présentateur' : 'Announcer voice'}</b>
+                  <small>{VOICES[screen.voice ?? 0]?.[lang] ?? ''}</small>
+                  <span className="opt-state">{t(lang, 'tapToChange')}</span>
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -587,14 +602,13 @@ function PadScreenView({
             </button>
           </div>
         );
-      if (screen.game === 'plateau' && screen.data) return <BoardPad data={screen.data as BoardPadData} lang={lang} send={send} />;
       if (screen.game === 'reflexes' && screen.data) return <ReflexPad data={screen.data as ReflexPadData} lang={lang} send={send} />;
       if (screen.game === 'roulette' && screen.data) return <RoulettePad data={screen.data as RoulettePadData} lang={lang} send={send} />;
       if (screen.game === 'undercover' && screen.data) return <UndercoverPad data={screen.data as UndercoverPadData} lang={lang} send={send} />;
       if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
       if (screen.game === 'dessin' && screen.data) return <ScribblePad data={screen.data as ScribblePadData} lang={lang} send={send} />;
       if (screen.layout === 'bluff' && screen.data) return <BluffPad data={screen.data as BluffPadData} lang={lang} send={send} />;
-      return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} profile={profile} live={live} />;
+      return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} profile={profile} live={live} cools={cools} />;
     case 'paused':
       return (
         <div className="pad-body">
@@ -835,10 +849,10 @@ function Editor({
     const img = new Image();
     img.onload = () => {
       const c = document.createElement('canvas');
-      c.width = c.height = 128;
+      c.width = c.height = 192;
       const s = Math.min(img.width, img.height);
-      c.getContext('2d')!.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 128, 128);
-      set({ selfie: c.toDataURL('image/jpeg', 0.75) });
+      c.getContext('2d')!.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 192, 192);
+      set({ selfie: c.toDataURL('image/jpeg', 0.8) });
       URL.revokeObjectURL(img.src);
     };
     img.src = URL.createObjectURL(file);

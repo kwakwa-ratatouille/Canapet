@@ -1669,23 +1669,6 @@ h3,
   color: var(--ink);
 }
 
-/* Grand Plateau (manette) */
-.boardpad {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 16px;
-  color: var(--ink);
-  text-align: center;
-}
-.boardpad-stats {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 0;
-}
 .big-round {
   width: min(70vw, 70vh, 300px);
   height: min(70vw, 70vh, 300px);
@@ -2985,4 +2968,26 @@ body,
 .roulette-thumb {
   border-radius: 16px;
   border-width: 4px;
+}
+
+/* Bouton en recharge : voile prune qui se vide comme une horloge + secondes restantes */
+.ab-btn.cooling {
+  filter: none;
+}
+.ab-cool {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(rgba(58, 33, 64, 0.72) var(--p), transparent 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.ab-cool b {
+  font-family: var(--cp-font-titre);
+  font-size: 2.1em;
+  color: #fff;
+  -webkit-text-stroke: 5px var(--ink);
+  paint-order: stroke fill;
 }

@@ -311,7 +311,7 @@ export const scribble: GameBase = {
   min: 3,
   max: 12,
   botFill: 0,
-  music: 'lobby',
+  music: 'party',
   limit: 300,
   create,
 };

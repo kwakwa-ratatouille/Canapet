@@ -777,6 +777,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (f.dodgeReq && f.dodgeCd <= 0 && f.stun <= 0 && !f.move) {
           f.dodge = 0.34;
           f.dodgeCd = 0.9;
+          if (!f.bot) ctx.cool(f.pid, 'd', 0.9);
           f.invuln = Math.max(f.invuln, 0.34);
           f.dodgeVx = Math.abs(f.inp.x) > 0.3 ? Math.sign(f.inp.x) * 820 : 0;
           if (!f.onGround) f.vy = Math.min(f.vy, 60);
@@ -1467,7 +1468,7 @@ export const clash: GameBase = {
   min: 2,
   max: 8,
   botFill: 4,
-  music: 'tumble',
+  music: 'fight',
   limit: 150,
   timerTop: true,
   create,

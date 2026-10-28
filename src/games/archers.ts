@@ -303,6 +303,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     p.vy = (dy / l) * 1050;
     p.dodge = 0.22;
     p.dodgeCool = 0.9;
+    if (!p.bot) ctx.cool(p.pid, 'c', 0.9);
     burst(p.x, p.y - BH / 2, 6, '#fff', 200, 7);
     sfx.step();
   }
@@ -795,7 +796,7 @@ export const archers: GameBase = {
   min: 2,
   max: 8,
   botFill: 4,
-  music: 'tumble',
+  music: 'fight',
   limit: 150,
   timerTop: true,
   create,

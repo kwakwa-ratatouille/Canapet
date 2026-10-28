@@ -26,7 +26,7 @@ export interface GameInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; players: { pid: string; name: string; color: string }[] }
+  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; players: { pid: string; name: string; color: string }[] }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }
@@ -51,10 +51,12 @@ export type ToPad =
   /** Pendant la partie, chaque seconde : ta place et le temps restant. */
   | { t: 'status'; rank: number; of: number; left: number | null }
   | { t: 'pong'; ts: number }
+  /** Bouton en recharge pendant s secondes (0 = de nouveau prêt). */
+  | { t: 'cool'; b: 'a' | 'b' | 'c' | 'd'; s: number }
   /** L'hôte t'a retiré de la partie. */
   | { t: 'kicked' };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief';
+export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief' | 'voice';
 
 /** Téléphone → télé */
 export type ToTv =
