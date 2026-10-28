@@ -28,6 +28,12 @@ const EN: Record<string, string> = {
   macaron: 'Macaron',
   banane: 'Banana',
   nuage: 'Cloud',
+  saucisse: 'Sausage',
+  champi: 'Mushroom',
+  tasse: 'Mug',
+  oignon: 'Onion',
+  patate: 'Potato',
+  popcorn: 'Popcorn',
 };
 
 export const FOODS: { id: string; name: Name }[] = Object.entries(CHARACTERS).map(([id, fr]) => ({

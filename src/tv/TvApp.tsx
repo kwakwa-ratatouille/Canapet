@@ -812,6 +812,20 @@ const CONFETTI = Array.from({ length: 34 }, (_, i) => ({
 }));
 const STAR = `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">${starGroup(20, 20, 16, SOLEIL, 3)}</svg>`;
 
+/** Petits titres rigolos pour les 3 premiers. */
+const TITLES: Record<'fr' | 'en', string[][]> = {
+  fr: [
+    ['Roi du canapé', 'Légende vivante', 'Boss final', 'Imbattable'],
+    ['Presque parfait', 'Éternel challenger', 'Médaille de chocolat… non, d’argent'],
+    ['Sur le fil', 'Pas loin !', 'Le bronze, c’est déjà bien'],
+  ],
+  en: [
+    ['Couch King', 'Living legend', 'Final boss', 'Unbeatable'],
+    ['Almost perfect', 'Eternal challenger', 'Silver lining'],
+    ['Close call', 'So close!', 'Bronze is still shiny'],
+  ],
+};
+
 function Podium({ players, lang }: { players: Player[]; lang: 'fr' | 'en' }) {
   const ranked = [...players].sort((a, b) => b.total - a.total);
   const top = [ranked[1], ranked[0], ranked[2]];
@@ -820,20 +834,32 @@ function Podium({ players, lang }: { players: Player[]; lang: 'fr' | 'en' }) {
       {CONFETTI.map((c, i) => (
         <i key={i} className="confetti" style={{ left: `${c.x}%`, top: `${c.y}%`, background: c.c, transform: `rotate(${c.r}deg)` }} />
       ))}
+      {/* Projecteurs qui balaient la scène */}
+      <span className="spot s1" />
+      <span className="spot s2" />
+      <span className="spot s3" />
       <h2 className="sticker title sun">{t(lang, 'champions')}</h2>
+      {ranked[0] && (
+        <p className="podium-winner">
+          👑 {ranked[0].name} {lang === 'fr' ? 'remporte la soirée !' : 'wins the night!'}
+        </p>
+      )}
       <div className="podium">
         {top.map((p, i) => {
           const place = [2, 1, 3][i];
           return p ? (
             <div key={p.pid} className={`step step${place}`}>
               {place === 1 && <span className="podium-star" dangerouslySetInnerHTML={{ __html: STAR }} />}
-              <CharCanvas profile={p} size={[180, 210, 165][i]} mood="win" arms />
+              <div className="podium-char">
+                <CharCanvas profile={p} size={[170, 210, 160][i]} mood="win" arms />
+              </div>
               <div className="block">
                 <b>{place}</b>
                 <span>{p.name}</span>
                 <small>
                   {p.total} {t(lang, 'pts')}
                 </small>
+                <em className="podium-title">{TITLES[lang][place - 1][p.pid.charCodeAt(0) % TITLES[lang][place - 1].length]}</em>
               </div>
             </div>
           ) : (
