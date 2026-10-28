@@ -1,5 +1,6 @@
 // Flèches à Ventouse : petite arène, les bords se rejoignent. Une flèche (ou un saut sur la tête) = KO.
 // Stick = courir et viser · A = sauter · B = tirer. 3 flèches à ramasser. Premier à 3 manches.
+import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { drawSky, roundRectText, candy } from './draw';
@@ -400,7 +401,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       ps.forEach((p, i) => {
         if (!p.alive) return;
-        if (p.bot) bot(p, i, dt);
+        if (p.bot) {
+          if (dozing(p, ctx.botSkill, dt)) p.inp = { x: 0, y: 0, a: false };
+          else bot(p, i, dt);
+        }
         p.cool = Math.max(0, p.cool - dt);
         p.dodgeCool = Math.max(0, p.dodgeCool - dt);
         p.shield = Math.max(0, p.shield - dt);

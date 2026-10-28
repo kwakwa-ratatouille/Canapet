@@ -19,6 +19,8 @@ export interface GameCtx {
   refresh(): void;
   /** Options choisies par l'hôte au lancement (sinon le premier choix de chaque option). */
   opts: Record<string, number>;
+  /** Habileté des bots, de 0 (facile) à 1 (fort). */
+  botSkill: number;
 }
 
 /** Une partie en cours. La télé l'appelle à 60 Hz (update) et à chaque image (render). */

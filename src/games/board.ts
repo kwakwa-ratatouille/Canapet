@@ -226,9 +226,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       time += dt;
       timer -= dt;
       // Bots pendant les mini-jeux
-      if (phase === 'tap') for (const p of pls) if (p.bot && Math.random() < dt * rnd(5, 8)) p.taps++;
+      if (phase === 'tap') for (const p of pls) if (p.bot && Math.random() < dt * rnd(5, 8) * (0.4 + 0.6 * ctx.botSkill)) p.taps++;
       if (phase === 'react' && time >= goAt)
-        for (const p of pls) if (p.bot && p.reactAt < 0 && time - goAt > rnd(0.25, 0.7)) p.reactAt = time - goAt;
+        for (const p of pls) if (p.bot && p.reactAt < 0 && time - goAt > rnd(0.25, 0.7) + (1 - ctx.botSkill) * 0.6) p.reactAt = time - goAt;
       if (phase === 'move') {
         hop += dt;
         if (hop >= 0.28) {

@@ -1,4 +1,5 @@
 // La soirée côté télé : joueurs, enchaînement des jeux, scores. La télé fait autorité.
+import { SKILLS } from '../games/botSkill';
 import { GAMES, gameById, playable } from '../games/registry';
 import { TEAMS } from '../games/teams';
 import { TUTOS } from '../games/tutos';
@@ -58,6 +59,10 @@ export class Session {
   mode: 'host' | 'tournament' = 'host';
   /** Mode famille (mémorisé sur la télé). */
   family = store('family', false);
+  /** Bots ajoutés : -1 = auto (selon le jeu), sinon ce nombre en plus des humains. */
+  bots = store('bots', -1);
+  /** Niveau des bots : 0 facile, 1 normal, 2 fort. */
+  botLevel = store('botLevel', 1);
   /** Mode équipes (Fraise contre Menthe) ; sinon mêlée générale. */
   teams = store('teams', false);
   /** Score des équipes à la dernière partie (moyenne des points de chaque camp). */
@@ -298,6 +303,20 @@ export class Session {
         this.changed();
         this.pushScreens();
         break;
+      case 'bots':
+        if (this.phase !== 'lobby') break;
+        this.bots = this.bots >= 7 ? -1 : this.bots + 1;
+        save('bots', this.bots);
+        this.changed();
+        this.pushScreens();
+        break;
+      case 'botlevel':
+        if (this.phase !== 'lobby') break;
+        this.botLevel = (this.botLevel + 1) % 3;
+        save('botLevel', this.botLevel);
+        this.changed();
+        this.pushScreens();
+        break;
       case 'lobby':
         this.toLobby();
         break;
@@ -336,7 +355,9 @@ export class Session {
     const count = (k: number) => runners.filter((r) => r.team === k).length;
     const used = new Set(runners.map((r) => r.profile.color));
     const foods = FOODS.map((f) => f.id).sort(() => Math.random() - 0.5);
-    for (let i = 0; runners.length < Math.min(def.botFill, def.max); i++) {
+    // Auto : le jeu complète comme il veut ; sinon le nombre choisi, mais toujours assez pour jouer
+    const want = this.bots < 0 ? def.botFill : runners.length + this.bots;
+    for (let i = 0; runners.length < Math.min(Math.max(want, def.min), def.max); i++) {
       const color = COLORS.find((c) => !used.has(c)) ?? COLORS[i];
       used.add(color);
       const food = foods[i % foods.length];
@@ -358,6 +379,7 @@ export class Session {
       family: this.family,
       buzz: (pid, ms) => this.net.send(pid, { t: 'buzz', ms }),
       refresh: () => this.pushScreens(),
+      botSkill: SKILLS[this.botLevel] ?? 0.7,
       opts: (() => {
         if (opts) this.opts = opts;
         else if (this.def?.id !== id) this.opts = {};
@@ -611,6 +633,8 @@ export class Session {
           count: this.list().filter((x) => x.connected).length,
           family: this.family,
           teams: this.teams,
+          bots: this.bots,
+          botLevel: this.botLevel,
           team: p.team,
         };
       case 'game':

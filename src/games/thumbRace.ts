@@ -98,7 +98,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if (r.botNext <= 0) {
             step(r, r.lastSide === 0 ? 1 : 0, i);
             const stumble = Math.random() < 0.02 ? 0.5 : 0;
-            r.botNext = 1 / (r.botRate * (0.8 + Math.random() * 0.4)) + stumble;
+            r.botNext = 1 / (r.botRate * (0.45 + 0.55 * ctx.botSkill) * (0.8 + Math.random() * 0.4)) + stumble;
           }
         }
         r.disp += (r.pos - r.disp) * Math.min(1, dt * 12);

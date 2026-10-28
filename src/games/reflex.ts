@@ -1,5 +1,6 @@
 // Réflexes Éclair : une suite d'épreuves de 10 secondes, toutes différentes.
 // Attendre le vert, trouver l'intrus, compter, la couleur piège, marteler, stopper la jauge…
+import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { INK, MENTHE, ROSE, SOLEIL, VIOLET } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
@@ -158,7 +159,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function bots(dt: number) {
     for (const p of pls) {
-      if (!p.bot) continue;
+      if (!p.bot || dozing(p, ctx.botSkill, dt)) continue;
       if (kind === 'marteau' && Math.random() < dt * rnd(4, 9)) p.taps++;
       if (p.answer >= 0 || p.out) continue;
       if (kind === 'vert' && t0 > goAt + rnd(0.3, 0.6) && Math.random() < 0.1) {

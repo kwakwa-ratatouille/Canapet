@@ -1,4 +1,5 @@
 import { TEAMS, allies, sidesLeft, winnerName } from './teams';
+import { dozing } from './botSkill';
 // Coussin Clash : combat de plateforme dans le salon. Plus on a de %, plus on vole loin.
 // A = saut (double saut) · B = coup normal selon la direction (au sol et en l'air, comme dans les jeux de combat de plateforme)
 // X = attaque lourde à charger (au sol) / remontée (en l'air) · Y = super coup quand la jauge est pleine.
@@ -766,7 +767,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if ((f.respawn -= dt) <= 0) respawnAt(f);
           return;
         }
-        if (f.bot) bot(f, i, dt);
+        if (f.bot) {
+          if (dozing(f, ctx.botSkill, dt)) f.inp = { x: 0, y: 0 };
+          else bot(f, i, dt);
+        }
         if (f.atkReq) startMove(f, i);
         f.atkReq = false;
         f.dodgeCd = Math.max(0, f.dodgeCd - dt);

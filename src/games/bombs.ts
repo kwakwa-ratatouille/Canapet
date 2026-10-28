@@ -1,4 +1,5 @@
 import { TEAMS, allies, sidesLeft, winnerName } from './teams';
+import { dozing } from './botSkill';
 // Pétards Mouillés : arène en grille, on pose des pétards qui éclatent en croix d'éclaboussures.
 // Stick = bouger · A = poser un pétard · B = shooter dans un pétard. Le dernier au sec gagne.
 import { drawCharacter } from '../shared/characters';
@@ -314,7 +315,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       time += dt;
       players.forEach((p, i) => {
         if (!p.alive) return;
-        if (p.bot) bot(p, i, dt);
+        if (p.bot) {
+          if (dozing(p, ctx.botSkill, dt)) p.inp = { x: 0, y: 0 };
+          else bot(p, i, dt);
+        }
         const cx = Math.round(p.x);
         const cy = Math.round(p.y);
         if (p.dropReq && !bombAt(cx, cy) && bombs.filter((b) => b.owner === i).length < p.bombs) {

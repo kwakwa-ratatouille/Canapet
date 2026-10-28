@@ -39,7 +39,7 @@ function defaultProfile(): Profile {
 }
 
 const DEMO: Record<string, PadScreen> = {
-  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0 },
+  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1 },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
   results: { s: 'results', gid: 1, host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
@@ -507,6 +507,20 @@ function PadScreenView({
                   <span className="opt-ico">{screen.teams ? '🍓🌿' : '🤼'}</span>
                   <b>{t(lang, screen.teams ? 'teams' : 'melee')}</b>
                   <small>{t(lang, screen.teams ? 'teamsShortOn' : 'teamsShortOff')}</small>
+                  <span className="opt-state">{t(lang, 'tapToChange')}</span>
+                </button>
+              </div>
+              <div className="opt-row">
+                <button className="opt violet on" onClick={() => host('bots')}>
+                  <span className="opt-ico">🤖</span>
+                  <b>{lang === 'fr' ? 'Bots' : 'Bots'}</b>
+                  <small>{screen.bots < 0 ? (lang === 'fr' ? 'Auto (selon le jeu)' : 'Auto (per game)') : screen.bots === 0 ? (lang === 'fr' ? 'Aucun bot' : 'No bots') : `+ ${screen.bots}`}</small>
+                  <span className="opt-state">{t(lang, 'tapToChange')}</span>
+                </button>
+                <button className="opt sun on" onClick={() => host('botlevel')}>
+                  <span className="opt-ico">{['🐣', '😎', '🔥'][screen.botLevel] ?? '😎'}</span>
+                  <b>{lang === 'fr' ? 'Niveau des bots' : 'Bot level'}</b>
+                  <small>{(lang === 'fr' ? ['Facile', 'Normal', 'Fort'] : ['Easy', 'Normal', 'Hard'])[screen.botLevel] ?? ''}</small>
                   <span className="opt-state">{t(lang, 'tapToChange')}</span>
                 </button>
               </div>

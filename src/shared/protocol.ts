@@ -26,7 +26,7 @@ export interface GameInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number }
+  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }
@@ -52,7 +52,7 @@ export type ToPad =
   | { t: 'status'; rank: number; of: number; left: number | null }
   | { t: 'pong'; ts: number };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume';
+export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel';
 
 /** Téléphone → télé */
 export type ToTv =

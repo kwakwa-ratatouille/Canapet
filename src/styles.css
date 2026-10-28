@@ -2923,3 +2923,15 @@ body,
   opacity: 0.4;
   filter: grayscale(1);
 }
+
+/* Réglages des bots */
+.opt.violet.on {
+  background: #8a5cf6;
+}
+.opt.sun.on {
+  background: #ffd60a;
+}
+.opt.sun.on b,
+.opt.sun.on small {
+  color: var(--ink);
+}

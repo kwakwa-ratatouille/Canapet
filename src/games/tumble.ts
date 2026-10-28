@@ -1,5 +1,6 @@
 // La Dégringolade : course d'obstacles vue de côté, inspirée des courses de jeux télé géants.
 // La caméra suit le joueur en tête. 3 vies : tomber ou se faire distancer (sortir de l'écran) en coûte une.
+import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import { drawSky, candy } from './draw';
@@ -519,7 +520,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function stepPlayer(p: P, dt: number) {
     if (p.out) return;
-    if (p.bot && !p.done) botThink(p, dt);
+    if (p.bot && !p.done) {
+      if (dozing(p, ctx.botSkill, dt)) p.inp = { x: 0, a: false, b: false };
+      else botThink(p, dt);
+    }
     p.stun = Math.max(0, p.stun - dt);
     p.invuln = Math.max(0, p.invuln - dt);
     p.jumpBuf = Math.max(0, p.jumpBuf - dt);

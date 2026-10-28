@@ -1,5 +1,6 @@
 // Mini Bolides : course de karts vue de dessus sur un circuit en bonbon, 5 tours, bordures, tapis turbo.
 // Le stick indique la direction voulue (le kart tourne et accélère), A = objet, B = frein.
+import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { roundRectText } from './draw';
@@ -305,7 +306,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     update(dt) {
       time += dt;
       ks.forEach((k, i) => {
-        if (k.bot && !k.done) bot(k, dt);
+        if (k.bot && !k.done && !dozing(k, ctx.botSkill, dt)) bot(k, dt);
         if (k.done) k.inp = { x: Math.cos(k.a) * 0.4, y: Math.sin(k.a) * 0.4, b: false };
         k.turbo = Math.max(0, k.turbo - dt);
         k.safe = Math.max(0, k.safe - dt);

@@ -1,6 +1,7 @@
 // Coussin Foot : match vu de dessus. 2 équipes (2 buts) ou 4 équipes (4 buts, terrain carré), 1 à 3 ballons.
 // Stick = courir · A = tirer (ou lancer le ballon qu'on tient) · B = sprint (envoie le ballon loin, vole le ballon du porteur)
 // X = attraper le ballon (une passe d'un coéquipier, ou un ballon libre). Un tir sur un porteur lui fait lâcher le ballon.
+import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { INK, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
@@ -355,7 +356,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         return;
       }
       for (const p of ps) {
-        if (p.bot) bot(p, dt);
+        if (p.bot) {
+          if (dozing(p, ctx.botSkill, dt)) p.inp = { x: 0, y: 0 };
+          else bot(p, dt);
+        }
         p.dash = Math.max(0, p.dash - dt);
         p.dashCd = Math.max(0, p.dashCd - dt);
         p.stun = Math.max(0, p.stun - dt);

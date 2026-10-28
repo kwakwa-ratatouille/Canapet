@@ -1,4 +1,5 @@
 import { TEAMS, allies, sidesLeft, winnerName } from './teams';
+import { dozing } from './botSkill';
 // Bagarre Molle : persos tout mous qui se baffent, s'attrapent et se jettent dans la mer de crème.
 // A = saut · B court = baffe · B maintenu = attraper, relâcher = jeter (direction du stick). Trop de baffes = sonné.
 // Premier à 2 manches. Chaque carte a son piège : vent, gouttes de sirop, plateformes qui bougent.
@@ -490,7 +491,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (!b.alive) return;
         if (b.bot) {
           const wasHolding = b.holding >= 0;
-          bot(b, i, dt);
+          if (dozing(b, ctx.botSkill, dt)) b.inp = { x: 0, y: 0 };
+          else bot(b, i, dt);
           if (wasHolding && !b.bHeld) release(i, true);
         }
         b.dizzy = Math.max(0, b.dizzy - dt * 0.5);
