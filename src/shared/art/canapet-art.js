@@ -266,7 +266,13 @@ function perso(kind,c=ROSE,o={}){
   if(o.toot) g+=cloud(14,116,20,'#fff',3.5)+cloud(-2,96,11,'#fff',3)+star(30,92,6,SOL,2.5)+star(-2,124,4,SOL,2);
   const mood=o.arms?'win':o.mood||'happy';
   g+=legs()+relief(feet(c));
-  let body=relief(k.b(c));
+  const raw=k.b(c);
+  // Ombrage façon BD qui épouse la silhouette : ombre en bas à droite, lumière en haut à gauche
+  const id='s'+kind;
+  const black=raw.replace(/fill="[^"]*"/g,'fill="#000"').replace(/stroke="[^"]*"/g,'stroke="none"');
+  const box='x="-60" y="-60" width="260" height="260"';
+  const shade=`<defs><clipPath id="c${id}">${black}</clipPath><mask id="m${id}" maskUnits="userSpaceOnUse" ${box}><rect ${box} fill="#fff"/><g transform="translate(-10 -9)">${black}</g></mask><mask id="h${id}" maskUnits="userSpaceOnUse" ${box}><rect ${box} fill="#fff"/><g transform="translate(6 6)">${black}</g></mask></defs><g clip-path="url(#c${id})"><rect ${box} fill="#3a2140" opacity=".2" mask="url(#m${id})"/><rect ${box} fill="#fff" opacity=".38" mask="url(#h${id})"/></g>`;
+  let body=relief(raw)+shade;
   const base=LOOK[kind]||['cool','hip'];
   // Le joueur peut choisir son regard et sa pose (sinon ceux du perso)
   const look=[o.eyes||base[0],o.pose||base[1]];
