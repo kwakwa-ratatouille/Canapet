@@ -51,7 +51,7 @@ export class TvNet {
     });
     peer.on('connection', (c) => this.accept(c));
     peer.on('disconnected', () => {
-      if (!peer.destroyed) setTimeout(() => !peer.destroyed && peer.reconnect(), 1500);
+      if (!peer.destroyed) setTimeout(() => !peer.destroyed && peer.disconnected && peer.reconnect(), 1500);
     });
     peer.on('error', (e: Error & { type?: string }) => {
       const type = e.type || e.message;
@@ -63,10 +63,16 @@ export class TvNet {
         setTimeout(() => this.open(this.tries < 4 ? code : randomCode()), 1500);
         return;
       }
+      const net = ['network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(String(type));
+      // Des manettes sont branchées : leurs liaisons directes marchent toujours, on se reconnecte en silence
+      if (net && this.byPid.size > 0 && !peer.destroyed) {
+        setTimeout(() => !peer.destroyed && peer.disconnected && peer.reconnect(), 2000);
+        return;
+      }
       this.status = 'error';
       this.error = String(type);
       this.h.onStatus();
-      if (!peer.destroyed && ['network', 'server-error', 'socket-error', 'socket-closed'].includes(String(type))) {
+      if (!peer.destroyed && net) {
         peer.destroy();
         setTimeout(() => this.open(code), 3000);
       }

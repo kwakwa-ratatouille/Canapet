@@ -30,8 +30,9 @@ export class PadNet {
       if (!peer.destroyed && !this.stopped) setTimeout(() => !peer.destroyed && peer.reconnect(), 1000);
     });
     peer.on('error', (e: Error & { type?: string }) => {
-      if (e.type === 'peer-unavailable') this.set('notfound');
-      else if (this.status === 'ok') this.set('lost');
+      // Les erreurs du serveur d'appairage (réseau, prise coupée…) ne touchent pas la liaison directe avec la télé :
+      // on ne dit « perdu » que si le canal se ferme ou si la télé ne répond plus.
+      if (e.type === 'peer-unavailable' && this.status !== 'ok') this.set('notfound');
     });
     this.timer = window.setInterval(() => this.watch(), 2000);
   }
@@ -85,7 +86,8 @@ export class PadNet {
     if (this.stopped) return;
     if (this.status === 'ok') {
       this.ping();
-      if (Date.now() - this.lastPong > 7000) this.set('lost');
+      if (Date.now() - this.lastPong > 10000 && !this.conn?.open) this.set('lost');
+      else if (Date.now() - this.lastPong > 14000) this.set('lost');
       return;
     }
     if (Date.now() - this.dialedAt > 4000) this.dial();

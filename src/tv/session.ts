@@ -657,10 +657,10 @@ export class Session {
     return true;
   }
 
-  /** Un téléphone qui ne donne plus de nouvelles depuis 9 s est considéré parti. */
+  /** Un téléphone qui ne donne plus de nouvelles depuis 15 s est considéré parti. */
   private watchdog(now: number) {
     for (const p of this.players.values())
-      if (p.connected && !p.fake && now - p.lastSeen > 9000) {
+      if (p.connected && !p.fake && now - p.lastSeen > 15000) {
         this.net.drop(p.pid);
         this.onLeave(p.pid);
       }
