@@ -2976,3 +2976,13 @@ body,
 .kick-btn.chief-btn {
   background: #fff3b0;
 }
+
+/* Grille des 16 photos tirées : plus grande */
+.roulette-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.roulette-thumb {
+  border-radius: 16px;
+  border-width: 4px;
+}
