@@ -6,16 +6,16 @@ import type { Lang, ToTv } from '../shared/protocol';
 const TXT = {
   fr: {
     pick: 'Sélectionne une large partie de ta galerie. Trois photos seront tirées au sort, sans que tu saches lesquelles.',
-    auto: 'Seize photos sont tirées au sort dans ta galerie, puis la télé en garde trois. Tu ne sauras pas lesquelles.',
+    auto: 'Seize photos tirées au sort dans ta galerie. Relance si elles ne te conviennent pas, puis valide : la télé en gardera trois.',
     autoBtn: 'Tirer au sort',
     orManual: 'ou sélectionner moi-même',
     digging: 'Tirage en cours…',
     noAccess: 'Accès aux photos refusé. Autorise-le dans les réglages du téléphone, puis touche Tirer au sort.',
     pickVideo: 'Sélectionne plusieurs vidéos de 20 secondes maximum. Certaines seront tirées au sort.',
     add: 'Ouvrir la galerie',
-    reroll: '🔀 Retirer au hasard',
+    reroll: 'Relancer le tirage',
     swap: 'Touche une image pour la changer',
-    sendGo: (n: number) => `Envoyer ces ${n} et je suis prêt !`,
+    sendGo: (n: number) => `Valider ces ${n} photos`,
     pool: (n: number) => `${n} dans ta sélection`,
     sending: (k: number, n: number) => `Envoi à la télé : ${k}/${n}`,
     sent: (n: number) => `${n} reçue(s) par la télé`,
@@ -32,16 +32,16 @@ const TXT = {
   },
   en: {
     pick: 'Select a large part of your gallery. Three photos will be drawn at random, without you knowing which.',
-    auto: 'Sixteen photos are drawn at random from your gallery, then the TV keeps three. You won’t know which.',
+    auto: 'Sixteen random photos from your gallery. Draw again if you don’t like them, then confirm: the TV will keep three.',
     autoBtn: 'Draw at random',
     orManual: 'or select them myself',
     digging: 'Drawing…',
     noAccess: 'Photo access denied. Allow it in your phone settings, then tap Draw at random.',
     pickVideo: 'Select several videos of 20 seconds or less. Some will be drawn at random.',
     add: 'Open gallery',
-    reroll: '🔀 Draw again',
+    reroll: 'Draw again',
     swap: 'Tap a picture to swap it',
-    sendGo: (n: number) => `Send these ${n}, I’m ready!`,
+    sendGo: (n: number) => `Confirm these ${n} photos`,
     pool: (n: number) => `${n} in your selection`,
     sending: (k: number, n: number) => `Sending to the TV: ${k}/${n}`,
     sent: (n: number) => `${n} received by the TV`,
@@ -162,14 +162,14 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
     send({ t: 'act', a: 'ready' });
   };
 
-  // Appli : tirage dans la galerie (16 photos), lancé tout seul au début de la manche d'envoi
+  // Appli : tirage de 16 photos dans la galerie, montrées avant l'envoi ; on peut relancer autant qu'on veut
   const fromGallery = async () => {
     setBusy({ k: 0, n: data.video ? 8 : MAX_MEDIA });
     setWarn('');
     try {
       const files = await randomFromGallery(data.video ? 8 : MAX_MEDIA, !!data.video);
-      if (files.length) return void upload(files);
-      setWarn(T.noAccess);
+      if (files.length) setPicks(files);
+      else setWarn(T.noAccess);
     } catch {
       setWarn(T.noAccess);
     }
@@ -191,44 +191,31 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
           <p className="pad-title pulse">{T.waitReady}</p>
         ) : busy ? (
           <p className="pad-title pulse">{busy.k ? T.sending(busy.k, busy.n) : T.digging}</p>
-        ) : (
+        ) : hasGallery() ? (
           <>
-            {hasGallery() && (
-              <button
-                className="btn big mint"
-                onClick={() => void fromGallery()}
-              >
-                {T.autoBtn}
-              </button>
+            {picks.length > 0 && (
+              <div className="roulette-grid">
+                {thumbs.map((t) => (
+                  <div key={t.url} className="roulette-thumb">
+                    {t.video ? <video src={t.url} muted playsInline /> : <img src={t.url} alt="" />}
+                    {t.video && <span>🎬</span>}
+                  </div>
+                ))}
+              </div>
             )}
-            {/* Dans l'appli : seulement le tirage au hasard, pas de choix à la main */}
-            {!hasGallery() && (
-              <button className="btn big sun" onClick={() => fileRef.current?.click()}>
-                {T.add}
+            <button className="btn alt" onClick={() => void fromGallery()}>
+              {picks.length ? T.reroll : T.autoBtn}
+            </button>
+            {picks.length > 0 && (
+              <button className="btn big mint" onClick={() => void upload(picks)}>
+                {T.sendGo(picks.length)}
               </button>
-            )}
-            {false && pool.length > 0 && (
-              <>
-                <p className="pad-small">
-                  {T.pool(pool.length)} · {T.swap}
-                </p>
-                <div className="roulette-grid">
-                  {thumbs.map((t, i) => (
-                    <button key={t.url} className="roulette-thumb" onClick={() => swap(i)}>
-                      {t.video ? <video src={t.url} muted playsInline /> : <img src={t.url} alt="" />}
-                      {t.video && <span>🎬</span>}
-                    </button>
-                  ))}
-                </div>
-                <button className="btn alt" onClick={() => draw(pool)}>
-                  {T.reroll}
-                </button>
-                <button className="btn big mint" onClick={() => void upload(picks)}>
-                  {T.sendGo(picks.length)}
-                </button>
-              </>
             )}
           </>
+        ) : (
+          <button className="btn big sun" onClick={() => fileRef.current?.click()}>
+            {T.add}
+          </button>
         )}
         <input
           ref={fileRef}
