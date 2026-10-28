@@ -1,0 +1,56 @@
+name: Appli iPhone
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: ios
+  cancel-in-progress: true
+jobs:
+  ipa:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm install @capacitor/ios@6.1.2
+      - run: npx cap add ios
+      - name: Code maison (galerie, plein écran, autorisations)
+        run: |
+          cp native/ios/GalleryPlugin.swift native/ios/MainViewController.swift ios/App/App/
+          ruby native/ios/patch.rb
+          P=ios/App/App/Info.plist
+          plutil -insert NSPhotoLibraryUsageDescription -string "Photo Roulette pioche des photos au hasard dans ta galerie." $P
+          plutil -insert NSCameraUsageDescription -string "Pour prendre un selfie comme visage de ton perso." $P
+          plutil -insert UIStatusBarHidden -bool YES $P
+          plutil -replace UIViewControllerBasedStatusBarAppearance -bool YES $P || plutil -insert UIViewControllerBasedStatusBarAppearance -bool YES $P
+      - name: Icône
+        continue-on-error: true
+        run: npx capacitor-assets generate --ios --iconBackgroundColor '#ff4f9a' --splashBackgroundColor '#ffe9f3'
+      - run: npx cap sync ios
+      - name: Fabriquer l'IPA (non signée)
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -20
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr Canapet.ipa Payload
+      - name: Publier (lien fixe ios-latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-latest
+          name: Appli iPhone Cana'pet
+          body: |
+            Appli iPhone de Cana'pet (.ipa non signée). Elle ouvre toujours la dernière version du jeu, en plein écran,
+            et Photo Roulette pioche toute seule des photos au hasard dans la photothèque.
+            À installer depuis le PC avec Sideloadly (gratuit, avec ton identifiant Apple).
+          files: mobile/Canapet.ipa
+          make_latest: false

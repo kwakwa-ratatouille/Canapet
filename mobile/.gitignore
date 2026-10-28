@@ -1,3 +1,5 @@
 node_modules
-android
+/android
+/ios
 Canapet.apk
+Canapet.ipa
