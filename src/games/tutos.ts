@@ -9,22 +9,23 @@ export interface Tuto {
 export const TUTOS: Record<string, Record<Lang, Tuto>> = {
   pouces: {
     fr: {
-      goal: 'Arrive le premier au bout de la piste !',
+      goal: 'Arrive le premier ! Ton perso court tout seul, à toi de franchir les obstacles',
       steps: [
-        ['👈👉', 'Tapote GAUCHE puis DROITE, en alternant'],
-        ['🐌', 'Dans la boue, tes pas sont plus courts'],
-        ['⚡', 'Sur le tapis turbo, tu fonces !'],
+        ['⬆', 'Bouton gauche : SAUTE par-dessus les haies roses'],
+        ['⬇', 'Bouton droit : GLISSE sous les barres jaunes'],
+        ['⚡', 'Pile au bon moment = PARFAIT et petit turbo. Trop tôt ou mauvais bouton = tu trébuches'],
       ],
     },
     en: {
-      goal: 'Reach the end of the track first!',
+      goal: 'Finish first! Your character runs by itself, you handle the obstacles',
       steps: [
-        ['👈👉', 'Tap LEFT then RIGHT, alternating'],
-        ['🐌', 'In the mud, your steps are shorter'],
-        ['⚡', 'On the boost pad, you fly!'],
+        ['⬆', 'Left button: JUMP over the pink hurdles'],
+        ['⬇', 'Right button: SLIDE under the yellow bars'],
+        ['⚡', 'Right on time = PERFECT and a little boost. Too early or wrong button = you trip'],
       ],
     },
   },
+
   obstacles: {
     fr: {
       goal: 'Seuls les premiers arrivés sont qualifiés. 3 vies : tomber ou traîner derrière en coûte une !',

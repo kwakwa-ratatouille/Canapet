@@ -27,7 +27,7 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 
 ## Catalogue (ordre de fabrication)
 
-1. ✅ Course de pouces (`src/games/thumbRace.ts`) : test de latence.
+1. ✅ Course de pouces (`src/games/thumbRace.ts`) : refaite (oct. 2026) : course auto, bouton gauche = sauter les haies, droit = glisser sous les barres, PARFAIT = turbo, trébucher sinon ; chaque couloir suit son coureur, barre de progression en haut, gros GO.
 2. ✅ La Dégringolade (`src/games/tumble.ts`) : course d’obstacles vue de côté, parcours tiré au hasard (tronçons), caméra qui suit le premier, A = saut, B = plongeon.
 3. ✅ Le Bar des Bobards (`src/games/bluff.ts` + `src/pad/BluffPad.tsx`) : bluff 2-6 joueurs, main privée sur le téléphone (`padData` + `ctx.refresh()`), roulette du coussin péteur.
 4. ✅ Sumo Tamponneur (`sumo.ts`, 12 joueurs, 3 vies, assiette qui rétrécit) et Pétards Mouillés (`bombs.ts`, 8 joueurs, grille, bonus, bots qui fuient le danger).
