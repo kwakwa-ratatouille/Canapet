@@ -17,6 +17,7 @@ export const IS_NATIVE = !!cap()?.isNativePlatform?.();
 /** Ouvert depuis l'écran d'accueil (appli installée, sans barre d'adresse). */
 export const IS_INSTALLED = IS_NATIVE || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || (navigator as { standalone?: boolean }).standalone === true;
 
+export const IOS_IPA_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/ios-latest/Canapet.ipa';
 export const ANDROID_APK_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/android-latest/Canapet.apk';
 
 export const hasGallery = () => !!cap()?.Plugins?.Gallery;

@@ -5,7 +5,7 @@ import { Wordmark } from '../shared/Logo';
 import { CODE_LETTERS, type Lang } from '../shared/protocol';
 import { save, store, IS_PHONE } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
-import { ANDROID_APK_URL, IS_INSTALLED, PLATFORM } from '../shared/native';
+import { ANDROID_APK_URL, IOS_IPA_URL, IS_INSTALLED, PLATFORM } from '../shared/native';
 
 export const PC_APP_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/pc-latest/Canapet-Setup.exe';
 const IN_APP = /Electron/.test(navigator.userAgent);
@@ -53,6 +53,13 @@ export function Home() {
           {fr
             ? 'L’appli Android pioche elle-même les photos de Photo Roulette. Android demandera d’autoriser l’installation : accepte.'
             : 'The Android app picks Photo Roulette pictures by itself. Android will ask to allow the install: accept.'}
+        </p>
+      )}
+      {PLATFORM === 'ios' && (
+        <p className="pad-small">
+          {fr ? '🍏 Appli iPhone : télécharge ' : '🍏 iPhone app: download '}
+          <a href={IOS_IPA_URL}>Canapet.ipa</a>
+          {fr ? ' sur ton PC et installe-la avec Sideloadly (gratuit). Sinon, plus simple :' : ' on your PC and install it with Sideloadly (free). Or, simpler:'}
         </p>
       )}
       {PLATFORM === 'ios' && (
