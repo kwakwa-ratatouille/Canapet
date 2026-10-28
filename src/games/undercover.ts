@@ -4,7 +4,7 @@
 import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL, MENTHE } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { roundRectText } from './draw';
+import { candy, roundRectText } from './draw';
 import { norm } from './scribbleShared';
 import type { UndercoverPadData } from './undercoverShared';
 import { THEMES } from './undercoverWords';
@@ -34,6 +34,124 @@ interface Pl extends Runner {
 }
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+
+/** Bureau de détective, dessiné une fois puis gardé en image. */
+let officeImg: HTMLCanvasElement | null = null;
+function office(): HTMLCanvasElement {
+  if (officeImg) return officeImg;
+  const c = document.createElement('canvas');
+  c.width = 1920;
+  c.height = 1080;
+  const g = c.getContext('2d')!;
+  const rr = (x: number, y: number, w: number, h: number, r: number, fill: string, lw = 8) => {
+    g.fillStyle = fill;
+    g.beginPath();
+    g.roundRect(x, y, w, h, r);
+    g.fill();
+    candy(g, x, y, w, h, r);
+    g.strokeStyle = INK;
+    g.lineWidth = lw;
+    g.beginPath();
+    g.roundRect(x, y, w, h, r);
+    g.stroke();
+  };
+  // Mur en lambris
+  const wall = g.createLinearGradient(0, 0, 0, 760);
+  wall.addColorStop(0, '#2a1838');
+  wall.addColorStop(1, '#43285e');
+  g.fillStyle = wall;
+  g.fillRect(0, 0, 1920, 760);
+  g.fillStyle = 'rgba(0,0,0,0.12)';
+  for (let x = 0; x < 1920; x += 120) g.fillRect(x, 480, 6, 280);
+  g.fillStyle = '#5a3778';
+  g.fillRect(0, 470, 1920, 16);
+  // Fenêtre à stores : lumière de la ville la nuit
+  rr(110, 250, 330, 230, 16, '#1b1030');
+  g.fillStyle = '#ffd60a';
+  for (const [x, y, w, h] of [[150, 380, 40, 100], [210, 340, 50, 140], [280, 400, 36, 80], [340, 360, 60, 120]]) {
+    g.fillRect(x, y, w, h);
+  }
+  g.fillStyle = '#c9a6ff';
+  for (let y = 262; y < 470; y += 22) g.fillRect(118, y, 314, 9);
+  // Tableau d'enquête avec fils rouges
+  rr(1420, 200, 400, 270, 14, '#c98a52');
+  rr(1438, 218, 364, 234, 8, '#e9c08a', 5);
+  const pins: [number, number, string][] = [[1490, 270, '#ff4f9a'], [1640, 250, '#2ec5ff'], [1750, 330, '#1fc9a0'], [1540, 390, '#ffd60a'], [1690, 410, '#fff']];
+  g.strokeStyle = '#ff3b3b';
+  g.lineWidth = 4;
+  g.beginPath();
+  g.moveTo(1490, 270);
+  g.lineTo(1640, 250);
+  g.lineTo(1750, 330);
+  g.lineTo(1540, 390);
+  g.lineTo(1490, 270);
+  g.moveTo(1640, 250);
+  g.lineTo(1690, 410);
+  g.stroke();
+  for (const [x, y, col] of pins) {
+    g.save();
+    g.translate(x, y);
+    g.rotate((x % 7) * 0.03 - 0.1);
+    rr(-34, -26, 68, 56, 4, col, 4);
+    g.fillStyle = INK;
+    g.font = '700 30px Fredoka, sans-serif';
+    g.textAlign = 'center';
+    g.fillText('?', 0, 14);
+    g.restore();
+  }
+  // Lampe suspendue
+  g.strokeStyle = INK;
+  g.lineWidth = 6;
+  g.beginPath();
+  g.moveTo(960, 0);
+  g.lineTo(960, 250);
+  g.stroke();
+  g.fillStyle = '#1fc9a0';
+  g.beginPath();
+  g.moveTo(880, 320);
+  g.quadraticCurveTo(960, 220, 1040, 320);
+  g.closePath();
+  g.fill();
+  g.lineWidth = 8;
+  g.stroke();
+  // Sol : parquet sombre
+  g.fillStyle = '#2f1d40';
+  g.fillRect(0, 760, 1920, 320);
+  g.strokeStyle = 'rgba(0,0,0,0.25)';
+  g.lineWidth = 4;
+  for (let y = 800; y < 1080; y += 52) {
+    g.beginPath();
+    g.moveTo(0, y);
+    g.lineTo(1920, y);
+    g.stroke();
+  }
+  g.strokeStyle = INK;
+  g.lineWidth = 8;
+  g.beginPath();
+  g.moveTo(0, 760);
+  g.lineTo(1920, 760);
+  g.stroke();
+  // Tapis rond sous le cercle des suspects
+  g.fillStyle = '#7a2e5c';
+  g.beginPath();
+  g.ellipse(960, 930, 900, 130, 0, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = '#ff7eb6';
+  g.lineWidth = 6;
+  g.setLineDash([18, 14]);
+  g.beginPath();
+  g.ellipse(960, 930, 860, 110, 0, 0, Math.PI * 2);
+  g.stroke();
+  g.setLineDash([]);
+  // Vignette
+  const v = g.createRadialGradient(960, 560, 300, 960, 540, 1150);
+  v.addColorStop(0, 'rgba(10,5,30,0)');
+  v.addColorStop(1, 'rgba(10,5,30,0.55)');
+  g.fillStyle = v;
+  g.fillRect(0, 0, 1920, 1080);
+  officeImg = c;
+  return c;
+}
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
@@ -293,18 +411,33 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     render(g, t) {
       // Salle d'interrogatoire bonbon : fond violet, projecteur qui balaie
-      g.fillStyle = '#2a1838';
-      g.fillRect(0, 0, 1920, 1080);
+      g.drawImage(office(), 0, 0, 1920, 1080);
       if (!ctx.light) {
-        const sx = 960 + Math.sin(t * 0.6) * 500;
-        const grd = g.createRadialGradient(sx, 620, 40, sx, 620, 520);
-        grd.addColorStop(0, 'rgba(255,214,10,0.22)');
+        // Cône de lumière de la lampe qui se balance + projecteur qui cherche un suspect
+        const sw = Math.sin(t * 0.9) * 0.08;
+        g.save();
+        g.translate(960, 0);
+        g.rotate(sw);
+        g.fillStyle = 'rgba(255,240,170,0.13)';
+        g.beginPath();
+        g.moveTo(-70, 300);
+        g.lineTo(70, 300);
+        g.lineTo(520, 1080);
+        g.lineTo(-520, 1080);
+        g.closePath();
+        g.fill();
+        g.fillStyle = '#fff6c8';
+        g.beginPath();
+        g.arc(0, 302, 20, 0, Math.PI);
+        g.fill();
+        g.restore();
+        const sx = 960 + Math.sin(t * 0.6) * 640;
+        const grd = g.createRadialGradient(sx, 900, 20, sx, 900, 260);
+        grd.addColorStop(0, 'rgba(255,214,10,0.25)');
         grd.addColorStop(1, 'rgba(255,214,10,0)');
         g.fillStyle = grd;
-        g.fillRect(0, 0, 1920, 1080);
+        g.fillRect(sx - 260, 640, 520, 440);
       }
-      g.fillStyle = '#3a2452';
-      for (let x = 0; x < 1920; x += 160) for (let y = 760; y < 1080; y += 160) if (((x + y) / 160) % 2 === 0) g.fillRect(x, y, 160, 160);
       // Thème
       g.font = '700 32px Fredoka, sans-serif';
       const label = `${theme.emoji} ${theme.name[ctx.lang]}`;
@@ -321,11 +454,22 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.fillText(label, 85, 81);
       // Titre
       g.textAlign = 'center';
-      g.fillStyle = '#fff';
       g.font = '700 58px Fredoka, sans-serif';
-      g.fillText(headline, 960, 170);
+      const hw = Math.max(440, g.measureText(headline).width + 90);
+      g.fillStyle = ROSE;
+      g.strokeStyle = INK;
+      g.lineWidth = 8;
+      g.beginPath();
+      g.roundRect(960 - hw / 2, 116, hw, 84, 42);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#fff';
+      g.fillText(headline, 960, 177);
       g.font = '600 36px Fredoka, sans-serif';
-      if (sub) g.fillText(sub, 960, 222);
+      if (sub) {
+        g.strokeText(sub, 960, 245);
+        g.fillText(sub, 960, 245);
+      }
       if (phase !== 'end' && phase !== 'reveal') {
         g.font = '700 44px Fredoka, sans-serif';
         g.fillStyle = timer < 6 ? ROSE : '#fff';
