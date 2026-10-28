@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { hasGallery, randomFromGallery } from '../shared/native';
 import { CHUNK, MAX_MEDIA, MAX_VIDEO_BYTES, MAX_VIDEOS, MAX_VIDEO_SECONDS, type RoulettePadData } from '../games/rouletteShared';
 import type { Lang, ToTv } from '../shared/protocol';
 
@@ -161,6 +162,23 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
           <p className="pad-title pulse">{T.sending(busy.k, busy.n)}</p>
         ) : (
           <>
+            {hasGallery() && (
+              <button
+                className="btn big mint"
+                onClick={async () => {
+                  setBusy({ k: 0, n: data.video ? 8 : MAX_MEDIA });
+                  try {
+                    const files = await randomFromGallery(data.video ? 8 : MAX_MEDIA, !!data.video);
+                    if (files.length) return void upload(files);
+                  } catch {
+                    /* autorisation refusée : on garde le choix manuel */
+                  }
+                  setBusy(null);
+                }}
+              >
+                🎲 {lang === 'fr' ? 'Piocher au hasard dans ma galerie' : 'Pick at random from my gallery'}
+              </button>
+            )}
             <button className="btn big sun" onClick={() => fileRef.current?.click()}>
               {T.add}
             </button>

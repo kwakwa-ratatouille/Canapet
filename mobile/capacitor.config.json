@@ -1,0 +1,12 @@
+{
+  "appId": "com.canapet.app",
+  "appName": "Cana'pet",
+  "webDir": "www",
+  "server": {
+    "url": "https://kwakwa-ratatouille.github.io/Canapet/",
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#ffe9f3"
+  }
+}

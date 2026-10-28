@@ -1,0 +1,14 @@
+{
+  "name": "canapet-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Appli Android de Cana'pet : ouvre le site en plein écran et donne accès à la galerie.",
+  "dependencies": {
+    "@capacitor/android": "6.1.2",
+    "@capacitor/cli": "6.1.2",
+    "@capacitor/core": "6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5"
+  }
+}

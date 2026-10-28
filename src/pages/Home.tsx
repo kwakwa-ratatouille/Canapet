@@ -5,6 +5,7 @@ import { Wordmark } from '../shared/Logo';
 import { CODE_LETTERS, type Lang } from '../shared/protocol';
 import { save, store, IS_PHONE } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
+import { ANDROID_APK_URL, IS_INSTALLED, PLATFORM } from '../shared/native';
 
 export const PC_APP_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/pc-latest/Canapet-Setup.exe';
 const IN_APP = /Electron/.test(navigator.userAgent);
@@ -35,6 +36,35 @@ export function Home() {
       setCastMsg(t(lang, 'castFail'));
     }
   };
+  const fr = lang === 'fr';
+  const install = IS_PHONE && !IS_INSTALLED && (
+    <div className="home-card install-card">
+      <h2>📲 {fr ? 'Installer l’appli' : 'Install the app'}</h2>
+      <p>{fr ? 'Plein écran, sans la barre d’adresse : la manette est plus grande.' : 'Full screen, no address bar: a bigger controller.'}</p>
+      {PLATFORM === 'android' && (
+        <div className="row">
+          <a className="btn" href={ANDROID_APK_URL}>
+            🤖 {fr ? 'Appli Android' : 'Android app'}
+          </a>
+        </div>
+      )}
+      {PLATFORM === 'android' && (
+        <p className="pad-small">
+          {fr
+            ? 'L’appli Android pioche elle-même les photos de Photo Roulette. Android demandera d’autoriser l’installation : accepte.'
+            : 'The Android app picks Photo Roulette pictures by itself. Android will ask to allow the install: accept.'}
+        </p>
+      )}
+      {PLATFORM === 'ios' && (
+        <p>
+          {fr ? 'Dans Safari : touche ' : 'In Safari: tap '}
+          <b>{fr ? 'Partager ⬆️' : 'Share ⬆️'}</b>
+          {fr ? ' puis ' : ' then '}
+          <b>{fr ? '« Sur l’écran d’accueil »' : '“Add to Home Screen”'}</b>.
+        </p>
+      )}
+    </div>
+  );
   const switchLang = (l: Lang) => {
     setLang(l);
     const p = store<Record<string, unknown>>('profile', {});
@@ -115,6 +145,7 @@ export function Home() {
         {IS_PHONE ? (
           <>
             {join}
+            {install}
             {tv}
           </>
         ) : (

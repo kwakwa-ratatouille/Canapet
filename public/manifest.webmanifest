@@ -1,0 +1,15 @@
+{
+  "name": "Cana'pet",
+  "short_name": "Cana'pet",
+  "description": "Jeux de soirée sur la télé, ton téléphone est la manette.",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "background_color": "#ffe9f3",
+  "theme_color": "#ff4f9a",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
