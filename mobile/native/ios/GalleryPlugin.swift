@@ -15,13 +15,22 @@ public class GalleryPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func random(_ call: CAPPluginCall) {
         let count = call.getInt("count") ?? 3
         let video = call.getBool("video") ?? false
-        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-            guard status == .authorized || status == .limited else {
+        let done: (Bool) -> Void = { ok in
+            guard ok else {
                 call.reject("Autorisation refusée")
                 return
             }
             DispatchQueue.global(qos: .userInitiated).async {
                 call.resolve(["items": self.pick(count: count, video: video)])
+            }
+        }
+        if #available(iOS 14, *) {
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+                done(status == .authorized || status == .limited)
+            }
+        } else {
+            PHPhotoLibrary.requestAuthorization { status in
+                done(status == .authorized)
             }
         }
     }

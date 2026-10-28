@@ -38,10 +38,12 @@ jobs:
       - run: npx cap sync ios
       - name: Fabriquer l'IPA (non signée)
         run: |
+          set -o pipefail
           xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
             -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -20
           mkdir Payload
           cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          test -f Payload/App.app/App
           zip -qr Canapet.ipa Payload
       - name: Publier (lien fixe ios-latest)
         uses: softprops/action-gh-release@v2
