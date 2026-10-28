@@ -5,46 +5,54 @@ import type { Lang, ToTv } from '../shared/protocol';
 
 const TXT = {
   fr: {
-    pick: 'Ouvre ta galerie et sélectionne TOUT (ou un maximum) : on en pioche au hasard, même toi tu ne sais pas lesquelles 🤭',
-    pickVideo: 'Ouvre ta galerie de vidéos et sélectionne-en un maximum : on en pioche au hasard 🤭',
-    add: '📷 Choisir dans ma galerie',
+    pick: '📸 Coche plein de photos d’un coup (genre 50). On en garde 3 au hasard : même toi, tu sauras pas lesquelles 😈',
+    auto: '🎲 On fouille ta galerie et on prend 3 photos au pif. Bonne chance 😈',
+    autoBtn: '🎲 Piocher au hasard',
+    orManual: 'ou choisis toi-même 👇',
+    digging: 'On fouille ta galerie… 🔍',
+    pickVideo: '🎬 Coche plein de vidéos d’un coup. On en garde au hasard (20 s max chacune) 😈',
+    add: '📂 Ouvrir ma galerie',
     reroll: '🔀 Retirer au hasard',
     swap: 'Touche une image pour la changer',
     sendGo: (n: number) => `Envoyer ces ${n} et je suis prêt !`,
     pool: (n: number) => `${n} dans ta sélection`,
-    sending: (k: number, n: number) => `Envoi… ${k} / ${n}`,
+    sending: (k: number, n: number) => `Envoi à la télé… ${k}/${n} 🚀`,
     sent: (n: number) => `${n} reçue(s) par la télé`,
     ready: 'Je suis prêt !',
-    waitReady: 'C’est noté ! On attend les autres…',
-    tooBig: 'Certaines vidéos trop longues ou trop lourdes ont été sautées',
+    waitReady: '✅ Envoyé ! On attend les traînards…',
+    tooBig: 'Vidéos trop longues zappées (20 s max)',
     vote: 'À qui est-ce ?',
     owner: 'C’est à toi ! 🤫 Fais semblant de chercher…',
     right: 'Bien vu ! 🎉',
     wrong: 'Raté ! 😅',
     wait: 'Regarde la télé…',
     score: (s: number) => `Ton score : ${s}`,
-    privacy: 'Tes fichiers vont directement à la télé et ne sont gardés nulle part.',
+    privacy: '🔒 Rien n’est gardé : ça passe juste par la télé.',
   },
   en: {
-    pick: 'Open your gallery and select EVERYTHING (or as many as you can): we pick at random, even you won’t know which 🤭',
-    pickVideo: 'Open your video gallery and select as many as you can: we pick at random 🤭',
-    add: '📷 Pick from my gallery',
+    pick: '📸 Tick loads of photos at once (like 50). We keep 3 at random: even you won’t know which 😈',
+    auto: '🎲 We dig through your gallery and grab 3 random photos. Good luck 😈',
+    autoBtn: '🎲 Pick at random',
+    orManual: 'or choose yourself 👇',
+    digging: 'Digging through your gallery… 🔍',
+    pickVideo: '🎬 Tick loads of videos at once. We keep some at random (20 s max each) 😈',
+    add: '📂 Open my gallery',
     reroll: '🔀 Draw again',
     swap: 'Tap a picture to swap it',
     sendGo: (n: number) => `Send these ${n}, I’m ready!`,
     pool: (n: number) => `${n} in your selection`,
-    sending: (k: number, n: number) => `Sending… ${k} / ${n}`,
+    sending: (k: number, n: number) => `Sending to the TV… ${k}/${n} 🚀`,
     sent: (n: number) => `${n} received by the TV`,
     ready: 'I’m ready!',
-    waitReady: 'Got it! Waiting for the others…',
-    tooBig: 'Video too long or too big (20 s / 8 MB max): skipped',
+    waitReady: '✅ Sent! Waiting for the slowpokes…',
+    tooBig: 'Videos too long skipped (20 s max)',
     vote: 'Whose is it?',
     owner: 'It’s yours! 🤫 Pretend to think…',
     right: 'Nice one! 🎉',
     wrong: 'Nope! 😅',
     wait: 'Watch the TV…',
     score: (s: number) => `Your score: ${s}`,
-    privacy: 'Your files go straight to the TV and are not stored anywhere.',
+    privacy: '🔒 Nothing is kept: it just passes through the TV.',
   },
 };
 
@@ -155,11 +163,11 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
   if (data.phase === 'upload')
     return (
       <div className="traitor">
-        <p className="pad-title">{data.video ? T.pickVideo : T.pick}</p>
+        <p className="pad-title">{data.video ? T.pickVideo : hasGallery() ? T.auto : T.pick}</p>
         {data.ready ? (
           <p className="pad-title pulse">{T.waitReady}</p>
         ) : busy ? (
-          <p className="pad-title pulse">{T.sending(busy.k, busy.n)}</p>
+          <p className="pad-title pulse">{busy.k ? T.sending(busy.k, busy.n) : T.digging}</p>
         ) : (
           <>
             {hasGallery() && (
@@ -176,9 +184,10 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
                   setBusy(null);
                 }}
               >
-                🎲 {lang === 'fr' ? 'Piocher au hasard dans ma galerie' : 'Pick at random from my gallery'}
+                {T.autoBtn}
               </button>
             )}
+            {hasGallery() && <p className="pad-small">{T.orManual}</p>}
             <button className="btn big sun" onClick={() => fileRef.current?.click()}>
               {T.add}
             </button>
