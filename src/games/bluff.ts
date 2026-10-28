@@ -30,6 +30,62 @@ const shuffle = <T,>(a: T[]) => {
   return a;
 };
 
+let tableCache: HTMLCanvasElement | null = null;
+/** Table de jeu en image : bois verni, tapis vert à motifs, halo de la lampe. */
+function tableImage(): HTMLCanvasElement {
+  if (tableCache) return tableCache;
+  const c = document.createElement('canvas');
+  c.width = 1920;
+  c.height = 1080;
+  const g = c.getContext('2d')!;
+  const light = g.createRadialGradient(960, 560, 60, 960, 600, 760);
+  light.addColorStop(0, 'rgba(255,236,170,0.5)');
+  light.addColorStop(1, 'rgba(255,236,170,0)');
+  g.fillStyle = light;
+  g.fillRect(0, 0, 1920, 1080);
+  // Ombre au sol
+  g.fillStyle = 'rgba(30,12,30,0.35)';
+  g.beginPath();
+  g.ellipse(960, 668, 560, 226, 0, 0, Math.PI * 2);
+  g.fill();
+  // Rebord en bois
+  const wood = g.createLinearGradient(0, 400, 0, 860);
+  wood.addColorStop(0, '#b86a3c');
+  wood.addColorStop(1, '#6e3519');
+  g.fillStyle = wood;
+  g.beginPath();
+  g.ellipse(960, 630, 545, 222, 0, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = '#3a2140';
+  g.lineWidth = 6;
+  g.stroke();
+  g.strokeStyle = 'rgba(255,220,180,0.45)';
+  g.lineWidth = 5;
+  g.beginPath();
+  g.ellipse(960, 624, 530, 212, 0, Math.PI * 1.05, Math.PI * 1.95);
+  g.stroke();
+  // Tapis vert
+  const felt = g.createRadialGradient(960, 590, 40, 960, 620, 520);
+  felt.addColorStop(0, '#2fb37f');
+  felt.addColorStop(1, '#156b4b');
+  g.fillStyle = felt;
+  g.beginPath();
+  g.ellipse(960, 622, 495, 188, 0, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = '#3a2140';
+  g.lineWidth = 5;
+  g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,0.18)';
+  g.lineWidth = 3;
+  g.setLineDash([14, 12]);
+  g.beginPath();
+  g.ellipse(960, 622, 440, 158, 0, 0, Math.PI * 2);
+  g.stroke();
+  g.setLineDash([]);
+  tableCache = c;
+  return c;
+}
+
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const seats: Seat[] = runners.map((r) => ({ ...r, hand: [], alive: true, bullet: Math.floor(Math.random() * 6), shots: 0, out: 0 }));
@@ -235,17 +291,22 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const a = -Math.PI / 2 + ((i + 0.5) / n) * Math.PI * 2 + Math.PI;
         return { x: 960 + Math.cos(a) * 760, y: 560 + Math.sin(a) * 280 };
       });
-      // Table
-      g.fillStyle = '#7a2f52';
-      g.beginPath();
-      g.ellipse(960, 640, 540, 220, 0, 0, Math.PI * 2);
-      g.fill();
-      g.fillStyle = '#c2577a';
-      g.beginPath();
-      g.ellipse(960, 620, 520, 205, 0, 0, Math.PI * 2);
-      g.fill();
+      // Table de jeu (dessinée une fois puis recopiée) : rebord en bois verni, tapis vert, lumière de la lampe
+      g.drawImage(tableImage(), 0, 0);
+      // Lampe suspendue qui se balance un peu
+      const sw = Math.sin(t * 0.8) * 6;
       g.strokeStyle = INK;
-      g.lineWidth = 6;
+      g.lineWidth = 5;
+      g.beginPath();
+      g.moveTo(960, 0);
+      g.lineTo(960 + sw, 150);
+      g.stroke();
+      g.fillStyle = '#ffd60a';
+      g.beginPath();
+      g.moveTo(900 + sw, 210);
+      g.quadraticCurveTo(960 + sw, 120, 1020 + sw, 210);
+      g.closePath();
+      g.fill();
       g.stroke();
 
       // Carte du tour + pile
@@ -349,12 +410,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
 
       // Bandeau de messages
-      g.fillStyle = 'rgba(0,0,0,0.35)';
-      g.fillRect(0, 1000, 1920, 80);
-      g.fillStyle = '#fff';
+      // (au-dessus de la pastille du chrono)
       g.font = '600 38px Fredoka, sans-serif';
+      const mw = Math.min(1700, g.measureText(message).width + 80);
+      g.fillStyle = 'rgba(42,24,56,0.8)';
+      g.beginPath();
+      g.roundRect(960 - mw / 2, 880, mw, 70, 35);
+      g.fill();
+      g.fillStyle = '#fff';
       g.textAlign = 'center';
-      g.fillText(message, 960, 1052);
+      g.fillText(message, 960, 928);
     },
     ranking() {
       return [...seats].sort((a, b) => Number(b.alive) - Number(a.alive) || b.out - a.out).map((s) => s.pid);
