@@ -66,7 +66,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Sois le dernier au sec dans l’arène !',
       steps: [
         ['🕹️', 'Stick : se déplacer dans les couloirs'],
-        ['🧨', 'A : poser un pétard (il éclate en croix)'],
+        ['🧨', 'A : poser un pétard. Il grossit avec le temps, et à la fin il éclabousse toute la ligne !'],
         ['🛡️', 'Casse les blocs pour gagner des bonus, B pour shooter un pétard'],
       ],
     },
@@ -74,7 +74,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       goal: 'Be the last one dry in the arena!',
       steps: [
         ['🕹️', 'Stick: move through the corridors'],
-        ['🧨', 'A: drop a banger (it splashes in a cross)'],
+        ['🧨', 'A: drop a banger. They grow over time, and at the end they splash the whole line!'],
         ['🛡️', 'Break blocks for power-ups, B to kick a banger'],
       ],
     },
@@ -99,19 +99,19 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
   },
   kart: {
     fr: {
-      goal: 'Fais 5 tours avant tout le monde ! Les tapis jaunes donnent un turbo',
+      goal: 'Fais 5 tours avant tout le monde ! Suis les flèches blanches sur la piste',
       steps: [
         ['🕹️', 'Pointe le stick là où tu veux aller : le kart accélère tout seul'],
-        ['❓', 'Roule sur les boîtes pour gagner un objet'],
-        ['🅰️', 'A : utiliser l’objet (turbo, sirop, pétard) · B : freiner'],
+        ['⚠️', 'Évite les plots, la boue et les bonbons qui roulent'],
+        ['❓', 'Boîtes = objets (⚡🍯🧨🍌🛡️🌩️🚀), A pour s’en servir · B : freiner'],
       ],
     },
     en: {
-      goal: 'Finish 5 laps before everyone else! Yellow pads give a boost',
+      goal: 'Finish 5 laps before everyone else! Follow the white arrows on the track',
       steps: [
         ['🕹️', 'Point the stick where you want to go: the kart speeds up by itself'],
-        ['❓', 'Drive over boxes to get an item'],
-        ['🅰️', 'A: use the item (boost, syrup, banger) · B: brake'],
+        ['⚠️', 'Avoid cones, mud and rolling candies'],
+        ['❓', 'Boxes = items (⚡🍯🧨🍌🛡️🌩️🚀), A to use · B: brake'],
       ],
     },
   },

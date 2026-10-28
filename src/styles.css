@@ -3004,3 +3004,22 @@ body,
   -webkit-text-stroke: 5px var(--ink);
   paint-order: stroke fill;
 }
+
+/* Gribouillis : la planche occupe toute la place libre */
+.scribble-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.scribble-area .scribble-canvas {
+  max-height: none;
+  width: auto;
+}
+@media (orientation: landscape) {
+  .scribble-area {
+    grid-row: 2 / 4;
+  }
+}

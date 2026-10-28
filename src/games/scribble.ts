@@ -7,33 +7,34 @@ import { INK_COLORS, norm, type ScribblePadData } from './scribbleShared';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
 
-const DRAW_TIME = 70;
-const MAX_TURNS = 8;
+const MAX_TURNS = 6;
 
+/** Mots faciles à dessiner (et quelques-uns pour rire). Pas de doublons. */
 const WORDS: [string, string][] = [
-  ['trampoline', 'trampoline'], ['hamac', 'hammock'], ['pirate', 'pirate'], ['robot', 'robot'], ['astronaute', 'astronaut'],
-  ['cactus', 'cactus'], ['koala', 'koala'], ['hérisson', 'hedgehog'], ['pieuvre', 'octopus'], ['flamant rose', 'flamingo'],
-  ['glace', 'ice cream'], ['hamburger', 'burger'], ['croissant', 'croissant'], ['pastèque', 'watermelon'], ['popcorn', 'popcorn'],
-  ['montgolfière', 'hot air balloon'], ['sous-marin', 'submarine'], ['skateboard', 'skateboard'], ['trottinette', 'scooter'], ['tracteur', 'tractor'],
-  ['arc-en-ciel', 'rainbow'], ['tornade', 'tornado'], ['éclair', 'lightning'], ['igloo', 'igloo'], ['phare', 'lighthouse'],
-  ['guitare', 'guitar'], ['micro', 'microphone'], ['lunettes', 'glasses'], ['chaussette', 'sock'], ['dentiste', 'dentist'],
-  ['banane', 'banana'], ['pizza', 'pizza'], ['fantôme', 'ghost'], ['dragon', 'dragon'], ['vélo', 'bike'],
-  ['château', 'castle'], ['requin', 'shark'], ['fusée', 'rocket'], ['parapluie', 'umbrella'], ['pingouin', 'penguin'],
-  ['volcan', 'volcano'], ['sirène', 'mermaid'], ['licorne', 'unicorn'], ['escargot', 'snail'], ['bonhomme de neige', 'snowman'],
-  ['toilettes', 'toilet'], ['dentiste', 'dentist'], ['chaussette', 'sock'], ['pirate', 'pirate'], ['robot', 'robot'],
-  ['arc-en-ciel', 'rainbow'], ['girafe', 'giraffe'], ['hamburger', 'hamburger'], ['canapé', 'couch'], ['télécommande', 'remote'],
-  ['moustache', 'moustache'], ['cactus', 'cactus'], ['araignée', 'spider'], ['tracteur', 'tractor'], ['sous-marin', 'submarine'],
-  ['vampire', 'vampire'], ['crocodile', 'crocodile'], ['éléphant', 'elephant'], ['hélicoptère', 'helicopter'], ['guitare', 'guitar'],
-  ['papillon', 'butterfly'], ['tortue', 'turtle'], ['soleil', 'sun'], ['lunettes', 'glasses'], ['frigo', 'fridge'],
-  ['ninja', 'ninja'], ['dinosaure', 'dinosaur'], ['sapin de noël', 'christmas tree'], ['œuf au plat', 'fried egg'], ['poulpe', 'octopus'],
-  ['baleine', 'whale'], ['trampoline', 'trampoline'], ['magicien', 'wizard'], ['bougie', 'candle'], ['clown', 'clown'],
-  ['kangourou', 'kangaroo'], ['astronaute', 'astronaut'], ['croissant', 'croissant'], ['brosse à dents', 'toothbrush'], ['parachute', 'parachute'],
-  ['tour eiffel', 'eiffel tower'], ['pieuvre', 'squid'], ['bonhomme', 'stickman'], ['cerf-volant', 'kite'], ['marteau', 'hammer'],
-  ['sirop', 'syrup'], ['hérisson', 'hedgehog'], ['télévision', 'television'], ['gâteau', 'cake'], ['moto', 'motorbike'],
-  ['phare', 'lighthouse'], ['zombie', 'zombie'], ['boussole', 'compass'], ['lama', 'llama'], ['igloo', 'igloo'],
-  ['bateau', 'boat'], ['cheval', 'horse'], ['citrouille', 'pumpkin'], ['taupe', 'mole'], ['pompier', 'firefighter'],
-  ['ballon', 'balloon'], ['fourchette', 'fork'], ['cascade', 'waterfall'], ['dauphin', 'dolphin'], ['épouvantail', 'scarecrow'],
-  ['chameau', 'camel'], ['loupe', 'magnifying glass'], ['sorcière', 'witch'], ['hamac', 'hammock'], ['coussin', 'cushion'],
+  // Rigolos
+  ['slip', 'underpants'], ['crotte', 'poop'], ['pet', 'fart'], ['fesses', 'butt'], ['moustache', 'moustache'], ['dentier', 'false teeth'],
+  ['chauve', 'bald guy'], ['perruque', 'wig'], ['bisou', 'kiss'], ['ronfleur', 'snorer'], ['chaussette sale', 'smelly sock'], ['nez qui coule', 'runny nose'],
+  ['poule', 'chicken'], ['saucisse', 'sausage'], ['cochon', 'pig'], ['mamie', 'granny'], ['bébé', 'baby'], ['squelette', 'skeleton'],
+  ['momie', 'mummy'], ['vampire', 'vampire'], ['zombie', 'zombie'], ['fantôme', 'ghost'], ['clown', 'clown'], ['ninja', 'ninja'],
+  ['pirate', 'pirate'], ['robot', 'robot'], ['sorcière', 'witch'], ['licorne', 'unicorn'], ['sirène', 'mermaid'], ['dragon', 'dragon'],
+  ['toilettes', 'toilet'], ['papier toilette', 'toilet paper'], ['canapé', 'couch'], ['coussin', 'cushion'], ['télécommande', 'remote'], ['frigo', 'fridge'],
+  // Bouffe
+  ['pizza', 'pizza'], ['frite', 'fries'], ['hot-dog', 'hot dog'], ['hamburger', 'burger'], ['donut', 'donut'], ['cookie', 'cookie'],
+  ['glace', 'ice cream'], ['banane', 'banana'], ['carotte', 'carrot'], ['pastèque', 'watermelon'], ['croissant', 'croissant'], ['œuf au plat', 'fried egg'],
+  ['gâteau', 'cake'], ['popcorn', 'popcorn'], ['sushi', 'sushi'], ['cornichon', 'pickle'], ['fromage', 'cheese'], ['citrouille', 'pumpkin'],
+  // Bêtes
+  ['chat', 'cat'], ['chien', 'dog'], ['serpent', 'snake'], ['escargot', 'snail'], ['araignée', 'spider'], ['requin', 'shark'],
+  ['pingouin', 'penguin'], ['girafe', 'giraffe'], ['éléphant', 'elephant'], ['crocodile', 'crocodile'], ['tortue', 'turtle'], ['papillon', 'butterfly'],
+  ['baleine', 'whale'], ['pieuvre', 'octopus'], ['abeille', 'bee'], ['coccinelle', 'ladybug'], ['hérisson', 'hedgehog'], ['dinosaure', 'dinosaur'],
+  ['lapin', 'rabbit'], ['vache', 'cow'], ['souris', 'mouse'], ['poisson', 'fish'], ['canard', 'duck'], ['singe', 'monkey'],
+  // Objets et choses
+  ['parapluie', 'umbrella'], ['lunettes', 'glasses'], ['chapeau', 'hat'], ['couronne', 'crown'], ['épée', 'sword'], ['guitare', 'guitar'],
+  ['ballon', 'balloon'], ['fusée', 'rocket'], ['avion', 'plane'], ['vélo', 'bike'], ['voiture', 'car'], ['bateau', 'boat'],
+  ['train', 'train'], ['château', 'castle'], ['maison', 'house'], ['phare', 'lighthouse'], ['igloo', 'igloo'], ['tente', 'tent'],
+  ['soleil', 'sun'], ['lune', 'moon'], ['nuage', 'cloud'], ['arc-en-ciel', 'rainbow'], ['éclair', 'lightning'], ['volcan', 'volcano'],
+  ['sapin de noël', 'christmas tree'], ['bonhomme de neige', 'snowman'], ['cactus', 'cactus'], ['fleur', 'flower'], ['arbre', 'tree'], ['cœur', 'heart'],
+  ['bougie', 'candle'], ['marteau', 'hammer'], ['fourchette', 'fork'], ['brosse à dents', 'toothbrush'], ['ciseaux', 'scissors'], ['clé', 'key'],
+  ['télévision', 'television'], ['téléphone', 'phone'], ['cerf-volant', 'kite'], ['trampoline', 'trampoline'], ['hamac', 'hammock'], ['parachute', 'parachute'],
 ];
 
 interface Stroke {
@@ -58,12 +59,15 @@ const lev = (a: string, b: string) => {
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
+  // Temps pour dessiner : choisi par l'hôte (45 s par défaut)
+  const DRAW_TIME = [30, 45, 60].includes(ctx.opts.time) ? ctx.opts.time : 45;
   const pls: Pl[] = runners.map((r) => ({ ...r, score: 0, found: false, note: '' }));
   // Seuls les humains dessinent ; les bots devinent parfois.
   const drawers = pls.map((p, i) => (p.bot ? -1 : i)).filter((i) => i >= 0);
   if (!drawers.length) drawers.push(0);
-  const turns = Math.min(MAX_TURNS, drawers.length * (drawers.length <= 3 ? 2 : 1));
-  const FAMILY_SKIP = new Set(['toilettes', 'vampire', 'zombie', 'sorcière']);
+  // Partie courte : chacun dessine une fois (deux fois à 2)
+  const turns = Math.min(MAX_TURNS, drawers.length * (drawers.length <= 2 ? 2 : 1));
+  const FAMILY_SKIP = new Set(['toilettes', 'papier toilette', 'vampire', 'zombie', 'sorcière', 'slip', 'crotte', 'pet', 'fesses', 'bisou', 'squelette', 'momie']);
   const words = WORDS.filter((w) => !ctx.family || !FAMILY_SKIP.has(w[0])).sort(() => Math.random() - 0.5);
   let turn = -1;
   let drawer = 0;
@@ -107,7 +111,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       p.found = false;
       p.note = '';
     });
-    botGuessAt = pls.map((p, i) => (p.bot && i !== drawer && Math.random() < 0.55 ? 15 + Math.random() * 45 : -1));
+    botGuessAt = pls.map((p, i) => (p.bot && i !== drawer && Math.random() < 0.55 ? DRAW_TIME * (0.2 + Math.random() * 0.6) : -1));
     feed = [];
     speak(fr ? `À ${pls[drawer].profile.name} de dessiner !` : `${pls[drawer].profile.name}, draw!`, ctx.lang);
     if (!pls[drawer].bot) ctx.buzz(pls[drawer].pid, 300);
@@ -118,7 +122,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const p = pls[i];
     p.found = true;
     foundCount++;
-    p.score += Math.max(3, 10 - (foundCount - 1) * 2) + Math.round(timer / 15);
+    p.score += Math.max(3, 10 - (foundCount - 1) * 2) + Math.round((timer / DRAW_TIME) * 4);
     pls[drawer].score += 3;
     feed.unshift({ text: fr ? `${p.profile.name} a trouvé !` : `${p.profile.name} got it!`, color: p.profile.color, t: 4 });
     sfx.join();
@@ -156,6 +160,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const s = strokes[strokes.length - 1];
         if (s.pts.length < 4000) s.pts.push(...n.slice(0, 200));
       }
+      // Trait complet renvoyé à la fin : répare un trait abîmé en route
+      if (m.a === 'S' && n.length >= 5 && n[0] >= 0 && n[0] <= strokes.length && n[0] < 400)
+        strokes[n[0]] = { c: INK_COLORS[n[1]] ?? INK, w: Math.max(2, Math.min(40, n[2])), pts: n.slice(3, 4003) };
       if (m.a === 'undo') strokes.pop();
       if (m.a === 'clear') strokes = [];
       if (m.a === 'skip') timer = 0.01;
@@ -167,7 +174,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (phase === 'draw') {
         // Indice : une lettre se dévoile à mi-temps puis à 20 s de la fin.
         const L = shown().length;
-        if ((timer < DRAW_TIME / 2 && hintLetters.size < 1) || (timer < 20 && hintLetters.size < 2)) {
+        if ((timer < DRAW_TIME / 2 && hintLetters.size < 1) || (timer < DRAW_TIME / 4 && hintLetters.size < 2)) {
           const free = [...Array(L).keys()].filter((k) => !hintLetters.has(k) && shown()[k] !== ' ');
           if (free.length) hintLetters.add(free[Math.floor(Math.random() * free.length)]);
           ctx.refresh();
@@ -313,5 +320,16 @@ export const scribble: GameBase = {
   botFill: 0,
   music: 'party',
   limit: 300,
+  options: [
+    {
+      id: 'time',
+      label: { fr: 'Temps pour dessiner', en: 'Drawing time' },
+      choices: [
+        { v: 45, label: { fr: '45 secondes', en: '45 seconds' } },
+        { v: 30, label: { fr: '30 secondes', en: '30 seconds' } },
+        { v: 60, label: { fr: '1 minute', en: '1 minute' } },
+      ],
+    },
+  ],
   create,
 };

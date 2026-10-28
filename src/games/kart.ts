@@ -83,7 +83,8 @@ const CIRCUITS: {
   },
 ];
 
-type Item = 'turbo' | 'sirop' | 'petard';
+type Item = 'turbo' | 'sirop' | 'petard' | 'banane' | 'bouclier' | 'nuage' | 'fusee';
+const ITEM_ICON: Record<Item, string> = { turbo: '⚡', sirop: '🍯', petard: '🧨', banane: '🍌', bouclier: '🛡️', nuage: '🌩️', fusee: '🚀' };
 
 interface K extends Runner {
   x: number;
@@ -109,6 +110,11 @@ interface K extends Runner {
   honkT: number;
   botItemT: number;
   botLane: number;
+  /** Bouclier (s), nuage d'orage au-dessus de la tête (s), fusée (s), temps passé à rouler à l'envers. */
+  shield: number;
+  cloud: number;
+  rocket: number;
+  wrong: number;
 }
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -155,6 +161,26 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const circuit = CIRCUITS[Math.floor(Math.random() * CIRCUITS.length)];
   PATH = catmull(circuit.ctrl, 30);
   N = PATH.length;
+  {
+    let best = 0;
+    let bs = -Infinity;
+    for (let i = 0; i < N; i++) {
+      const [x, y] = PATH[i];
+      const [x2, y2] = PATH[(i + 4) % N];
+      const a = Math.atan2(y2 - y, x2 - x);
+      // Droit devant ce point : la ligne doit être suivie d'une ligne droite vers la droite
+      const [x3, y3] = PATH[(i + 20) % N];
+      const a2 = Math.atan2(y3 - y, x3 - x);
+      const center = Math.hypot(x - 960, y - 540) < 300 ? 10 : 0;
+      const s = Math.cos(a - 0.25) * 2 + Math.cos(a2 - 0.25) * 2 - x / 1920 - center;
+      if (s > bs) {
+        bs = s;
+        best = i;
+      }
+    }
+    // Le départ se fait un peu avant ce point : la grille est derrière la ligne
+    PATH = [...PATH.slice(best), ...PATH.slice(0, best)];
+  }
   const fr = ctx.lang === 'fr';
   const [sx, sy] = PATH[N - 6];
   const [tx, ty] = PATH[0];
@@ -187,7 +213,37 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       honkT: 0,
       botItemT: rnd(1, 3),
       botLane: rnd(-40, 40),
+      shield: 0,
+      cloud: 0,
+      rocket: 0,
+      wrong: 0,
     };
+  });
+  const along = (i: number) => {
+    const [x, y] = PATH[i % N];
+    const [x2, y2] = PATH[(i + 1) % N];
+    return Math.atan2(y2 - y, x2 - x);
+  };
+  // Pièges sur la piste (jamais près du départ) : plots, flaques de chocolat, bonbons qui roulent d'un bord à l'autre
+  const free = (f: number) => f > 0.12 && f < 0.95 && [0.08, 0.36, 0.62, 0.88, 0.18, 0.47, 0.74].every((o) => Math.abs(o - f) > 0.04);
+  const spots: number[] = [];
+  for (let k = 0; k < 200 && spots.length < 9; k++) {
+    const f = Math.random();
+    if (free(f) && spots.every((o) => Math.abs(o - f) > 0.05)) spots.push(f);
+  }
+  const cones = spots.slice(0, 4).map((f) => {
+    const i = Math.floor(f * N);
+    const off = (Math.random() < 0.5 ? -1 : 1) * rnd(15, 40);
+    const n = along(i) + Math.PI / 2;
+    return { x: PATH[i][0] + Math.cos(n) * off, y: PATH[i][1] + Math.sin(n) * off, i, off };
+  });
+  const muds = spots.slice(4, 6).map((f) => {
+    const i = Math.floor(f * N);
+    return { x: PATH[i][0], y: PATH[i][1], a: along(i) };
+  });
+  const rollers = spots.slice(6, 8).map((f) => {
+    const i = Math.floor(f * N);
+    return { i, cx: PATH[i][0], cy: PATH[i][1], n: along(i) + Math.PI / 2, x: 0, y: 0, sp: rnd(1.1, 1.7), ph: rnd(0, 6), c: ['#ff4f9a', '#2ec5ff', '#ffd60a'][Math.floor(Math.random() * 3)] };
   });
   // Décor au bord de la piste : sucettes géantes, buissons et fleurs, jamais sur la route.
   const decor: { x: number; y: number; kind: number; c: string }[] = [];
@@ -227,7 +283,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.5 + Math.random() * 0.4, max: 0.9, c, r: r * (0.6 + Math.random() * 0.6) });
     }
   };
-  const puddles: { x: number; y: number; t: number }[] = [];
+  const puddles: { x: number; y: number; t: number; kind: 'sirop' | 'banane' }[] = [];
   const shots: { idx: number; x: number; y: number; owner: number; t: number }[] = [];
   let time = 0;
   let order = 0;
@@ -241,9 +297,26 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (k.item === 'turbo') {
       k.turbo = 1.3;
       sfx.go();
-    } else if (k.item === 'sirop') {
-      puddles.push({ x: k.x - Math.cos(k.a) * 50, y: k.y - Math.sin(k.a) * 50, t: 12 });
+    } else if (k.item === 'sirop' || k.item === 'banane') {
+      puddles.push({ x: k.x - Math.cos(k.a) * 50, y: k.y - Math.sin(k.a) * 50, t: 12, kind: k.item });
       sfx.pop();
+    } else if (k.item === 'bouclier') {
+      k.shield = 6;
+      sfx.join();
+    } else if (k.item === 'fusee') {
+      k.rocket = 2.4;
+      k.safe = Math.max(k.safe, 2.4);
+      sfx.whoosh();
+      pops.push({ x: k.x, y: k.y - 60, text: fr ? 'FUSÉE !' : 'ROCKET!', c: '#ff8a3d', t: 1 });
+    } else if (k.item === 'nuage') {
+      // Le nuage d'orage file au-dessus du premier (ou du suivant si c'est soi)
+      const lead = [...ks].filter((o) => !o.done && o !== k).sort((a, b) => progress(b) - progress(a))[0];
+      if (lead) {
+        lead.cloud = 4;
+        pops.push({ x: lead.x, y: lead.y - 70, text: fr ? 'ORAGE !' : 'STORM!', c: '#9b5cff', t: 1.2 });
+        sfx.boom();
+        if (!lead.bot) ctx.buzz(lead.pid, 300);
+      }
     } else {
       shots.push({ idx: k.idx, x: k.x, y: k.y, owner: i, t: 3 });
       sfx.boing();
@@ -253,6 +326,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function spinOut(k: K) {
     if (k.spin > 0 || k.safe > 0) return;
+    if (k.shield > 0) {
+      k.shield = 0;
+      k.safe = 0.8;
+      pops.push({ x: k.x, y: k.y - 60, text: fr ? 'PROTÉGÉ !' : 'BLOCKED!', c: '#2ec5ff', t: 0.9 });
+      sfx.boing();
+      return;
+    }
     k.spin = 0.9;
     k.safe = 0.9 + 1.6;
     k.v *= 0.3;
@@ -263,6 +343,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   }
 
   function bot(k: K, dt: number) {
+    for (const c of cones) {
+      const ahead = (c.i - k.idx + N) % N;
+      if (ahead > 4 && ahead < 40 && Math.abs(k.botLane - c.off) < 55) k.botLane = c.off > 0 ? -45 : 45;
+    }
     const [px, py] = PATH[(k.idx + 14) % N];
     const [qx, qy] = PATH[(k.idx + 15) % N];
     const na = Math.atan2(qy - py, qx - px) + Math.PI / 2;
@@ -313,6 +397,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         k.honkT = Math.max(0, k.honkT - dt);
         k.padT = Math.max(0, k.padT - dt);
         k.bumpT = Math.max(0, k.bumpT - dt);
+        k.shield = Math.max(0, k.shield - dt);
+        k.cloud = Math.max(0, k.cloud - dt);
+        if (k.rocket > 0) {
+          // La fusée conduit toute seule
+          k.rocket -= dt;
+          const [px, py] = PATH[(k.idx + 12) % N];
+          const l = Math.hypot(px - k.x, py - k.y) || 1;
+          k.inp = { x: (px - k.x) / l, y: (py - k.y) / l, b: false };
+          k.turbo = Math.max(k.turbo, 0.1);
+        }
         if (k.useReq) useItem(k, i);
         k.useReq = false;
         if (k.spin > 0) {
@@ -336,7 +430,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         // Les derniers vont un poil plus vite : la course reste serrée
         const behind = ks.filter((o) => progress(o) > progress(k) + 10).length;
-        const max = MAX_V * (1 + behind * 0.035) * (k.turbo > 0 ? 1.45 : 1);
+        const inMud = muds.some((m) => Math.hypot(m.x - k.x, m.y - k.y) < 66);
+        const max = MAX_V * (1 + behind * 0.035) * (k.rocket > 0 ? 1.75 : k.turbo > 0 ? 1.45 : 1) * (k.cloud > 0 ? 0.62 : 1) * (inMud && k.rocket <= 0 ? 0.5 : 1);
+        if (inMud && !ctx.light && Math.random() < 0.3) puff(k.x, k.y, 1, '#7a4a2a', 80, 6);
         k.v = Math.max(-150, Math.min(max, k.v));
         if (mag0(k)) k.v *= Math.pow(0.45, dt);
         const tx = Math.cos(k.a) * k.v;
@@ -370,6 +466,33 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
               if (!k.bot) ctx.buzz(k.pid, 60);
             }
           }
+        }
+        for (const c of cones) {
+          const dx = k.x - c.x;
+          const dy = k.y - c.y;
+          const d = Math.hypot(dx, dy);
+          if (d < 46 && d > 0) {
+            k.x = c.x + (dx / d) * 46;
+            k.y = c.y + (dy / d) * 46;
+            const vn = (k.vx * dx + k.vy * dy) / d;
+            if (vn < 0) {
+              k.vx -= 1.6 * vn * (dx / d);
+              k.vy -= 1.6 * vn * (dy / d);
+              k.v *= 0.55;
+              if (k.bumpT <= 0) {
+                k.bumpT = 0.3;
+                puff(c.x, c.y, 6, '#ff8a3d', 200, 7);
+                sfx.boing();
+                if (!k.bot) ctx.buzz(k.pid, 80);
+              }
+            }
+          }
+        }
+        for (const r of rollers) if (Math.hypot(r.x - k.x, r.y - k.y) < 50) spinOut(k);
+        {
+          const pa = along(k.idx);
+          const fwd = Math.cos(pa) * k.vx + Math.sin(pa) * k.vy;
+          k.wrong = fwd < -60 && !k.done ? k.wrong + dt : 0;
         }
         for (const pd of pads)
           if (k.padT <= 0 && Math.hypot(pd.x - k.x, pd.y - k.y) < 52) {
@@ -420,7 +543,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if (b.t <= 0 && !k.item && Math.hypot(b.x - k.x, b.y - k.y) < 38) {
             b.t = 4;
             const ahead = ks.filter((o) => progress(o) > progress(k)).length;
-            const pool: Item[] = ahead === 0 ? ['sirop', 'sirop', 'petard'] : ahead > 2 ? ['turbo', 'turbo', 'petard'] : ['turbo', 'sirop', 'petard'];
+            const pool: Item[] =
+              ahead === 0 ? ['sirop', 'banane', 'bouclier', 'petard'] : ahead > 2 ? ['turbo', 'fusee', 'nuage', 'turbo', 'petard'] : ['turbo', 'sirop', 'petard', 'banane', 'nuage', 'bouclier'];
             k.item = pool[Math.floor(Math.random() * pool.length)];
             puff(b.x, b.y, 10, '#9b5cff', 240, 7);
             sfx.join();
@@ -431,6 +555,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             p.t = 0;
           }
       });
+      for (const r of rollers) {
+        const o = Math.sin(time * r.sp + r.ph) * WALL;
+        r.x = r.cx + Math.cos(r.n) * o;
+        r.y = r.cy + Math.sin(r.n) * o;
+      }
       for (const b of boxes) b.t -= dt;
       for (const p of puddles) p.t -= dt;
       for (let i = puddles.length - 1; i >= 0; i--) if (puddles[i].t <= 0) puddles.splice(i, 1);
@@ -590,6 +719,79 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.stroke();
       g.setLineDash([]);
 
+      // Flèches de direction peintes sur la piste
+      for (let c = 1; c < 18; c++) {
+        const i = Math.floor((c / 18) * N);
+        const [x, y] = PATH[i];
+        g.save();
+        g.translate(x, y);
+        g.rotate(along(i));
+        g.globalAlpha = 0.35 + 0.25 * Math.max(0, Math.sin(t * 4 - c * 0.7));
+        g.fillStyle = '#fff';
+        for (const o of [-14, 14]) {
+          g.beginPath();
+          g.moveTo(o - 12, -24);
+          g.lineTo(o + 12, 0);
+          g.lineTo(o - 12, 24);
+          g.lineTo(o - 2, 0);
+          g.closePath();
+          g.fill();
+        }
+        g.restore();
+      }
+      g.globalAlpha = 1;
+      for (const m of muds) {
+        g.save();
+        g.translate(m.x, m.y);
+        g.rotate(m.a);
+        g.fillStyle = '#7a4a2a';
+        g.strokeStyle = INK;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.ellipse(0, 0, 74, 56, 0, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.25)';
+        for (let b = 0; b < 3; b++) {
+          const q = (t * 0.7 + b / 3) % 1;
+          g.beginPath();
+          g.arc(-30 + b * 30, 10 - b * 12, 4 + q * 8, 0, Math.PI * 2);
+          g.fill();
+        }
+        g.restore();
+      }
+      for (const c of cones) {
+        g.fillStyle = '#ff8a3d';
+        g.strokeStyle = INK;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.moveTo(c.x - 26, c.y + 22);
+        g.lineTo(c.x, c.y - 36);
+        g.lineTo(c.x + 26, c.y + 22);
+        g.closePath();
+        g.fill();
+        g.stroke();
+        g.fillStyle = '#fff';
+        g.fillRect(c.x - 13, c.y - 6, 26, 9);
+      }
+      for (const r of rollers) {
+        g.save();
+        g.translate(r.x, r.y);
+        g.rotate(t * 6);
+        g.fillStyle = r.c;
+        g.strokeStyle = INK;
+        g.lineWidth = 5;
+        g.beginPath();
+        g.arc(0, 0, 34, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.strokeStyle = '#fff';
+        g.lineWidth = 6;
+        g.beginPath();
+        g.arc(0, 0, 18, 0, Math.PI * 1.4);
+        g.stroke();
+        g.restore();
+      }
       // Ligne d'arrivée
       const [fx, fy] = PATH[0];
       const [gx, gy] = PATH[1];
@@ -647,6 +849,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.restore();
       }
       for (const p of puddles) {
+        if (p.kind === 'banane') {
+          g.font = '52px sans-serif';
+          g.textAlign = 'center';
+          g.fillText('🍌', p.x, p.y + 18);
+          continue;
+        }
         g.fillStyle = '#c98a3a';
         g.strokeStyle = INK;
         g.lineWidth = 3;
@@ -723,12 +931,103 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillText('👑', k.x, k.y - 66 + Math.sin(t * 6) * 4);
         }
         if (k.item) {
-          g.font = '28px sans-serif';
+          g.font = '30px sans-serif';
           g.textAlign = 'center';
-          g.fillText(k.item === 'turbo' ? '⚡' : k.item === 'sirop' ? '🍯' : '🧨', k.x + 30, k.y - 52);
+          g.fillText(ITEM_ICON[k.item], k.x + 32, k.y - 52);
+        }
+        if (k.shield > 0) {
+          g.strokeStyle = Math.floor(t * 8) % 2 || k.shield > 1.5 ? 'rgba(46,197,255,0.85)' : 'rgba(46,197,255,0.3)';
+          g.lineWidth = 6;
+          g.beginPath();
+          g.arc(k.x, k.y - 10, 50, 0, Math.PI * 2);
+          g.stroke();
+        }
+        if (k.cloud > 0) {
+          g.fillStyle = '#6b5a8a';
+          g.strokeStyle = INK;
+          g.lineWidth = 4;
+          g.beginPath();
+          g.arc(k.x - 24, k.y - 100, 22, 0, Math.PI * 2);
+          g.arc(k.x, k.y - 112, 28, 0, Math.PI * 2);
+          g.arc(k.x + 24, k.y - 100, 22, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.strokeStyle = '#7fd4ff';
+          g.lineWidth = 3;
+          for (let d = 0; d < 4; d++) {
+            const q = (t * 3 + d * 0.25) % 1;
+            g.beginPath();
+            g.moveTo(k.x - 24 + d * 16, k.y - 84 + q * 50);
+            g.lineTo(k.x - 28 + d * 16, k.y - 72 + q * 50);
+            g.stroke();
+          }
+        }
+        if (k.rocket > 0) {
+          g.font = '40px sans-serif';
+          g.textAlign = 'center';
+          g.fillText('🚀', k.x - Math.cos(k.a) * 50, k.y - Math.sin(k.a) * 50);
+        }
+        // Mauvais sens : panneau + flèche vers la bonne direction
+        if (k.wrong > 0.7) {
+          const pa = along(k.idx);
+          g.save();
+          g.translate(k.x, k.y - 96);
+          g.fillStyle = '#ff3b3b';
+          g.strokeStyle = INK;
+          g.lineWidth = 5;
+          g.beginPath();
+          g.roundRect(-110, -26, 220, 52, 26);
+          g.fill();
+          g.stroke();
+          g.fillStyle = '#fff';
+          g.font = '700 28px Fredoka, sans-serif';
+          g.textAlign = 'center';
+          g.fillText(fr ? '⛔ MAUVAIS SENS' : '⛔ WRONG WAY', 0, 10);
+          g.translate(0, 70);
+          g.rotate(pa);
+          g.fillStyle = '#ffd60a';
+          g.beginPath();
+          g.moveTo(-30, -14);
+          g.lineTo(10, -14);
+          g.lineTo(10, -28);
+          g.lineTo(40, 0);
+          g.lineTo(10, 28);
+          g.lineTo(10, 14);
+          g.lineTo(-30, 14);
+          g.closePath();
+          g.fill();
+          g.stroke();
+          g.restore();
         }
       }
 
+      // Au départ : grosse flèche « par là »
+      if (time < 4) {
+        const i = 26;
+        const [x, y] = PATH[i];
+        g.save();
+        g.translate(x, y);
+        g.rotate(along(i));
+        g.globalAlpha = time < 3 ? 1 : 4 - time;
+        const k = 1 + Math.sin(t * 8) * 0.06;
+        g.scale(k, k);
+        g.fillStyle = '#ffd60a';
+        g.strokeStyle = INK;
+        g.lineWidth = 7;
+        g.beginPath();
+        g.moveTo(-60, -22);
+        g.lineTo(20, -22);
+        g.lineTo(20, -48);
+        g.lineTo(70, 0);
+        g.lineTo(20, 48);
+        g.lineTo(20, 22);
+        g.lineTo(-60, 22);
+        g.closePath();
+        g.fill();
+        g.stroke();
+        g.restore();
+        g.globalAlpha = 1;
+      }
       // Classement en direct
       const ranked = [...ks].sort((a, b) => (a.done || 99) - (b.done || 99) || progress(b) - progress(a));
       g.fillStyle = 'rgba(255,255,255,0.85)';
@@ -805,8 +1104,8 @@ export const kart: GameBase = {
   emoji: '🏎️',
   name: { fr: 'Mini Bolides', en: 'Tiny Racers' },
   how: {
-    fr: 'Pointe le stick où tu veux aller · A objet · B frein · 5 tours',
-    en: 'Point the stick where to go · A item · B brake · 5 laps',
+    fr: 'Pointe le stick où tu veux aller · suis les flèches · A objet · B frein · 5 tours',
+    en: 'Point the stick where to go · follow the arrows · A item · B brake · 5 laps',
   },
   inspired: 'Micro Machines',
   layout: 'stick',

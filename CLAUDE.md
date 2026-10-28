@@ -39,7 +39,7 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 10. ✅ Bagarre Molle (`brawl.ts`) : persos mous, baffe / attraper / jeter, sonné après 4 baffes.
 11. ✅ Réflexes Éclair (`reflex.ts` + `ReflexPad.tsx`, remplace Cuisine en Panique, supprimée) : 7 épreuves (vert, intrus, compte, couleur piège, marteau, jauge), 5/3/2/1 pts. Touche X.
 11 bis. ✅ Coussin Foot (`foot.ts`) : match vu de dessus, 2 équipes (celles du mode équipes sinon un sur deux), A = tir, B = sprint/tacle, ballon qui colle au pied. Touche O.
-12. ✅ Le Grand Plateau (`board.ts` + `BoardPad.tsx`) : dé sur le téléphone, bonbons, Coussins d’or, mini-jeux Tapotage et Réflexe.
+12. ❌ Le Grand Plateau : supprimé (oct. 2026, le propriétaire ne l’aimait pas).
 13. ✅ Mode famille : interrupteur sur le téléphone de l’hôte (salon), mémorisé sur la télé (`session.family`, `ctx.family`), badge à la télé, « pet » → « pouic », PROUT → POUF, mots limites retirés de Gribouillis. Touche H en aperçu.
 14. ✅ Undercover (`undercover.ts` + `UndercoverPad.tsx`, mots dans `undercoverWords.ts`) : indices tapés sur le téléphone et affichés à la télé, Mr White peut deviner, 10 thèmes (le piquant caché en mode famille). Touche U.
 15. ✅ Photo Roulette (`roulette.ts` + `RoulettePad.tsx`) : photos (réduites à 960 px) et vidéos (20 s / 8 Mo) envoyées en morceaux de 48 Ko (`act up`, acceptés même pendant le tuto), 3 par joueur tirées au hasard, 12 manches, vote rapide = plus de points, le propriétaire marque s’il trompe la majorité. Rien n’est gardé. Touche J.
@@ -53,8 +53,8 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 ## Cartes et ajouts (oct. 2026)
 
-- Chaque jeu d'action tire une carte au hasard (`mapName`, affiché à l'intro) : Pouces (Plage/Neige/Parc + boue 🐌 et turbo ⚡), Dégringolade (Pâtisserie/Jardin/Nuit Pyjama + ventilateurs + caramel qui s'enfonce), Sumo (Assiette/Patinoire/Pizza Flipper à champignons), Bolides (Bonbon/Huit/Ovale Express), Flèches (Tour/Étagères/Puits), Clash (Canapé/Étagère/Frigo), Bagarre (Nénuphars/Pont/Pile de Crêpes), Pétards (Classique/Arène ouverte/Croix + bonus bouclier 🛡️), Cuisine (Bistrot/Couloir), Plateau (Ovale/Grand Salon/Cœur).
-- Bar des Bobards : carte Miroir 🪞 (si elle est retournée, l'accusateur perd). Gribouillis : 90 mots. Plateau : mini-jeu Pile ou Face. Traître : rôle Glouton dès 7 joueurs (gagne s'il est voté). Cuisine : bots commis (prendre, couper, cuire, poser sur un plan de travail ; les humains dressent et servent).
+- Chaque jeu d'action tire une carte au hasard (`mapName`, affiché à l'intro) : Pouces (Plage/Neige/Parc + boue 🐌 et turbo ⚡), Dégringolade (Pâtisserie/Jardin/Nuit Pyjama + ventilateurs + caramel qui s'enfonce), Sumo (Assiette/Patinoire/Pizza Flipper à champignons), Bolides (Bonbon/Huit/Ovale Express), Flèches (Tour/Étagères/Puits), Clash (Canapé/Étagère/Frigo), Bagarre (Nénuphars/Pont/Pile de Crêpes), Pétards (Classique/Arène ouverte/Croix + bonus bouclier 🛡️), Cuisine (Bistrot/Couloir).
+- Bar des Bobards : carte Miroir 🪞 (si elle est retournée, l'accusateur perd). Gribouillis : 90 mots. Traître : rôle Glouton dès 7 joueurs (gagne s'il est voté). Cuisine : bots commis (prendre, couper, cuire, poser sur un plan de travail ; les humains dressent et servent).
 - Tester sans afficher le panneau : appeler `__session.frame(t)` en boucle avec un temps croissant (le panneau caché ralentit l'animation).
 
 ## Tutos, Coussin Clash v2, persos (oct. 2026)
@@ -101,7 +101,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 ## Tester
 
 - `npm run dev` (port 5180, déclaré dans `.claude/launch.json`).
-- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : E = équipes, Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, G = Gribouillis, V = Traître, C = Clash, W = Bagarre, O = Foot, X = Réflexes, U = Undercover, J = Photo Roulette, Y = Plateau, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
+- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : E = équipes, Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, G = Gribouillis, V = Traître, C = Clash, W = Bagarre, O = Foot, X = Réflexes, U = Undercover, J = Photo Roulette, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
 - `#/m/TEST?s=lobby|tap|stick|results|podium` : la manette sans connexion.
 - En aperçu, `window.__session` donne la session télé : `__session.game.input(pid, {t:'in', …})` pour piloter un joueur. Attention : un onglet manette au premier plan met la télé en pause (onglet en arrière-plan) ; mettre la manette dans une iframe de la page télé pour tester.
 
@@ -115,3 +115,18 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Répondre **en français, simplement**, sans jargon (le propriétaire n'est pas développeur). Pas de questions sur les choix évidents : choisir et le dire en une ligne.
 - Chromecast : appli Cast **publiée** dans la console, bandeau de diagnostic dans `cast.html`, `skipPlayersLoad` + `disableIdleTimeout`.
 - Connexion Google : ajouter `kwakwa-ratatouille.github.io` aux domaines autorisés Firebase. Dans les applis, page relais + jeton chiffré (voir Croivez). iOS Capacitor : `initializeAuth`.
+
+## Retouches oct. 2026 (2)
+
+- **Musique par jeu** : `music` = `MusicId` (`sound.ts`) : fight (baston : Sumo, Flèches, Bagarre, Clash), arcade (Pétards), spy (Undercover, Traître), bar (Bobards), sport (Foot), party (Gribouillis, Photos, Réflexes), race, tumble. Pistes mineures possibles (`minor`, `bassWave`, batterie `fight`).
+- **Voix du présentateur** au choix de l’hôte (bouton 🎙️ du salon, action `voice`, `session.voice` mémorisé, `VOICES` + `setVoice`) : Classique (par défaut), Naturelle (voix « Natural/Google/Online » du PC), accents québécois/anglais/italien/espagnol (une voix d’une autre langue lit le texte, si le PC l’a), Bande-annonce, Écureuil, Robot.
+- **Chrono** : jaune à 30 s, rouge clignotant qui tremble à 10 s avec bords de l’écran rouges et ondes, « Dix secondes ! », bips d’alarme sur les 5 dernières (`sfx.alarm`).
+- **Recharge sur les boutons** de la manette : le jeu appelle `ctx.cool(pid, bouton, secondes)` → message `cool` → voile horloge + secondes sur le bouton (`Cools` dans `Stick.tsx`). Utilisé : Bagarre (X attraper 1,2 s, Y charge 1,6 s), Clash (esquive Y 0,9 s), Flèches (esquive X).
+- **QR code** caché pendant le jeu (il revient en pause et aux résultats).
+- **Selfie** : photo 1,5× plus grande sur le visage, liseré blanc + contour ; capturée en 192 px.
+- **Pétards** : portée +1 toutes les 25 s, 20 dernières s = MÉGA PÉTARDS (toute la ligne et la colonne, traverse piliers et caisses), bandeaux et tremblement.
+- **Bagarre Molle** : 3 baffes d’affilée = MANDALE, Y = charge épaule, en l’air bas + B = plongeon fessier (onde de choc), X = attraper.
+- **Bar des Bobards** : vrai bar dessiné une fois (`barScene`) + animations (`drawBarLive` : guirlande, néon qui grésille, barman cornichon, juke-box), projecteur + flèche + anneau du temps sur celui qui joue, bandeau « Au tour de… », cartes qui volent vers la pile, bulles, roulette russe au **pistolet** (`drawGun`, barillet avec les balles chargées, PAN / clic ; mode famille : drapeau POUF). Bouton TIRER sur la manette.
+- **Undercover** : la lampe se balance avec sa lumière. Mr White ne commence jamais (`startClues`).
+- **Mini Bolides** : départ choisi automatiquement (ligne droite vers la droite, jamais au croisement du Huit), flèches peintes sur la piste, grosse flèche au départ, « MAUVAIS SENS » + flèche, plots, flaques de boue, bonbons qui roulent d’un bord à l’autre, 7 objets (⚡🍯🧨🍌🛡️🌩️🚀).
+- **Gribouillis** : ~130 mots faciles (dont des rigolos, cachés en mode famille), une manche par dessinateur (max 6), temps au choix de l’hôte 45/30/60 s (`ctx.opts.time`), planche du téléphone qui garde la forme du tableau télé et prend toute la place, trait entier renvoyé au lever du doigt (`act 'S'`) pour réparer les traits perdus.

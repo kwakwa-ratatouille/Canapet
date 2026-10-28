@@ -84,7 +84,9 @@ function DrawBoard({ data, send, T }: { data: ScribblePadData; send: (m: ToTv) =
   const [size, setSize] = useState(1);
   const strokes = useRef<{ c: number; w: number; pts: number[] }[]>([]);
   const buf = useRef<number[]>([]);
-  const drawing = useRef(false);
+  const drawing = useRef<number | null>(null);
+  const area = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 300, h: 300 / RATIO });
 
   const redraw = () => {
     const c = cv.current;
@@ -111,10 +113,14 @@ function DrawBoard({ data, send, T }: { data: ScribblePadData; send: (m: ToTv) =
 
   useEffect(() => {
     const c = cv.current!;
+    // La planche prend toute la place libre en gardant exactement la forme du tableau de la télé
     const fit = () => {
-      const r = c.getBoundingClientRect();
-      c.width = r.width * Math.min(2, devicePixelRatio || 1);
-      c.height = r.height * Math.min(2, devicePixelRatio || 1);
+      const a = area.current!.getBoundingClientRect();
+      const w = Math.max(100, Math.min(a.width, a.height * RATIO));
+      const h = w / RATIO;
+      setBox({ w, h });
+      c.width = w * Math.min(2, devicePixelRatio || 1);
+      c.height = h * Math.min(2, devicePixelRatio || 1);
       redraw();
     };
     fit();
@@ -138,12 +144,16 @@ function DrawBoard({ data, send, T }: { data: ScribblePadData; send: (m: ToTv) =
     redraw();
   }, [data.word]);
 
-  const pos = (e: React.PointerEvent) => {
+  const pos = (e: { clientX: number; clientY: number }) => {
     const r = cv.current!.getBoundingClientRect();
-    return [Math.round(((e.clientX - r.left) / r.width) * 1000), Math.round(((e.clientY - r.top) / r.height) * 1000)];
+    const k = (v: number) => Math.max(0, Math.min(1000, Math.round(v * 1000)));
+    return [k((e.clientX - r.left) / r.width), k((e.clientY - r.top) / r.height)];
   };
   const down = (e: React.PointerEvent) => {
-    drawing.current = true;
+    // Un seul doigt à la fois (la paume ou un 2e doigt ne font pas de traits parasites)
+    if (drawing.current !== null || !e.isPrimary) return;
+    drawing.current = e.pointerId;
+    cv.current!.setPointerCapture(e.pointerId);
     const [x, y] = pos(e);
     if (buf.current.length) {
       send({ t: 'act', a: 'p', n: buf.current });
@@ -154,18 +164,32 @@ function DrawBoard({ data, send, T }: { data: ScribblePadData; send: (m: ToTv) =
     redraw();
   };
   const move = (e: React.PointerEvent) => {
-    if (!drawing.current) return;
-    const [x, y] = pos(e);
+    if (drawing.current !== e.pointerId) return;
     const s = strokes.current[strokes.current.length - 1];
-    const lx = s.pts[s.pts.length - 2];
-    const ly = s.pts[s.pts.length - 1];
-    if (Math.abs(x - lx) + Math.abs(y - ly) < 4) return;
-    s.pts.push(x, y);
-    buf.current.push(x, y);
+    if (!s) return;
+    // Tous les points intermédiaires (traits plus fidèles quand on dessine vite)
+    const evs = (e.nativeEvent.getCoalescedEvents?.() ?? []) as PointerEvent[];
+    for (const ev of evs.length ? evs : [e.nativeEvent]) {
+      const [x, y] = pos(ev);
+      const lx = s.pts[s.pts.length - 2];
+      const ly = s.pts[s.pts.length - 1];
+      if (Math.abs(x - lx) + Math.abs(y - ly) < 3 || s.pts.length >= 3990) continue;
+      s.pts.push(x, y);
+      buf.current.push(x, y);
+    }
     redraw();
   };
-  const up = () => {
-    drawing.current = false;
+  const up = (e: React.PointerEvent) => {
+    if (drawing.current !== e.pointerId) return;
+    drawing.current = null;
+    if (buf.current.length) {
+      send({ t: 'act', a: 'p', n: buf.current });
+      buf.current = [];
+    }
+    // Le trait entier part une 2e fois : la télé affiche exactement ce qui est dessiné
+    const i = strokes.current.length - 1;
+    const s = strokes.current[i];
+    if (s) send({ t: 'act', a: 'S', n: [i, s.c, s.w, ...s.pts] });
   };
 
   return (
@@ -173,16 +197,17 @@ function DrawBoard({ data, send, T }: { data: ScribblePadData; send: (m: ToTv) =
       <p className="scribble-word">
         {T.draw} <b>{data.word}</b>
       </p>
-      <canvas
-        ref={cv}
-        className="scribble-canvas"
-        style={{ aspectRatio: `${RATIO}` }}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerCancel={up}
-        onPointerLeave={up}
-      />
+      <div className="scribble-area" ref={area}>
+        <canvas
+          ref={cv}
+          className="scribble-canvas"
+          style={{ width: box.w, height: box.h }}
+          onPointerDown={down}
+          onPointerMove={move}
+          onPointerUp={up}
+          onPointerCancel={up}
+        />
+      </div>
       <div className="scribble-tools">
         {INK_COLORS.map((c, k) => (
           <button key={c} className={`dot ${color === k ? 'on' : ''}`} style={{ background: c }} onClick={() => setColor(k)} aria-label={c} />
