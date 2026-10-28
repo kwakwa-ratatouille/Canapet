@@ -11,7 +11,7 @@ import { INK, MENTHE, ROSE, SOLEIL, VIOLET } from '../shared/palette';
 import { drawCharacter } from '../shared/characters';
 import { joinUrl } from '../shared/protocol';
 import { QR } from '../shared/QR';
-import { audioLocked, isMuted, setMuted, unlockAudio } from '../shared/sound';
+import { VOICES, audioLocked, isMuted, setMuted, unlockAudio } from '../shared/sound';
 import { Session, TOURNAMENT_LEN, type Player } from './session';
 
 const W = 1920;
@@ -120,6 +120,9 @@ export function TvApp() {
           }}
         >
           {muted ? '🔇' : '🔊'}
+        </button>
+        <button className="pill" onClick={() => session.hostAction('voice')} title={lang === 'fr' ? 'Changer la voix du présentateur' : 'Change the announcer voice'}>
+          🎙️ {VOICES[session.voice]?.[lang] ?? ''}
         </button>
         <button className="pill" onClick={toggleFullscreen}>
           ⛶ {t(lang, 'fullscreen')}

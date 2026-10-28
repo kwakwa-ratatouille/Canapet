@@ -93,6 +93,13 @@ export const POSE_LIST: { id: string; name: Name }[] = [
   { id: 'wave', name: { fr: 'Coucou', en: 'Wave' } },
   { id: 'thumbs', name: { fr: 'Pouce levé', en: 'Thumbs up' } },
   { id: 'shy', name: { fr: 'Timide', en: 'Shy' } },
+  { id: 'dab', name: { fr: 'Le dab', en: 'Dab' } },
+  { id: 'disco', name: { fr: 'Disco', en: 'Disco' } },
+  { id: 'peace', name: { fr: 'V de la victoire', en: 'Peace' } },
+  { id: 'hero', name: { fr: 'Super-héros', en: 'Superhero' } },
+  { id: 'shrug', name: { fr: 'J’sais pas', en: 'Shrug' } },
+  { id: 'think', name: { fr: 'Le penseur', en: 'Thinker' } },
+  { id: 'salute', name: { fr: 'Salut militaire', en: 'Salute' } },
 ];
 
 export type Mood = 'happy' | 'sad' | 'wow' | 'win' | 'toot';
@@ -195,9 +202,10 @@ export function drawCharacter(g: CanvasRenderingContext2D, x: number, y: number,
   if (o.selfie && o.selfie.complete && o.selfie.naturalWidth) {
     const f = faceSlot(CHARACTERS[o.food] ? o.food : 'coussin');
     const cx = (f.cx - CENTER_X) * k;
-    // Photo agrandie (on voit mieux la tête), un peu remontée, avec un liseré blanc et un contour
-    const r = f.r * k * 1.5;
-    const cy = (f.cy - FEET_Y) * k - r * 0.12;
+    // Photo en grand, avec un liseré blanc et un contour
+    // La photo couvre tout le corps du perso (on ne voit plus que la photo, les bras, les jambes et le chapeau)
+    const r = f.r * k * 2.15;
+    const cy = (f.cy - FEET_Y) * k - r * 0.05;
     const fx = (o.dir ?? 1) < 0 ? -cx : cx;
     g.save();
     if ((o.dir ?? 1) < 0) g.scale(-1, 1);

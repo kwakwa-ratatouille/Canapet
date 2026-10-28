@@ -64,7 +64,7 @@ function relief(str){
 }
 
 /* ===== Look de chaque perso : [regard, pose] ===== */
-const LOOK={coussin:['cool','hip'],tartine:['sleepy','cross'],cornichon:['angry','flex'],beignet:['round','wave'],oeuf:['round','shy'],fromage:['wink','thumbs'],tomate:['angry','cross'],brocoli:['cool','flex'],cupcake:['round','wave'],sushi:['sleepy','hip'],frites:['wink','thumbs'],bonbon:['star','wave'],chaussette:['sleepy','shy'],pizza:['cool','thumbs'],glace:['round','hip'],avocat:['wink','cross'],macaron:['star','shy'],banane:['angry','wave'],nuage:['sleepy','hip'],saucisse:['wink','flex'],champi:['round','shy'],tasse:['sleepy','thumbs'],oignon:['angry','cross'],patate:['cool','hip'],popcorn:['star','wave']};
+const LOOK={coussin:['cool','hip'],tartine:['sleepy','cross'],cornichon:['angry','flex'],beignet:['round','wave'],oeuf:['round','shy'],fromage:['wink','peace'],tomate:['angry','cross'],brocoli:['cool','flex'],cupcake:['round','wave'],sushi:['sleepy','hip'],frites:['wink','dab'],bonbon:['star','wave'],chaussette:['sleepy','shy'],pizza:['cool','thumbs'],glace:['round','hip'],avocat:['wink','cross'],macaron:['star','shy'],banane:['angry','wave'],nuage:['sleepy','hip'],saucisse:['wink','hero'],champi:['round','shy'],tasse:['sleepy','think'],oignon:['angry','shrug'],patate:['cool','hip'],popcorn:['star','disco']};
 
 /** Visage « content », différent selon le regard du perso. */
 function faceLook(cx,cy,s,look){
@@ -177,10 +177,44 @@ function arms(m,sx,sy,pose='hip'){
     d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+20} ${sy-6} ${R+16} ${sy-30}`;
     hands=[[L-8,sy+29],[R+16,sy-33]];
   }else if(pose==='thumbs'){
-    // Pouce levé
-    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+18} ${sy+8} ${R+20} ${sy-6}`;
-    hands=[[L-8,sy+29]];
-    return `<path d="${d}" fill="none" ${sw(5)}/>`+glove(L-8,sy+29)+`<ellipse cx="${R+20}" cy="${sy-8}" rx="9" ry="7" fill="#fff" ${sw(3.5)}/><path d="M${R+14} ${sy-12}Q${R+8} ${sy-19} ${R+11} ${sy-23}Q${R+15} ${sy-25} ${R+19} ${sy-14}" fill="#fff" ${sw(3)}/>`;
+    // Pouce levé : poing fermé (doigts repliés visibles) et gros pouce sur le côté, bien penché
+    const fx=R+20,fy=sy-6;
+    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+14} ${sy+8} ${fx} ${fy+4}`;
+    return `<path d="${d}" fill="none" ${sw(5)}/>`+glove(L-8,sy+29)
+      +`<rect x="${fx-14}" y="${fy-24}" width="10" height="20" rx="5" fill="#fff" transform="rotate(-8 ${fx-9} ${fy-6})" ${sw(3)}/>`
+      +`<rect x="${fx-10}" y="${fy-8}" width="20" height="16" rx="6" fill="#fff" ${sw(3.5)}/>`
+      +`<path d="M${fx-3} ${fy-3}H${fx+9}M${fx-3} ${fy+2}H${fx+9}" stroke="${P}" stroke-width="2" stroke-linecap="round"/>`;
+  }else if(pose==='dab'){
+    // Le dab : un bras tendu en l'air, le visage caché dans le coude de l'autre
+    d=`M${L} ${sy}Q${L-14} ${sy-12} ${L-26} ${sy-30}M${R} ${sy}L${R+10} ${sy-10}L${50} ${sy-20}`;
+    hands=[[L-28,sy-33],[48,sy-21]];
+  }else if(pose==='disco'){
+    // Fièvre du samedi soir : une main sur la hanche, l'autre bras en l'air
+    d=`M${L} ${sy}Q${L-18} ${sy+6} ${L-2} ${sy+20}M${R} ${sy}Q${R+10} ${sy-16} ${R+18} ${sy-40}`;
+    hands=[[L+1,sy+21],[R+19,sy-43]];
+  }else if(pose==='peace'){
+    // V de la victoire à côté de la tête
+    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+18} ${sy-4} ${R+14} ${sy-24}`;
+    return `<path d="${d}" fill="none" ${sw(5)}/>`+glove(L-8,sy+29)
+      +`<rect x="${R+7}" y="${sy-44}" width="7" height="16" rx="3.5" fill="#fff" transform="rotate(-16 ${R+10} ${sy-30})" ${sw(3)}/>`
+      +`<rect x="${R+15}" y="${sy-44}" width="7" height="16" rx="3.5" fill="#fff" transform="rotate(16 ${R+18} ${sy-30})" ${sw(3)}/>`
+      +`<circle cx="${R+14}" cy="${sy-26}" r="7" fill="#fff" ${sw(3.5)}/>`;
+  }else if(pose==='hero'){
+    // Super-héros : les deux poings sur les hanches
+    d=`M${L} ${sy}Q${L-18} ${sy+6} ${L-2} ${sy+20}M${R} ${sy}Q${R+18} ${sy+6} ${R+2} ${sy+20}`;
+    hands=[[L+1,sy+21],[R-1,sy+21]];
+  }else if(pose==='shrug'){
+    // « J'sais pas » : épaules haussées, paumes vers le ciel
+    d=`M${L} ${sy}Q${L-16} ${sy+14} ${L-20} ${sy-2}M${R} ${sy}Q${R+16} ${sy+14} ${R+20} ${sy-2}`;
+    hands=[[L-21,sy-5],[R+21,sy-5]];
+  }else if(pose==='think'){
+    // Le penseur : la main sous le menton
+    d=`M${L} ${sy}Q${L-4} ${sy+18} ${62} ${sy+16}M${R} ${sy}Q${R+10} ${sy+16} ${66} ${sy+2}`;
+    hands=[[63,sy+16],[66,sy]];
+  }else if(pose==='salute'){
+    // Salut militaire
+    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+18} ${sy-8} ${70} ${sy-28}`;
+    hands=[[L-8,sy+29],[68,sy-30]];
   }else if(pose==='shy'){
     // Mains jointes devant, timide
     d=`M${L} ${sy}Q${L-4} ${sy+20} ${56} ${sy+26}M${R} ${sy}Q${R+4} ${sy+20} ${64} ${sy+26}`;
@@ -545,7 +579,7 @@ export const CHARACTERS = Object.fromEntries(KEYS.map(k => [k, K[k].n]));
 export const HATS = ['couronne','casquette','haut','bob','cornes','antenne','noeud','toque','fete','pirate','aureole','fleur','bonnet','sorciere'];
 /** Regards et poses au choix. */
 export const EYES = ['cool','round','sleepy','angry','wink','star'];
-export const POSES = ['hip','cross','flex','wave','thumbs','shy'];
+export const POSES = ['hip','cross','flex','wave','thumbs','shy','dab','disco','peace','hero','shrug','think','salute'];
 export const LOOKS = LOOK;
 export const ACCESSORIES = ['lunettes','soleil','moustache','monocle','bisou','coeurs','masque','barbe','rougir'];
 export const MOODS = ['happy','wow','sad','win','toot'];
