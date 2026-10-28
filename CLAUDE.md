@@ -43,7 +43,10 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 13. ✅ Mode famille : interrupteur sur le téléphone de l’hôte (salon), mémorisé sur la télé (`session.family`, `ctx.family`), badge à la télé, « pet » → « pouic », PROUT → POUF, mots limites retirés de Gribouillis. Touche H en aperçu.
 14. ✅ Undercover (`undercover.ts` + `UndercoverPad.tsx`, mots dans `undercoverWords.ts`) : indices tapés sur le téléphone et affichés à la télé, Mr White peut deviner, 10 thèmes (le piquant caché en mode famille). Touche U.
 15. ✅ Photo Roulette (`roulette.ts` + `RoulettePad.tsx`) : photos (réduites à 960 px) et vidéos (20 s / 8 Mo) envoyées en morceaux de 48 Ko (`act up`, acceptés même pendant le tuto), 3 par joueur tirées au hasard, 12 manches, vote rapide = plus de points, le propriétaire marque s’il trompe la majorité. Rien n’est gardé. Touche J.
-16. Ensuite : activer le Chromecast (identifiant Google Cast à fournir), refonte graphique des persos (direction à choisir avec le propriétaire).
+16. ✅ Coussin Foot v2 : options de l’hôte (2/4 équipes, 1-3 ballons), X = attraper/passer, B = sprint (vole le ballon, l’envoie loin), coins arrondis, 4 terrains (pelouse, plage, patinoire, tapis), contre son camp = +1 aux autres équipes.
+17. Ensuite : Traître du Frigo (décor), Chromecast (identifiant Google Cast à fournir), appli Android si Photo Roulette doit piocher seule dans la galerie (impossible depuis un site web).
+
+État oct. 2026 : 25 persos (dont saucisse, champi, tasse, oignon, patate, pop-corn), ombrage BD par masque SVG dans `perso()`, podium avec projecteurs et titres (`TITLES`), résultats animés (CSS row-in/rise), manette sans perso au milieu (place + chrono), appui long bloqué sur mobile.
 
 Manette : boutons X (`c`) et Y (`d`) dans le message `in`, croix façon Switch dans `Stick.tsx` (libellés par jeu dans `LABELS`). La Dégringolade : 3 vies, 12 tronçons, glace/gants/pluie. Flèches : esquive X, coffre, bulle.
 Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
@@ -93,7 +96,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 ## Tester
 
 - `npm run dev` (port 5180, déclaré dans `.claude/launch.json`).
-- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : E = équipes, Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, G = Gribouillis, V = Traître, C = Clash, W = Bagarre, O = Cuisine, Y = Plateau, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
+- `#/tv?apercu=1` : la télé avec 3 faux joueurs. Clavier : E = équipes, Entrée = Course de pouces, D = Dégringolade, B = Bar des Bobards, S = Sumo, P = Pétards, K = Kart, A = Archers, G = Gribouillis, V = Traître, C = Clash, W = Bagarre, O = Foot, X = Réflexes, U = Undercover, J = Photo Roulette, Y = Plateau, T = tournoi, N = suivant, R = rejouer, L = salon, M = muet, F = plein écran.
 - `#/m/TEST?s=lobby|tap|stick|results|podium` : la manette sans connexion.
 - En aperçu, `window.__session` donne la session télé : `__session.game.input(pid, {t:'in', …})` pour piloter un joueur. Attention : un onglet manette au premier plan met la télé en pause (onglet en arrière-plan) ; mettre la manette dans une iframe de la page télé pour tester.
 
