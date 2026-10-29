@@ -14,6 +14,7 @@ import type { GameInfo, HostAction, Lang, PadScreen, Profile, ToTv } from '../sh
 import { sfx, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
 import { Stick, type Cools } from './Stick';
+import { ReactButton, SecretCard } from './ReactPad';
 import { BluffPad } from './BluffPad';
 import { ScribblePad } from './ScribblePad';
 import { TraitorPad } from './TraitorPad';
@@ -58,6 +59,13 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const [editing, setEditing] = useState(() => !store<Profile | null>('profile', null)?.name && !demo);
   const [screen, setScreen] = useState<PadScreen | null>(demo ? DEMO[demo] ?? DEMO.lobby : null);
   // Fiches des jeux envoyées par la télé (gardées pour afficher le nom du jeu après une reconnexion)
+  const [family, setFamily] = useState(() => store<boolean>('family', false));
+  useEffect(() => {
+    if (screen?.s === 'lobby' && screen.family !== family) {
+      setFamily(screen.family);
+      save('family', screen.family);
+    }
+  }, [screen, family]);
   const [catalog, setCatalogState] = useState<GameInfo[]>(() => store<GameInfo[]>('catalog', []));
   const setCatalog = (games: GameInfo[]) => {
     setCatalogState(games);
@@ -315,9 +323,11 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           account={account}
           send={send}
           host={host}
+          family={family}
           edit={() => setEditing(true)}
         />
       )}
+      {status === 'ok' && screen && ['wait', 'results', 'podium', 'paused', 'recap'].includes(screen.s) && !editing && <ReactButton lang={lang} family={family} send={send} />}
     </div>
   );
 }
@@ -336,7 +346,9 @@ function PadScreenView({
   progress,
   reward,
   account,
+  family,
 }: {
+  family: boolean;
   cools: Cools;
   account: Account;
   progress: Progress;
@@ -550,6 +562,11 @@ function PadScreenView({
                   <small>{t(lang, 'catalogue', { n: screen.games.filter((g) => !g.soon).length })}</small>
                 </span>
               </button>
+              {screen.recap && (
+                <button className="btn ghost" onClick={() => host('recap')}>
+                  📊 {lang === 'fr' ? 'Bilan de la soirée' : 'Tonight’s awards'}
+                </button>
+              )}
               {screen.players.length > 0 && (
                 <>
                   <p className="opt-title">{lang === 'fr' ? 'Joueurs' : 'Players'}</p>
@@ -670,6 +687,7 @@ function PadScreenView({
         return (
           <div className="pad-body">
             <p className="pad-title">📺 {t(lang, 'readTuto')}</p>
+            <SecretCard secret={screen.secret} lang={lang} />
             <button className="round-btn rose reflex-btn" onClick={() => send({ t: 'act', a: 'tuto' })}>
               ✋ {t(lang, 'imReady')}
             </button>
@@ -682,7 +700,7 @@ function PadScreenView({
       if (screen.game === 'president' && screen.data) return <PresidentPad data={screen.data as PresidentPadData} lang={lang} send={send} />;
       if (screen.game === 'dessin' && screen.data) return <ScribblePad data={screen.data as ScribblePadData} lang={lang} send={send} />;
       if (screen.layout === 'bluff' && screen.data) return <BluffPad data={screen.data as BluffPadData} lang={lang} send={send} />;
-      return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} profile={profile} live={live} cools={cools} />;
+      return screen.layout === 'tap' ? <TapPad lang={lang} send={send} /> : <Stick send={send} lang={lang} game={screen.game} profile={profile} live={live} cools={cools} family={family} />;
     case 'paused':
       return (
         <div className="pad-body">
@@ -723,6 +741,7 @@ function PadScreenView({
             </div>
           )}
           {reward && <RewardCard reward={reward} progress={progress} lang={lang} />}
+          <SecretCard secret={screen.secret} lang={lang} />
           {screen.host && (
             <>
               <button className="btn big mint" onClick={() => host('next')}>
@@ -753,6 +772,23 @@ function PadScreenView({
             </div>
           </div>
           {reward && <RewardCard reward={reward} progress={progress} lang={lang} />}
+          <SecretCard secret={screen.secret} lang={lang} />
+          {screen.host && (
+            <>
+              <button className="btn big mint" onClick={() => host('recap')}>
+                📊 {lang === 'fr' ? 'Bilan de la soirée' : 'Tonight’s awards'}
+              </button>
+              <button className="btn ghost" onClick={() => host('lobby')}>
+                {t(lang, 'toLobby')}
+              </button>
+            </>
+          )}
+        </div>
+      );
+    case 'recap':
+      return (
+        <div className="pad-body">
+          <p className="pad-title">📊 {lang === 'fr' ? 'Regarde la télé : le bilan de la soirée !' : 'Look at the TV: tonight’s awards!'}</p>
           {screen.host && (
             <button className="btn big mint" onClick={() => host('lobby')}>
               {t(lang, 'toLobby')}

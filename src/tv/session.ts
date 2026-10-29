@@ -10,6 +10,8 @@ import { defaultLang, t } from '../shared/i18n';
 import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
 import { VOICES, playMusic, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
+import { REACTIONS } from '../shared/reactions';
+import { makeSecrets, type Secret } from './secrets';
 
 export interface Player extends Profile {
   pid: string;
@@ -22,7 +24,34 @@ export interface Player extends Profile {
   team: number;
 }
 
-export type Phase = 'lobby' | 'game' | 'results' | 'podium';
+export type Phase = 'lobby' | 'game' | 'results' | 'podium' | 'recap';
+
+/** Statistiques de la soirée (depuis l’ouverture de la télé), pour le bilan. */
+export interface Stats {
+  games: number;
+  wins: number;
+  lasts: number;
+  podiums: number;
+  /** Places successives (1 = premier). */
+  ranks: number[];
+  reacts: number;
+  rude: number;
+  /** Nombre d’envois de chaque réaction (numéro dans REACTIONS). */
+  emoji: Record<number, number>;
+  secrets: number;
+}
+
+/** Réaction en vol sur la télé (born = performance.now()). */
+export interface FlyingReaction {
+  i: number;
+  name: string;
+  color: string;
+  x: number;
+  born: number;
+}
+
+/** Durée du ralenti de fin de partie (secondes). */
+export const REPLAY = 5;
 
 export interface ResultRow {
   pid: string;
@@ -105,6 +134,20 @@ export class Session {
   paused = false;
   /** Joueurs qui ont appuyé sur un bouton pendant le tuto (« prêt ! »). */
   ready = new Set<string>();
+  /** Réactions qui s'envolent sur la télé, et la dernière « pluie » (6 fois la même en 2,5 s). */
+  reactions: FlyingReaction[] = [];
+  combo: { i: number; born: number } | null = null;
+  private lastReact = new Map<string, number>();
+  private lastPet = 0;
+  stats = new Map<string, Stats>();
+  /** Défis secrets du tournoi en cours (un par joueur). */
+  secrets = new Map<string, Secret>();
+  /** Ralenti de fin de partie : secondes restantes ; canReplay est mis par l'écran quand assez d'images sont gardées. */
+  replay = 0;
+  canReplay = false;
+  private replayDone = false;
+  /** Réactions envoyées au début du tournoi (pour le défi « envoie des réactions »). */
+  private tourReacts = new Map<string, number>();
 
   constructor(preview: boolean) {
     setFamily(this.family);
@@ -229,6 +272,29 @@ export class Session {
         if (this.phase === 'game' && this.game && (this.clock >= this.intro + COUNT || (m.t === 'act' && m.a === 'up'))) this.game.input(pid, m);
         else if (this.phase === 'game' && this.clock < this.intro && (m.t !== 'in' || m.a || m.b) && !(m.t === 'act' && m.a === 'up')) this.markReady(pid);
         return;
+      case 'react': {
+        const r = REACTIONS[m.i];
+        if (!p || !r || (this.family && r.rude)) return;
+        const now = performance.now();
+        if (now - (this.lastReact.get(pid) ?? 0) < 280) return;
+        this.lastReact.set(pid, now);
+        this.reactions.push({ i: m.i, name: p.name, color: p.color, x: 160 + Math.random() * 1600, born: now });
+        if (this.reactions.length > 50) this.reactions.shift();
+        const st = this.statsOf(pid);
+        st.reacts++;
+        if (r.rude) st.rude++;
+        st.emoji[m.i] = (st.emoji[m.i] ?? 0) + 1;
+        if (r.pet && now - this.lastPet > 1200) {
+          this.lastPet = now;
+          sfx.pet();
+        }
+        // Pluie : la même réaction 6 fois en 2,5 s (par n'importe qui)
+        if (this.reactions.filter((x) => x.i === m.i && now - x.born < 2500).length === 6 && (!this.combo || now - this.combo.born > 4000)) {
+          this.combo = { i: m.i, born: now };
+          sfx.hurry();
+        }
+        return;
+      }
       case 'team':
         if (!p || this.phase !== 'lobby') return;
         p.team = m.n ? 1 : 0;
@@ -263,6 +329,11 @@ export class Session {
         this.mode = 'tournament';
         this.step = 0;
         this.players.forEach((p) => (p.total = 0));
+        this.secrets = makeSecrets(
+          this.list().filter((p) => p.connected),
+          this.plan.map((id) => gameById(id)!),
+        );
+        this.tourReacts = new Map(this.list().map((p) => [p.pid, this.statsOf(p.pid).reacts]));
         this.startGame(this.plan[0]);
         break;
       }
@@ -275,7 +346,20 @@ export class Session {
       case 'replay':
         if (this.def && (this.phase === 'results' || this.phase === 'game')) this.startGame(this.def.id);
         break;
+      case 'recap':
+        if (this.phase === 'game' || ![...this.stats.values()].some((x) => x.games > 0)) break;
+        this.phase = 'recap';
+        playMusic('podium');
+        speak(this.lang() === 'fr' ? 'Le bilan de la soirée !' : 'Tonight’s awards!', this.lang());
+        sfx.win();
+        this.changed();
+        this.pushScreens();
+        break;
       case 'next':
+        if (this.phase === 'podium') {
+          this.hostAction('recap');
+          break;
+        }
         if (this.phase !== 'results') break;
         if (this.mode === 'tournament') {
           this.step++;
@@ -448,6 +532,9 @@ export class Session {
     this.paused = false;
     this.lastStatus = 0;
     this.timeUp = 0;
+    this.replay = 0;
+    this.replayDone = false;
+    this.canReplay = false;
     this.ready = new Set();
     this.clock = 0;
     this.acc = 0;
@@ -490,6 +577,7 @@ export class Session {
       if (p) p.total += points;
       return { pid, profile: r.profile, bot: !p, rank, points, team: r.team };
     });
+    this.record(order);
     this.phase = 'results';
     playMusic('lobby');
     sfx.win();
@@ -498,6 +586,16 @@ export class Session {
   }
 
   private showPodium() {
+    for (const sc of this.secrets.values()) {
+      if (sc.kind === 'neverLast') sc.done = !this.tourOrders.some((o) => o.length > 1 && o[o.length - 1] === sc.pid);
+      if (sc.kind === 'react') sc.done = this.statsOf(sc.pid).reacts - (this.tourReacts.get(sc.pid) ?? 0) >= sc.n!;
+      sc.done = !!sc.done;
+      const p = this.players.get(sc.pid);
+      if (sc.done && p) {
+        p.total += sc.bonus;
+        this.statsOf(sc.pid).secrets++;
+      }
+    }
     this.phase = 'podium';
     playMusic('podium');
     const top = this.list().sort((a, b) => b.total - a.total)[0];
@@ -514,6 +612,11 @@ export class Session {
     this.watchdog(now);
     if (this.toast.t > 0) this.toast.t -= dt;
     if (this.phase !== 'game' || !this.game || this.paused) return;
+    if (this.replay > 0) {
+      this.replay -= dt;
+      if (this.replay <= 0) this.endGame();
+      return;
+    }
     this.acc += dt;
     while (this.acc >= STEP) {
       this.acc -= STEP;
@@ -550,6 +653,16 @@ export class Session {
         speak(this.lang() === 'fr' ? `${lead} gagne !` : `${lead} wins!`, this.lang());
       }
       if (this.game.over) {
+        // Jeux d'action : on revoit la fin au ralenti avant les résultats
+        const action = this.def && (this.def.layout === 'stick' || this.def.layout === 'tap');
+        if (action && this.canReplay && !this.replayDone && !LIGHT) {
+          this.replayDone = true;
+          this.replay = REPLAY;
+          this.acc = 0;
+          speak(this.lang() === 'fr' ? 'Revoyons ça au ralenti !' : 'Let’s see that again in slow motion!', this.lang());
+          sfx.boing();
+          return;
+        }
         this.endGame();
         return;
       }
@@ -678,6 +791,65 @@ export class Session {
 
   // ——— Écrans des manettes ———
 
+  statsOf(pid: string): Stats {
+    let st = this.stats.get(pid);
+    if (!st) {
+      st = { games: 0, wins: 0, lasts: 0, podiums: 0, ranks: [], reacts: 0, rude: 0, emoji: {}, secrets: 0 };
+      this.stats.set(pid, st);
+    }
+    return st;
+  }
+
+  /** Classements des jeux du tournoi en cours. */
+  private tourOrders: string[][] = [];
+
+  /** Note la partie dans les statistiques de la soirée et vérifie les défis secrets. */
+  private record(order: string[]) {
+    const humans = order.filter((pid) => this.players.has(pid));
+    if (this.mode === 'tournament') {
+      if (this.step === 0) this.tourOrders = [];
+      this.tourOrders.push(order);
+    }
+    order.forEach((pid, i) => {
+      if (!this.players.has(pid)) return;
+      const st = this.statsOf(pid);
+      st.games++;
+      st.ranks.push(i + 1);
+      if (i === 0) st.wins++;
+      if (i < 3 && order.length > 3) st.podiums++;
+      if (i === order.length - 1 && order.length > 1) st.lasts++;
+    });
+    if (this.mode !== 'tournament' || !humans.length) return;
+    const id = this.def?.id;
+    for (const sc of this.secrets.values()) {
+      if (sc.done) continue;
+      const at = order.indexOf(sc.pid);
+      if (at < 0) continue;
+      const wins = this.tourOrders.filter((o) => o[0] === sc.pid).length;
+      const pods = this.tourOrders.filter((o) => o.indexOf(sc.pid) >= 0 && o.indexOf(sc.pid) < 3).length;
+      let ok = false;
+      if (sc.kind === 'podium' && sc.game === id) ok = at < 3;
+      if (sc.kind === 'last' && sc.game === id) ok = at === order.length - 1 && order.length > 1;
+      if (sc.kind === 'beat' && sc.game === id) ok = order.indexOf(sc.foe!) < 0 || at < order.indexOf(sc.foe!);
+      if (sc.kind === 'win') ok = wins >= 1;
+      if (sc.kind === 'twoPodiums') ok = pods >= 2;
+      if (sc.kind === 'react') ok = this.statsOf(sc.pid).reacts - (this.tourReacts.get(sc.pid) ?? 0) >= sc.n!;
+      if (ok) {
+        sc.done = true;
+        if (!this.players.get(sc.pid)?.fake) this.net.send(sc.pid, { t: 'buzz', ms: 400 });
+      }
+    }
+  }
+
+  /** Le défi secret d'un joueur, dans sa langue (seulement pendant un tournoi). */
+  private secretFor(p: Player) {
+    const sc = this.mode === 'tournament' ? this.secrets.get(p.pid) : undefined;
+    if (!sc) return undefined;
+    const name = (pid?: string) => this.players.get(pid ?? '')?.name ?? '?';
+    const game = sc.game ? gameById(sc.game)?.name[p.lang] ?? '' : '';
+    return { text: sc.text[p.lang].replace('{G}', game).replace('{F}', name(sc.foe)), done: sc.done, bonus: sc.bonus };
+  }
+
   pushScreens() {
     for (const p of this.players.values()) if (p.connected && !p.fake) this.net.send(p.pid, { t: 'screen', screen: this.screenFor(p) });
   }
@@ -701,23 +873,26 @@ export class Session {
           bots: this.bots,
           botLevel: this.botLevel,
           voice: this.voice,
+          recap: [...this.stats.values()].some((x) => x.games > 0),
           players: host ? this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color })) : [],
           team: p.team,
         };
       case 'game':
         if (this.paused) return { s: 'paused', host, game: this.def!.id };
         return playing
-          ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid), host, tuto: this.clock < this.intro && !this.ready.has(p.pid) }
+          ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid), host, tuto: this.clock < this.intro && !this.ready.has(p.pid), secret: this.secretFor(p) }
           : { s: 'wait', game: this.def!.id };
       case 'results': {
         const row = this.results.find((r) => r.pid === p.pid);
         if (!row && !host) return { s: 'wait', game: this.def?.id ?? '' };
-        return { s: 'results', gid: this.gameNo, host, rank: row?.rank ?? 0, points: row?.points ?? 0, total: p.total, step };
+        return { s: 'results', gid: this.gameNo, host, rank: row?.rank ?? 0, points: row?.points ?? 0, total: p.total, step, secret: this.secretFor(p) };
       }
       case 'podium': {
         const rank = this.list().sort((a, b) => b.total - a.total).findIndex((x) => x.pid === p.pid) + 1;
-        return { s: 'podium', gid: this.gameNo, host, rank, total: p.total };
+        return { s: 'podium', gid: this.gameNo, host, rank, total: p.total, secret: this.secretFor(p) };
       }
+      case 'recap':
+        return { s: 'recap', host };
     }
   }
 }

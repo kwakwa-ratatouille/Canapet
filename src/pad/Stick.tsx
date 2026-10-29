@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { t } from '../shared/i18n';
 import { ordinal } from '../shared/i18n';
 import type { Lang, Profile, ToTv } from '../shared/protocol';
+import { ReactButton } from './ReactPad';
 
 /** Rôle des boutons A, B, X, Y selon le jeu (X et Y n'apparaissent que s'ils servent). */
 const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> = {
@@ -50,6 +51,7 @@ export function Stick({
   game,
   profile,
   live,
+  family,
   cools,
 }: {
   send: (m: ToTv) => void;
@@ -57,6 +59,7 @@ export function Stick({
   game?: string;
   profile?: Profile;
   live?: { rank: number; of: number; left: number | null } | null;
+  family?: boolean;
   cools?: Cools;
 }) {
   // Recharge : on redessine tant qu'un bouton recharge
@@ -189,6 +192,7 @@ export function Stick({
             {Math.floor(live.left / 60)}:{String(live.left % 60).padStart(2, '0')}
           </span>
         )}
+        <ReactButton lang={lang} family={!!family} send={send} inline />
       </div>
       <div className="ab four">
         <div className="ab-cluster">

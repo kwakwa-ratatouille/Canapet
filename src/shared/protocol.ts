@@ -30,9 +30,16 @@ export interface GameInfo {
   options?: { id: string; label: Record<Lang, string>; choices: { v: number; label: Record<Lang, string> }[] }[];
 }
 
+/** Défi secret du tournoi (texte dans la langue du joueur ; done = null tant que rien n'est décidé). */
+export interface SecretInfo {
+  text: string;
+  done: boolean | null;
+  bonus: number;
+}
+
 export type PadScreen =
-  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; players: { pid: string; name: string; color: string }[] }
-  | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean }
+  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; recap?: boolean; players: { pid: string; name: string; color: string }[] }
+  | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean; secret?: SecretInfo }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }
   | { s: 'wait'; game: string }
@@ -45,8 +52,11 @@ export type PadScreen =
       points: number;
       total: number;
       step: { index: number; count: number } | null;
+      secret?: SecretInfo;
     }
-  | { s: 'podium'; gid: number; host: boolean; rank: number; total: number };
+  | { s: 'podium'; gid: number; host: boolean; rank: number; total: number; secret?: SecretInfo }
+  /** Bilan de la soirée (titres rigolos). */
+  | { s: 'recap'; host: boolean };
 
 /** Télé → téléphone */
 export type ToPad =
@@ -61,7 +71,7 @@ export type ToPad =
   /** L'hôte t'a retiré de la partie. */
   | { t: 'kicked' };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief' | 'voice';
+export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief' | 'voice' | 'recap';
 
 /** Téléphone → télé */
 export type ToTv =
@@ -75,6 +85,8 @@ export type ToTv =
   | { t: 'host'; action: HostAction; game?: string; opts?: Record<string, number> }
   /** Mode équipes : le joueur choisit son camp (0 ou 1). */
   | { t: 'team'; n: number }
+  /** Réaction (numéro dans REACTIONS) qui s'envole sur la télé. */
+  | { t: 'react'; i: number }
   | { t: 'ping'; ts: number };
 
 export const PEER_PREFIX = 'canapet-v1-';

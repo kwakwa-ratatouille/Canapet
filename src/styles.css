@@ -3169,3 +3169,207 @@ body,
   opacity: 0.7;
   font-size: 13px;
 }
+
+/* ——— Réactions des téléphones (calque au-dessus de tout) ——— */
+.react-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* ——— Défis secrets révélés au podium ——— */
+.secrets-card {
+  position: absolute;
+  left: calc(36 * var(--u));
+  top: calc(150 * var(--u));
+  width: calc(560 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+  background: #fff;
+  border: calc(6 * var(--u)) solid var(--ink);
+  border-radius: calc(28 * var(--u));
+  box-shadow: 0 calc(8 * var(--u)) 0 var(--ink);
+  padding: calc(18 * var(--u)) calc(22 * var(--u));
+  z-index: 2;
+}
+.secrets-card > b {
+  font-family: Fredoka, sans-serif;
+  font-size: calc(38 * var(--u));
+}
+.secrets-card > span {
+  font-family: Nunito, sans-serif;
+  font-weight: 700;
+  font-size: calc(28 * var(--u));
+  line-height: 1.2;
+  opacity: 0;
+  animation: row-in 0.5s ease-out forwards;
+}
+.secrets-card > span i {
+  display: inline-block;
+  width: calc(20 * var(--u));
+  height: calc(20 * var(--u));
+  border-radius: 50%;
+  border: calc(3 * var(--u)) solid var(--ink);
+  margin-right: calc(8 * var(--u));
+  vertical-align: middle;
+}
+.secrets-card em {
+  font-style: normal;
+  font-weight: 900;
+}
+.secrets-card strong {
+  white-space: nowrap;
+  font-family: Fredoka, sans-serif;
+}
+.secrets-card .ko {
+  color: #8a7590;
+}
+
+/* ——— Bilan de la soirée ——— */
+.recap-bg {
+  background: radial-gradient(ellipse at 50% 120%, #fff3c4 0, #ffe3f1 55%, #efe6ff 100%);
+  justify-content: flex-start;
+  padding-top: calc(70 * var(--u));
+}
+.recap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, calc(470 * var(--u)));
+  gap: calc(30 * var(--u));
+}
+.recap-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  background: #fff;
+  background-image: var(--cp-bonbon);
+  border: calc(6 * var(--u)) solid var(--ink);
+  border-top: calc(22 * var(--u)) solid var(--pc);
+  border-radius: calc(32 * var(--u));
+  box-shadow: 0 calc(10 * var(--u)) 0 var(--ink);
+  padding: calc(14 * var(--u)) calc(18 * var(--u)) calc(18 * var(--u));
+  opacity: 0;
+  animation: rise 0.7s ease-out forwards;
+}
+.recap-card b {
+  font-family: Fredoka, sans-serif;
+  font-size: calc(40 * var(--u));
+}
+.recap-who {
+  font-family: Fredoka, sans-serif;
+  font-weight: 600;
+  font-size: calc(34 * var(--u));
+  color: var(--ink);
+}
+.recap-card small {
+  font-family: Nunito, sans-serif;
+  font-weight: 800;
+  font-size: calc(28 * var(--u));
+  color: #6d5873;
+}
+.recap-icon {
+  position: absolute;
+  top: calc(-10 * var(--u));
+  left: calc(14 * var(--u));
+  font-size: calc(64 * var(--u));
+}
+
+/* ——— Manette : réactions et défi secret ——— */
+.react-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 4px solid var(--ink);
+  background: #ffd60a;
+  box-shadow: 0 5px 0 var(--ink);
+  font-size: 32px;
+  z-index: 30;
+}
+.react-fab.inline {
+  position: static;
+  width: 52px;
+  height: 52px;
+  font-size: 26px;
+  box-shadow: 0 4px 0 var(--ink);
+}
+.react-sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  max-height: 72vh;
+  overflow-y: auto;
+  background: #fff;
+  border-top: 4px solid var(--ink);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 12px 20px;
+  z-index: 40;
+  box-shadow: 0 -6px 0 rgba(58, 33, 64, 0.15);
+}
+.react-sheet header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.react-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 6px;
+}
+.react-grid button {
+  height: 54px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background: #fff6fb;
+  font-size: 30px;
+  touch-action: manipulation;
+}
+.react-grid button.txt {
+  grid-column: span 2;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  background: #fff3c4;
+}
+.react-grid button:active {
+  transform: scale(0.9);
+}
+.secret-card {
+  background: #241530;
+  color: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 20px;
+  padding: 12px 16px;
+  text-align: left;
+  width: min(100%, 420px);
+}
+.secret-card small {
+  display: block;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  color: #ffd60a;
+  font-size: 15px;
+}
+.secret-card p {
+  margin: 4px 0 0;
+  font-weight: 800;
+  font-size: 17px;
+}
+.secret-card.done {
+  background: #1fc9a0;
+  color: var(--ink);
+}
+.secret-card.done small {
+  color: var(--ink);
+}

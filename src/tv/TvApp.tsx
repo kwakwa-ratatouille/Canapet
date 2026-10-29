@@ -14,6 +14,8 @@ import { QR } from '../shared/QR';
 import { VOICES, audioLocked, isMuted, setMuted, unlockAudio } from '../shared/sound';
 import { EVENTS, Session, TOURNAMENT_LEN, type Player } from './session';
 import { stickerCloud } from '../games/draw';
+import { ReplayRecorder, drawReactions } from './fx';
+import { Recap } from './Recap';
 
 const W = 1920;
 const H = 1080;
@@ -72,6 +74,7 @@ export function TvApp() {
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');
       if (k === '9') session.surprise();
+      if (k === '8') session.hostAction('recap');
       if (k === 'escape' || k === ' ') session.hostAction(session.paused ? 'resume' : 'pause');
       if (k === 'enter') session.hostAction(session.phase === 'results' ? 'next' : 'pick', 'pouces');
       if (pick[k]) session.hostAction('pick', pick[k]);
@@ -108,14 +111,17 @@ export function TvApp() {
           <QR text={joinUrl(code)} size={120} />
           <div>
             {def && <small>{def.name[lang]}</small>}
-            {session.mode === 'tournament' && <small>{t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN })}</small>}
+            {session.mode === 'tournament' && session.step < TOURNAMENT_LEN && <small>{t(lang, 'gameStep', { i: session.step + 1, n: TOURNAMENT_LEN })}</small>}
             <b>{code}</b>
           </div>
         </div>
       )}
 
       {session.phase === 'results' && <Results session={session} />}
-      {session.phase === 'podium' && <Podium players={players} lang={lang} />}
+      {session.phase === 'podium' && <Podium players={players} lang={lang} session={session} />}
+
+      {session.phase === 'recap' && <Recap session={session} players={players} lang={lang} />}
+      <ReactionLayer session={session} />
 
       <div className="tv-tools">
         {locked && !muted && <span className="pill warn">🔇 {t(lang, 'soundOn')}</span>}
@@ -223,16 +229,27 @@ function GameView({ session }: { session: Session }) {
     cv.height = H * scale;
     const g = cv.getContext('2d', { alpha: false })!;
     let raf = 0;
+    const rec = new ReplayRecorder();
+    // Aperçu : accès au ralenti pour les tests (window.__rec)
+    if (PREVIEW) (window as unknown as { __rec: ReplayRecorder }).__rec = rec;
     const loop = (now: number) => {
       session.frame(now);
       g.setTransform(scale, 0, 0, scale, 0, 0);
       const tt = now / 1000;
+      if (session.phase === 'game' && session.replay > 0) {
+        // Ralenti de la fin : on rejoue les dernières images gardées
+        rec.draw(g, session, tt);
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       // Événements surprises : le séisme secoue l’image, les autres se dessinent par-dessus
       const ev = session.phase === 'game' && !session.paused ? session.event : null;
       if (ev?.kind === 'seisme') g.translate(Math.sin(tt * 60) * 14, Math.cos(tt * 47) * 10);
       if (session.game) session.game.render(g, tt);
       g.setTransform(scale, 0, 0, scale, 0, 0);
       if (session.game && !LIGHT) drawAmbience(g, tt, session);
+      // On garde des images pour le ralenti (pendant le jeu seulement)
+      if (!LIGHT && session.phase === 'game' && !session.paused && session.timeUp <= 0 && session.clock >= session.intro + 3) rec.capture(cv, session, now);
       if (ev) drawEvent(g, session, ev, tt);
       drawTimer(g, session, tt);
       drawIntro(g, session);
@@ -349,6 +366,33 @@ function drawEvent(g: CanvasRenderingContext2D, session: Session, ev: NonNullabl
   g.roundRect(30, 68, Math.max(16, (w - 60) * (ev.t / ev.dur)), 16, 8);
   g.fill();
   g.restore();
+}
+
+/** Réactions des téléphones par-dessus tout le reste (même au salon et aux résultats). */
+function ReactionLayer({ session }: { session: Session }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current!;
+    const scale = LIGHT ? 2 / 3 : 1;
+    cv.width = W * scale;
+    cv.height = H * scale;
+    const g = cv.getContext('2d')!;
+    let raf = 0;
+    let drawn = false;
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      const now = performance.now();
+      const busy = session.reactions.some((r) => now - r.born < 3300) || (session.combo && now - session.combo.born < 2900);
+      if (!busy && !drawn) return;
+      g.setTransform(scale, 0, 0, scale, 0, 0);
+      g.clearRect(0, 0, W, H);
+      drawn = !!busy;
+      if (busy) drawReactions(g, session, now);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [session]);
+  return <canvas ref={ref} className="react-layer" />;
 }
 
 /** Icônes de jeux chargées une seule fois pour l'écran d'intro. */
@@ -934,7 +978,8 @@ const TITLES: Record<'fr' | 'en', string[][]> = {
   ],
 };
 
-function Podium({ players, lang }: { players: Player[]; lang: 'fr' | 'en' }) {
+function Podium({ players, lang, session }: { players: Player[]; lang: 'fr' | 'en'; session: Session }) {
+  const secrets = session.mode === 'tournament' ? [...session.secrets.values()].filter((sc) => session.players.has(sc.pid)) : [];
   const ranked = [...players].sort((a, b) => b.total - a.total);
   const top = [ranked[1], ranked[0], ranked[2]];
   return (
@@ -983,6 +1028,22 @@ function Podium({ players, lang }: { players: Player[]; lang: 'fr' | 'en' }) {
             </span>
           ))}
         </p>
+      )}
+      {secrets.length > 0 && (
+        <div className="secrets-card">
+          <b>🤫 {lang === 'fr' ? 'Défis secrets' : 'Secret missions'}</b>
+          {secrets.map((sc, i) => {
+            const p = session.players.get(sc.pid)!;
+            const game = sc.game ? gameById(sc.game)?.name[lang] ?? '' : '';
+            const foe = session.players.get(sc.foe ?? '')?.name ?? '?';
+            return (
+              <span key={sc.pid} className={sc.done ? 'ok' : 'ko'} style={{ animationDelay: `${1.2 + i * 0.5}s` }}>
+                <i style={{ background: p.color }} />
+                <em>{p.name}</em> {sc.text[lang].replace('{G}', game).replace('{F}', foe)} <strong>{sc.done ? `✅ +${sc.bonus}` : '❌'}</strong>
+              </span>
+            );
+          })}
+        </div>
       )}
       <div className="podium-sofa" dangerouslySetInnerHTML={{ __html: SOFA }} />
       <p className="hint">{t(lang, 'podiumHint')}</p>
