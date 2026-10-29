@@ -42,15 +42,14 @@ const COUNT = 3;
 export const TOURNAMENT_LEN = 5;
 const MAX_PLAYERS = 12;
 
-/** Événements surprises des jeux d'action : quelques secondes de chaos. */
-export type EventKind = 'turbo' | 'ralenti' | 'miroir' | 'inverse' | 'disco' | 'seisme';
-const EVENTS: Record<EventKind, { dur: number; fr: string; en: string }> = {
-  turbo: { dur: 7, fr: 'TURBO ! Tout va plus vite !', en: 'TURBO! Everything speeds up!' },
-  ralenti: { dur: 6, fr: 'Ralenti… tout… doucement…', en: 'Slow… mo… tion…' },
-  miroir: { dur: 8, fr: 'Effet miroir ! L’écran est à l’envers !', en: 'Mirror mode! The screen is flipped!' },
-  inverse: { dur: 7, fr: 'Commandes inversées !', en: 'Controls reversed!' },
-  disco: { dur: 7, fr: 'Soirée disco !', en: 'Disco time!' },
-  seisme: { dur: 5, fr: 'Tremblement de canapé !', en: 'Sofa quake!' },
+/** Événements surprises des jeux d’action : quelques secondes de chaos, toujours visibles et faciles à comprendre. */
+export type EventKind = 'turbo' | 'ralenti' | 'seisme' | 'brouillard' | 'panne';
+export const EVENTS: Record<EventKind, { dur: number; icon: string; name: [string, string]; fr: string; en: string }> = {
+  turbo: { dur: 7, icon: '⚡', name: ['TURBO', 'TURBO'], fr: 'Turbo ! Tout va plus vite !', en: 'Turbo! Everything speeds up!' },
+  ralenti: { dur: 6, icon: '🐌', name: ['RALENTI', 'SLOW-MO'], fr: 'Ralenti… tout… doucement…', en: 'Slow… mo… tion…' },
+  seisme: { dur: 5, icon: '🫨', name: ['SÉISME', 'QUAKE'], fr: 'Tremblement de canapé !', en: 'Sofa quake!' },
+  brouillard: { dur: 8, icon: '☁️', name: ['BROUILLARD', 'FOG'], fr: 'Brouillard ! Les nuages cachent le jeu !', en: 'Fog! Clouds are hiding the game!' },
+  panne: { dur: 7, icon: '🔦', name: ['PANNE DE COURANT', 'BLACKOUT'], fr: 'Panne de courant ! Suivez les lampes torches !', en: 'Blackout! Follow the flashlights!' },
 };
 
 export class Session {
@@ -95,6 +94,7 @@ export class Session {
   toast = { text: '', t: 0 };
   /** Événement surprise en cours (t = secondes restantes). */
   event: { kind: EventKind; t: number; dur: number } | null = null;
+  private lastEvent: EventKind | null = null;
   private nextEvent = 0;
   /** Numéro de la dernière partie terminée. */
   private gameNo = 0;
@@ -226,7 +226,6 @@ export class Session {
       case 'in':
       case 'act':
         // Les envois de fichiers (Photo Roulette) passent même pendant le tuto
-        if (m.t === 'in' && this.event?.kind === 'inverse') m = { ...m, x: -m.x, y: -m.y };
         if (this.phase === 'game' && this.game && (this.clock >= this.intro + COUNT || (m.t === 'act' && m.a === 'up'))) this.game.input(pid, m);
         else if (this.phase === 'game' && this.clock < this.intro && (m.t !== 'in' || m.a || m.b) && !(m.t === 'act' && m.a === 'up')) this.markReady(pid);
         return;
@@ -557,6 +556,12 @@ export class Session {
     }
   }
 
+  /** Aperçu : déclenche tout de suite le prochain événement surprise. */
+  surprise() {
+    this.event = null;
+    this.nextEvent = 0;
+  }
+
   /** Lance de temps en temps un événement surprise (jeux d'action seulement). */
   private stepEvent() {
     if (this.event) {
@@ -569,14 +574,15 @@ export class Session {
     const left = this.timeLeft();
     if (!action || play < this.nextEvent || (left !== null && left < 12)) return;
     const kinds = Object.keys(EVENTS) as EventKind[];
-    // La course de pouces se joue en tapotant : pas de commandes inversées
-    const pool = this.def!.layout === 'tap' ? kinds.filter((k) => k !== 'inverse') : kinds;
+    // Jamais deux fois le même événement d’affilée
+    const pool = kinds.filter((k) => k !== this.lastEvent);
     const kind = pool[Math.floor(Math.random() * pool.length)];
+    this.lastEvent = kind;
     const e = EVENTS[kind];
     this.event = { kind, t: e.dur, dur: e.dur };
     this.nextEvent = play + e.dur + 25 + Math.random() * 15;
     const text = this.lang() === 'fr' ? e.fr : e.en;
-    this.toast = { text: '⚡ ' + text, t: 3 };
+    this.toast = { text: e.icon + ' ' + text, t: 3 };
     speak(text, this.lang());
     sfx.hurry();
   }

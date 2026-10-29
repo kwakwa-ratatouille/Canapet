@@ -17,6 +17,9 @@ const JUMP = 1200;
 const HW = 18;
 const BH = 56;
 const ARROW_V = 1350;
+/** Recharge automatique : une flèche toutes les 5 s, jusqu’à 3 dans le carquois. */
+const RELOAD = 5;
+const RELOAD_MAX = 3;
 const WIN_ROUNDS = 3;
 const MAX_TIME = 150;
 /** Chrono d'une manche : mort subite à 30 s, fin à 45 s (plus de camping sans fin). */
@@ -122,6 +125,8 @@ interface P extends Runner {
   kills: number;
   cool: number;
   botT: number;
+  /** Une flèche revient toute seule dans le carquois toutes les RELOAD secondes. */
+  reload: number;
 }
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -157,6 +162,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     kills: 0,
     cool: 0,
     botT: 0,
+    reload: 0,
   }));
   let arrows: Arrow[] = [];
   let time = 0;
@@ -194,6 +200,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       p.vx = p.vy = 0;
       p.alive = true;
       p.arrows = 3;
+      p.reload = 0;
       p.dir = p.x < W / 2 ? 1 : -1;
       p.shield = 1.5;
       p.bubble = false;
@@ -407,6 +414,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           else bot(p, i, dt);
         }
         p.cool = Math.max(0, p.cool - dt);
+        // Recharge automatique : +1 flèche toutes les 5 s (jusqu’à 3)
+        if (p.arrows < RELOAD_MAX) {
+          p.reload += dt;
+          if (p.reload >= RELOAD) {
+            p.reload = 0;
+            p.arrows++;
+            pops.push({ x: p.x, y: p.y - 130, text: "+1 🏹", c: "#ffd60a", t: 0.8 });
+          }
+        } else p.reload = 0;
         p.dodgeCool = Math.max(0, p.dodgeCool - dt);
         p.shield = Math.max(0, p.shield - dt);
         p.jumpReq = Math.max(0, p.jumpReq - dt);
@@ -679,6 +695,18 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.beginPath();
           g.arc(p.x, p.y - BH / 2 - 6, 56 + Math.sin(t * 5) * 3, 0, Math.PI * 2);
           g.fill();
+          g.stroke();
+        }
+        // Anneau de recharge au-dessus du carquois
+        if (p.arrows < RELOAD_MAX) {
+          g.lineWidth = 6;
+          g.strokeStyle = INK;
+          g.beginPath();
+          g.arc(p.x, p.y - 140, 13, 0, Math.PI * 2);
+          g.stroke();
+          g.strokeStyle = "#ffd60a";
+          g.beginPath();
+          g.arc(p.x, p.y - 140, 13, -Math.PI / 2, -Math.PI / 2 + (p.reload / RELOAD) * Math.PI * 2);
           g.stroke();
         }
         // Carquois : une flèche par trait au-dessus de la tête

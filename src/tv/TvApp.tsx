@@ -12,7 +12,8 @@ import { drawCharacter } from '../shared/characters';
 import { joinUrl } from '../shared/protocol';
 import { QR } from '../shared/QR';
 import { VOICES, audioLocked, isMuted, setMuted, unlockAudio } from '../shared/sound';
-import { Session, TOURNAMENT_LEN, type Player } from './session';
+import { EVENTS, Session, TOURNAMENT_LEN, type Player } from './session';
+import { stickerCloud } from '../games/draw';
 
 const W = 1920;
 const H = 1080;
@@ -70,6 +71,7 @@ export function TvApp() {
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');
+      if (k === '9') session.surprise();
       if (k === 'escape' || k === ' ') session.hostAction(session.paused ? 'resume' : 'pause');
       if (k === 'enter') session.hostAction(session.phase === 'results' ? 'next' : 'pick', 'pouces');
       if (pick[k]) session.hostAction('pick', pick[k]);
@@ -225,41 +227,13 @@ function GameView({ session }: { session: Session }) {
       session.frame(now);
       g.setTransform(scale, 0, 0, scale, 0, 0);
       const tt = now / 1000;
-      // Événements surprises : écran retourné ou qui tremble
-      const ev = session.phase === 'game' ? session.event : null;
-      if (ev?.kind === 'miroir') {
-        g.translate(W, 0);
-        g.scale(-1, 1);
-      }
+      // Événements surprises : le séisme secoue l’image, les autres se dessinent par-dessus
+      const ev = session.phase === 'game' && !session.paused ? session.event : null;
       if (ev?.kind === 'seisme') g.translate(Math.sin(tt * 60) * 14, Math.cos(tt * 47) * 10);
       if (session.game) session.game.render(g, tt);
       g.setTransform(scale, 0, 0, scale, 0, 0);
       if (session.game && !LIGHT) drawAmbience(g, tt, session);
-      if (ev?.kind === 'disco') {
-        g.globalAlpha = 0.22;
-        g.fillStyle = ['#ff4f9a', '#ffd60a', '#2ec5ff', '#1fc9a0', '#9b5cff'][Math.floor(tt * 6) % 5];
-        g.fillRect(0, 0, W, H);
-        g.globalAlpha = 1;
-        // Boule à facettes
-        g.fillStyle = '#fff';
-        g.strokeStyle = INK;
-        g.lineWidth = 6;
-        g.beginPath();
-        g.arc(110, 90, 50, 0, Math.PI * 2);
-        g.fill();
-        g.stroke();
-      }
-      if (ev && ev.t > 0) {
-        // Petite jauge de l'événement en haut à gauche
-        g.fillStyle = INK;
-        g.beginPath();
-        g.roundRect(40, 150, 300, 30, 15);
-        g.fill();
-        g.fillStyle = SOLEIL;
-        g.beginPath();
-        g.roundRect(40, 150, Math.max(30, 300 * (ev.t / ev.dur)), 30, 15);
-        g.fill();
-      }
+      if (ev) drawEvent(g, session, ev, tt);
       drawTimer(g, session, tt);
       drawIntro(g, session);
       if (session.paused) drawPause(g, session, tt);
@@ -279,6 +253,102 @@ function GameView({ session }: { session: Session }) {
     return () => cancelAnimationFrame(raf);
   }, [session]);
   return <canvas ref={ref} className="game-canvas" />;
+}
+
+/** Effet visible de l’événement surprise + étiquette « icône, nom, jauge » en haut à gauche. */
+function drawEvent(g: CanvasRenderingContext2D, session: Session, ev: NonNullable<Session['event']>, t: number) {
+  const e = EVENTS[ev.kind];
+  const since = ev.dur - ev.t;
+  // Entrée et sortie en fondu
+  const k = Math.max(0, Math.min(1, since * 3, ev.t * 3));
+  g.save();
+  if (ev.kind === 'turbo') {
+    // Traits de vitesse qui filent sur les bords
+    g.globalAlpha = 0.85 * k;
+    g.strokeStyle = '#fff';
+    g.lineCap = 'round';
+    for (let i = 0; i < 14; i++) {
+      const y = ((i * 167) % 1000) + 40;
+      const len = 160 + ((i * 73) % 220);
+      const x = W - (((t * 2600 + i * 431) % (W + len * 2)) - len);
+      const edge = Math.abs(y - H / 2) > 260 || i % 3 === 0;
+      if (!edge) continue;
+      g.lineWidth = 12 + (i % 3) * 6;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.lineTo(x + len, y);
+      g.stroke();
+    }
+    g.globalAlpha = 0.1 * k;
+    g.fillStyle = SOLEIL;
+    g.fillRect(0, 0, W, H);
+  } else if (ev.kind === 'ralenti') {
+    g.globalAlpha = 0.2 * k;
+    g.fillStyle = '#2e7dff';
+    g.fillRect(0, 0, W, H);
+    // Bandes sombres en haut et en bas, façon ralenti de film
+    g.globalAlpha = 0.85 * k;
+    g.fillStyle = INK;
+    g.fillRect(0, 0, W, 70 * k);
+    g.fillRect(0, H - 70 * k, W, 70 * k);
+  } else if (ev.kind === 'brouillard') {
+    // Gros nuages qui traversent lentement l’écran
+    g.globalAlpha = 0.93 * k;
+    for (let i = 0; i < 6; i++) {
+      const sc = 3.2 + (i % 3) * 0.9;
+      const span = W + 900;
+      const x = ((since * (70 + i * 18) + i * 380) % span) - 450;
+      const y = 180 + ((i * 263) % 760) + Math.sin(t * 0.8 + i) * 20;
+      stickerCloud(g, i % 2 ? x : W - x, y, sc);
+    }
+  } else if (ev.kind === 'panne') {
+    // Noir partout sauf trois lampes torches qui balayent (trous en pair-impair)
+    const flick = since < 0.6 && Math.floor(since * 14) % 2 === 0;
+    g.globalAlpha = (flick ? 0.4 : 0.86) * k;
+    g.fillStyle = '#0d0612';
+    g.beginPath();
+    g.rect(0, 0, W, H);
+    for (let i = 0; i < 3; i++) {
+      const x = W / 2 + Math.sin(t * (0.55 + i * 0.17) + i * 2.1) * 760;
+      const y = H / 2 + Math.cos(t * (0.43 + i * 0.13) + i * 1.3) * 380;
+      g.moveTo(x + 230, y);
+      g.arc(x, y, 230, 0, Math.PI * 2);
+    }
+    g.fill('evenodd');
+  }
+  g.restore();
+  // Étiquette de l’événement
+  const fr = session.lang() === 'fr';
+  const label = e.icon + ' ' + e.name[fr ? 0 : 1];
+  g.save();
+  g.globalAlpha = k;
+  g.translate(40, 130 + (1 - k) * -40);
+  g.font = '700 40px Fredoka, sans-serif';
+  const w = Math.max(320, g.measureText(label).width + 60);
+  g.fillStyle = INK;
+  g.beginPath();
+  g.roundRect(0, 8, w, 100, 26);
+  g.fill();
+  g.fillStyle = '#fff';
+  g.strokeStyle = INK;
+  g.lineWidth = 6;
+  g.beginPath();
+  g.roundRect(0, 0, w, 100, 26);
+  g.fill();
+  g.stroke();
+  g.fillStyle = INK;
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.fillText(label, 30, 38);
+  g.fillStyle = '#eadff0';
+  g.beginPath();
+  g.roundRect(30, 68, w - 60, 16, 8);
+  g.fill();
+  g.fillStyle = ev.t < 1.5 && Math.floor(t * 8) % 2 ? ROSE : SOLEIL;
+  g.beginPath();
+  g.roundRect(30, 68, Math.max(16, (w - 60) * (ev.t / ev.dur)), 16, 8);
+  g.fill();
+  g.restore();
 }
 
 /** Icônes de jeux chargées une seule fois pour l'écran d'intro. */

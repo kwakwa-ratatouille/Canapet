@@ -212,7 +212,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🕹️', 'Stick : courir et viser (8 directions)'],
         ['🅰️', 'A : sauter · B : tirer · X : esquive (attrape une flèche au vol !)'],
-        ['🎁', 'Ramasse tes flèches plantées et le coffre (bulle + 2 flèches). Mort subite à 30 s !'],
+        ['🎁', 'Une flèche revient toute seule toutes les 5 s. Ramasse aussi les flèches plantées et le coffre !'],
       ],
     },
     en: {
@@ -220,7 +220,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🕹️', 'Stick: run and aim (8 directions)'],
         ['🅰️', 'A: jump · B: shoot · X: dodge (catch an arrow mid-air!)'],
-        ['🎁', 'Pick up stuck arrows and the chest (bubble + 2 arrows). Sudden death at 30 s!'],
+        ['🎁', 'An arrow comes back every 5 s. Also grab stuck arrows and the chest!'],
       ],
     },
   },
