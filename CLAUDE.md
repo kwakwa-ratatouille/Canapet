@@ -70,6 +70,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 ## Architecture
 
 - React + TypeScript + Vite, navigation par `#` (`#/tv`, `#/m/CODE`, `#/aide`).
+- Télé et manette chargées à part (`lazy` dans `main.tsx`) : la manette n’importe **jamais** `games/registry` (le code des jeux) ; elle reçoit la fiche des jeux (`GameInfo` : nom, icône, couleur, options) dans `welcome` et le salon, gardée dans `catalog`.
 - **La télé fait autorité** (`src/tv/session.ts`) : boucle à pas fixe 60 Hz, rendu Canvas 2D en repère 1920×1080. Les téléphones n'envoient que leurs entrées (`src/shared/protocol.ts`).
 - Liaison : **PeerJS** (WebRTC DataChannel). La télé ouvre le pair `canapet-v1-<CODE>` ; les manettes s'y connectent. Ping toutes les 2 s, et un joueur muet depuis 9 s est compté comme parti.
   Prévu : Firebase Realtime Database pour l'appairage de secours et les comptes. Pas Firestore pour le temps réel.
