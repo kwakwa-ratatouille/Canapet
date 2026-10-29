@@ -252,7 +252,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   }
 
   const playing = screen?.s === 'play' && status === 'ok';
-  const gameName = screen && 'game' in screen ? catalog.find((g) => g.id === screen.game)?.name[lang] : '';
+  const gameName = screen && 'game' in screen ? catalog.find((g) => g.id === screen.game)?.name?.[lang] : '';
 
   return (
     // Manettes stick et tapotage : toujours en paysage, même si le téléphone reste droit (on tourne l'écran).
@@ -365,7 +365,7 @@ function PadScreenView({
         return (
           <div className="pad-body top">
             <img className="opt-game-icon" src={gameIcon(def.slug)} alt="" />
-            <p className="pad-title">{def.name[lang]}</p>
+            <p className="pad-title">{def.name?.[lang] ?? def.id}</p>
             {def.options!.map((op) => (
               <div key={op.id} className="team-box">
                 <p className="opt-title">{op.label[lang]}</p>
@@ -421,7 +421,7 @@ function PadScreenView({
                     }}
                   >
                     <img src={gameIcon(def.slug)} alt="" />
-                    <b>{def.name[lang]}</b>
+                    <b>{def.name?.[lang] ?? def.id}</b>
                     {off && <small>✕ {lang === 'fr' ? 'enlevé' : 'removed'}</small>}
                   </button>
                 );
@@ -467,7 +467,7 @@ function PadScreenView({
                     }}
                   >
                     <img src={gameIcon(def.slug)} alt="" />
-                    <b>{def.name[lang]}</b>
+                    <b>{def.name?.[lang] ?? def.id}</b>
                     {g.soon && <small>{t(lang, 'soon')}</small>}
                   </button>
                 );
