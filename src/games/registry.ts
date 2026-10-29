@@ -17,6 +17,7 @@ import { roulette } from './roulette';
 import { president } from './president';
 import { chairsGame, lavaGame, potatoGame, rainGame } from './minis';
 import type { GameBase, GameDef } from './types';
+import type { GameInfo } from '../shared/protocol';
 
 /** Icône et couleur de chaque jeu (fichiers de la DA : public/da/jeux/<slug>.svg). */
 const ART: Record<string, string> = {
@@ -76,3 +77,6 @@ export const GAMES: GameDef[] = [
 
 export const gameById = (id: string) => GAMES.find((g) => g.id === id);
 export const playable = () => GAMES.filter((g) => !g.soon);
+
+/** Fiche légère de chaque jeu, envoyée aux manettes. */
+export const gameInfo = (games: GameDef[]): GameInfo[] => games.map((g) => ({ id: g.id, soon: !!g.soon, name: g.name, slug: g.slug, color: g.color, options: g.options }));

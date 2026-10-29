@@ -5,13 +5,12 @@ import { VOICES } from '../shared/sound';
 import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
 import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRICES, rewardFor, saveProgress, type Kind, type Progress } from '../shared/progress';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { GAMES, gameById, playable } from '../games/registry';
 import { CharCanvas } from '../shared/CharCanvas';
 import { ACCS, COLORS, EYE_LIST, FOODS, HATS, POSE_LIST } from '../shared/characters';
 import { IS_IOS, newId, save, store } from '../shared/device';
 import { defaultLang, ordinal, t } from '../shared/i18n';
 import { gameIcon, Wordmark } from '../shared/Logo';
-import type { HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
+import type { GameInfo, HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
 import { sfx, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
 import { Stick, type Cools } from './Stick';
@@ -40,7 +39,7 @@ function defaultProfile(): Profile {
 }
 
 const DEMO: Record<string, PadScreen> = {
-  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: GAMES.map((g) => ({ id: g.id, soon: !!g.soon })), count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1, voice: 0, players: [{ pid: 'a', name: 'Lulu', color: COLORS[1] }] },
+  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: [], count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1, voice: 0, players: [{ pid: 'a', name: 'Lulu', color: COLORS[1] }] },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
   president: { s: 'play', layout: 'buttons', game: 'president', data: { hand: [0, 5, 9, 10, 11, 22, 23, 30, 37, 44, 46, 49, 51], phase: 'play', myTurn: true, need: 2, min: 2, give: 0, giveTo: '', role: '🎩 Vice-président', turnName: 'Moi', pile: [8, 10], pileBy: 'Lulu', note: '', done: 0 } },
@@ -58,6 +57,21 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   }, []);
   const [editing, setEditing] = useState(() => !store<Profile | null>('profile', null)?.name && !demo);
   const [screen, setScreen] = useState<PadScreen | null>(demo ? DEMO[demo] ?? DEMO.lobby : null);
+  // Fiches des jeux envoyées par la télé (gardées pour afficher le nom du jeu après une reconnexion)
+  const [catalog, setCatalogState] = useState<GameInfo[]>(() => store<GameInfo[]>('catalog', []));
+  const setCatalog = (games: GameInfo[]) => {
+    setCatalogState(games);
+    save('catalog', games);
+  };
+  useEffect(() => {
+    // Manette de démonstration : pas de télé, on charge le catalogue complet à part
+    if (!demo) return;
+    import('../games/registry').then(({ GAMES, gameInfo }) => {
+      const games = gameInfo(GAMES);
+      setCatalogState(games);
+      setScreen((s) => (s?.s === 'lobby' ? { ...s, games } : s));
+    });
+  }, [demo]);
   const [status, setStatus] = useState<PadStatus>(demo ? 'ok' : 'connecting');
   const [kicked, setKicked] = useState(false);
   const [rtt, setRtt] = useState(0);
@@ -152,6 +166,8 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         if (m.t === 'status') setLive({ rank: m.rank, of: m.of, left: m.left });
         if (m.t === 'cool') setCools((c) => ({ ...c, [m.b]: m.s > 0 ? { at: performance.now(), s: m.s } : undefined }));
         if (m.t === 'welcome') save('lastGame', { code, at: Date.now() });
+        if (m.t === 'welcome' && m.games) setCatalog(m.games);
+        if (m.t === 'screen' && m.screen.s === 'lobby' && m.screen.games.length) setCatalog(m.screen.games);
         if (m.t === 'welcome' && m.color !== profileRef.current.color) setProfile((p) => ({ ...p, color: m.color }));
         if (m.t === 'buzz') {
           if (navigator.vibrate) navigator.vibrate(m.ms);
@@ -236,7 +252,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   }
 
   const playing = screen?.s === 'play' && status === 'ok';
-  const gameName = screen && 'game' in screen ? gameById(screen.game)?.name[lang] : '';
+  const gameName = screen && 'game' in screen ? catalog.find((g) => g.id === screen.game)?.name[lang] : '';
 
   return (
     // Manettes stick et tapotage : toujours en paysage, même si le téléphone reste droit (on tourne l'écran).
@@ -345,7 +361,7 @@ function PadScreenView({
   switch (screen.s) {
     case 'lobby':
       if (optFor && screen.host) {
-        const def = gameById(optFor)!;
+        const def = screen.games.find((g) => g.id === optFor)!;
         return (
           <div className="pad-body top">
             <img className="opt-game-icon" src={gameIcon(def.slug)} alt="" />
@@ -389,7 +405,7 @@ function PadScreenView({
             <p className="pad-small">{lang === 'fr' ? 'Touche un jeu pour l’enlever (ou le remettre)' : 'Tap a game to remove it (or bring it back)'}</p>
             <div className="game-list">
               {screen.games.filter((g) => !g.soon).map((g) => {
-                const def = gameById(g.id)!;
+                const def = g;
                 const off = noTour.includes(g.id);
                 return (
                   <button
@@ -433,7 +449,7 @@ function PadScreenView({
             <p className="pad-title">{t(lang, 'pickGame')}</p>
             <div className="game-list">
               {screen.games.map((g) => {
-                const def = gameById(g.id)!;
+                const def = g;
                 return (
                   <button
                     key={g.id}
@@ -531,7 +547,7 @@ function PadScreenView({
                 </svg>
                 <span>
                   <b>{t(lang, 'pickGame')}</b>
-                  <small>{t(lang, 'catalogue', { n: playable().length })}</small>
+                  <small>{t(lang, 'catalogue', { n: screen.games.filter((g) => !g.soon).length })}</small>
                 </span>
               </button>
               {screen.players.length > 0 && (

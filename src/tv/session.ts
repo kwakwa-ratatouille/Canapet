@@ -1,6 +1,6 @@
 // La soirée côté télé : joueurs, enchaînement des jeux, scores. La télé fait autorité.
 import { SKILLS } from '../games/botSkill';
-import { GAMES, gameById, playable } from '../games/registry';
+import { GAMES, gameById, playable, gameInfo } from '../games/registry';
 import { TEAMS } from '../games/teams';
 import { TUTOS } from '../games/tutos';
 import type { GameDef, GameInstance, Runner } from '../games/types';
@@ -182,7 +182,7 @@ export class Session {
     };
     this.players.set(pid, p);
     if (!existing) sfx.join();
-    if (!fake) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code });
+    if (!fake) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code, games: GAMES_INFO() });
     this.changed();
     this.pushScreens();
   }
@@ -218,7 +218,7 @@ export class Session {
       case 'profile':
         if (!p) return;
         Object.assign(p, m.profile, { name: clean(m.profile.name), color: this.freeColor(m.profile.color, pid) });
-        if (p.color !== m.profile.color) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code });
+        if (p.color !== m.profile.color) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code, games: GAMES_INFO() });
         this.changed();
         this.pushScreens();
         return;
@@ -722,7 +722,8 @@ export class Session {
   }
 }
 
-const GAMES_INFO = () => GAMES.map((g) => ({ id: g.id, soon: !!g.soon }));
+let gamesInfo: ReturnType<typeof gameInfo> | null = null;
+const GAMES_INFO = () => (gamesInfo ??= gameInfo(GAMES));
 
 function clean(name: string): string {
   return (name || '').replace(/\s+/g, ' ').trim().slice(0, 14) || '???';

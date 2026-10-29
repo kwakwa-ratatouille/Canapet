@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { PadApp } from './pad/PadApp';
 import { Help } from './pages/Help';
 import { Home } from './pages/Home';
-import { TvApp } from './tv/TvApp';
 import './tokens.css';
 import './styles.css';
+
+// La télé (tous les jeux) et la manette sont chargées à part : le téléphone ne télécharge pas le code des jeux.
+const TvApp = lazy(() => import('./tv/TvApp').then((m) => ({ default: m.TvApp })));
+const PadApp = lazy(() => import('./pad/PadApp').then((m) => ({ default: m.PadApp })));
 
 // Navigation par « # » : marche sur GitHub Pages, Chromecast et l'appli PC sans réglage serveur.
 function parse() {
@@ -21,10 +23,19 @@ function App() {
     return () => window.removeEventListener('hashchange', on);
   }, []);
   const [page, arg] = route.parts;
-  if (page === 'tv') return <TvApp />;
+  if (page === 'tv')
+    return (
+      <Suspense fallback={null}>
+        <TvApp />
+      </Suspense>
+    );
   if (page === 'm' && arg) {
     const code = arg.toUpperCase().slice(0, 4);
-    return <PadApp key={code} code={code} demo={code === 'TEST' ? route.query.get('s') || 'lobby' : undefined} />;
+    return (
+      <Suspense fallback={null}>
+        <PadApp key={code} code={code} demo={code === 'TEST' ? route.query.get('s') || 'lobby' : undefined} />
+      </Suspense>
+    );
   }
   if (page === 'aide') return <Help />;
   return <Home />;

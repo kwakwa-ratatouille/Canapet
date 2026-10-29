@@ -20,9 +20,14 @@ export interface Profile {
 
 export type PadLayout = 'tap' | 'stick' | 'bluff' | 'buttons';
 
+/** Ce que la manette sait d’un jeu (la télé l’envoie : la manette ne charge pas le code des jeux). */
 export interface GameInfo {
   id: string;
   soon: boolean;
+  name: Record<Lang, string>;
+  slug: string;
+  color: string;
+  options?: { id: string; label: Record<Lang, string>; choices: { v: number; label: Record<Lang, string> }[] }[];
 }
 
 export type PadScreen =
@@ -45,7 +50,7 @@ export type PadScreen =
 
 /** Télé → téléphone */
 export type ToPad =
-  | { t: 'welcome'; color: string; code: string }
+  | { t: 'welcome'; color: string; code: string; games?: GameInfo[] }
   | { t: 'screen'; screen: PadScreen }
   | { t: 'buzz'; ms: number }
   /** Pendant la partie, chaque seconde : ta place et le temps restant. */
