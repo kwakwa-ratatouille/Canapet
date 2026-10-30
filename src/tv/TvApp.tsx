@@ -73,6 +73,7 @@ export function TvApp() {
         i: 'pluie',
         '1': 'lave',
         '2': 'trappe',
+        '3': 'couleur',
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');

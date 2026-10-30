@@ -134,6 +134,24 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  couleur: {
+    fr: {
+      goal: 'Sois le dernier debout !',
+      steps: [
+        ['🎨', 'Une couleur est annoncée en haut'],
+        ['🏃', 'Fonce sur une dalle de cette couleur'],
+        ['🕳️', 'Toutes les autres tombent ! B : pousser'],
+      ],
+    },
+    en: {
+      goal: 'Be the last one standing!',
+      steps: [
+        ['🎨', 'A color is called at the top'],
+        ['🏃', 'Run onto a tile of that color'],
+        ['🕳️', 'All the others drop! B: shove'],
+      ],
+    },
+  },
   lave: {
     fr: {
       goal: 'Sois le dernier debout !',

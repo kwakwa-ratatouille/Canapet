@@ -4,7 +4,7 @@ import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { roundRectText } from './draw';
+import { candy, roundRectText } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 // Aire de jeu commune (repère télé 1920 × 1080)
@@ -813,6 +813,176 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
+// ————————————————————————————————————————— Bloc de Couleur —————————————————————————————————————————
+// Une couleur est annoncée : cours sur une dalle de cette couleur avant que toutes les autres tombent.
+
+const BLOCK_COLORS = [
+  { c: '#ff4f9a', n: { fr: 'ROSE', en: 'PINK' } },
+  { c: '#ffd60a', n: { fr: 'JAUNE', en: 'YELLOW' } },
+  { c: '#2ec5ff', n: { fr: 'BLEU', en: 'BLUE' } },
+  { c: '#7bd13b', n: { fr: 'VERT', en: 'GREEN' } },
+  { c: '#9b5cff', n: { fr: 'VIOLET', en: 'PURPLE' } },
+  { c: '#ff9a1f', n: { fr: 'ORANGE', en: 'ORANGE' } },
+];
+
+function colorBlock(runners: Runner[], ctx: GameCtx): GameInstance {
+  const fr = ctx.lang === 'fr';
+  const ps = makePlayers(runners);
+  const CS = 160;
+  const GW = Math.floor(AW / CS);
+  const GH = Math.floor(AH / CS);
+  const OX = AX + (AW - GW * CS) / 2;
+  const OY = AY + (AH - GH * CS) / 2;
+  let grid: number[][] = [];
+  let phase: 'call' | 'drop' | 'back' = 'back';
+  let pt = 1.5;
+  let callLen = 4;
+  let target = 0;
+  let rounds = 0;
+  let outCount = 0;
+  const alive = () => ps.filter((p) => p.alive);
+  const shuffle = () => {
+    // Chaque couleur au moins deux fois, le reste au hasard
+    const cells: number[] = [];
+    for (let i = 0; i < GW * GH; i++) cells.push(i < BLOCK_COLORS.length * 2 ? i % BLOCK_COLORS.length : Math.floor(Math.random() * BLOCK_COLORS.length));
+    cells.sort(() => Math.random() - 0.5);
+    grid = Array.from({ length: GH }, (_, y) => cells.slice(y * GW, y * GW + GW));
+  };
+  const cell = (x: number, y: number) => [Math.floor((x - OX) / CS), Math.floor((y - 10 - OY) / CS)];
+  shuffle();
+
+  const game: GameInstance = {
+    over: false,
+    input(pid, m) {
+      const p = readInput(ps, pid, m as never);
+      if (!p) return;
+      if (p.b && !p.lastB && p.alive) shove(ps, p, ctx);
+      p.lastB = p.b;
+    },
+    update(dt) {
+      pt -= dt;
+      if (phase === 'back' && pt <= 0) {
+        rounds++;
+        shuffle();
+        target = Math.floor(Math.random() * BLOCK_COLORS.length);
+        // De plus en plus vite
+        callLen = Math.max(1.6, 4 - rounds * 0.25);
+        phase = 'call';
+        pt = callLen;
+        speak(BLOCK_COLORS[target].n[ctx.lang], ctx.lang);
+        sfx.go();
+        for (const p of ps) p.botT = rnd(0.15, 1.1 - ctx.botSkill * 0.8);
+      } else if (phase === 'call') {
+        if (Math.ceil(pt) !== Math.ceil(pt + dt) && pt > 0) sfx.tick();
+        if (pt <= 0) {
+          phase = 'drop';
+          pt = 1.4;
+          sfx.boom();
+        }
+      } else if (phase === 'drop' && pt <= 0) {
+        phase = 'back';
+        pt = 1;
+      }
+      for (const p of ps) {
+        if (!p.bot || !p.alive) continue;
+        if (phase === 'call' && p.botT > 0 && (p.botT -= dt) <= 0) {
+          // Le bot repère la dalle de la bonne couleur la plus proche (ou se trompe parfois)
+          let best = { x: p.x, y: p.y, d: 1e9 };
+          const ok = Math.random() < 0.55 + 0.4 * ctx.botSkill;
+          for (let y = 0; y < GH; y++)
+            for (let x = 0; x < GW; x++) {
+              if (ok ? grid[y][x] !== target : grid[y][x] === target) continue;
+              const cx = OX + x * CS + CS / 2;
+              const cy = OY + y * CS + CS / 2;
+              const d = Math.hypot(cx - p.x, cy - p.y);
+              if (d < best.d) best = { x: cx, y: cy, d };
+            }
+          p.tx = best.x;
+          p.ty = best.y;
+        }
+        botGo(p, ctx, dt);
+      }
+      step(ps, dt, () => 430);
+      if (phase === 'drop' && pt < 1.25) {
+        for (const p of ps) {
+          if (!p.alive) continue;
+          const [cx, cy] = cell(p.x, p.y);
+          const safe = cx >= 0 && cy >= 0 && cx < GW && cy < GH && grid[cy][cx] === target;
+          if (!safe) {
+            p.alive = false;
+            p.out = ++outCount;
+            sfx.pet();
+            if (!p.bot) ctx.buzz(p.pid, 500);
+          }
+        }
+      }
+      if (alive().length <= (ps.length > 1 ? 1 : 0)) game.over = true;
+    },
+    render(g, t) {
+      g.fillStyle = '#1d0f26';
+      g.fillRect(0, 0, 1920, 1080);
+      // Le vide, avec des étoiles qui défilent
+      if (!ctx.light) {
+        g.fillStyle = 'rgba(255,255,255,0.5)';
+        for (let k = 0; k < 60; k++) g.fillRect((k * 337) % 1920, (k * 211 + t * 20 * (1 + (k % 3))) % 1080, 3, 3);
+      }
+      const dropK = phase === 'drop' ? Math.min(1, (1.4 - pt) / 0.3) : 0;
+      for (let y = 0; y < GH; y++)
+        for (let x = 0; x < GW; x++) {
+          const v = grid[y][x];
+          const k = phase === 'drop' && v !== target ? dropK : 0;
+          const s = 1 - k * 0.7;
+          const px = OX + x * CS + CS / 2;
+          const py = OY + y * CS + CS / 2 + k * 60;
+          const w = (CS - 12) * s;
+          g.globalAlpha = 1 - k;
+          g.fillStyle = INK;
+          g.beginPath();
+          g.roundRect(px - w / 2, py - w / 2 + 10, w, w, 18 * s);
+          g.fill();
+          const calling = phase === 'call' && v === target;
+          g.fillStyle = BLOCK_COLORS[v].c;
+          g.strokeStyle = calling && Math.floor(t * 6) % 2 ? '#fff' : INK;
+          g.lineWidth = calling ? 8 : 5;
+          g.beginPath();
+          g.roundRect(px - w / 2, py - w / 2, w, w, 18 * s);
+          g.fill();
+          g.stroke();
+          candy(g, px - w / 2, py - w / 2, w, w, 18 * s);
+          g.globalAlpha = 1;
+        }
+      const order = ps.map((_, i) => i).sort((a, b) => ps[a].y - ps[b].y);
+      for (const i of order) drawP(g, ps[i], t, i, { mood: phase === 'call' && pt < 1 ? 'wow' : undefined });
+      hud(g, ps, false);
+      if (phase === 'call') {
+        const C = BLOCK_COLORS[target];
+        const k = Math.max(0, pt / callLen);
+        g.fillStyle = INK;
+        g.beginPath();
+        g.roundRect(660, 120 + 8, 600, 110, 30);
+        g.fill();
+        g.fillStyle = C.c;
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.roundRect(660, 120, 600, 110, 30);
+        g.fill();
+        g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.5)';
+        g.fillRect(680, 206, 560 * k, 12);
+        bigText(g, C.n[ctx.lang], '#fff', 0.7, 150);
+      } else bigText(g, fr ? '🎨 Attends la couleur…' : '🎨 Wait for the color…', '#fff', 0.42, 160);
+    },
+    out: (pid) => !!ps.find((p) => p.pid === pid && !p.alive),
+    ranking: () => byOut(ps),
+    leader() {
+      const a = alive();
+      return a.length === 1 ? a[0].profile.name : null;
+    },
+  };
+  return game;
+}
+
 // ————————————————————————————————————————— Fiches des jeux —————————————————————————————————————————
 
 const base = { inspired: 'Jeux de fête classiques', layout: 'stick' as const, min: 2, max: 8, botFill: 4 };
@@ -846,6 +1016,16 @@ export const rainGame: GameBase = {
   music: 'party',
   limit: 45,
   create: candyRain,
+};
+export const colorGame: GameBase = {
+  ...base,
+  id: 'couleur',
+  emoji: '🎨',
+  name: { fr: 'Bloc de Couleur', en: 'Color Block' },
+  how: { fr: 'Une couleur est annoncée : fonce sur une dalle de cette couleur, les autres tombent ! · B = pousser', en: 'A color is called: run onto a tile of that color, the rest drop! · B = shove' },
+  music: 'arcade',
+  limit: 120,
+  create: colorBlock,
 };
 export const lavaGame: GameBase = {
   ...base,

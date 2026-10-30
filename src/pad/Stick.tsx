@@ -18,6 +18,7 @@ const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> =
   pluie: { fr: ['', 'POUSSE'], en: ['', 'SHOVE'] },
   lave: { fr: ['SAUT', ''], en: ['JUMP', ''] },
   trappe: { fr: ['', 'POUSSER'], en: ['', 'SHOVE'] },
+  couleur: { fr: ['', 'POUSSER'], en: ['', 'SHOVE'] },
   foot: { fr: ['TIR', 'SPRINT', 'ATTRAPE'], en: ['SHOOT', 'SPRINT', 'CATCH'] },
 };
 
