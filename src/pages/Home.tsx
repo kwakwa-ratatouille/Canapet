@@ -5,7 +5,10 @@ import { Wordmark } from '../shared/Logo';
 import { CODE_LETTERS, type Lang } from '../shared/protocol';
 import { save, store, IS_PHONE } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
-import { ANDROID_APK_URL, IOS_IPA_URL, IS_INSTALLED, PLATFORM } from '../shared/native';
+import { ANDROID_APK_URL, IOS_IPA_URL, IOS_SOURCE_URL, IS_INSTALLED, IS_NATIVE, PLATFORM } from '../shared/native';
+import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
+import { levelInfo, loadProgress, saveProgress } from '../shared/progress';
+import { GoogleLogo } from '../shared/GoogleLogo';
 
 export const PC_APP_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/pc-latest/Canapet-Setup.exe';
 const IN_APP = /Electron/.test(navigator.userAgent);
@@ -16,6 +19,60 @@ const MASCOTS = [
   { food: 'cupcake', color: '#ffd60a', hat: 'aucun', acc: 'moustache' },
   { food: 'tartine', color: '#9b5cff', hat: 'haut', acc: 'monocle' },
 ];
+
+/** Compte Google sur l'accueil : connexion, et la progression du téléphone fusionnée avec celle du compte. */
+function AccountCard({ lang }: { lang: Lang }) {
+  const fr = lang === 'fr';
+  const [user, setUser] = useState<CloudUser | null>(null);
+  const [state, setState] = useState<'off' | 'busy' | 'ok' | 'error'>('off');
+  const [on, setOn] = useState(() => store('cloud', false));
+  useEffect(() => {
+    if (!on) return void preload();
+    return watchUser((u) => {
+      setUser(u);
+      if (!u) return setState('off');
+      setState('busy');
+      loadCloud(u.uid)
+        .then((remote) => {
+          const p = merge(loadProgress(), remote);
+          saveProgress(p);
+          return saveCloud(u.uid, p);
+        })
+        .then(() => setState('ok'))
+        .catch(() => setState('error'));
+    });
+  }, [on]);
+  const connect = () => {
+    save('cloud', true);
+    setOn(true);
+    setState('busy');
+    signIn().catch(() => setState('error'));
+  };
+  const lv = levelInfo(loadProgress().xp).level;
+  return (
+    <div className="home-card account-card">
+      <h2>👤 {fr ? 'Mon compte' : 'My account'}</h2>
+      {user ? (
+        <div className="cloud-row">
+          {user.photo ? <img src={user.photo} alt="" referrerPolicy="no-referrer" /> : <span className="cloud-ini">{user.name.slice(0, 1)}</span>}
+          <span>
+            {state === 'error' ? t(lang, 'cloudError') : state === 'busy' ? t(lang, 'cloudBusy') : `${user.name.split(' ')[0]} · ${fr ? 'Niv.' : 'Lv.'} ${lv}`}
+          </span>
+          <button onClick={() => void signOut()}>{t(lang, 'signOut')}</button>
+        </div>
+      ) : (
+        <>
+          <p>{fr ? 'Garde ton niveau, tes bonbons et tes objets, même en changeant de téléphone.' : 'Keep your level, candies and items, even on a new phone.'}</p>
+          <button className="google-btn" onClick={connect} disabled={state === 'busy'}>
+            <GoogleLogo />
+            <span>{state === 'busy' ? t(lang, 'cloudBusy') : state === 'error' ? t(lang, 'cloudError') : fr ? 'Se connecter avec Google' : 'Sign in with Google'}</span>
+          </button>
+          {state === 'busy' && IS_NATIVE && <p className="pad-small">{fr ? 'Connecte-toi dans la page qui s’ouvre, puis reviens ici.' : 'Sign in on the page that opens, then come back here.'}</p>}
+        </>
+      )}
+    </div>
+  );
+}
 
 export function Home() {
   const [lang, setLang] = useState<Lang>(() => store('profile', { lang: defaultLang() }).lang ?? defaultLang());
@@ -59,7 +116,11 @@ export function Home() {
         <p className="pad-small">
           {fr ? '🍏 Appli iPhone : télécharge ' : '🍏 iPhone app: download '}
           <a href={IOS_IPA_URL}>Canapet.ipa</a>
-          {fr ? ' sur ton PC et installe-la avec Sideloadly (gratuit). Sinon, plus simple :' : ' on your PC and install it with Sideloadly (free). Or, simpler:'}
+          {fr
+            ? ' ou ajoute la source SideStore (mises à jour automatiques) : '
+            : ' or add the SideStore source (automatic updates): '}
+          <a href={IOS_SOURCE_URL}>sidestore.json</a>
+          {fr ? '. Sinon, plus simple :' : '. Or, simpler:'}
         </p>
       )}
       {PLATFORM === 'ios' && (
@@ -161,6 +222,7 @@ export function Home() {
         {IS_PHONE ? (
           <>
             {join}
+            <AccountCard lang={lang} />
             {install}
             {tv}
           </>

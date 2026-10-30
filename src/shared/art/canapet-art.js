@@ -186,8 +186,9 @@ function arms(m,sx,sy,pose='hip'){
       +`<path d="M${fx-3} ${fy-3}H${fx+9}M${fx-3} ${fy+2}H${fx+9}" stroke="${P}" stroke-width="2" stroke-linecap="round"/>`;
   }else if(pose==='dab'){
     // Le dab : un bras tendu en l'air, le visage caché dans le coude de l'autre
-    d=`M${L} ${sy}Q${L-14} ${sy-12} ${L-26} ${sy-30}M${R} ${sy}L${R+10} ${sy-10}L${50} ${sy-20}`;
-    hands=[[L-28,sy-33],[48,sy-21]];
+    // L'avant-bras passe au-dessus des sourcils (avant, il cachait les yeux)
+    d=`M${L} ${sy}Q${L-14} ${sy-12} ${L-26} ${sy-30}M${R} ${sy}Q${R+14} ${sy-12} ${R+8} ${sy-30}L${62} ${sy-40}`;
+    hands=[[59,sy-41],[L-28,sy-33]];
   }else if(pose==='disco'){
     // Fièvre du samedi soir : une main sur la hanche, l'autre bras en l'air
     d=`M${L} ${sy}Q${L-18} ${sy+6} ${L-2} ${sy+20}M${R} ${sy}Q${R+10} ${sy-16} ${R+18} ${sy-40}`;
@@ -209,12 +210,15 @@ function arms(m,sx,sy,pose='hip'){
     hands=[[L-21,sy-5],[R+21,sy-5]];
   }else if(pose==='think'){
     // Le penseur : la main sous le menton
-    d=`M${L} ${sy}Q${L-4} ${sy+18} ${62} ${sy+16}M${R} ${sy}Q${R+10} ${sy+16} ${66} ${sy+2}`;
-    hands=[[63,sy+16],[66,sy]];
+    // Le penseur : une main sous le menton (coude bas), l'autre bras le long du corps
+    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+12} ${sy+24} ${70} ${sy+6}`;
+    hands=[[L-8,sy+29],[67,sy+4]];
   }else if(pose==='salute'){
     // Salut militaire
-    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+18} ${sy-8} ${70} ${sy-28}`;
-    hands=[[L-8,sy+29],[68,sy-30]];
+    // Salut militaire : la main à la tempe, au-dessus de l'œil
+    const tx=Math.max(84,R-4);
+    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+20} ${sy-10} ${tx+2} ${sy-30}`;
+    hands=[[L-8,sy+29],[tx,sy-33]];
   }else if(pose==='shy'){
     // Mains jointes devant, timide
     d=`M${L} ${sy}Q${L-4} ${sy+20} ${56} ${sy+26}M${R} ${sy}Q${R+4} ${sy+20} ${64} ${sy+26}`;
@@ -292,6 +296,8 @@ function acc(t,cx,cy,s){
   }
   return '';
 }
+/** Chapeaux adaptés à chaque perso : [taille, décalage vertical, décalage horizontal] (repère du corps). */
+const HATFIT={coussin:[1.15,3,0],tartine:[1.55,6,0],cornichon:[1.15,3,0],beignet:[1.45,5,0],oeuf:[1.1,4,0],fromage:[1.2,3,0],tomate:[1.4,5,0],brocoli:[1.35,4,0],cupcake:[1.2,-4,2],sushi:[1.55,4,0],frites:[1.35,-4,0],bonbon:[1.3,3,0],chaussette:[1.3,3,0],pizza:[1.4,4,0],glace:[1.3,2,0],avocat:[1.1,4,0],macaron:[1.55,6,0],banane:[1.0,4,0],saucisse:[1.2,4,0],champi:[1.5,4,0],tasse:[1.5,-6,0],oignon:[1.05,6,0],patate:[1.45,5,0],popcorn:[1.4,-8,0],nuage:[1.45,6,0]};
 const SC=.84,DY=10,X0=60*(1-SC);
 /** Position d'un point du corps (repère d'origine) dans le dessin final. */
 const BY=y=>y*SC-DY;
@@ -312,7 +318,11 @@ function perso(kind,c=ROSE,o={}){
   const look=[o.eyes||base[0],o.pose||base[1]];
   body+=o.selfie?selfie(60,k.fy,s):(o.mood||'happy')==='happy'?faceLook(60,k.fy,s,look[0]):face(60,k.fy,o.mood,s);
   if(o.acc) body+=acc(o.acc,60,k.fy,s);
-  if(o.hat) body+=relief(hat(o.hat,k.hx||60,k.top,c));
+  if(o.hat){
+    // Chapeau à la taille de la tête de chaque perso, posé un peu dedans pour ne pas flotter
+    const [hs,hy,hx2]=HATFIT[kind]||[1.2,2,0],hx=(k.hx||60)+hx2,hy2=k.top+hy;
+    body+=`<g transform="translate(${hx} ${hy2}) scale(${hs}) translate(${-hx} ${-hy2})">${relief(hat(o.hat,hx,hy2,c))}</g>`;
+  }
   g+=`<g transform="translate(${X0} ${-DY}) scale(${SC})">${body}</g>`;
   g+=arms(mood==='toot'?'happy':mood,(k.aw||36)*SC,BY(k.fy+20),look[1]);
   return g;

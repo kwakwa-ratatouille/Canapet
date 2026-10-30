@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Help } from './pages/Help';
 import { Home } from './pages/Home';
+import { Relay } from './pages/Relay';
 import './tokens.css';
 import './styles.css';
 
@@ -38,6 +39,7 @@ function App() {
     );
   }
   if (page === 'aide') return <Help />;
+  if (page === 'relais-google') return <Relay id={route.query.get('id') ?? ''} k={route.query.get('k') ?? ''} />;
   return <Home />;
 }
 

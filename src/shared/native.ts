@@ -23,6 +23,7 @@ export const IS_NATIVE = !!cap()?.isNativePlatform?.();
 export const IS_INSTALLED = IS_NATIVE || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || (navigator as { standalone?: boolean }).standalone === true;
 
 export const IOS_IPA_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/ios-latest/Canapet.ipa';
+export const IOS_SOURCE_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/ios-latest/sidestore.json';
 export const ANDROID_APK_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/android-latest/Canapet.apk';
 
 // Dans l'appli, le site est chargé depuis internet : le plugin s'appelle directement par le pont natif.
