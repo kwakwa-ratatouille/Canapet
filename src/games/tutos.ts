@@ -116,6 +116,24 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  trappe: {
+    fr: {
+      goal: 'Sois le dernier debout !',
+      steps: [
+        ['❓', 'Une question, deux réponses : gauche ou droite'],
+        ['🏃', 'Cours du bon côté avant le STOP'],
+        ['🕳️', 'La trappe s’ouvre sous le mauvais côté ! B : pousser'],
+      ],
+    },
+    en: {
+      goal: 'Be the last one standing!',
+      steps: [
+        ['❓', 'One question, two answers: left or right'],
+        ['🏃', 'Run to the right side before STOP'],
+        ['🕳️', 'The trapdoor opens under the wrong side! B: shove'],
+      ],
+    },
+  },
   lave: {
     fr: {
       goal: 'Sois le dernier debout !',

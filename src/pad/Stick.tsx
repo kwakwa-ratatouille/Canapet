@@ -17,6 +17,7 @@ const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> =
   patate: { fr: ['', 'POUSSE'], en: ['', 'SHOVE'] },
   pluie: { fr: ['', 'POUSSE'], en: ['', 'SHOVE'] },
   lave: { fr: ['SAUT', ''], en: ['JUMP', ''] },
+  trappe: { fr: ['', 'POUSSER'], en: ['', 'SHOVE'] },
   foot: { fr: ['TIR', 'SPRINT', 'ATTRAPE'], en: ['SHOOT', 'SPRINT', 'CATCH'] },
 };
 
