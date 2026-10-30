@@ -5,8 +5,8 @@ import { Wordmark } from '../shared/Logo';
 import { CODE_LETTERS, type Lang } from '../shared/protocol';
 import { save, store, IS_PHONE } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
-import { ANDROID_APK_URL, IOS_IPA_URL, IOS_SOURCE_URL, IS_INSTALLED, IS_NATIVE, PLATFORM } from '../shared/native';
-import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
+import { ANDROID_APK_URL, IOS_IPA_URL, IOS_SOURCE_URL, IS_INSTALLED, PLATFORM } from '../shared/native';
+import { VIA_BROWSER, loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
 import { levelInfo, loadProgress, saveProgress } from '../shared/progress';
 import { GoogleLogo } from '../shared/GoogleLogo';
 
@@ -67,7 +67,7 @@ function AccountCard({ lang }: { lang: Lang }) {
             <GoogleLogo />
             <span>{state === 'busy' ? t(lang, 'cloudBusy') : state === 'error' ? t(lang, 'cloudError') : fr ? 'Se connecter avec Google' : 'Sign in with Google'}</span>
           </button>
-          {state === 'busy' && IS_NATIVE && <p className="pad-small">{fr ? 'Connecte-toi dans la page qui s’ouvre, puis reviens ici.' : 'Sign in on the page that opens, then come back here.'}</p>}
+          {state === 'busy' && VIA_BROWSER && <p className="pad-small">{fr ? 'Connecte-toi dans la page qui s’ouvre, puis reviens ici.' : 'Sign in on the page that opens, then come back here.'}</p>}
         </>
       )}
     </div>

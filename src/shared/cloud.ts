@@ -1,6 +1,7 @@
 // Compte Google (Firebase) : connexion depuis le téléphone et sauvegarde de la progression.
 // Firebase n'est chargé qu'à la demande, pour garder la télé et la manette légères.
-import { IS_NATIVE } from './native';
+import { IS_IOS } from './device';
+import { IS_INSTALLED, IS_NATIVE } from './native';
 import type { Progress } from './progress';
 
 const CONFIG = {
@@ -40,7 +41,8 @@ export function watchUser(cb: (u: CloudUser | null) => void): () => void {
 /** Charge Firebase en avance (la fenêtre Google doit s'ouvrir tout de suite au toucher). */
 export const preload = () => void impl().catch(() => {});
 /** Dans les applis (iPhone, Android, .exe), Google refuse sa fenêtre : on passe par le navigateur. */
-const VIA_BROWSER = IS_NATIVE || /Electron/.test(navigator.userAgent);
+// iPhone : même ajoutée à l'écran d'accueil, la fenêtre Google reste bloquée sur la page firebaseapp.com.
+export const VIA_BROWSER = IS_NATIVE || /Electron/.test(navigator.userAgent) || (IS_IOS && IS_INSTALLED);
 const SITE = 'https://kwakwa-ratatouille.github.io/Canapet/';
 export const signIn = () => impl().then((m) => (VIA_BROWSER ? m.signInViaBrowser(SITE) : m.signIn()));
 export const relayTokens = (id: string, k: string) => impl().then((m) => m.relayTokens(id, k));
