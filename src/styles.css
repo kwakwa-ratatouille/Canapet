@@ -3373,3 +3373,471 @@ body,
 .secret-card.done small {
   color: var(--ink);
 }
+
+/* ——— Résultats : phrase du présentateur et duel ——— */
+.results-quip {
+  font-family: Fredoka, sans-serif;
+  font-weight: 600;
+  font-size: calc(32 * var(--u));
+  background: #fff;
+  border: calc(5 * var(--u)) solid var(--ink);
+  border-radius: calc(24 * var(--u));
+  padding: calc(8 * var(--u)) calc(24 * var(--u));
+  margin: calc(-12 * var(--u)) 0 calc(18 * var(--u));
+  max-width: calc(1500 * var(--u));
+  text-align: center;
+  transform: rotate(-1deg);
+}
+.duel-badge {
+  font-style: normal;
+  font-family: Fredoka, sans-serif;
+  font-size: 0.8em;
+  background: #ffe08a;
+  border: calc(4 * var(--u)) solid var(--ink);
+  border-radius: calc(14 * var(--u));
+  padding: 0 calc(10 * var(--u));
+  margin-left: calc(12 * var(--u));
+}
+
+/* ——— Roue de la honte ——— */
+.wheel-bg {
+  background: radial-gradient(ellipse at 50% 40%, #fff3c4 0, #ffd6ea 55%, #c9b2ff 120%);
+  justify-content: flex-start;
+  padding-top: calc(40 * var(--u));
+}
+.wheel-wrap {
+  display: flex;
+  align-items: center;
+  gap: calc(30 * var(--u));
+}
+.wheel-canvas {
+  width: calc(720 * var(--u));
+  height: calc(720 * var(--u));
+}
+.wheel-side {
+  width: calc(330 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: calc(8 * var(--u));
+}
+.wheel-victim {
+  font-family: Fredoka, sans-serif;
+  font-size: calc(48 * var(--u));
+}
+.wheel-side small {
+  font-weight: 800;
+  font-size: calc(28 * var(--u));
+}
+.wheel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: calc(560 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+}
+.wheel-list li {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  background: #fff;
+  border: calc(4 * var(--u)) solid var(--ink);
+  border-left: calc(18 * var(--u)) solid var(--sc);
+  border-radius: calc(18 * var(--u));
+  padding: calc(6 * var(--u)) calc(14 * var(--u));
+  font-weight: 800;
+  font-size: calc(28 * var(--u));
+  line-height: 1.15;
+  transition: transform 0.3s, opacity 0.3s;
+}
+.wheel-list li i {
+  font-style: normal;
+  font-size: calc(40 * var(--u));
+}
+.wheel-list li.on {
+  transform: scale(1.08);
+  background: #fff3c4;
+}
+.wheel-list li.off {
+  opacity: 0.35;
+}
+.wheel-result {
+  display: flex;
+  align-items: center;
+  gap: calc(20 * var(--u));
+  background: #fff;
+  border: calc(6 * var(--u)) solid var(--ink);
+  box-shadow: 0 calc(10 * var(--u)) 0 var(--ink);
+  border-radius: calc(30 * var(--u));
+  padding: calc(14 * var(--u)) calc(30 * var(--u));
+  margin-top: calc(10 * var(--u));
+  max-width: calc(1600 * var(--u));
+  animation: rise 0.6s ease-out;
+}
+.wheel-result span {
+  font-size: calc(80 * var(--u));
+}
+.wheel-result b {
+  font-family: Fredoka, sans-serif;
+  font-size: calc(44 * var(--u));
+}
+
+/* ——— Questions de la soirée ——— */
+.vote-bg {
+  background: linear-gradient(160deg, #e6f6ff, #efe6ff 55%, #ffe3f1);
+  justify-content: flex-start;
+  padding-top: calc(60 * var(--u));
+}
+.vote-step {
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: calc(34 * var(--u));
+  margin: 0 0 calc(10 * var(--u));
+}
+.vote-q {
+  max-width: calc(1600 * var(--u));
+  text-align: center;
+  font-size: calc(70 * var(--u)) !important;
+}
+.vote-timer {
+  position: relative;
+  width: calc(900 * var(--u));
+  height: calc(34 * var(--u));
+  background: #fff;
+  border: calc(5 * var(--u)) solid var(--ink);
+  border-radius: calc(20 * var(--u));
+  overflow: hidden;
+  margin: calc(26 * var(--u)) 0;
+}
+.vote-timer i {
+  position: absolute;
+  inset: 0;
+  background: #ffd60a;
+  transform-origin: left;
+  animation: vote-shrink linear forwards;
+}
+.vote-timer span {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: calc(26 * var(--u));
+  line-height: calc(26 * var(--u));
+}
+@keyframes vote-shrink {
+  to {
+    transform: scaleX(0);
+  }
+}
+.vote-who {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(18 * var(--u));
+  max-width: calc(1600 * var(--u));
+}
+.vote-who span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-weight: 800;
+  font-size: calc(28 * var(--u));
+  opacity: 0.55;
+}
+.vote-who span.done {
+  opacity: 1;
+}
+.vote-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+  width: calc(1300 * var(--u));
+  margin-top: calc(20 * var(--u));
+}
+.vote-bar {
+  display: flex;
+  align-items: center;
+  gap: calc(18 * var(--u));
+  background: #fff;
+  border: calc(5 * var(--u)) solid var(--ink);
+  border-radius: calc(26 * var(--u));
+  padding: calc(6 * var(--u)) calc(20 * var(--u));
+  opacity: 0;
+  animation: row-in 0.5s ease-out forwards;
+  position: relative;
+}
+.vote-bar.win {
+  background: #fff3c4;
+  box-shadow: 0 calc(8 * var(--u)) 0 var(--ink);
+}
+.vote-bar b {
+  font-family: Fredoka, sans-serif;
+  font-size: calc(40 * var(--u));
+  width: calc(240 * var(--u));
+}
+.vote-fill {
+  flex: 1;
+  height: calc(30 * var(--u));
+  background: #f1e8f5;
+  border-radius: calc(15 * var(--u));
+  overflow: hidden;
+}
+.vote-fill i {
+  display: block;
+  height: 100%;
+  border-radius: calc(15 * var(--u));
+}
+.vote-bar em {
+  font-style: normal;
+  font-weight: 900;
+  font-size: calc(30 * var(--u));
+  width: calc(120 * var(--u));
+}
+.vote-title {
+  position: absolute;
+  right: calc(20 * var(--u));
+  top: calc(-28 * var(--u));
+  background: #ff4f9a;
+  color: #fff;
+  border: calc(4 * var(--u)) solid var(--ink);
+  border-radius: calc(18 * var(--u));
+  padding: calc(2 * var(--u)) calc(16 * var(--u));
+  font-family: Fredoka, sans-serif;
+  font-size: calc(34 * var(--u));
+  transform: rotate(3deg);
+}
+.ab-row {
+  display: flex;
+  align-items: center;
+  gap: calc(30 * var(--u));
+  margin-top: calc(20 * var(--u));
+}
+.ab-card {
+  width: calc(620 * var(--u));
+  min-height: calc(220 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: calc(8 * var(--u));
+  border: calc(6 * var(--u)) solid var(--ink);
+  border-radius: calc(32 * var(--u));
+  box-shadow: 0 calc(10 * var(--u)) 0 var(--ink);
+  padding: calc(20 * var(--u));
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: calc(46 * var(--u));
+  color: #fff;
+  background-image: var(--cp-bonbon);
+}
+.ab-card.a {
+  background-color: #ff4f9a;
+}
+.ab-card.b {
+  background-color: #2ec5ff;
+}
+.ab-card b {
+  font-size: calc(90 * var(--u));
+}
+.ab-card small {
+  font-family: Nunito, sans-serif;
+  font-size: calc(28 * var(--u));
+}
+.ab-card.win {
+  transform: scale(1.06);
+}
+.ab-card.lose {
+  opacity: 0.55;
+}
+.ab-or {
+  font-family: Fredoka, sans-serif;
+  font-size: calc(54 * var(--u));
+}
+
+/* ——— Départage ——— */
+.tie-bg {
+  background: radial-gradient(ellipse at 50% 50%, #3a2a5c 0, #241530 70%);
+  color: #fff;
+}
+.tie-bg .results-sub {
+  color: #fff;
+}
+.tie-clock {
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: calc(260 * var(--u));
+  color: #ffd60a;
+  text-shadow: 0 calc(12 * var(--u)) 0 var(--ink);
+  line-height: 1;
+  margin: calc(10 * var(--u)) 0 calc(30 * var(--u));
+}
+.tie-clock.hidden {
+  animation: tie-wobble 0.5s ease-in-out infinite alternate;
+  color: #ff9ad0;
+}
+@keyframes tie-wobble {
+  from {
+    transform: rotate(-3deg) scale(0.97);
+  }
+  to {
+    transform: rotate(3deg) scale(1.03);
+  }
+}
+.tie-players {
+  display: flex;
+  gap: calc(40 * var(--u));
+}
+.tie-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  background: #fff;
+  color: var(--ink);
+  border: calc(6 * var(--u)) solid var(--ink);
+  border-radius: calc(30 * var(--u));
+  padding: calc(16 * var(--u)) calc(30 * var(--u));
+  min-width: calc(300 * var(--u));
+}
+.tie-card b {
+  font-family: Fredoka, sans-serif;
+  font-size: calc(42 * var(--u));
+}
+.tie-card span {
+  font-weight: 800;
+  font-size: calc(30 * var(--u));
+}
+.tie-card.win {
+  background: #fff3c4;
+  transform: scale(1.08);
+}
+.tie-card strong {
+  font-family: Fredoka, sans-serif;
+  font-size: calc(40 * var(--u));
+}
+
+/* ——— Manette : fantôme, sort, roue, vote, départage ——— */
+.ghost-pad {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  background: rgba(36, 21, 48, 0.94);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  text-align: center;
+}
+.ghost-pad h3 {
+  margin: 0;
+  font-family: Fredoka, sans-serif;
+  font-size: 24px;
+}
+.ghost-targets,
+.ghost-spells {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.ghost-targets button {
+  border: 3px solid #fff;
+  border-radius: 14px;
+  padding: 6px 12px;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink);
+  opacity: 0.6;
+}
+.ghost-targets button.on {
+  opacity: 1;
+  outline: 4px solid #ffd60a;
+}
+.ghost-spells button {
+  width: 92px;
+  height: 78px;
+  border-radius: 18px;
+  border: 4px solid var(--ink);
+  background: #d9c8ff;
+  box-shadow: 0 4px 0 #000;
+  font-size: 30px;
+  line-height: 1;
+  font-family: Fredoka, sans-serif;
+}
+.ghost-spells button small {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.ghost-spells button:disabled {
+  opacity: 0.4;
+}
+.ghost-cool {
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  color: #ffd60a;
+}
+.curse-banner {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  z-index: 24;
+  background: #9b5cff;
+  color: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  padding: 4px 14px;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  pointer-events: none;
+}
+.vote-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 420px);
+}
+.vote-options button {
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+  padding: 12px;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #fff;
+  box-shadow: 0 4px 0 var(--ink);
+}
+.vote-options button.mine {
+  outline: 5px solid #ffd60a;
+}
+.vote-options.ab button {
+  min-height: 90px;
+  font-size: 22px;
+}
+.big-stop {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 6px solid var(--ink);
+  background: #ff3b3b;
+  color: #fff;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: 40px;
+  box-shadow: 0 8px 0 var(--ink);
+}
+.big-stop:disabled {
+  background: #b8a9bd;
+}

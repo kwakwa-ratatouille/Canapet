@@ -1054,6 +1054,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       drawHud(g, fs, t);
     },
     mapName: stage.name,
+    /** Éliminé : son téléphone devient un fantôme qui peut se venger. */
+    out: (pid) => !!fs.find((f) => f.pid === pid && f.stocks <= 0),
     ranking() {
       return [...fs].sort((a, b) => b.stocks - a.stocks || (b.out || 99) - (a.out || 99) || a.dmg - b.dmg || b.kos - a.kos).map((f) => f.pid);
     },

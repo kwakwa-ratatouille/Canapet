@@ -37,6 +37,12 @@ export interface SecretInfo {
   bonus: number;
 }
 
+/** Joueur éliminé : il devient un fantôme qui peut jeter un sort (cool = secondes avant le prochain). */
+export interface GhostInfo {
+  cool: number;
+  targets: { pid: string; name: string; color: string; cursed: boolean }[];
+}
+
 export type PadScreen =
   | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; recap?: boolean; players: { pid: string; name: string; color: string }[] }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean; secret?: SecretInfo }
@@ -56,7 +62,13 @@ export type PadScreen =
     }
   | { s: 'podium'; gid: number; host: boolean; rank: number; total: number; secret?: SecretInfo }
   /** Bilan de la soirée (titres rigolos). */
-  | { s: 'recap'; host: boolean };
+  | { s: 'recap'; host: boolean }
+  /** Roue de la honte : la victime (ou l'hôte) la fait tourner. */
+  | { s: 'wheel'; host: boolean; victim: boolean; victimName: string; spun: boolean; result?: string }
+  /** Questions de la soirée : on vote pour un joueur ou pour A/B. */
+  | { s: 'vote'; host: boolean; q: string; options: { id: string; label: string; color: string }[]; my?: string; reveal: boolean; n: number; of: number }
+  /** Départage : arrêter le chrono à l'aveugle (startAt = secondes avant le départ). */
+  | { s: 'tiebreak'; host: boolean; in: boolean; stopped: boolean; done: boolean; startAt: number };
 
 /** Télé → téléphone */
 export type ToPad =
@@ -64,14 +76,14 @@ export type ToPad =
   | { t: 'screen'; screen: PadScreen }
   | { t: 'buzz'; ms: number }
   /** Pendant la partie, chaque seconde : ta place et le temps restant. */
-  | { t: 'status'; rank: number; of: number; left: number | null }
+  | { t: 'status'; rank: number; of: number; left: number | null; ghost?: GhostInfo; curse?: string }
   | { t: 'pong'; ts: number }
   /** Bouton en recharge pendant s secondes (0 = de nouveau prêt). */
   | { t: 'cool'; b: 'a' | 'b' | 'c' | 'd'; s: number }
   /** L'hôte t'a retiré de la partie. */
   | { t: 'kicked' };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief' | 'voice' | 'recap';
+export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief' | 'voice' | 'recap' | 'wheel' | 'vote';
 
 /** Téléphone → télé */
 export type ToTv =
@@ -87,6 +99,14 @@ export type ToTv =
   | { t: 'team'; n: number }
   /** Réaction (numéro dans REACTIONS) qui s'envole sur la télé. */
   | { t: 'react'; i: number }
+  /** Fantôme : jette un sort (k) sur un joueur (to). */
+  | { t: 'ghost'; k: string; to: string }
+  /** Roue de la honte : la lancer. */
+  | { t: 'spin' }
+  /** Questions de la soirée : choix (pid ou 'a'/'b'). */
+  | { t: 'vote'; v: string }
+  /** Départage : arrêter le chrono. */
+  | { t: 'stop' }
   | { t: 'ping'; ts: number };
 
 export const PEER_PREFIX = 'canapet-v1-';

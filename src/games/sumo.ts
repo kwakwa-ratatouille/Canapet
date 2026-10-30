@@ -795,6 +795,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
     },
     mapName: map.name,
+    /** Éliminé : son téléphone devient un fantôme qui peut se venger. */
+    out: (pid) => !!ss.find((s) => s.pid === pid && s.lives <= 0),
     ranking() {
       return ss
         .map((s, i) => ({ s, i }))

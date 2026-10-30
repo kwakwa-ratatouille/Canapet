@@ -577,6 +577,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       });
     },
     mapName: layout.name,
+    /** Éliminé : son téléphone devient un fantôme qui peut se venger. */
+    out: (pid) => !!players.find((p) => p.pid === pid && !p.alive),
     ranking() {
       return [...players].sort((a, b) => Number(b.alive) - Number(a.alive) || b.out - a.out).map((p) => p.pid);
     },

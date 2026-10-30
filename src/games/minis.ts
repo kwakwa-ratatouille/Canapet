@@ -374,6 +374,7 @@ function chairs(runners: Runner[], ctx: GameCtx): GameInstance {
       if (phase === 'rush') bigText(g, fr ? `Assieds-toi ! ${seats.filter((s) => s.by < 0).length} coussin(s) libre(s)` : `Sit down! ${seats.filter((s) => s.by < 0).length} free`, SOLEIL, 0.5, 130);
       if (phase === 'result' && loser >= 0) bigText(g, fr ? `${ps[loser].profile.name} éliminé !` : `${ps[loser].profile.name} is out!`, '#fff', 0.7);
     },
+    out: (pid) => !!ps.find((p) => p.pid === pid && !p.alive),
     ranking: () => byOut(ps),
     leader() {
       const a = alive();
@@ -511,6 +512,7 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
       hud(g, ps, false);
       if (pause <= 0) bigText(g, fr ? `🥔 ${ps[holder].profile.name} a la patate ! Touche quelqu'un !` : `🥔 ${ps[holder].profile.name} has it! Tag someone!`, SOLEIL, 0.45, 130);
     },
+    out: (pid) => !!ps.find((p) => p.pid === pid && !p.alive),
     ranking: () => byOut(ps),
     leader() {
       const a = alive();
@@ -801,6 +803,7 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
       hud(g, ps, false);
       bigText(g, fr ? '🌋 Ne reste pas en place ! A = sauter un trou' : '🌋 Keep moving! A = jump a hole', '#fff', 0.42, 130);
     },
+    out: (pid) => !!ps.find((p) => p.pid === pid && !p.alive),
     ranking: () => byOut(ps),
     leader() {
       const a = alive();

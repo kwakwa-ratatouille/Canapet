@@ -16,6 +16,8 @@ import { EVENTS, Session, TOURNAMENT_LEN, type Player } from './session';
 import { stickerCloud } from '../games/draw';
 import { ReplayRecorder, drawReactions } from './fx';
 import { Recap } from './Recap';
+import { Tiebreak, Vote, Wheel } from './PartyViews';
+import { CURSES } from './party';
 
 const W = 1920;
 const H = 1080;
@@ -75,6 +77,8 @@ export function TvApp() {
       if (k === 'e') session.hostAction('teams');
       if (k === '9') session.surprise();
       if (k === '8') session.hostAction('recap');
+      if (k === '7') session.hostAction('wheel');
+      if (k === '6') session.hostAction('vote');
       if (k === 'escape' || k === ' ') session.hostAction(session.paused ? 'resume' : 'pause');
       if (k === 'enter') session.hostAction(session.phase === 'results' ? 'next' : 'pick', 'pouces');
       if (pick[k]) session.hostAction('pick', pick[k]);
@@ -121,6 +125,9 @@ export function TvApp() {
       {session.phase === 'podium' && <Podium players={players} lang={lang} session={session} />}
 
       {session.phase === 'recap' && <Recap session={session} players={players} lang={lang} />}
+      {session.phase === 'wheel' && <Wheel session={session} lang={lang} />}
+      {session.phase === 'vote' && <Vote session={session} lang={lang} />}
+      {session.phase === 'tiebreak' && <Tiebreak session={session} lang={lang} />}
       <ReactionLayer session={session} />
 
       <div className="tv-tools">
@@ -251,6 +258,7 @@ function GameView({ session }: { session: Session }) {
       // On garde des images pour le ralenti (pendant le jeu seulement)
       if (!LIGHT && session.phase === 'game' && !session.paused && session.timeUp <= 0 && session.clock >= session.intro + 3) rec.capture(cv, session, now);
       if (ev) drawEvent(g, session, ev, tt);
+      if (session.phase === 'game') drawCurses(g, session, tt);
       drawTimer(g, session, tt);
       drawIntro(g, session);
       if (session.paused) drawPause(g, session, tt);
@@ -366,6 +374,46 @@ function drawEvent(g: CanvasRenderingContext2D, session: Session, ev: NonNullabl
   g.roundRect(30, 68, Math.max(16, (w - 60) * (ev.t / ev.dur)), 16, 8);
   g.fill();
   g.restore();
+}
+
+/** Sorts des fantômes en cours (à droite) et duel de rivaux (en haut à gauche). */
+function drawCurses(g: CanvasRenderingContext2D, session: Session, t: number) {
+  const lang = session.lang();
+  const pill = (x: number, y: number, text: string, fill: string, right: boolean) => {
+    g.font = '700 32px Fredoka, sans-serif';
+    const w = g.measureText(text).width + 44;
+    const x0 = right ? x - w : x;
+    g.fillStyle = INK;
+    g.beginPath();
+    g.roundRect(x0, y + 6, w, 56, 28);
+    g.fill();
+    g.fillStyle = fill;
+    g.strokeStyle = INK;
+    g.lineWidth = 6;
+    g.beginPath();
+    g.roundRect(x0, y, w, 56, 28);
+    g.fill();
+    g.stroke();
+    g.fillStyle = INK;
+    g.textAlign = 'left';
+    g.textBaseline = 'middle';
+    g.fillText(text, x0 + 22, y + 29);
+  };
+  let y = 250;
+  for (const [pid, c] of session.curses) {
+    const name = session.players.get(pid)?.name ?? '?';
+    const cu = CURSES[c.kind];
+    g.save();
+    g.translate(Math.sin(t * 9) * 3, 0);
+    pill(1880, y, `${cu.icon} ${name} · ${cu.name[lang]}`, '#d9c8ff', true);
+    g.restore();
+    y += 72;
+  }
+  const d = session.duel;
+  if (d && session.clock > session.intro + 3) {
+    const n = (id: string) => session.players.get(id)?.name ?? '?';
+    pill(40, 40, `⚔️ ${n(d.a)} vs ${n(d.b)} · +3`, '#ffe08a', false);
+  }
 }
 
 /** Réactions des téléphones par-dessus tout le reste (même au salon et aux résultats). */
@@ -906,6 +954,7 @@ function Results({ session }: { session: Session }) {
         {tournament ? `${t(lang, 'roundOf', { i: session.step + 1, n: TOURNAMENT_LEN })} · ` : ''}
         {def?.name[lang]}
       </p>
+      {session.quip && <p className="results-quip">🎙️ {session.quip}</p>}
       {session.teamScore && (
         <div className="team-score">
           {TEAMS.map((tm, k) => (
@@ -925,7 +974,10 @@ function Results({ session }: { session: Session }) {
                 <span className={`rank-disc r${Math.min(4, r.rank)}`}>{r.rank}</span>
                 {r.team !== undefined && <span className="team-dot" style={{ background: TEAMS[r.team].color }} />}
                 <CharCanvas profile={r.profile} size={compact ? 52 : 64} still mood={r.rank === 1 ? 'win' : 'happy'} />
-                <span className="who">{r.profile.name}</span>
+                <span className="who">
+                  {r.profile.name}
+                  {r.duel && <em className="duel-badge">⚔️ +3</em>}
+                </span>
                 {!r.bot && (
                   <>
                     <span className="bar">

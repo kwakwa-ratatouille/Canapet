@@ -131,50 +131,84 @@ export class ReplayRecorder {
     session.canReplay = this.filled >= 30;
   }
 
-  /** Dessine le ralenti en plein écran, avec bandes noires, REC et petit zoom. */
+  /**
+   * Dessine le ralenti façon retransmission sportive : on rejoue la fin vite puis de plus en plus lentement
+   * (images fondues entre elles), la caméra zoome, puis arrêt sur image sur le dernier moment avec le gagnant.
+   */
   draw(g: CanvasRenderingContext2D, session: Session, t: number) {
     if (!this.filled) return;
     const p = Math.max(0, Math.min(1, 1 - session.replay / REPLAY));
-    const idx = Math.min(this.filled - 1, Math.floor(p * this.filled));
     const start = (this.head - this.filled + COUNT) % COUNT;
-    const img = this.frames[(start + idx) % COUNT];
-    const z = 1 + p * 0.12;
+    const FREEZE = 0.78;
+    // Rampe de vitesse : la lecture ralentit fort en approchant de la fin
+    const q = p < FREEZE ? 1 - Math.pow(1 - p / FREEZE, 2.2) : 1;
+    const pos = q * (this.filled - 1);
+    const i0 = Math.floor(pos);
+    const i1 = Math.min(this.filled - 1, i0 + 1);
+    const frozen = p >= FREEZE;
+    // Caméra : zoom progressif, léger balancement, secousse à l'arrêt sur image
+    const z = 1 + q * 0.28 + (frozen ? (p - FREEZE) * 0.25 : 0);
+    const shake = frozen && p - FREEZE < 0.05 ? (1 - (p - FREEZE) / 0.05) * 14 : 0;
     g.save();
     g.imageSmoothingEnabled = true;
-    g.translate(W / 2, H / 2);
+    g.translate(W / 2 + Math.sin(t * 0.9) * 10 * q + (Math.random() - 0.5) * shake, H / 2 + (Math.random() - 0.5) * shake);
     g.scale(z, z);
-    g.drawImage(img, -W / 2, -H / 2, W, H);
+    g.drawImage(this.frames[(start + i0) % COUNT], -W / 2, -H / 2, W, H);
+    if (!frozen && i1 !== i0) {
+      g.globalAlpha = pos - i0;
+      g.drawImage(this.frames[(start + i1) % COUNT], -W / 2, -H / 2, W, H);
+      g.globalAlpha = 1;
+    }
     g.restore();
-    // Voile bleuté façon souvenir + bandes de cinéma
-    g.fillStyle = 'rgba(46,125,255,0.12)';
+    // Ton chaud de cinéma + lignes de film qui défilent
+    g.fillStyle = frozen ? "rgba(255,214,10,0.10)" : "rgba(255,170,90,0.10)";
     g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(255,255,255,0.05)";
+    for (let y = ((t * 240) % 12) - 12; y < H; y += 12) g.fillRect(0, y, W, 2);
+    // Bandes de cinéma qui se resserrent pendant le ralenti
+    const band = 70 + q * 40;
     g.fillStyle = INK;
-    g.fillRect(0, 0, W, 96);
-    g.fillRect(0, H - 96, W, 96);
-    // Flash blanc au début, fondu à la fin
-    if (p < 0.08) {
-      g.fillStyle = `rgba(255,255,255,${1 - p / 0.08})`;
+    g.fillRect(0, 0, W, band);
+    g.fillRect(0, H - band, W, band);
+    // Flash au début et à l'arrêt sur image
+    const flash = p < 0.06 ? 1 - p / 0.06 : frozen && p - FREEZE < 0.04 ? 1 - (p - FREEZE) / 0.04 : 0;
+    if (flash > 0) {
+      g.fillStyle = `rgba(255,255,255,${flash})`;
       g.fillRect(0, 0, W, H);
     }
-    g.fillStyle = '#ff2a2a';
+    // REC + chrono façon caméra
+    g.fillStyle = "#ff2a2a";
     if (Math.floor(t * 2) % 2) {
       g.beginPath();
-      g.arc(80, 48, 18, 0, Math.PI * 2);
+      g.arc(80, band / 2, 16, 0, Math.PI * 2);
       g.fill();
     }
-    g.font = '700 40px Fredoka, sans-serif';
-    g.textAlign = 'left';
-    g.textBaseline = 'middle';
-    g.fillStyle = '#fff';
-    g.fillText('REC', 112, 50);
-    const fr = session.lang() === 'fr';
-    stickerText(g, fr ? '🎬 RALENTI' : '🎬 SLOW-MO', W / 2, 66, 64, '#ffd60a');
-    g.font = '600 32px Nunito, sans-serif';
-    g.textAlign = 'right';
-    g.fillStyle = '#fff';
-    g.fillText(fr ? '× 0,6' : '× 0.6', W - 60, H - 48);
-    if (p > 0.9) {
-      g.fillStyle = `rgba(58,33,64,${(p - 0.9) * 10})`;
+    g.font = "700 36px Fredoka, sans-serif";
+    g.textAlign = "left";
+    g.textBaseline = "middle";
+    g.fillStyle = "#fff";
+    g.fillText("REC", 108, band / 2 + 2);
+    const fr = session.lang() === "fr";
+    g.textAlign = "right";
+    g.font = "600 32px Nunito, sans-serif";
+    const speed = frozen ? (fr ? "⏸ PAUSE" : "⏸ PAUSED") : `× ${(1 - q * 0.8).toFixed(1).replace(".", fr ? "," : ".")}`;
+    g.fillText(speed, W - 60, band / 2 + 2);
+    stickerText(g, fr ? "🎬 RALENTI" : "🎬 SLOW-MO", W / 2, band / 2 + 4, 56, "#ffd60a");
+    // Arrêt sur image : le gagnant en tampon
+    if (frozen) {
+      const k = Math.min(1, (p - FREEZE) / 0.06);
+      const s = 1.6 - 0.6 * (1 - Math.pow(1 - k, 3));
+      const lead = session.game?.leader?.();
+      g.save();
+      g.translate(W / 2, H - band - 90);
+      g.rotate(-0.06);
+      g.scale(s, s);
+      g.globalAlpha = k;
+      stickerText(g, lead ? `🏆 ${lead} !` : fr ? "QUELLE FIN !" : "WHAT AN ENDING!", 0, 0, 84, "#ff4f9a");
+      g.restore();
+    }
+    if (p > 0.94) {
+      g.fillStyle = `rgba(58,33,64,${(p - 0.94) / 0.06})`;
       g.fillRect(0, 0, W, H);
     }
   }

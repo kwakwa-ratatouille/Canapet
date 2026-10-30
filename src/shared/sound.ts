@@ -549,16 +549,16 @@ export function playMusic(track: MusicId | '') {
 // ——— Présentateur (voix de synthèse du navigateur) ———
 
 /** Voix du présentateur, au choix de l'hôte. `accent` = langue de la voix qui lit le texte (fr, puis en). */
-export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; rate: number; pitch: number }[] = [
+export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; rate: number; pitch: number }[] = [
   { id: 'classique', fr: 'Classique', en: 'Classic', rate: 1.05, pitch: 1.15 },
   { id: 'naturelle', fr: 'Naturelle (IA)', en: 'Natural (AI)', nice: true, rate: 1.02, pitch: 1 },
   { id: 'quebec', fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05 },
   { id: 'anglais', fr: 'Accent anglais', en: 'French accent', accent: ['en-gb', 'fr-fr'], rate: 0.95, pitch: 1.05 },
   { id: 'italien', fr: 'Accent italien', en: 'Italian accent', accent: ['it', 'it'], rate: 1.05, pitch: 1.1 },
   { id: 'espagnol', fr: 'Accent espagnol', en: 'Spanish accent', accent: ['es', 'es'], rate: 1.05, pitch: 1.05 },
-  { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', rate: 0.9, pitch: 0.5 },
-  { id: 'ecureuil', fr: 'Écureuil', en: 'Chipmunk', rate: 1.3, pitch: 2 },
-  { id: 'robot', fr: 'Robot', en: 'Robot', rate: 0.85, pitch: 0.1 },
+  { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', local: true, rate: 0.82, pitch: 0.3 },
+  { id: 'ecureuil', fr: 'Écureuil', en: 'Chipmunk', local: true, rate: 1.35, pitch: 2 },
+  { id: 'robot', fr: 'Robot', en: 'Robot', local: true, rate: 0.8, pitch: 0.1 },
 ];
 let voiceIdx = 0;
 export function setVoice(i: number) {
@@ -567,9 +567,14 @@ export function setVoice(i: number) {
 
 const NICE = /natural|neural|online|google|premium|enhanced|siri|wavenet/i;
 
-function findVoice(prefix: string, nice: boolean): SpeechSynthesisVoice | undefined {
+/**
+ * Les voix « en ligne » (Natural, Google…) ignorent la hauteur de la voix : Bande-annonce, Écureuil et Robot
+ * sonnaient comme la voix normale. Pour elles, on prend une voix installée sur le PC, qui la respecte.
+ */
+function findVoice(prefix: string, nice: boolean, local = false): SpeechSynthesisVoice | undefined {
   const all = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith(prefix));
-  return (nice ? all.find((v) => NICE.test(v.name)) : undefined) ?? all[0];
+  if (local) return all.find((v) => v.localService && !NICE.test(v.name)) ?? all.find((v) => v.localService) ?? all[0];
+  return (nice ? all.find((v) => NICE.test(v.name)) : undefined) ?? all.find((v) => !NICE.test(v.name)) ?? all[0];
 }
 
 export function speak(text: string, lang: Lang) {
@@ -579,7 +584,7 @@ export function speak(text: string, lang: Lang) {
   const base = lang === 'fr' ? 'fr' : 'en';
   // Accent : une voix d'une autre langue lit le texte (si le PC l'a, sinon voix normale)
   const acc = pre.accent ? findVoice(pre.accent[lang === 'fr' ? 0 : 1], true) : undefined;
-  const voice = acc ?? findVoice(base, !!pre.nice);
+  const voice = acc ?? findVoice(base, !!pre.nice, !!pre.local);
   u.lang = voice?.lang ?? (lang === 'fr' ? 'fr-FR' : 'en-US');
   if (voice) u.voice = voice;
   u.rate = pre.rate;

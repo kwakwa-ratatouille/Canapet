@@ -35,6 +35,8 @@ export interface GameInstance {
   over: boolean;
   /** Identifiants des joueurs, du premier au dernier. */
   ranking(): string[];
+  /** Joueur éliminé (pour la vengeance des fantômes). */
+  out?(pid: string): boolean;
   /** Pour le présentateur : nom du premier arrivé dès qu'il y en a un. */
   leader?(): string | null;
   /** Données privées affichées sur le téléphone de ce joueur (sa main, ses choix…). */

@@ -60,6 +60,13 @@ function awards(session: Session, lang: L): { list: Award[]; emoji: string | nul
   add('😂', ['Roi des réactions', 'Reaction King'], best(free(), (st) => st.reacts, 5), (v) => [`${v} réactions envoyées`, `${v} reactions sent`], 'wow');
   if (!session.family) add('🖕', ['Le plus vulgaire', 'Potty Mouth'], best(free(), (st) => st.rude, 3), (v) => [`${v} gestes déplacés`, `${v} rude gestures`], 'wow');
   add('🤫', ['Agent secret', 'Secret Agent'], best(free(), (st) => st.secrets), (v) => [`${v} défi${s(v)} secret${s(v)} réussi${s(v)}`, `${v} secret mission${s(v)} done`]);
+  add('👻', ['Fantôme vengeur', 'Vengeful Ghost'], best(free(), (st) => st.ghosts, 2), (v) => [`${v} sorts jetés`, `${v} curses cast`], 'wow');
+  add('⚔️', ['Le Duelliste', 'The Duelist'], best(free(), (st) => st.duels), (v) => [`${v} duel${s(v)} gagné${s(v)}`, `${v} duel${s(v)} won`]);
+  {
+    const top = best(free(), (st) => st.titles.length);
+    const st = top && session.stats.get(top.p.pid);
+    if (top && st) add('🗳️', ['Désigné par le salon', 'Chosen by the couch'], top, () => [st.titles.slice(-2).join(' · '), st.titles.slice(-2).join(' · ')], 'wow');
+  }
   add('🎮', ['Accro du canapé', 'Couch Addict'], best(free(), (st) => st.games, 3), (v) => [`${v} parties jouées`, `${v} games played`], 'happy');
   // Emoji de la soirée
   const count: Record<number, number> = {};
