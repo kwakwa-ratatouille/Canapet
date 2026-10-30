@@ -31,6 +31,8 @@ jobs:
           plutil -insert NSPhotoLibraryUsageDescription -string "Photo Roulette pioche des photos au hasard dans ta galerie." $P
           plutil -insert NSCameraUsageDescription -string "Pour prendre un selfie comme visage de ton perso." $P
           plutil -insert UIStatusBarHidden -bool YES $P
+          plutil -replace CFBundleShortVersionString -string "1.0.${{ github.run_number }}" $P
+          plutil -replace CFBundleVersion -string "${{ github.run_number }}" $P
           plutil -replace UIViewControllerBasedStatusBarAppearance -bool YES $P || plutil -insert UIViewControllerBasedStatusBarAppearance -bool YES $P
       - name: Icône
         continue-on-error: true
@@ -45,6 +47,41 @@ jobs:
           cp -R build/Build/Products/Release-iphoneos/App.app Payload/
           test -f Payload/App.app/App
           zip -qr Canapet.ipa Payload
+      - name: Source SideStore (mises à jour automatiques)
+        run: |
+          cat > sidestore.json <<EOF
+          {
+            "name": "Cana'pet",
+            "identifier": "com.canapet.source",
+            "subtitle": "Jeux de soirée sur la télé, le téléphone est la manette",
+            "iconURL": "https://kwakwa-ratatouille.github.io/Canapet/icon.png",
+            "website": "https://kwakwa-ratatouille.github.io/Canapet/",
+            "tintColor": "#ff4f9a",
+            "apps": [{
+              "name": "Cana'pet",
+              "bundleIdentifier": "com.canapet.app",
+              "developerName": "Cana'pet",
+              "subtitle": "La manette de Cana'pet",
+              "localizedDescription": "Jeux de soirée multijoueurs sur la télé : ton téléphone sert de manette.",
+              "iconURL": "https://kwakwa-ratatouille.github.io/Canapet/icon.png",
+              "tintColor": "#ff4f9a",
+              "versions": [{
+                "version": "1.0.${{ github.run_number }}",
+                "buildVersion": "${{ github.run_number }}",
+                "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                "downloadURL": "https://github.com/kwakwa-ratatouille/Canapet/releases/download/ios-latest/Canapet.ipa",
+                "size": $(stat -f%z Canapet.ipa),
+                "minOSVersion": "13.0"
+              }],
+              "appPermissions": { "entitlements": [], "privacy": {
+                "NSPhotoLibraryUsageDescription": "Photo Roulette pioche des photos au hasard dans ta galerie.",
+                "NSCameraUsageDescription": "Pour prendre un selfie comme visage de ton perso."
+              } }
+            }],
+            "news": []
+          }
+          EOF
+          python3 -m json.tool sidestore.json
       - name: Publier (lien fixe ios-latest)
         uses: softprops/action-gh-release@v2
         with:
@@ -53,6 +90,9 @@ jobs:
           body: |
             Appli iPhone de Cana'pet (.ipa non signée). Elle ouvre toujours la dernière version du jeu, en plein écran,
             et Photo Roulette pioche toute seule des photos au hasard dans la photothèque.
-            À installer depuis le PC avec Sideloadly (gratuit, avec ton identifiant Apple).
-          files: mobile/Canapet.ipa
+            À installer avec SideStore (source avec mises à jour automatiques :
+            https://github.com/kwakwa-ratatouille/Canapet/releases/download/ios-latest/sidestore.json) ou Sideloadly.
+          files: |
+            mobile/Canapet.ipa
+            mobile/sidestore.json
           make_latest: false
