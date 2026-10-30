@@ -114,3 +114,29 @@
   line-height: 1.15;
   text-align: center;
 }
+
+/* ===== Bouton réactions dans le bandeau du haut ===== */
+.pad-head .react-fab.inline {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  font-size: 22px;
+  border-width: 3px;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+/* ===== iPhone tenu droit : manette tournée ===== */
+/* Une fois tournée, le haut du téléphone (encoche) est à gauche de la manette et la barre du bas à droite :
+   on décale sur les côtés au lieu de grossir le bandeau du haut, qui poussait la manette vers le bas. */
+@media (orientation: portrait) {
+  .pad.turn .pad-head,
+  .pad.turn .pad-head.slim {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: max(12px, env(safe-area-inset-top));
+    padding-right: max(12px, env(safe-area-inset-bottom));
+  }
+  .pad.turn .stick-pad {
+    padding: 0 env(safe-area-inset-bottom) 0 env(safe-area-inset-top);
+  }
+}

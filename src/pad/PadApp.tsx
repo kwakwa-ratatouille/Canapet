@@ -277,6 +277,8 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
             ⏸
           </button>
         )}
+        {/* Réactions : toujours au même endroit, en haut à droite (avant, la bulle flottante cachait l'écran) */}
+        {status === 'ok' && screen && ['wait', 'results', 'podium', 'paused', 'recap'].includes(screen.s) && <ReactButton lang={lang} family={family} send={send} inline />}
         {!playing && (
           <button className="pill" onClick={() => setEditing(true)} aria-label={t(lang, 'editChar')}>
             ✏️
@@ -329,7 +331,6 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           edit={() => setEditing(true)}
         />
       )}
-      {status === 'ok' && screen && ['wait', 'results', 'podium', 'paused', 'recap'].includes(screen.s) && !editing && <ReactButton lang={lang} family={family} send={send} />}
     </div>
   );
 }
