@@ -13,6 +13,9 @@ export function init(config: Record<string, string>) {
   app = initializeApp(config);
   auth = getAuth(app);
   db = getDatabase(app);
+  // L'appli a pu être fermée par le téléphone pendant la connexion dans le navigateur : on reprend l'attente
+  const p = pending();
+  if (p) void waitRelay(p.id, unB64(p.k)).catch(() => {});
 }
 
 export function watchUser(cb: (u: CloudUser | null) => void) {
@@ -43,6 +46,18 @@ const unB64 = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/
 const aes = (raw: Uint8Array, use: KeyUsage) => crypto.subtle.importKey('raw', raw as BufferSource, 'AES-GCM', false, [use]);
 type Tokens = { i: string | null; a: string | null };
 
+// Demande en cours, gardée sur le téléphone (10 minutes) pour survivre à un redémarrage de l'appli
+const PENDING = 'relaisGoogle';
+function pending(): { id: string; k: string } | null {
+  try {
+    const p = JSON.parse(localStorage.getItem(PENDING) ?? 'null') as { id: string; k: string; t: number } | null;
+    return p && Date.now() - p.t < 600000 ? p : null;
+  } catch {
+    return null;
+  }
+}
+const waiting = new Map<string, Promise<void>>();
+
 /** Côté appli : ouvre le navigateur et attend le jeton (fini quand on est connecté). */
 export async function signInViaBrowser(site: string): Promise<void> {
   const id = b64(crypto.getRandomValues(new Uint8Array(18)));
@@ -54,16 +69,33 @@ export async function signInViaBrowser(site: string): Promise<void> {
     location.assign(url + '&ici=1');
     return new Promise(() => {});
   }
-  const key = await aes(raw, 'decrypt');
-  const node = ref(db, `relaisGoogle/${id}`);
+  try {
+    localStorage.setItem(PENDING, JSON.stringify({ id, k: b64(raw), t: Date.now() }));
+  } catch {
+    /* rien */
+  }
+  return waitRelay(id, raw);
+}
+
+/** Attend le jeton déposé par la page relais, puis connecte l'appli avec. */
+function waitRelay(id: string, raw: Uint8Array): Promise<void> {
+  const already = waiting.get(id);
+  if (already) return already;
   const done = new Promise<void>((resolve, reject) => {
-    const stop = onValue(node, async (snap) => {
+    const node = ref(db, `relaisGoogle/${id}`);
+    let stop = () => {};
+    const end = () => {
+      stop();
+      waiting.delete(id);
+      if (pending()?.id === id) localStorage.removeItem(PENDING);
+    };
+    stop = onValue(node, async (snap) => {
       const d = (snap.val() as { d?: string } | null)?.d;
       if (!d) return;
-      stop();
+      end();
       try {
         const all = unB64(d);
-        const clear = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: all.slice(0, 12) as BufferSource }, key, all.slice(12) as BufferSource);
+        const clear = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: all.slice(0, 12) as BufferSource }, await aes(raw, 'decrypt'), all.slice(12) as BufferSource);
         const j = JSON.parse(new TextDecoder().decode(clear)) as Tokens;
         await signInWithCredential(auth, GoogleAuthProvider.credential(j.i, j.a));
         resolve();
@@ -73,20 +105,25 @@ export async function signInViaBrowser(site: string): Promise<void> {
       remove(node).catch(() => {});
     });
     // On abandonne l'attente au bout de 10 minutes
-    setTimeout(() => (stop(), reject(new Error('timeout'))), 600000);
+    setTimeout(() => (end(), reject(new Error('timeout'))), 600000);
   });
+  waiting.set(id, done);
   return done;
 }
 
 /** Côté page relais (navigateur), au retour de Google : jeton chiffré déposé pour l'appli (ici = connecter aussi ce navigateur). */
 export async function relayTokens(id: string, k: string, idToken: string, here: boolean) {
-  if (here) await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+  // Connexion ici aussi : vérifie le jeton tout de suite, et la base n'accepte le dépôt que d'un joueur connecté
+  const before = auth.currentUser;
+  await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await aes(unB64(k), 'encrypt'), new TextEncoder().encode(JSON.stringify({ i: idToken, a: null })));
   const all = new Uint8Array(12 + enc.byteLength);
   all.set(iv);
   all.set(new Uint8Array(enc), 12);
   await set(ref(db, `relaisGoogle/${id}`), { d: b64(all), t: serverTimestamp() });
+  // Ce navigateur n'était pas connecté avant (l'appli est ailleurs) : on le laisse comme il était
+  if (!here && !before) fbSignOut(auth).catch(() => {});
 }
 
 export async function load(uid: string): Promise<Partial<Progress> | null> {
