@@ -1,6 +1,10 @@
 // Côté téléphone : connexion directe à la télé dont l'identifiant contient le code.
 import Peer, { type DataConnection } from 'peerjs';
 import { ICE_SERVERS, PEER_PREFIX, type ToPad, type ToTv } from '../shared/protocol';
+import type { Relay } from '../shared/relay';
+
+/** Pour tester : #/m/CODE?relais=1 passe tout de suite par le relais, sans liaison directe. */
+const FORCE_RELAY = /[?&]relais=1/.test(location.hash);
 
 export type PadStatus = 'connecting' | 'ok' | 'lost' | 'notfound';
 
@@ -17,6 +21,11 @@ export class PadNet {
   why = '';
   /** Moment où la liaison a été perdue (0 = pas perdue). */
   lostSince = 0;
+  /** Vrai quand on passe par le relais de secours (Firebase) au lieu de la liaison directe. */
+  viaRelay = false;
+  private relay?: Relay | null;
+  private triedAt = Date.now();
+  private directAt = 0;
   private peer?: Peer;
   private conn?: DataConnection;
   private lastPong = 0;
@@ -28,6 +37,11 @@ export class PadNet {
   constructor(private code: string, private h: Handlers) {}
 
   start() {
+    if (FORCE_RELAY) {
+      this.useRelay();
+      this.timer = window.setInterval(() => this.watch(), 2000);
+      return;
+    }
     const peer = new Peer({ debug: 1, config: { iceServers: ICE_SERVERS } });
     this.peer = peer;
     peer.on('open', () => this.dial());
@@ -70,6 +84,7 @@ export class PadNet {
   stop() {
     this.stopped = true;
     clearInterval(this.timer);
+    this.relay?.stop();
     this.conn?.close();
     this.peer?.destroy();
   }
@@ -98,24 +113,53 @@ export class PadNet {
     c.on('open', () => {
       if (this.conn !== c) return;
       this.lastPong = Date.now();
+      // La liaison directe repasse : on quitte le relais
+      this.viaRelay = false;
       this.set('ok');
       c.send(this.h.hello());
       this.ping();
     });
-    c.on('data', (d) => {
-      const m = d as ToPad;
-      if (m.t === 'pong') {
-        this.lastPong = Date.now();
-        this.rtt = Math.round(performance.now() - m.ts);
-        this.h.onStatus();
-      } else this.h.onMsg(m);
-    });
+    c.on('data', (d) => this.receive(d as ToPad));
     c.on('close', () => {
-      if (this.conn === c && this.status === 'ok') this.set('lost', 'canal fermé');
+      if (this.conn === c && this.status === 'ok' && !this.viaRelay) this.set('lost', 'canal fermé');
     });
     c.on('error', (e) => {
-      if (this.conn === c && this.status === 'ok') this.set('lost', `erreur canal ${String((e as Error)?.message ?? e).slice(0, 40)}`);
+      if (this.conn === c && this.status === 'ok' && !this.viaRelay) this.set('lost', `erreur canal ${String((e as Error)?.message ?? e).slice(0, 40)}`);
     });
+  }
+
+  private receive(m: ToPad) {
+    if (m.t === 'pong') {
+      this.lastPong = Date.now();
+      this.rtt = Math.round(performance.now() - m.ts);
+      if (this.viaRelay && this.status !== 'ok') this.set('ok');
+      this.h.onStatus();
+    } else this.h.onMsg(m);
+  }
+
+  /** La liaison directe ne passe pas depuis un moment : on bascule sur le relais de secours. */
+  private useRelay() {
+    if (this.viaRelay || this.stopped) return;
+    this.viaRelay = true;
+    const hello = this.h.hello();
+    const pid = hello.t === 'hello' ? hello.pid : '';
+    const go = (r: Relay) => {
+      r.send(hello);
+      this.ping();
+    };
+    if (this.relay) return go(this.relay);
+    if (this.relay === null) return;
+    this.relay = null;
+    import('../shared/relay')
+      .then((m) => {
+        if (this.stopped) return;
+        this.relay = m.padRelay(this.code, pid, (d) => this.receive(d as ToPad));
+        if (this.viaRelay) go(this.relay);
+      })
+      .catch(() => {
+        this.relay = undefined;
+        this.viaRelay = false;
+      });
   }
 
   private ping() {
@@ -127,14 +171,27 @@ export class PadNet {
     if (this.stopped) return;
     if (this.status === 'ok') {
       this.ping();
+      if (this.viaRelay) {
+        // Sur le relais : on retente la liaison directe de temps en temps (plus rapide)
+        if (!FORCE_RELAY && Date.now() - this.directAt > 20000) {
+          this.directAt = Date.now();
+          this.dial();
+        }
+        if (Date.now() - this.lastPong > 14000) this.set('lost', 'relais muet');
+        return;
+      }
       if (Date.now() - this.lastPong > 10000 && !this.conn?.open) this.set('lost', 'canal mort');
       else if (Date.now() - this.lastPong > 14000) this.set('lost', 'la télé ne répond plus');
       return;
     }
-    if (Date.now() - this.dialedAt > 3000) this.redial();
+    // Pas de liaison directe après 8 s (au début ou après une coupure) : relais de secours
+    if (Date.now() - Math.max(this.triedAt, this.lostSince) > 8000) this.useRelay();
+    if (this.viaRelay) this.ping();
+    if (Date.now() - this.dialedAt > 3000 && !FORCE_RELAY) this.redial();
   }
 
   send(m: ToTv) {
     if (this.conn?.open) this.conn.send(m);
+    else if (this.viaRelay) this.relay?.send(m);
   }
 }

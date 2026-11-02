@@ -1,5 +1,5 @@
 // Partie Firebase de cloud.ts (chargée seulement quand on en a besoin).
-import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as fbSignOut, type Auth } from 'firebase/auth';
 import { get, getDatabase, goOffline, goOnline, onValue, ref, remove, serverTimestamp, set, type Database, type DataSnapshot } from 'firebase/database';
 import type { CloudUser } from './cloud';
@@ -10,7 +10,7 @@ let auth: Auth;
 let db: Database;
 
 export function init(config: Record<string, string>) {
-  app = initializeApp(config);
+  app = getApps()[0] ?? initializeApp(config);
   auth = getAuth(app);
   db = getDatabase(app);
   // L'appli a pu être fermée par le téléphone pendant la connexion dans le navigateur : on reprend l'attente

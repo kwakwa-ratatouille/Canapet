@@ -19,6 +19,9 @@ export class TvNet {
   private byPid = new Map<string, DataConnection>();
   private pidOf = new Map<DataConnection, string>();
   private tries = 0;
+  /** Relais de secours (Firebase) et joueurs qui passent par lui. */
+  private relay?: { send(pid: string, m: unknown): void; stop(): void };
+  private viaRelay = new Set<string>();
 
   constructor(private h: Handlers) {}
 
@@ -43,6 +46,8 @@ export class TvNet {
     this.h.onStatus();
     const peer = new Peer(PEER_PREFIX + code, { debug: 1, config: { iceServers: ICE_SERVERS } });
     this.peer = peer;
+    // Le relais ne dépend pas du serveur d'appairage : il marche même si celui-ci est en panne
+    this.startRelay(code);
     peer.on('open', () => {
       this.tries = 0;
       this.status = 'ready';
@@ -79,6 +84,27 @@ export class TvNet {
     });
   }
 
+  private relayCode = '';
+  private startRelay(code: string) {
+    if (this.relayCode === code) return;
+    this.relayCode = code;
+    this.relay?.stop();
+    this.relay = undefined;
+    import('../shared/relay')
+      .then((r) => {
+        if (this.relayCode === code) this.relay = r.tvRelay(code, (pid, d) => this.fromRelay(pid, d as ToTv));
+      })
+      .catch(() => (this.relayCode = ''));
+  }
+
+  private fromRelay(pid: string, m: ToTv) {
+    if (!m || typeof m !== 'object') return;
+    if (m.t === 'hello' && m.pid !== pid) return;
+    this.viaRelay.add(pid);
+    if (m.t === 'ping') this.relay?.send(pid, { t: 'pong', ts: m.ts } satisfies ToPad);
+    this.h.onMsg(pid, m);
+  }
+
   private accept(c: DataConnection) {
     c.on('data', (d) => {
       const m = d as ToTv;
@@ -97,6 +123,7 @@ export class TvNet {
         }
         this.byPid.set(m.pid, c);
         this.pidOf.set(c, m.pid);
+        this.viaRelay.delete(m.pid);
       }
       const pid = this.pidOf.get(c);
       if (pid) this.h.onMsg(pid, m);
@@ -106,7 +133,8 @@ export class TvNet {
       this.pidOf.delete(c);
       if (pid && this.byPid.get(pid) === c) {
         this.byPid.delete(pid);
-        this.h.onLeave(pid);
+        // Le joueur passe aussi par le relais : il n'est pas parti
+        if (!this.viaRelay.has(pid)) this.h.onLeave(pid);
       }
     };
     c.on('close', gone);
@@ -116,9 +144,11 @@ export class TvNet {
   send(pid: string, m: ToPad) {
     const c = this.byPid.get(pid);
     if (c?.open) c.send(m);
+    else if (this.viaRelay.has(pid)) this.relay?.send(pid, m);
   }
 
   drop(pid: string) {
+    this.viaRelay.delete(pid);
     const c = this.byPid.get(pid);
     if (c) {
       this.byPid.delete(pid);

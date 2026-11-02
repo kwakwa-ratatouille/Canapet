@@ -4,7 +4,7 @@ import { IS_PHONE } from './device';
 import { IS_INSTALLED, IS_NATIVE } from './native';
 import type { Progress } from './progress';
 
-const CONFIG = {
+export const CONFIG = {
   apiKey: 'AIzaSyCBOa9SNOnyN6GkG7asYT2J1Y350EU7rmY',
   authDomain: 'canapet-31bb7.firebaseapp.com',
   databaseURL: 'https://canapet-31bb7-default-rtdb.europe-west1.firebasedatabase.app',

@@ -75,7 +75,8 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Télé et manette chargées à part (`lazy` dans `main.tsx`) : la manette n’importe **jamais** `games/registry` (le code des jeux) ; elle reçoit la fiche des jeux (`GameInfo` : nom, icône, couleur, options) dans `welcome` et le salon, gardée dans `catalog`.
 - **La télé fait autorité** (`src/tv/session.ts`) : boucle à pas fixe 60 Hz, rendu Canvas 2D en repère 1920×1080. Les téléphones n'envoient que leurs entrées (`src/shared/protocol.ts`).
 - Liaison : **PeerJS** (WebRTC DataChannel). La télé ouvre le pair `canapet-v1-<CODE>` ; les manettes s'y connectent. Ping toutes les 2 s, et un joueur muet depuis 9 s est compté comme parti.
-  Prévu : Firebase Realtime Database pour l'appairage de secours et les comptes. Pas Firestore pour le temps réel.
+  Relais de secours (nov. 2026) : si la liaison directe ne passe pas en 8 s (4G ↔ Wi-Fi), la manette passe par Firebase Realtime Database (`src/shared/relay.ts`, chemin `relais/<CODE>`, messages effacés dès lus, ~0,3 s aller-retour) et retente le direct toutes les 20 s. La télé écoute le relais dès qu'elle a son code. Test : `#/m/CODE?relais=1`.
+  Connexion Google sur téléphone : page relais + retour direct de Google sur le site (`goGoogle`/`googleReturn` dans cloud.ts, client OAuth web 723941656736-mj3o…, adresse de retour https://kwakwa-ratatouille.github.io/Canapet/ déclarée dans Google Cloud) ; plus de page firebaseapp.com sur téléphone.
 - Un jeu = un `GameDef` dans `src/games/registry.ts` avec `create(runners, ctx)` qui rend un `GameInstance` (input/update/render/ranking). Intro, compte à rebours, points et résultats sont gérés par la session.
 - Personnages dessinés par le code : `src/shared/characters.ts`. Sons : `src/shared/sound.ts`. Textes FR/EN : `src/shared/i18n.ts`.
 - Mode léger automatique (`LIGHT`, Chromecast et petits Android) : canvas en 1280×720, moins d'effets.
