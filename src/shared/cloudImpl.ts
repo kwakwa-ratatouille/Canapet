@@ -47,6 +47,13 @@ type Tokens = { i: string | null; a: string | null };
 export async function signInViaBrowser(site: string): Promise<void> {
   const id = b64(crypto.getRandomValues(new Uint8Array(18)));
   const raw = crypto.getRandomValues(new Uint8Array(32));
+  // Ouvert tout de suite (avant toute attente), sinon le navigateur du téléphone bloque la page
+  const url = `${site}#/relais-google?id=${id}&k=${b64(raw)}`;
+  if (!window.open(url, '_blank')) {
+    // Page bloquée : on y va dans cet onglet, elle connectera ce navigateur puis reviendra à l'accueil
+    location.assign(url + '&ici=1');
+    return new Promise(() => {});
+  }
   const key = await aes(raw, 'decrypt');
   const node = ref(db, `relaisGoogle/${id}`);
   const done = new Promise<void>((resolve, reject) => {
@@ -68,24 +75,18 @@ export async function signInViaBrowser(site: string): Promise<void> {
     // On abandonne l'attente au bout de 10 minutes
     setTimeout(() => (stop(), reject(new Error('timeout'))), 600000);
   });
-  window.open(`${site}#/relais-google?id=${id}&k=${b64(raw)}`, '_blank');
   return done;
 }
 
-/** Côté page relais (navigateur) : connexion Google, puis jeton chiffré déposé pour l'appli. */
-export async function relayTokens(id: string, k: string) {
-  const before = auth.currentUser;
-  const res = await signInWithPopup(auth, new GoogleAuthProvider());
-  const c = GoogleAuthProvider.credentialFromResult(res);
-  if (!c?.idToken && !c?.accessToken) throw new Error('no token');
+/** Côté page relais (navigateur), au retour de Google : jeton chiffré déposé pour l'appli (ici = connecter aussi ce navigateur). */
+export async function relayTokens(id: string, k: string, idToken: string, here: boolean) {
+  if (here) await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await aes(unB64(k), 'encrypt'), new TextEncoder().encode(JSON.stringify({ i: c.idToken ?? null, a: c.accessToken ?? null })));
+  const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await aes(unB64(k), 'encrypt'), new TextEncoder().encode(JSON.stringify({ i: idToken, a: null })));
   const all = new Uint8Array(12 + enc.byteLength);
   all.set(iv);
   all.set(new Uint8Array(enc), 12);
   await set(ref(db, `relaisGoogle/${id}`), { d: b64(all), t: serverTimestamp() });
-  // Ce navigateur n'était pas connecté avant : on le laisse comme il était
-  if (!before) fbSignOut(auth).catch(() => {});
 }
 
 export async function load(uid: string): Promise<Partial<Progress> | null> {

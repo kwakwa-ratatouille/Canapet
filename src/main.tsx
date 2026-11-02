@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Help } from './pages/Help';
 import { Home } from './pages/Home';
 import { Relay } from './pages/Relay';
+import { googleReturn } from './shared/cloud';
 import './tokens.css';
 import './styles.css';
 
@@ -15,6 +16,9 @@ function parse() {
   const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?');
   return { parts: path.split('/').filter(Boolean), query: new URLSearchParams(query) };
 }
+
+// Retour de la connexion Google (lu une seule fois : l'adresse est nettoyée aussitôt)
+const fromGoogle = googleReturn();
 
 function App() {
   const [route, setRoute] = useState(parse);
@@ -39,7 +43,8 @@ function App() {
     );
   }
   if (page === 'aide') return <Help />;
-  if (page === 'relais-google') return <Relay id={route.query.get('id') ?? ''} k={route.query.get('k') ?? ''} />;
+  if (fromGoogle && !route.parts.length) return <Relay id={fromGoogle.id} k={fromGoogle.k} back={fromGoogle} />;
+  if (page === 'relais-google') return <Relay id={route.query.get('id') ?? ''} k={route.query.get('k') ?? ''} here={route.query.has('ici')} />;
   return <Home />;
 }
 

@@ -1,6 +1,6 @@
 // Compte Google (Firebase) : connexion depuis le téléphone et sauvegarde de la progression.
 // Firebase n'est chargé qu'à la demande, pour garder la télé et la manette légères.
-import { IS_IOS } from './device';
+import { IS_PHONE } from './device';
 import { IS_INSTALLED, IS_NATIVE } from './native';
 import type { Progress } from './progress';
 
@@ -41,11 +41,41 @@ export function watchUser(cb: (u: CloudUser | null) => void): () => void {
 /** Charge Firebase en avance (la fenêtre Google doit s'ouvrir tout de suite au toucher). */
 export const preload = () => void impl().catch(() => {});
 /** Dans les applis (iPhone, Android, .exe), Google refuse sa fenêtre : on passe par le navigateur. */
-// iPhone : même ajoutée à l'écran d'accueil, la fenêtre Google reste bloquée sur la page firebaseapp.com.
-export const VIA_BROWSER = IS_NATIVE || /Electron/.test(navigator.userAgent) || (IS_IOS && IS_INSTALLED);
+// Téléphones (même dans le navigateur) : la page firebaseapp.com perd sa mémoire en route (« missing initial state »),
+// donc on passe aussi par la page relais, qui va chez Google et revient directement sur le site.
+export const VIA_BROWSER = IS_NATIVE || IS_INSTALLED || IS_PHONE || /Electron/.test(navigator.userAgent);
 const SITE = 'https://kwakwa-ratatouille.github.io/Canapet/';
 export const signIn = () => impl().then((m) => (VIA_BROWSER ? m.signInViaBrowser(SITE) : m.signIn()));
-export const relayTokens = (id: string, k: string) => impl().then((m) => m.relayTokens(id, k));
+export const relayTokens = (id: string, k: string, idToken: string, here: boolean) => impl().then((m) => m.relayTokens(id, k, idToken, here));
+
+// Connexion Google sans la page firebaseapp.com : Google renvoie le jeton directement sur le site (après le #).
+// Adresse de retour à déclarer dans Google Cloud (identifiants OAuth, client web) : SITE.
+const CLIENT_ID = '723941656736-mj3obbsi342p7lmur3r70emnp0vv4go1.apps.googleusercontent.com';
+const back = () => location.origin + location.pathname.replace(/index.html$/, '');
+type Pending = { id: string; k: string; here: boolean; n: string };
+
+/** Page relais : part chez Google (en gardant de quoi finir au retour). */
+export function goGoogle(id: string, k: string, here: boolean) {
+  const rnd = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+  const st = rnd();
+  const n = rnd();
+  localStorage.setItem('gauth-' + st, JSON.stringify({ id, k, here, n } satisfies Pending));
+  const q = new URLSearchParams({ client_id: CLIENT_ID, redirect_uri: back(), response_type: 'id_token', scope: 'openid email profile', nonce: n, state: st, prompt: 'select_account' });
+  location.assign('https://accounts.google.com/o/oauth2/v2/auth?' + q);
+}
+
+/** Retour de Google : lit la réponse (#id_token=…&state=…) et retrouve la demande. */
+export function googleReturn(): (Pending & { token: string | null; error: string | null }) | null {
+  const q = new URLSearchParams(location.hash.slice(1));
+  const st = q.get('state');
+  if (!st || (!q.has('id_token') && !q.has('error'))) return null;
+  const raw = localStorage.getItem('gauth-' + st);
+  localStorage.removeItem('gauth-' + st);
+  // Le jeton ne reste pas dans l'adresse
+  history.replaceState(null, '', location.pathname + location.search);
+  if (!raw) return { id: '', k: '', here: false, n: '', token: null, error: 'lost' };
+  return { ...(JSON.parse(raw) as Pending), token: q.get('id_token'), error: q.get('error') };
+}
 export const signOut = () => impl().then((m) => m.signOut());
 export const loadCloud = (uid: string) => impl().then((m) => m.load(uid));
 export const saveCloud = (uid: string, p: Progress) => impl().then((m) => m.save(uid, p));
