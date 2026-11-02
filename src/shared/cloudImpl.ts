@@ -1,7 +1,7 @@
 // Partie Firebase de cloud.ts (chargée seulement quand on en a besoin).
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as fbSignOut, type Auth } from 'firebase/auth';
-import { get, getDatabase, onValue, ref, remove, serverTimestamp, set, type Database } from 'firebase/database';
+import { get, getDatabase, goOffline, goOnline, onValue, ref, remove, serverTimestamp, set, type Database, type DataSnapshot } from 'firebase/database';
 import type { CloudUser } from './cloud';
 import type { Progress } from './progress';
 
@@ -84,14 +84,27 @@ function waitRelay(id: string, raw: Uint8Array): Promise<void> {
   const done = new Promise<void>((resolve, reject) => {
     const node = ref(db, `relaisGoogle/${id}`);
     let stop = () => {};
+    // Retour dans l'appli (iPhone surtout) : la liaison avec la base a pu s'endormir, on la relance et on relit
+    const wake = () => {
+      if (document.visibilityState !== 'visible') return;
+      goOffline(db);
+      goOnline(db);
+      get(node).then(got, () => {});
+    };
+    document.addEventListener('visibilitychange', wake);
+    window.addEventListener('focus', wake);
     const end = () => {
+      document.removeEventListener('visibilitychange', wake);
+      window.removeEventListener('focus', wake);
       stop();
       waiting.delete(id);
       if (pending()?.id === id) localStorage.removeItem(PENDING);
     };
-    stop = onValue(node, async (snap) => {
+    let used = false;
+    const got = async (snap: DataSnapshot) => {
       const d = (snap.val() as { d?: string } | null)?.d;
-      if (!d) return;
+      if (!d || used) return;
+      used = true;
       end();
       try {
         const all = unB64(d);
@@ -103,7 +116,8 @@ function waitRelay(id: string, raw: Uint8Array): Promise<void> {
         reject(e);
       }
       remove(node).catch(() => {});
-    });
+    };
+    stop = onValue(node, (snap) => void got(snap));
     // On abandonne l'attente au bout de 10 minutes
     setTimeout(() => (end(), reject(new Error('timeout'))), 600000);
   });
