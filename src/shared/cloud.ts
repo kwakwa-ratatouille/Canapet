@@ -45,7 +45,8 @@ export const preload = () => void impl().catch(() => {});
 // donc on passe aussi par la page relais, qui va chez Google et revient directement sur le site.
 export const VIA_BROWSER = IS_NATIVE || IS_INSTALLED || IS_PHONE || /Electron/.test(navigator.userAgent);
 const SITE = 'https://kwakwa-ratatouille.github.io/Canapet/';
-export const signIn = () => impl().then((m) => (VIA_BROWSER ? m.signInViaBrowser(SITE) : m.signIn()));
+const IN_APP = IS_NATIVE || IS_INSTALLED || /Electron/.test(navigator.userAgent);
+export const signIn = () => impl().then((m) => (VIA_BROWSER ? m.signInViaBrowser(SITE, IN_APP) : m.signIn()));
 export const relayTokens = (id: string, k: string, idToken: string, here: boolean) => impl().then((m) => m.relayTokens(id, k, idToken, here));
 
 // Connexion Google sans la page firebaseapp.com : Google renvoie le jeton directement sur le site (après le #).

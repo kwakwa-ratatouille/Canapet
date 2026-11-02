@@ -59,13 +59,14 @@ function pending(): { id: string; k: string } | null {
 const waiting = new Map<string, Promise<void>>();
 
 /** Côté appli : ouvre le navigateur et attend le jeton (fini quand on est connecté). */
-export async function signInViaBrowser(site: string): Promise<void> {
+export async function signInViaBrowser(site: string, inApp: boolean): Promise<void> {
   const id = b64(crypto.getRandomValues(new Uint8Array(18)));
   const raw = crypto.getRandomValues(new Uint8Array(32));
   // Ouvert tout de suite (avant toute attente), sinon le navigateur du téléphone bloque la page
   const url = `${site}#/relais-google?id=${id}&k=${b64(raw)}`;
-  if (!window.open(url, '_blank')) {
-    // Page bloquée : on y va dans cet onglet, elle connectera ce navigateur puis reviendra à l'accueil
+  // Dans les applis, l'ouverture du navigateur ne renvoie rien même quand elle a marché : on attend quand même
+  if (!window.open(url, '_blank') && !inApp) {
+    // Page bloquée (navigateur du téléphone) : on y va dans cet onglet, elle connectera ce navigateur puis reviendra à l'accueil
     location.assign(url + '&ici=1');
     return new Promise(() => {});
   }
