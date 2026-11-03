@@ -8,6 +8,11 @@ type Lines = Record<Lang, string[]>;
 export const BANTER: Record<string, Lines> = {
   lead: {
     fr: [
+      "{n} passe devant ! Quelqu’un a vu {p} ? Non ? Normal.",
+      "Changement de patron : c’est {n} qui commande maintenant !",
+      "{n} en tête ! Je sens l’odeur de la victoire… ou des chaussettes.",
+      "Oh là là, {n} prend les commandes, {p} pleure en silence.",
+      "{n} premier ! Les sponsors appellent déjà.",
       '{n} prend la tête !',
       'Oh là là, {n} passe devant !',
       '{n} double {p} !',
@@ -34,6 +39,11 @@ export const BANTER: Record<string, Lines> = {
       'Oh, {n} se réveille enfin !',
     ],
     en: [
+      "{n} takes the lead! Anyone seen {p}? No? Figures.",
+      "New boss in town: {n} is calling the shots!",
+      "{n} in front! I can smell victory… or socks.",
+      "Oh my, {n} takes over, {p} cries quietly.",
+      "{n} first! The sponsors are already calling.",
       '{n} takes the lead!',
       'Whoa, {n} is in front!',
       '{n} overtakes {p}!',
@@ -50,6 +60,11 @@ export const BANTER: Record<string, Lines> = {
   },
   last: {
     fr: [
+      "{n} est dernier, mais avec beaucoup de style. Enfin… un peu.",
+      "Courage {n}, même un escargot a gagné une course une fois.",
+      "{n} fait une pause stratégique. Très stratégique. Trop stratégique.",
+      "On fait un petit coucou à {n}, tout au fond !",
+      "{n}, la manette est à l’endroit ?",
       '{n} est dernier… mais avec style.',
       'On a retrouvé {n} : tout au fond.',
       '{n}, tout va bien ? Cligne deux fois si tu as besoin d’aide.',
@@ -76,6 +91,11 @@ export const BANTER: Record<string, Lines> = {
       '{n} : dernier, mais très bien coiffé.',
     ],
     en: [
+      "{n} is last, but with style. Well… some style.",
+      "Hang in there {n}, even a snail won a race once.",
+      "{n} is taking a strategic break. Very strategic. Too strategic.",
+      "Let’s wave to {n}, all the way at the back!",
+      "{n}, is your controller the right way up?",
       '{n} is last… but stylishly.',
       'We found {n}: all the way at the back.',
       '{n}, blink twice if you need help.',
@@ -120,6 +140,11 @@ export const BANTER: Record<string, Lines> = {
   },
   win: {
     fr: [
+      "{n} gagne ! Applaudissez, ou au moins faites semblant.",
+      "Victoire de {n} ! Je n’y croyais pas, et pourtant.",
+      "{n} remporte la manche ! Le canapé tremble.",
+      "Et c’est {n} qui gagne ! Qui l’eût cru ? Pas moi.",
+      "{n} gagne et ne va pas se taire de la soirée.",
       '{n} gagne !',
       'Victoire de {n} ! Le canapé s’incline.',
       '{n} remporte la manche, quelle classe !',
@@ -140,6 +165,11 @@ export const BANTER: Record<string, Lines> = {
       'Et c’est {n} qui repart avec la gloire !',
     ],
     en: [
+      "{n} wins! Clap, or at least pretend.",
+      "{n} takes it! I didn’t believe it, and yet.",
+      "{n} wins the round! The couch is shaking.",
+      "And {n} wins! Who saw that coming? Not me.",
+      "{n} wins and won’t shut up about it all night.",
       '{n} wins!',
       'Victory for {n}! The couch bows down.',
       'And the winner is… {n}!',
