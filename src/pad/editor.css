@@ -140,3 +140,8 @@
     padding: 0 env(safe-area-inset-bottom) 0 env(safe-area-inset-top);
   }
 }
+
+/* Perso déjà pris par un autre joueur : grisé */
+.pick.taken {
+  opacity: 0.35;
+}

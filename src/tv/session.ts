@@ -1358,6 +1358,7 @@ export class Session {
           host,
           hostName: hostP?.name ?? '',
           taken: this.list().filter((x) => x.pid !== p.pid).map((x) => x.color),
+          foods: Object.fromEntries(this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => [x.food, x.name])),
           games: GAMES_INFO(),
           count: this.list().filter((x) => x.connected).length,
           family: this.family,

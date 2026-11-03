@@ -44,7 +44,7 @@ export interface GhostInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; recap?: boolean; players: { pid: string; name: string; color: string }[] }
+  | { s: 'lobby'; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; recap?: boolean; players: { pid: string; name: string; color: string }[] }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean; secret?: SecretInfo }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }

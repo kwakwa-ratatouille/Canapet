@@ -34,6 +34,16 @@ const EN: Record<string, string> = {
   oignon: 'Onion',
   patate: 'Potato',
   popcorn: 'Popcorn',
+  chewing: 'Bubble gum',
+  croque: 'Croque-monsieur',
+  yaourt: 'Yogurt',
+  ravioli: 'Ravioli',
+  oeufplat: 'Fried egg',
+  pasteque: 'Watermelon',
+  cookie: 'Cookie',
+  ketchup: 'Ketchup',
+  nouilles: 'Noodles',
+  gaufre: 'Waffle',
 };
 
 export const FOODS: { id: string; name: Name }[] = Object.entries(CHARACTERS).map(([id, fr]) => ({
@@ -61,6 +71,14 @@ export const HATS: { id: string; name: Name }[] = [
   { id: 'pirate', name: { fr: 'Pirate', en: 'Pirate' } },
   { id: 'sorciere', name: { fr: 'Sorcière', en: 'Witch hat' } },
   { id: 'aureole', name: { fr: 'Auréole', en: 'Halo' } },
+  { id: 'viking', name: { fr: 'Casque viking', en: 'Viking helmet' } },
+  { id: 'cowboy', name: { fr: 'Chapeau de cowboy', en: 'Cowboy hat' } },
+  { id: 'afro', name: { fr: 'Afro', en: 'Afro' } },
+  { id: 'licorne', name: { fr: 'Licorne', en: 'Unicorn' } },
+  { id: 'ninja', name: { fr: 'Bandeau ninja', en: 'Ninja headband' } },
+  { id: 'dj', name: { fr: 'Casque de DJ', en: 'DJ headphones' } },
+  { id: 'frites', name: { fr: 'Couronne de frites', en: 'Fry crown' } },
+  { id: 'pizzahat', name: { fr: 'Part de pizza', en: 'Pizza slice' } },
 ];
 
 export const ACCS: { id: string; name: Name }[] = [

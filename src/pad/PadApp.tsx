@@ -271,7 +271,8 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
 
   if (editing) {
     const taken = screen?.s === 'lobby' ? screen.taken : [];
-    return <Editor profile={profile} setProfile={setProfile} taken={taken} onDone={() => setEditing(false)} progress={progress} setProgress={setProgress} />;
+    const takenFoods = screen?.s === 'lobby' ? screen.foods ?? {} : {};
+    return <Editor profile={profile} setProfile={setProfile} taken={taken} takenFoods={takenFoods} onDone={() => setEditing(false)} progress={progress} setProgress={setProgress} />;
   }
 
   const playing = screen?.s === 'play' && status === 'ok';
@@ -930,6 +931,7 @@ function Editor({
   profile,
   setProfile,
   taken,
+  takenFoods,
   onDone,
   progress,
   setProgress,
@@ -937,6 +939,8 @@ function Editor({
   profile: Profile;
   setProfile: (f: (p: Profile) => Profile) => void;
   taken: string[];
+  /** Persos déjà choisis par les autres (on ne peut pas les prendre). */
+  takenFoods: Record<string, string>;
   onDone: () => void;
   progress: Progress;
   setProgress: (f: (p: Progress) => Progress) => void;
@@ -992,7 +996,7 @@ function Editor({
   };
   const randomize = () =>
     set({
-      food: pick(FOODS.filter((f) => owned('food', f.id))).id,
+      food: (pick(FOODS.filter((f) => owned('food', f.id) && !takenFoods[f.id])) ?? FOODS[0]).id,
       color: pick(COLORS.filter((c) => !taken.includes(c))) ?? profile.color,
       hat: pick(HATS.filter((h) => owned('hat', h.id))).id,
       acc: pick(ACCS.filter((a) => owned('acc', a.id))).id,
@@ -1100,9 +1104,14 @@ function Editor({
       {tab === 'perso' && (
         <div className="pick-grid">
           {FOODS.map((f) => (
-            <button key={f.id} className={`pick ${profile.food === f.id ? 'on' : ''} ${owned('food', f.id) ? '' : 'locked'}`} onClick={() => choose('food', f.id, f.name[lang])}>
+            <button
+              key={f.id}
+              className={`pick ${profile.food === f.id ? 'on' : ''} ${owned('food', f.id) ? '' : 'locked'} ${takenFoods[f.id] && profile.food !== f.id ? 'taken' : ''}`}
+              disabled={!!takenFoods[f.id] && profile.food !== f.id}
+              onClick={() => choose('food', f.id, f.name[lang])}
+            >
               <CharCanvas profile={{ ...profile, food: f.id, selfie: undefined, hat: 'aucun', acc: 'aucun' }} size={64} still />
-              <small>{f.name[lang]}</small>
+              <small>{takenFoods[f.id] && profile.food !== f.id ? (fr ? `Pris par ${takenFoods[f.id]}` : `Taken by ${takenFoods[f.id]}`) : f.name[lang]}</small>
               {lock('food', f.id)}
             </button>
           ))}
