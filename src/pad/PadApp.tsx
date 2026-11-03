@@ -5,6 +5,7 @@ import { VOICES } from '../shared/sound';
 import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
 import { GoogleLogo } from '../shared/GoogleLogo';
 import './editor.css';
+import { TiebreakPad, VotePad, WheelPad } from './PartyPad';
 import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRICES, rewardFor, saveProgress, type Kind, type Progress } from '../shared/progress';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CharCanvas } from '../shared/CharCanvas';
@@ -49,6 +50,8 @@ const DEMO: Record<string, PadScreen> = {
   results: { s: 'results', gid: 1, host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
   paused: { s: 'paused', host: true, game: 'sumo' },
   podium: { s: 'podium', gid: 1, host: true, rank: 1, total: 42 },
+  vote: { s: 'vote', host: true, q: 'Qui finirait en prison en premier ?', options: [{ id: '1', label: 'Momo', color: '#ff4f9a' }, { id: '2', label: 'Lulu', color: '#ffd60a' }, { id: '3', label: 'Zaza', color: '#2ec5ff' }, { id: '4', label: 'Bot 1', color: '#7bd13b' }], reveal: false, n: 1, of: 3 },
+  ab: { s: 'vote', host: true, q: 'Tu préfères…', options: [{ id: 'a', label: 'Ne plus jamais manger de pizza', color: '#ff4f9a' }, { id: 'b', label: 'Ne plus jamais dormir dans un lit', color: '#2ec5ff' }], my: 'a', reveal: false, n: 2, of: 3 },
 };
 
 export function PadApp({ code, demo }: { code: string; demo?: string }) {
@@ -788,6 +791,12 @@ function PadScreenView({
           )}
         </div>
       );
+    case 'vote':
+      return <VotePad screen={screen} lang={lang} send={send} />;
+    case 'wheel':
+      return <WheelPad screen={screen} lang={lang} send={send} />;
+    case 'tiebreak':
+      return <TiebreakPad screen={screen} lang={lang} send={send} />;
     case 'recap':
       return (
         <div className="pad-body">
