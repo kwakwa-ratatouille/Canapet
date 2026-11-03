@@ -305,6 +305,11 @@ export const BANTER: Record<string, Lines> = {
     fr: ['Pluie de {e} ! Le salon s’enflamme !', 'Wow, une avalanche de {e} !', 'Tout le monde est d’accord : {e} !', 'Alerte météo : averse de {e} !'],
     en: ['A rain of {e}! The room is on fire!', 'Whoa, an avalanche of {e}!', 'Weather alert: {e} shower!'],
   },
+  // Fin d'un jeu de rôles (Traître, Undercover) : pas de « premier », on parle du groupe
+  endTeam: {
+    fr: ['Quelle partie ! Les menteurs ont été démasqués… ou pas.', 'Vous êtes tous suspects, je vous préviens.', 'Je ne ferai plus jamais confiance à personne dans ce salon.', 'Bravo les détectives ! Enfin, certains.', 'Les regards en disent long… rendez-vous au prochain jeu.', 'Il y a des amitiés qui viennent de se fissurer, là.'],
+    en: ['What a game! The liars got caught… or not.', 'You are all suspects, just so you know.', 'I will never trust anyone in this room again.', 'Well done, detectives! Some of you.', 'Those looks say it all… see you next game.'],
+  },
   // Ralenti de fin de partie ({n} = le gagnant, si on le connaît)
   replay: {
     fr: [

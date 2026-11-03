@@ -853,7 +853,7 @@ export class Session {
 
   /** Le commentateur réagit quand la tête change, et chambre le dernier de temps en temps (une phrase toutes les 9 s au plus). */
   private commentate() {
-    if (!this.game || !this.runners.length) return;
+    if (!this.game || !this.runners.length || !this.liveRanked()) return;
     const order = this.game.ranking();
     const first = order[0];
     const play = this.clock - this.intro - COUNT;
@@ -875,6 +875,15 @@ export class Session {
     }
   }
 
+  /**
+   * Jeux où « premier » et « dernier » veulent dire quelque chose en cours de partie (courses, combats…).
+   * Dans les jeux de rôles, de dessin ou de cartes, tout le monde est à égalité : on ne commente pas un faux premier.
+   */
+  private liveRanked(): boolean {
+    const id = this.def?.id ?? '';
+    return (this.def?.layout === 'stick' || this.def?.layout === 'tap') && !['traitre', 'dessin', 'undercover', 'roulette', 'bluff', 'president'].includes(id);
+  }
+
   /** Bandeau + voix du présentateur. */
   private say(text: string) {
     if (!text) return;
@@ -888,6 +897,8 @@ export class Session {
     const fam = this.family;
     const name = (pid: string) => this.players.get(pid)?.name ?? this.runners.find((r) => r.pid === pid)?.profile.name ?? '';
     const first = order[0];
+    // Jeux d'équipe ou de rôles sans vrai gagnant unique : phrase générale, sans viser toujours la même personne
+    if (!this.liveRanked() && !this.game?.leader?.() && ['traitre', 'undercover'].includes(this.def?.id ?? '')) return banter('endTeam', L, fam);
     if (first === this.streak.pid) this.streak.k++;
     else this.streak = { pid: first, k: 1 };
     const last = [...order].reverse().find((pid) => this.players.has(pid) && pid !== first);

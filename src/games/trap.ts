@@ -210,6 +210,7 @@ function trap(runners: Runner[], ctx: GameCtx): GameInstance {
     sfx.boom();
     for (const p of victims) {
       p.fall = 0.001;
+      p.pop = { text: fr ? 'AAAAAH !' : 'AAAAAH!', t: 1.2, c: '#ff3b3b' };
       if (!p.bot) ctx.buzz(p.pid, 500);
     }
     if (victims.length) setTimeout(() => sfx.pet(), 350);
@@ -376,6 +377,13 @@ function trap(runners: Runner[], ctx: GameCtx): GameInstance {
           g.textBaseline = 'middle';
           g.fillStyle = 'rgba(255,255,255,0.22)';
           g.fillText(S.key, x + w / 2, (Y0 + Y1) / 2 - 10);
+          // Combien de joueurs de chaque côté, en direct
+          if (phase === 'ask' || phase === 'stop') {
+            const nb = alive().filter((q) => side(q) === s).length;
+            g.font = '700 40px Fredoka, sans-serif';
+            g.fillStyle = 'rgba(255,255,255,0.9)';
+            g.fillText(fr ? `${nb} joueur${nb > 1 ? 's' : ''}` : `${nb} player${nb > 1 ? 's' : ''}`, x + w / 2, Y1 - 40);
+          }
           g.globalAlpha = 1;
         }
       }
@@ -394,8 +402,10 @@ function trap(runners: Runner[], ctx: GameCtx): GameInstance {
         const size = 92 * (1 - f * 0.85);
         g.save();
         g.globalAlpha = 1 - f * 0.6;
-        g.translate(p.x, p.y + f * 40);
-        if (f > 0) g.rotate(f * 4 * p.dir);
+        // Chute : petit saut de surprise, puis on tourbillonne au fond du trou
+        const hop = f > 0 ? (f < 0.2 ? -(f / 0.2) * 60 : -60 + ((f - 0.2) / 0.8) * 160) : 0;
+        g.translate(p.x, p.y + hop);
+        if (f > 0.2) g.rotate((f - 0.2) * 6 * p.dir);
         if (f === 0) {
           g.fillStyle = 'rgba(0,0,0,0.25)';
           g.beginPath();

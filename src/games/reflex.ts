@@ -7,11 +7,18 @@ import { sfx, speak } from '../shared/sound';
 import { candy, roundRectText } from './draw';
 import type { ReflexPadData } from './reflexShared';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
+import { TRAP_QUESTIONS, type TrapQ } from './trapQuestions';
 
-type Kind = 'vert' | 'intrus' | 'compte' | 'couleur' | 'marteau' | 'jauge' | 'calcul' | 'plus';
-const KINDS: Kind[] = ['vert', 'intrus', 'compte', 'couleur', 'marteau', 'jauge', 'calcul', 'plus'];
+type Kind = 'vert' | 'intrus' | 'compte' | 'couleur' | 'marteau' | 'jauge' | 'calcul' | 'plus' | 'memo' | 'vf' | 'chrono' | 'fleche';
+const KINDS: Kind[] = ['vert', 'intrus', 'compte', 'couleur', 'marteau', 'jauge', 'calcul', 'plus', 'memo', 'vf', 'chrono', 'fleche'];
+// Mémoire : on retient une rangée de dessins
+const MEMO = ['🍕', '🦆', '🚀', '🧦', '🍩', '🐙', '🎸', '🌵', '🦄', '🧀', '🎩', '🐸'];
+// Flèches : il faut toucher le sens INVERSE
+const ARROWS = ['⬅', '⬆', '➡', '⬇'];
+const OPPOSITE = [2, 3, 0, 1];
+const CHRONO = 5;
 const FRUITS = ['🍓', '🍋', '🍇', '🍑'];
-const ROUNDS = 7;
+const ROUNDS = 9;
 const POINTS = [5, 3, 2, 1];
 const COLS = [
   { fr: 'ROUGE', en: 'RED', c: '#ff3b3b' },
@@ -55,6 +62,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let headline = '';
   let calc = { a: 0, b: 0, opts: [] as number[] };
   let crowd: number[] = [];
+  let memo: string[] = [];
+  let memoAsk = 0;
+  let memoOpts: string[] = [];
+  let vf: TrapQ = TRAP_QUESTIONS[0];
+  let arrow = 0;
+  const vfPool = TRAP_QUESTIONS.filter((q) => !(ctx.family && q.fam === false) && q.a[0].fr === 'Vrai').sort(() => Math.random() - 0.5);
 
   const titles: Record<Kind, [string, string]> = {
     vert: ['Attends le VERT… puis tape !', 'Wait for GREEN… then tap!'],
@@ -65,7 +78,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     jauge: ['Arrête la jauge sur la ligne !', 'Stop the bar on the line!'],
     calcul: ['Calcul éclair !', 'Quick maths!'],
     plus: ['Lequel est le plus nombreux ?', 'Which one is the most?'],
+    memo: ['Retiens bien la rangée…', 'Remember the row…'],
+    vf: ['Vrai ou faux ? Vite !', 'True or false? Quick!'],
+    chrono: [`Arrête le chrono à ${CHRONO} secondes pile… à l’aveugle !`, `Stop the clock at exactly ${CHRONO} seconds… blind!`],
+    fleche: ['Touche le sens INVERSE de la flèche !', 'Tap the OPPOSITE way of the arrow!'],
   };
+  const ordinal = (n: number) => (fr ? ['1er', '2e', '3e', '4e'][n] : ['1st', '2nd', '3rd', '4th'][n]);
 
   function next() {
     round++;
@@ -134,6 +152,22 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       gauge = 0;
       target = rnd(0.45, 0.85);
     }
+    if (kind === 'memo') {
+      memo = [...MEMO].sort(() => Math.random() - 0.5).slice(0, 4);
+      memoAsk = Math.floor(Math.random() * 4);
+      const others = MEMO.filter((e) => e !== memo[memoAsk]).sort(() => Math.random() - 0.5);
+      // Les leurres viennent surtout de la rangée : c'est là qu'on se trompe
+      memoOpts = [memo[memoAsk], ...memo.filter((_, i) => i !== memoAsk).slice(0, 2), others[0]].sort(() => Math.random() - 0.5);
+      correct = memoOpts.indexOf(memo[memoAsk]);
+    }
+    if (kind === 'vf') {
+      vf = vfPool[round % Math.max(1, vfPool.length)] ?? TRAP_QUESTIONS[0];
+      correct = vf.ok;
+    }
+    if (kind === 'fleche') {
+      arrow = Math.floor(Math.random() * 4);
+      correct = OPPOSITE[arrow];
+    }
     ctx.refresh();
   }
 
@@ -143,6 +177,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (kind === 'marteau') ranked = [...pls].filter((p) => p.taps > 0).sort((a, b) => b.taps - a.taps);
     else if (kind === 'jauge') ranked = [...pls].filter((p) => p.answer >= 0).sort((a, b) => Math.abs(a.answer / 1000 - target) - Math.abs(b.answer / 1000 - target));
     else if (kind === 'vert') ranked = [...pls].filter((p) => !p.out && p.answer >= 0).sort((a, b) => a.at - b.at);
+    else if (kind === 'chrono') ranked = [...pls].filter((p) => p.answer >= 0).sort((a, b) => Math.abs(a.answer / 1000 - CHRONO) - Math.abs(b.answer / 1000 - CHRONO));
     else ranked = [...pls].filter((p) => p.answer === correct).sort((a, b) => a.at - b.at);
     ranked.forEach((p, i) => {
       p.gain = POINTS[i] ?? 1;
@@ -166,8 +201,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         p.answer = 0;
         p.at = t0 - goAt;
       }
-      if ((kind === 'intrus' || kind === 'compte' || kind === 'couleur' || kind === 'calcul' || kind === 'plus') && t0 > rnd(1.5, 5) && Math.random() < 0.05) {
-        p.answer = Math.random() < 0.6 ? correct : Math.floor(Math.random() * 4);
+      if (kind === 'chrono' && t0 > CHRONO + rnd(-0.6, 0.6) && Math.random() < 0.2) p.answer = Math.round(t0 * 1000);
+      if ((kind === 'intrus' || kind === 'compte' || kind === 'couleur' || kind === 'calcul' || kind === 'plus' || kind === 'vf' || kind === 'fleche' || (kind === 'memo' && t0 > 2.6)) && t0 > rnd(1.5, 5) && Math.random() < 0.05) {
+        p.answer = Math.random() < 0.6 ? correct : Math.floor(Math.random() * (kind === 'vf' ? 2 : 4));
         p.at = t0;
       }
       if (kind === 'jauge' && gauge > target - 0.12 && Math.random() < 0.08) p.answer = Math.round(gauge * 1000);
@@ -200,6 +236,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           ctx.refresh();
           return;
         }
+        if (kind === 'chrono' && p.answer < 0) {
+          p.answer = Math.round(t0 * 1000);
+          sfx.click();
+          ctx.refresh();
+        }
         if (kind === 'jauge' && p.answer < 0) {
           p.answer = Math.round(gauge * 1000);
           sfx.click();
@@ -219,7 +260,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (timer <= 0) {
           phase = 'play';
           t0 = 0;
-          timer = kind === 'marteau' ? 5 : kind === 'vert' ? goAt + 3 : kind === 'jauge' ? 6 : 8;
+          timer = kind === 'marteau' ? 5 : kind === 'vert' ? goAt + 3 : kind === 'jauge' ? 6 : kind === 'chrono' ? CHRONO + 3 : kind === 'memo' ? 10 : 8;
           sfx.go();
           ctx.refresh();
         }
@@ -228,6 +269,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (phase === 'play') {
         t0 += dt;
         if (kind === 'jauge') gauge = Math.min(1, gauge + dt / 4.5);
+        // Mémoire : les choix arrivent sur les téléphones quand la rangée se cache
+        if (kind === 'memo' && t0 >= 2.5 && t0 - dt < 2.5) ctx.refresh();
         if (kind === 'vert' && t0 >= goAt && t0 - dt < goAt) {
           sfx.go();
           ctx.refresh();
@@ -320,6 +363,68 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillText('?', 960, 560);
         }
       }
+      if (showPlay && kind === 'memo') {
+        // La rangée s'affiche 2,5 s, puis on demande une position
+        const show = phase === 'result' || t0 < 2.5;
+        memo.forEach((e, i) => {
+          const x = 480 + i * 320;
+          g.fillStyle = '#fff';
+          g.strokeStyle = INK;
+          g.lineWidth = 6;
+          g.beginPath();
+          g.roundRect(x - 130, 330, 260, 260, 30);
+          g.fill();
+          g.stroke();
+          g.font = show ? '150px sans-serif' : '700 150px Fredoka, sans-serif';
+          g.fillStyle = INK;
+          g.fillText(show ? e : '?', x, 520);
+          g.font = '700 40px Fredoka, sans-serif';
+          g.fillText(ordinal(i), x, 650);
+        });
+        if (!show || phase === 'result') {
+          g.font = '700 70px Fredoka, sans-serif';
+          g.fillText(fr ? `Qui était en ${ordinal(memoAsk)} ?` : `What was ${ordinal(memoAsk)}?`, 960, 790);
+        }
+      }
+      if (showPlay && kind === 'vf') {
+        g.font = '700 64px Fredoka, sans-serif';
+        g.fillStyle = INK;
+        let fs = 64;
+        while (g.measureText(vf.q[fr ? 'fr' : 'en']).width > 1700 && fs > 36) g.font = `700 ${(fs -= 4)}px Fredoka, sans-serif`;
+        g.fillText(vf.q[fr ? 'fr' : 'en'], 960, 520);
+        if (phase === 'result') {
+          g.font = '700 110px Fredoka, sans-serif';
+          g.fillStyle = vf.ok === 0 ? MENTHE : ROSE;
+          g.fillText(vf.ok === 0 ? (fr ? 'VRAI !' : 'TRUE!') : fr ? 'FAUX !' : 'FALSE!', 960, 720);
+        }
+      }
+      if (showPlay && kind === 'chrono') {
+        // Le chrono disparaît au bout de 2 s : à toi de compter dans ta tête
+        g.font = '700 220px Fredoka, sans-serif';
+        g.fillStyle = INK;
+        const v = phase === 'result' ? CHRONO : t0;
+        g.fillText(phase === 'result' || t0 < 2 ? v.toFixed(2) : '?.??', 960, 600);
+        if (phase === 'result')
+          pls.forEach((p, i) => {
+            if (p.answer < 0) return;
+            g.font = '700 36px Fredoka, sans-serif';
+            g.fillStyle = p.profile.color;
+            g.fillText(`${p.profile.name} : ${(p.answer / 1000).toFixed(2)}`, 960, 700 + i * 44);
+          });
+      }
+      if (showPlay && kind === 'fleche') {
+        g.font = '700 320px Fredoka, sans-serif';
+        g.fillStyle = ROSE;
+        g.lineWidth = 16;
+        g.strokeStyle = INK;
+        g.strokeText(ARROWS[arrow], 960, 660);
+        g.fillText(ARROWS[arrow], 960, 660);
+        if (phase === 'result') {
+          g.font = '700 70px Fredoka, sans-serif';
+          g.fillStyle = INK;
+          g.fillText(`→ ${ARROWS[OPPOSITE[arrow]]}`, 960, 800);
+        }
+      }
       if (showPlay && kind === 'marteau') {
         g.font = '700 180px Fredoka, sans-serif';
         g.fillText(phase === 'play' ? `${Math.ceil(Math.max(0, timer))}` : '🔨', 960, 560);
@@ -392,7 +497,22 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const play = phase === 'play';
       let k: ReflexPadData['kind'] = 'wait';
       let options: ReflexPadData['options'] = [];
-      if (play && (kind === 'vert' || kind === 'jauge')) k = 'buzz';
+      if (play && (kind === 'vert' || kind === 'jauge' || kind === 'chrono')) k = 'buzz';
+      if (play && kind === 'memo' && t0 >= 2.5) {
+        k = 'choice';
+        options = memoOpts.map((e, i) => ({ label: e, color: QUAD[i] }));
+      }
+      if (play && kind === 'vf') {
+        k = 'choice';
+        options = [
+          { label: fr ? 'VRAI' : 'TRUE', color: MENTHE },
+          { label: fr ? 'FAUX' : 'FALSE', color: ROSE },
+        ];
+      }
+      if (play && kind === 'fleche') {
+        k = 'choice';
+        options = ARROWS.map((a, i) => ({ label: a, color: QUAD[i] }));
+      }
       if (play && kind === 'marteau') k = 'mash';
       if (play && kind === 'intrus') {
         k = 'choice';
@@ -433,8 +553,8 @@ export const reflex: GameBase = {
   emoji: '⚡',
   name: { fr: 'Réflexes Éclair', en: 'Lightning Reflexes' },
   how: {
-    fr: '7 épreuves éclair : attends le vert, trouve l’intrus, compte, couleur piège, martèle, stoppe la jauge !',
-    en: '7 lightning rounds: wait for green, find the odd one, count, tricky color, mash, stop the bar!',
+    fr: '9 épreuves éclair parmi 12 : attends le vert, intrus, mémoire, vrai ou faux, flèche inversée, chrono à l’aveugle…',
+    en: '9 lightning rounds out of 12: wait for green, odd one out, memory, true or false, reverse arrow, blind clock…',
   },
   inspired: 'WarioWare',
   layout: 'buttons',
