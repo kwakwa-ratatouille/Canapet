@@ -57,6 +57,10 @@ const THEMES = [
   { name: { fr: 'La Plage', en: 'The Beach' }, sky: ['#7fd6ff', '#fff1c9'], sun: '#ffe066', hills: ['#9fe3ff', '#ffe3a8'], ground: '#ffe9b8', top: '#ffb84d' },
   { name: { fr: 'Le Pays des Glaces', en: 'Ice Cream Land' }, sky: ['#d9f7ff', '#ffe3f1'], sun: '#fff3a8', hills: ['#ffc6e0', '#c9f5e3'], ground: '#fff6e0', top: '#ff9ccf' },
   { name: { fr: 'Le Volcan en chocolat', en: 'The Chocolate Volcano' }, sky: ['#ffb38a', '#ffe08a'], sun: '#fff3a8', hills: ['#c98a5a', '#a0643a'], ground: '#e8b98a', top: '#7a4a2a' },
+  { name: { fr: 'La Baignoire géante', en: 'The Giant Bathtub' }, sky: ['#bfefff', '#ffffff'], sun: '#fffbe0', hills: ['#9fe2ff', '#d9f5ff'], ground: '#ffffff', top: '#2ec5ff' },
+  { name: { fr: 'L’Espace en guimauve', en: 'Marshmallow Space' }, sky: ['#1d0f26', '#3a2a7a'], sun: '#ffd6ec', hills: ['#2e2060', '#47358c'], ground: '#ffe3f1', top: '#ff9ccf' },
+  { name: { fr: 'Le Frigo', en: 'The Fridge' }, sky: ['#e3f7ff', '#ffffff'], sun: '#ffffff', hills: ['#cfeeff', '#e8f6ff'], ground: '#f2fbff', top: '#7bd13b' },
+  { name: { fr: 'La Fête foraine', en: 'The Funfair' }, sky: ['#ff9cc8', '#ffe08a'], sun: '#fff3a8', hills: ['#ffd60a', '#ff4f9a'], ground: '#fff0d0', top: '#9b5cff' },
 ];
 type Theme = (typeof THEMES)[number];
 
@@ -298,6 +302,71 @@ function buildLevel(): Level {
       L.rains.push({ x0: x + 120, x1: x + 1080, y, every: 0.45 / diff, t: 0 });
       x += 1200;
     },
+    rebonds() {
+      // Trois trampolines au-dessus du vide : on enchaîne les rebonds
+      entry();
+      for (let i = 0; i < 3; i++) {
+        x += 170;
+        solid(x, y + 60, 150, 'bounce', 40);
+        x += 150;
+      }
+      x += 220;
+      y -= 120;
+      solid(x, y, 300);
+      x += 300;
+    },
+    tapisMarteaux() {
+      // Tapis roulant qui ramène en arrière… sous des marteaux
+      entry();
+      const t = solid(x, y, 1000, 'conveyor', 1500 - y);
+      t.push = -220;
+      for (let i = 0; i < 2; i++) L.hammers.push({ cx: x + 300 + i * 380, cy: y - 400, len: 330, amp: 1, freq: rnd(1.3, 1.7) * diff, ph: rnd(0, 6), ang: 0, vel: 0 });
+      x += 1000;
+    },
+    patinoireMoulins() {
+      // Glace + moulins : on glisse droit dans les pales
+      entry();
+      solid(x, y, 1000, 'ice');
+      L.sweepers.push({ cx: x + 500, cy: y - 150, len: 200, speed: 2 * diff, ang: rnd(0, 6) });
+      x += 1000;
+    },
+    nacellesPluie() {
+      // Nacelles au-dessus du vide pendant qu'il pleut des bonbons
+      entry();
+      for (let i = 0; i < 3; i++) {
+        const bx = x + 140 + i * 280;
+        const m = solid(bx, y - 10, 170, 'mover', 30);
+        m.move = { bx, by: y - 10, ax: 60, ay: 40, freq: 1.4, ph: i * 1.3 };
+      }
+      L.rains.push({ x0: x + 140, x1: x + 980, y, every: 0.6 / diff, t: 0 });
+      x += 140 + 3 * 280 + 60;
+      solid(x, y, 260);
+      x += 260;
+    },
+    escalierFragile() {
+      // Escalier en dalles qui tombent : on ne s'arrête pas !
+      entry();
+      for (let i = 0; i < 6; i++) {
+        y -= 70;
+        x += 40;
+        solid(x, y, 130, 'tile');
+        x += 130;
+      }
+      x += 60;
+      solid(x, y, 260);
+      x += 260;
+    },
+    ventTrampo() {
+      // Trampoline face au vent : il faut viser le plateau en hauteur
+      entry();
+      solid(x, y, 300);
+      L.fans.push({ x: x + 300, w: 500, y, force: -900 });
+      solid(x + 340, y + 60, 160, 'bounce', 40);
+      x += 640;
+      y -= 300;
+      solid(x, y, 360);
+      x += 360;
+    },
     escaliers() {
       entry();
       for (let i = 0; i < 6; i++) {
@@ -317,7 +386,7 @@ function buildLevel(): Level {
   x += 760;
   // Parcours long : 12 tronçons, tous différents puis quelques-uns qui reviennent, de plus en plus durs.
   const all = Object.keys(segments).sort(() => Math.random() - 0.5);
-  const keys = [...all, ...all.sort(() => Math.random() - 0.5)].slice(0, 12);
+  const keys = [...all, ...all.sort(() => Math.random() - 0.5)].slice(0, 13);
   keys.forEach((k, i) => {
     diff = 1 + i * 0.05;
     segments[k]();
