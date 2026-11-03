@@ -236,7 +236,26 @@ interface F extends Runner {
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
-  const stage = STAGES[Math.floor(Math.random() * STAGES.length)];
+  const base = STAGES[Math.floor(Math.random() * STAGES.length)];
+  // Scène plus large quand on est nombreux (jusqu'à +45 % à 8) : tout est écarté depuis le centre,
+  // et dès 6 joueurs deux plateformes de plus apparaissent sur les côtés.
+  const many = Math.min(8, runners.length);
+  const wide = 1 + Math.max(0, many - 3) * 0.09;
+  const mid = base.main.x + base.main.w / 2;
+  const sx = (x: number) => mid + (x - mid) * wide;
+  const stage: Stage = {
+    ...base,
+    main: { ...base.main, x: sx(base.main.x), w: base.main.w * wide },
+    plats: [
+      ...base.plats.map((q) => ({ ...q, x: sx(q.x + q.w / 2) - (q.w * Math.min(wide, 1.2)) / 2, w: q.w * Math.min(wide, 1.2), move: q.move && { ...q.move, ax: q.move.ax * wide } })),
+      ...(many >= 6
+        ? [
+            { x: sx(base.main.x) - 330, y: base.main.y - 120, w: 240 },
+            { x: sx(base.main.x + base.main.w) + 90, y: base.main.y - 120, w: 240 },
+          ]
+        : []),
+    ],
+  };
   const MAIN = stage.main;
   const PLATS: Plat[] = stage.plats.map((p) => ({ ...p, bx: p.x, by: p.y, dx: 0, dy: 0 }));
   const BLAST = { l: MAIN.x - 700, r: MAIN.x + MAIN.w + 700, t: MAIN.y - 1250, b: MAIN.y + 600 };

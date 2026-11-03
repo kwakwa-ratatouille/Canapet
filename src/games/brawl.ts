@@ -160,7 +160,17 @@ const SLAPS = { fr: ['PAF !', 'BAFFE !', 'TCHAC !', 'BIM !'], en: ['SLAP!', 'WHA
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const map = MAPS[Math.floor(Math.random() * MAPS.length)];
-  const plats: Plat[] = map.plats.map(([x, y, w, ay]) => ({ x, y, w, by: y, ay: ay ?? 0, freq: rnd(0.35, 0.55), ph: rnd(0, 6), dy: 0 }));
+  // Plus on est nombreux, plus la scène s'étale vers les bords de l'écran (et dès 6 joueurs, deux perchoirs en plus)
+  const crowd = Math.min(8, runners.length);
+  const wide = 1 + Math.max(0, crowd - 4) * 0.07;
+  const spread = ([x, y, w, ay]: [number, number, number, number?]): [number, number, number, number?] => {
+    const c = 960 + (x + w / 2 - 960) * wide;
+    const nw = w * Math.min(wide, 1.15);
+    const nx = Math.max(40, Math.min(1880 - nw, c - nw / 2));
+    return [nx, y, nw, ay];
+  };
+  const layout = [...map.plats.map(spread), ...(crowd >= 6 ? ([[120, 430, 240, 40], [1560, 430, 240, 40]] as [number, number, number, number?][]) : [])];
+  const plats: Plat[] = layout.map(([x, y, w, ay]) => ({ x, y, w, by: y, ay: ay ?? 0, freq: rnd(0.35, 0.55), ph: rnd(0, 6), dy: 0 }));
   const fr = ctx.lang === 'fr';
   const bs: B[] = runners.slice(0, 8).map((r, i) => ({
     ...r,
