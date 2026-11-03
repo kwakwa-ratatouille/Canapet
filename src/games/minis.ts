@@ -503,6 +503,8 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
   let outCount = 0;
   let pause = 0;
   let boomAt: { x: number; y: number; t: number } | null = null;
+  let toss: { x: number; y: number; t: number } | null = null;
+  const debris: { x: number; y: number; vx: number; vy: number; t: number; c: string }[] = [];
   const alive = () => ps.filter((p) => p.alive);
   // Carte tirée au hasard à chaque partie : estrade (deux rampes = on peut faire la boucle),
   // meubles qui bloquent, flaques de sirop qui ralentissent, deux tuyaux qui téléportent.
@@ -601,6 +603,14 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       if (boomAt) boomAt.t -= dt;
+      if (toss) toss.t += dt;
+      for (const d of debris) {
+        d.vy += 1400 * dt;
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        d.t -= dt;
+      }
+      for (let k = debris.length - 1; k >= 0; k--) if (debris[k].t <= 0) debris.splice(k, 1);
       if (pause > 0) {
         pause -= dt;
         if (pause <= 0) {
@@ -657,6 +667,7 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
       for (const o of ps) {
         if (o === h || !o.alive || (ps.indexOf(o) === immune && immuneT > 0)) continue;
         if (Math.hypot(o.x - h.x, (o.y - h.y) * 1.3) < BODY * 2 + 6) {
+          toss = { x: h.x, y: h.y - 140, t: 0 };
           immune = holder;
           immuneT = 0.6;
           holder = ps.indexOf(o);
@@ -671,6 +682,12 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
         p.alive = false;
         p.out = ++outCount;
         boomAt = { x: p.x, y: p.y, t: 1 };
+        if (!ctx.light)
+          for (let k = 0; k < 26; k++) {
+            const a = Math.random() * Math.PI * 2;
+            const v = rnd(250, 700);
+            debris.push({ x: p.x, y: p.y - 60, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 300, t: 1.2, c: k % 3 ? '#c98a3a' : '#ffd60a' });
+          }
         sfx.boom();
         if (!p.bot) ctx.buzz(p.pid, 600);
         speak(ctx.family ? (fr ? 'Pouf !' : 'Poof!') : fr ? 'Boum !' : 'Boom!', ctx.lang);
@@ -781,8 +798,34 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
           // La patate qui fume, de plus en plus rouge et qui tremble
           const heat = 1 - fuse / fuseMax;
           const sh = heat * 6;
-          const px = p.x + rnd(-sh, sh);
-          const py = p.y - 140 + rnd(-sh, sh);
+          let px = p.x + rnd(-sh, sh);
+          let py = p.y - 140 + rnd(-sh, sh);
+          if (toss && toss.t < 0.28) {
+            const k = toss.t / 0.28;
+            px = toss.x + (px - toss.x) * k;
+            py = toss.y + (py - toss.y) * k - Math.sin(k * Math.PI) * 90;
+          }
+          // Sueur du porteur
+          g.fillStyle = '#9fe2ff';
+          for (let k = 0; k < 2; k++) {
+            const q = (t * 2 + k * 0.5) % 1;
+            g.globalAlpha = 1 - q;
+            g.beginPath();
+            g.arc(p.x + (k ? 40 : -40), p.y - 90 + q * 30, 6, 0, Math.PI * 2);
+            g.fill();
+          }
+          g.globalAlpha = 1;
+          // Mèche qui crépite
+          g.strokeStyle = INK;
+          g.lineWidth = 4;
+          g.beginPath();
+          g.moveTo(px + 20, py - 18);
+          g.quadraticCurveTo(px + 34, py - 40, px + 44, py - 36);
+          g.stroke();
+          g.fillStyle = Math.floor(t * 18) % 2 ? SOLEIL : '#ff3b3b';
+          g.beginPath();
+          g.arc(px + 46, py - 37, 7 + Math.sin(t * 30) * 2, 0, Math.PI * 2);
+          g.fill();
           g.fillStyle = heat > 0.7 && Math.floor(t * 12) % 2 ? '#ff3b3b' : '#c98a3a';
           g.strokeStyle = INK;
           g.lineWidth = 5;
@@ -800,6 +843,22 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
           }
           g.globalAlpha = 1;
         }
+      }
+      for (const d of debris) {
+        g.globalAlpha = Math.min(1, d.t);
+        g.fillStyle = d.c;
+        g.beginPath();
+        g.arc(d.x, d.y, 9, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      // Les 3 dernières secondes : bords rouges qui battent et TIC TAC
+      if (pause <= 0 && fuse < 3) {
+        const k = 0.25 + Math.abs(Math.sin(t * (6 + (3 - fuse) * 4))) * 0.35;
+        g.strokeStyle = `rgba(255,59,59,${k})`;
+        g.lineWidth = 40;
+        g.strokeRect(0, 0, 1920, 1080);
+        bigText(g, Math.floor(t * 4) % 2 ? 'TIC' : 'TAC', '#ff3b3b', 0.5, 210);
       }
       if (boomAt && boomAt.t > 0) {
         g.fillStyle = `rgba(255,140,40,${boomAt.t})`;
