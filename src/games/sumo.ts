@@ -107,6 +107,54 @@ const MAPS = [
     under: '#e8c240',
     bumpers: [[0, 0]] as [number, number][],
   },
+  {
+    id: 'vinyle',
+    name: { fr: 'Le Disque qui tourne', en: 'The Spinning Record' },
+    shrink: true,
+    grip: 0.3,
+    acc: 1,
+    plate: '#2a2a36',
+    rim: '#ff4f9a',
+    under: '#1a1a22',
+    bumpers: [] as [number, number][],
+    spin: 0.55,
+  },
+  {
+    id: 'vent',
+    name: { fr: 'Le Ventilateur fou', en: 'The Crazy Fan' },
+    shrink: true,
+    grip: 0.3,
+    acc: 1,
+    plate: '#e8fbd9',
+    rim: '#ffffff',
+    under: '#9fd28a',
+    bumpers: [] as [number, number][],
+    wind: 260,
+  },
+  {
+    id: 'donut',
+    name: { fr: 'Le Donut troué', en: 'The Donut Hole' },
+    shrink: false,
+    grip: 0.3,
+    acc: 1,
+    plate: '#ff9ccf',
+    rim: '#e8a35a',
+    under: '#c97a35',
+    bumpers: [] as [number, number][],
+    hole: 130,
+  },
+  {
+    id: 'crepe',
+    name: { fr: 'La Crêpe brûlante', en: 'The Sizzling Crepe' },
+    shrink: true,
+    grip: 0.3,
+    acc: 1,
+    plate: '#ffe0a0',
+    rim: '#3a3a46',
+    under: '#2a2a36',
+    bumpers: [] as [number, number][],
+    hot: true,
+  },
 ];
 const BUMPER_R = 52;
 
@@ -167,6 +215,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const parts: Part[] = [];
   const pops: { x: number; y: number; text: string; color: string; t: number; size: number }[] = [];
   const maxParts = ctx.light ? 60 : 220;
+  // Vent : direction qui change toutes les 5 s ; crêpe : une bulle brûlante apparaît au hasard
+  let windA = Math.random() * Math.PI * 2;
+  let windT = 5;
+  let hotX = 0;
+  let hotY = 0;
+  let hotT = 0;
+  let hotNext = 4;
   const radius = () => (map.shrink ? R0 - (R0 - R_MIN) * Math.min(1, time / SHRINK_TIME) : R0 - 40);
   const inPlay = (s: S) => s.lives > 0 && s.falling <= 0 && s.respawn <= 0;
   const scr = (x: number, y: number) => [CX + x * SX, CY + y * SY] as const;
@@ -233,7 +288,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     nextPickup -= dt;
     if (!pickup && nextPickup <= 0) {
       const a = rnd(0, Math.PI * 2);
-      const r = rnd(0, R * 0.55);
+      const r = map.hole ? rnd(map.hole + 60, R * 0.7) : rnd(0, R * 0.55);
       pickup = { x: Math.cos(a) * r, y: Math.sin(a) * r, kind: (['piment', 'bouclier', 'geant'] as Bonus[])[Math.floor(Math.random() * 3)], t: 10 };
       nextPickup = rnd(8, 12);
     }
@@ -245,8 +300,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         s.respawn -= dt;
         if (s.respawn <= 0) {
           const a = rnd(0, Math.PI * 2);
-          s.x = Math.cos(a) * 60;
-          s.y = Math.sin(a) * 60;
+          // Retour sur l'arène (à côté du trou du donut, pas dedans)
+          const rr = map.hole ? map.hole + 90 : 60;
+          s.x = Math.cos(a) * rr;
+          s.y = Math.sin(a) * rr;
           s.vx = s.vy = 0;
           s.invuln = 1.6;
         }
@@ -310,6 +367,21 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const [px, py] = scr(s.x, s.y);
         parts.push({ x: px, y: py, vx: 0, vy: 0, t: 0, max: 0.35, size: 26, color: s.profile.color, kind: 'smoke' });
       }
+      if (map.spin && !s.anchor) {
+        // Le disque tourne : on est emporté dans le sens de rotation
+        s.x += -s.y * map.spin * dt;
+        s.y += s.x * map.spin * dt;
+      }
+      if (map.wind && !s.anchor) {
+        s.vx += Math.cos(windA) * map.wind * dt;
+        s.vy += Math.sin(windA) * map.wind * dt;
+      }
+      if (map.hot && hotT > 0 && hotT <= 1.5 && !s.anchor && Math.hypot(s.x - hotX, s.y - hotY) < 150) {
+        // Zone brûlante : on saute en l'air, propulsé hors du rond
+        const d = Math.hypot(s.x - hotX, s.y - hotY) || 1;
+        s.vx += ((s.x - hotX) / d) * 1600 * dt;
+        s.vy += ((s.y - hotY) / d) * 1600 * dt;
+      }
       const damp = Math.pow(s.anchor ? 0.02 : map.grip, dt);
       s.vx *= damp;
       s.vy *= damp;
@@ -326,7 +398,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (!s.bot) ctx.buzz(s.pid, 100);
         pickup = null;
       }
-      if (Math.hypot(s.x, s.y) > R + bodyR(s) * 0.3) {
+      if (Math.hypot(s.x, s.y) > R + bodyR(s) * 0.3 || (map.hole && Math.hypot(s.x, s.y) < map.hole - bodyR(s) * 0.4)) {
         s.falling = 0.75;
         s.bonus = null;
         const [px, py] = scr(s.x, s.y);
@@ -437,6 +509,23 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       shake = Math.max(0, shake - dt * 50);
+      if (map.wind && (windT -= dt) <= 0) {
+        windT = 5;
+        windA = Math.random() * Math.PI * 2;
+        sfx.whoosh();
+      }
+      if (map.hot) {
+        hotT -= dt;
+        if ((hotNext -= dt) <= 0) {
+          // La bulle brûlante prévient 1 s avant (elle gonfle), puis pousse pendant 1,5 s
+          const a = rnd(0, Math.PI * 2);
+          const rr = rnd(0, radius() * 0.6);
+          hotX = Math.cos(a) * rr;
+          hotY = Math.sin(a) * rr;
+          hotT = 2.5;
+          hotNext = rnd(3.5, 5.5);
+        }
+      }
       for (const q of parts) {
         q.t += dt;
         q.x += q.vx * dt;
@@ -528,6 +617,83 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.beginPath();
       g.ellipse(CX, CY, R * SX - 10, R * SY - 8, 0, 0, Math.PI * 2);
       g.fill();
+      if (map.id === 'vinyle') {
+        // Sillons + étiquette qui tourne
+        g.strokeStyle = 'rgba(255,255,255,0.12)';
+        g.lineWidth = 3;
+        for (let k = 1; k < 7; k++) {
+          g.beginPath();
+          g.ellipse(CX, CY, R * SX * (k / 7), R * SY * (k / 7), 0, 0, Math.PI * 2);
+          g.stroke();
+        }
+        g.save();
+        g.translate(CX, CY);
+        g.scale(SX, SY);
+        g.rotate(t * (map.spin ?? 0));
+        g.fillStyle = '#ff4f9a';
+        g.beginPath();
+        g.arc(0, 0, 110, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#ffd60a';
+        g.fillRect(-8, -100, 16, 70);
+        g.restore();
+      }
+      if (map.id === 'donut') {
+        // Le trou du milieu (on y tombe !) + vermicelles
+        g.fillStyle = INK;
+        g.beginPath();
+        g.ellipse(CX, CY, (map.hole ?? 0) * SX, (map.hole ?? 0) * SY, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#1d0f26';
+        g.beginPath();
+        g.ellipse(CX, CY + 10, (map.hole ?? 0) * SX - 10, (map.hole ?? 0) * SY - 8, 0, 0, Math.PI * 2);
+        g.fill();
+        for (let k = 0; k < 24; k++) {
+          const a = k * 2.4;
+          const rr = (map.hole ?? 0) + 40 + ((k * 53) % Math.max(60, R - (map.hole ?? 0) - 60));
+          g.fillStyle = ['#2ec5ff', '#ffd60a', '#1fc9a0', '#fff'][k % 4];
+          g.save();
+          g.translate(CX + Math.cos(a) * rr * SX, CY + Math.sin(a) * rr * SY);
+          g.rotate(a * 3);
+          g.fillRect(-10, -3, 20, 6);
+          g.restore();
+        }
+      }
+      if (map.id === 'vent') {
+        // Flèches du vent qui défilent
+        g.save();
+        g.translate(CX, CY);
+        g.strokeStyle = 'rgba(58,33,64,0.25)';
+        g.lineWidth = 8;
+        g.lineCap = 'round';
+        const dx = Math.cos(windA);
+        const dy = Math.sin(windA);
+        for (let k = 0; k < 9; k++) {
+          const off = ((t * 220 + k * 140) % 700) - 350;
+          const px = (k % 3 - 1) * 260 * SX + dx * off * SX;
+          const py = (Math.floor(k / 3) - 1) * 170 * SY + dy * off * SY;
+          g.beginPath();
+          g.moveTo(px - dx * 50, py - dy * 30);
+          g.lineTo(px + dx * 50, py + dy * 30);
+          g.lineTo(px + dx * 30 - dy * 20, py + dy * 18 + dx * 12);
+          g.stroke();
+        }
+        g.restore();
+      }
+      if (map.id === 'crepe' && hotT > 0) {
+        // Bulle qui gonfle (1 s), puis qui brûle
+        const warn = hotT > 1.5;
+        const k = warn ? 1 - (hotT - 1.5) : 1;
+        g.fillStyle = warn ? 'rgba(255,154,31,0.45)' : 'rgba(255,59,59,0.6)';
+        g.beginPath();
+        g.ellipse(CX + hotX * SX, CY + hotY * SY, 150 * SX * k, 150 * SY * k, 0, 0, Math.PI * 2);
+        g.fill();
+        if (!warn) {
+          g.font = '60px sans-serif';
+          g.textAlign = 'center';
+          g.fillText('🔥', CX + hotX * SX, CY + hotY * SY + 20);
+        }
+      }
       if (map.id === 'pizza') {
         g.fillStyle = '#e8453c';
         for (let k = 0; k < 9; k++) {
