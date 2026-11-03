@@ -35,6 +35,33 @@ const WORDS: [string, string][] = [
   ['sapin de noël', 'christmas tree'], ['bonhomme de neige', 'snowman'], ['cactus', 'cactus'], ['fleur', 'flower'], ['arbre', 'tree'], ['cœur', 'heart'],
   ['bougie', 'candle'], ['marteau', 'hammer'], ['fourchette', 'fork'], ['brosse à dents', 'toothbrush'], ['ciseaux', 'scissors'], ['clé', 'key'],
   ['télévision', 'television'], ['téléphone', 'phone'], ['cerf-volant', 'kite'], ['trampoline', 'trampoline'], ['hamac', 'hammock'], ['parachute', 'parachute'],
+  // Ajouts (nov. 2026) : objets, animaux, actions et situations drôles
+  ['dinosaure', 'dinosaur'], ['licorne', 'unicorn'], ['dragon', 'dragon'], ['sirène', 'mermaid'], ['robot', 'robot'], ['fusée', 'rocket'],
+  ['extraterrestre', 'alien'], ['soucoupe volante', 'flying saucer'], ['pirate', 'pirate'], ['chevalier', 'knight'], ['princesse', 'princess'], ['magicien', 'wizard'],
+  ['ninja', 'ninja'], ['cowboy', 'cowboy'], ['astronaute', 'astronaut'], ['pompier', 'firefighter'], ['clown', 'clown'], ['policier', 'police officer'],
+  ['girafe', 'giraffe'], ['éléphant', 'elephant'], ['pingouin', 'penguin'], ['pieuvre', 'octopus'], ['requin', 'shark'], ['escargot', 'snail'],
+  ['papillon', 'butterfly'], ['araignée', 'spider'], ['crocodile', 'crocodile'], ['hibou', 'owl'], ['kangourou', 'kangaroo'], ['flamant rose', 'flamingo'],
+  ['paresseux', 'sloth'], ['hérisson', 'hedgehog'], ['tortue', 'turtle'], ['méduse', 'jellyfish'], ['vache', 'cow'], ['cochon', 'pig'],
+  ['banane', 'banana'], ['pastèque', 'watermelon'], ['ananas', 'pineapple'], ['hot-dog', 'hot dog'], ['frites', 'fries'], ['glace', 'ice cream'],
+  ['gâteau d’anniversaire', 'birthday cake'], ['croissant', 'croissant'], ['spaghetti', 'spaghetti'], ['œuf au plat', 'fried egg'], ['popcorn', 'popcorn'], ['sushi', 'sushi'],
+  ['vélo', 'bike'], ['trottinette', 'scooter'], ['avion', 'plane'], ['sous-marin', 'submarine'], ['hélicoptère', 'helicopter'], ['montgolfière', 'hot air balloon'],
+  ['tracteur', 'tractor'], ['ambulance', 'ambulance'], ['skateboard', 'skateboard'], ['bateau pirate', 'pirate ship'], ['train', 'train'], ['camion poubelle', 'garbage truck'],
+  ['château', 'castle'], ['phare', 'lighthouse'], ['igloo', 'igloo'], ['tente', 'tent'], ['pyramide', 'pyramid'], ['tour Eiffel', 'Eiffel Tower'],
+  ['île déserte', 'desert island'], ['manège', 'carousel'], ['grande roue', 'ferris wheel'], ['toboggan', 'slide'], ['balançoire', 'swing'], ['piscine', 'swimming pool'],
+  ['guitare', 'guitar'], ['batterie', 'drums'], ['micro', 'microphone'], ['casque audio', 'headphones'], ['appareil photo', 'camera'], ['manette', 'game controller'],
+  ['parapluie', 'umbrella'], ['lunettes de soleil', 'sunglasses'], ['couronne', 'crown'], ['baguette magique', 'magic wand'], ['trésor', 'treasure'], ['bombe', 'bomb'],
+  ['aimant', 'magnet'], ['loupe', 'magnifying glass'], ['échelle', 'ladder'], ['ampoule', 'light bulb'], ['horloge', 'clock'], ['réveil', 'alarm clock'],
+  ['canapé', 'couch'], ['lit superposé', 'bunk bed'], ['frigo', 'fridge'], ['machine à laver', 'washing machine'], ['aspirateur', 'vacuum cleaner'], ['baignoire', 'bathtub'],
+  ['bonhomme qui glisse sur une banane', 'person slipping on a banana'], ['chat sur un toit', 'cat on a roof'], ['chien qui fait du ski', 'dog skiing'],
+  ['vache dans l’espace', 'cow in space'], ['poisson qui fait du vélo', 'fish riding a bike'], ['mamie en skate', 'granny on a skateboard'],
+  ['fantôme qui a peur', 'scared ghost'], ['pizza volante', 'flying pizza'], ['dinosaure en tutu', 'dinosaur in a tutu'], ['éléphant sur un tabouret', 'elephant on a stool'],
+  ['bébé qui pleure', 'crying baby'], ['prof endormi', 'sleeping teacher'], ['selfie', 'selfie'], ['embouteillage', 'traffic jam'], ['coup de soleil', 'sunburn'],
+  ['mal de dents', 'toothache'], ['cheveux en pétard', 'messy hair'], ['ronflement', 'snoring'], ['éternuement', 'sneeze'], ['hoquet', 'hiccups'],
+  ['danse de la joie', 'happy dance'], ['bataille de polochons', 'pillow fight'], ['bataille de boules de neige', 'snowball fight'], ['pique-nique', 'picnic'],
+  ['anniversaire surprise', 'surprise party'], ['karaoké', 'karaoke'], ['mariage', 'wedding'], ['camping', 'camping'], ['plongée', 'scuba diving'],
+  ['tondeuse à gazon', 'lawn mower'], ['épouvantail', 'scarecrow'], ['bonhomme en pain d’épice', 'gingerbread man'], ['père Noël coincé dans la cheminée', 'Santa stuck in the chimney'],
+  ['moustique', 'mosquito'], ['bave', 'drool'], ['poubelle qui déborde', 'overflowing trash can'], ['pieds qui puent', 'smelly feet'], ['caleçon à cœurs', 'heart boxers'],
+  ['gros bidon', 'big belly'], ['dent en or', 'gold tooth'], ['rot', 'burp'], ['coussin péteur', 'whoopee cushion'], ['zombie qui danse', 'dancing zombie'],
 ];
 
 interface Stroke {
@@ -67,7 +94,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   if (!drawers.length) drawers.push(0);
   // Partie courte : chacun dessine une fois (deux fois à 2)
   const turns = Math.min(MAX_TURNS, drawers.length * (drawers.length <= 2 ? 2 : 1));
-  const FAMILY_SKIP = new Set(['toilettes', 'papier toilette', 'vampire', 'zombie', 'sorcière', 'slip', 'crotte', 'pet', 'fesses', 'bisou', 'squelette', 'momie']);
+  const FAMILY_SKIP = new Set(['toilettes', 'papier toilette', 'vampire', 'zombie', 'sorcière', 'slip', 'crotte', 'pet', 'fesses', 'bisou', 'squelette', 'momie', 'bombe', 'rot', 'pieds qui puent', 'caleçon à cœurs', 'bave', 'zombie qui danse', 'coussin péteur']);
   const words = WORDS.filter((w) => !ctx.family || !FAMILY_SKIP.has(w[0])).sort(() => Math.random() - 0.5);
   let turn = -1;
   let drawer = 0;
