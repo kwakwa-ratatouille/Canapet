@@ -7,6 +7,7 @@ import { drawSky, roundRectText, candy } from './draw';
 import { INK, SOLEIL } from '../shared/palette';
 
 const TRACK = 8200;
+const ROSE_F = '#ff4f9a';
 const SPEED = 340;
 const RUNNER_X = 420;
 const ACT = 0.55;
@@ -36,11 +37,11 @@ interface R extends Runner {
 
 /** Décors : chaque course en tire un au hasard. */
 const THEMES = [
-  { name: { fr: 'La Plage', en: 'The Beach' }, sky: ['#7fd6ff', '#fff1c9'], lanes: ['#ffe9b8', '#fff3d1'], post: '#2ec5ff' },
-  { name: { fr: 'La Neige', en: 'The Snow' }, sky: ['#bfe3ff', '#f4f9ff'], lanes: ['#ffffff', '#eef6ff'], post: '#ff4f9a' },
-  { name: { fr: 'Le Parc', en: 'The Park' }, sky: ['#8fd8ff', '#ffd6ec'], lanes: ['#d9f7c4', '#e8fbd9'], post: '#9b5cff' },
-  { name: { fr: 'La Nuit étoilée', en: 'The Starry Night' }, sky: ['#2a1838', '#6a4bd8'], lanes: ['#c9b6ff', '#ddd0ff'], post: '#ffd60a' },
-  { name: { fr: 'Le Gâteau', en: 'The Cake' }, sky: ['#ffd6ec', '#fff1c9'], lanes: ['#fff0f7', '#ffe1ef'], post: '#1fc9a0' },
+  { name: { fr: 'La Plage', en: 'The Beach' }, sky: ['#7fd6ff', '#fff1c9'], lanes: ['#ffe9b8', '#fff3d1'], post: '#2ec5ff', deco: ['🌴', '🐚', '🦀', '⛱️', '🏐'] },
+  { name: { fr: 'La Neige', en: 'The Snow' }, sky: ['#bfe3ff', '#f4f9ff'], lanes: ['#ffffff', '#eef6ff'], post: '#ff4f9a', deco: ['⛄', '🌲', '❄️', '🐧', '🎿'] },
+  { name: { fr: 'Le Parc', en: 'The Park' }, sky: ['#8fd8ff', '#ffd6ec'], lanes: ['#d9f7c4', '#e8fbd9'], post: '#9b5cff', deco: ['🌳', '🌷', '🦆', '🍄', '🐿️'] },
+  { name: { fr: 'La Nuit étoilée', en: 'The Starry Night' }, sky: ['#2a1838', '#6a4bd8'], lanes: ['#c9b6ff', '#ddd0ff'], post: '#ffd60a', deco: ['⭐', '🌙', '🦉', '🏮', '✨'] },
+  { name: { fr: 'Le Gâteau', en: 'The Cake' }, sky: ['#ffd6ec', '#fff1c9'], lanes: ['#fff0f7', '#ffe1ef'], post: '#1fc9a0', deco: ['🍓', '🧁', '🍭', '🍬', '🍒'] },
 ];
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
@@ -192,6 +193,40 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillRect(60, y + 4, 1800, h - 8);
         g.globalAlpha = 1;
         g.fillRect(60, y + 4, 16, h - 8);
+        // Petits décors au fond du couloir (ils défilent moins vite : effet de profondeur)
+        if (h > 60) {
+          const ds = Math.max(28, Math.min(54, h * 0.32));
+          g.font = `${ds}px sans-serif`;
+          g.textAlign = 'center';
+          g.textBaseline = 'alphabetic';
+          g.globalAlpha = 0.75;
+          const step = 260;
+          const off = (cam * 0.6) % step;
+          for (let x = -off, k = Math.floor((cam * 0.6) / step); x < 1900; x += step, k++) {
+            const e = theme.deco[((k % theme.deco.length) + theme.deco.length) % theme.deco.length];
+            g.fillText(e, 60 + x + ((k * 97) % 90), y + 8 + ds);
+          }
+          g.globalAlpha = 1;
+        }
+        // Fanions de départ et d'arrivée
+        for (const fx0 of [0, TRACK]) {
+          const fx = 60 + fx0 - cam - 30;
+          if (fx < -100 || fx > 1900) continue;
+          g.strokeStyle = INK;
+          g.lineWidth = 3;
+          g.beginPath();
+          g.moveTo(fx, ground);
+          g.lineTo(fx, y + 10);
+          g.stroke();
+          for (let k = 0; k < 4; k++) {
+            g.fillStyle = [ROSE_F, SOLEIL, '#2ec5ff', '#1fc9a0'][k];
+            g.beginPath();
+            g.moveTo(fx, y + 12 + k * 14);
+            g.lineTo(fx + 22, y + 18 + k * 14);
+            g.lineTo(fx, y + 24 + k * 14);
+            g.fill();
+          }
+        }
         // Bandes au sol qui défilent
         g.fillStyle = 'rgba(58,33,64,0.08)';
         for (let x = -((cam * 1) % 120); x < 1900; x += 120) g.fillRect(60 + x, ground - 4, 60, 8);
@@ -249,7 +284,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
               g.fillRect(ox - ACT * SPEED * 0.9, ground - 6, ACT * SPEED * 0.9, 10);
               g.globalAlpha = 1;
             }
-            const br = Math.max(22, 30 * s) * (next ? 1.15 + Math.sin(t * 8) * 0.05 : 0.9);
+            const br = Math.max(14, 19 * s) * (next ? 1 + Math.sin(t * 8) * 0.05 : 0.8);
             const by = y + h / 2;
             const bx = ox - br - 34 * s;
             g.fillStyle = col;
@@ -264,9 +299,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             g.textAlign = 'center';
             g.textBaseline = 'middle';
             g.fillText(o.k === 'haie' ? '⬆' : '⬇', bx, by + 2);
-            if (next && h > 90) {
-              g.font = `700 ${Math.max(28, 26 * s)}px Fredoka, sans-serif`;
-              g.lineWidth = 6;
+            if (next && h > 150) {
+              g.font = `700 ${Math.max(28, 20 * s)}px Fredoka, sans-serif`;
+              g.lineWidth = 5;
               const word = o.k === 'haie' ? (fr ? 'SAUTE' : 'JUMP') : fr ? 'GLISSE' : 'SLIDE';
               g.textAlign = 'right';
               g.strokeText(word, bx - br - 10, by);
