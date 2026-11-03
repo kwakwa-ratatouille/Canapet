@@ -187,6 +187,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.clip();
         g.fillStyle = i % 2 ? theme.lanes[0] : theme.lanes[1];
         g.fillRect(60, y + 4, 1800, h - 8);
+        g.globalAlpha = 0.16;
+        g.fillStyle = r.profile.color;
+        g.fillRect(60, y + 4, 1800, h - 8);
+        g.globalAlpha = 1;
+        g.fillRect(60, y + 4, 16, h - 8);
         // Bandes au sol qui défilent
         g.fillStyle = 'rgba(58,33,64,0.08)';
         for (let x = -((cam * 1) % 120); x < 1900; x += 120) g.fillRect(60 + x, ground - 4, 60, 8);
@@ -233,12 +238,42 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             g.fillRect(ox - 20 * s, ground - 78 * s, 8 * s, 18 * s);
             g.fillRect(ox + 12 * s, ground - 78 * s, 8 * s, 18 * s);
           }
-          // Indice sur l'obstacle qui arrive : quel bouton
-          if (o === nextObs(r) && o.x - r.pos < 500 && !r.done) {
-            g.font = `700 ${Math.max(28, 34 * s)}px Fredoka, sans-serif`;
+          // Indice : zone où appuyer (au sol) et grosse pastille SAUTE / GLISSE au-dessus de l'obstacle
+          const ahead = o.x - r.pos;
+          if (ahead > -40 && ahead < 900 && !r.done) {
+            const col = o.k === 'haie' ? '#ff4f9a' : '#ffb800';
+            const next = o === nextObs(r);
+            if (next) {
+              g.globalAlpha = 0.35;
+              g.fillStyle = col;
+              g.fillRect(ox - ACT * SPEED * 0.9, ground - 6, ACT * SPEED * 0.9, 10);
+              g.globalAlpha = 1;
+            }
+            const br = Math.max(22, 30 * s) * (next ? 1.15 + Math.sin(t * 8) * 0.05 : 0.9);
+            const by = y + h / 2;
+            const bx = ox - br - 34 * s;
+            g.fillStyle = col;
+            g.strokeStyle = INK;
+            g.lineWidth = 4;
+            g.beginPath();
+            g.arc(bx, by, br, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+            g.fillStyle = '#fff';
+            g.font = `700 ${Math.round(br * 1.2)}px Fredoka, sans-serif`;
             g.textAlign = 'center';
-            g.fillStyle = o.k === 'haie' ? '#ff4f9a' : '#e0a800';
-            g.fillText(o.k === 'haie' ? '⬆' : '⬇', ox, y + 34 * s + 8);
+            g.textBaseline = 'middle';
+            g.fillText(o.k === 'haie' ? '⬆' : '⬇', bx, by + 2);
+            if (next && h > 90) {
+              g.font = `700 ${Math.max(28, 26 * s)}px Fredoka, sans-serif`;
+              g.lineWidth = 6;
+              const word = o.k === 'haie' ? (fr ? 'SAUTE' : 'JUMP') : fr ? 'GLISSE' : 'SLIDE';
+              g.textAlign = 'right';
+              g.strokeText(word, bx - br - 10, by);
+              g.fillStyle = col;
+              g.fillText(word, bx - br - 10, by);
+            }
+            g.textBaseline = 'alphabetic';
           }
         }
         g.restore();

@@ -90,6 +90,7 @@ export interface Stats {
 /** Réaction en vol sur la télé (born = performance.now()). */
 export interface FlyingReaction {
   i: number;
+  pid?: string;
   name: string;
   color: string;
   x: number;
@@ -369,10 +370,13 @@ export class Session {
         const r = REACTIONS[m.i];
         if (!p || !r || (this.family && r.rude)) return;
         const now = performance.now();
-        if (now - (this.lastReact.get(pid) ?? 0) < 280) return;
+        // Anti-spam : 0,7 s mini entre deux réactions d'un joueur, 4 maxi par joueur en 4 s, 18 à l'écran en même temps
+        if (now - (this.lastReact.get(pid) ?? 0) < 700) return;
+        if (this.reactions.filter((x) => x.pid === pid && now - x.born < 4000).length >= 4) return;
+        if (this.reactions.filter((x) => now - x.born < 2500).length >= 18) return;
         this.lastReact.set(pid, now);
-        this.reactions.push({ i: m.i, name: p.name, color: p.color, x: 160 + Math.random() * 1600, born: now });
-        if (this.reactions.length > 50) this.reactions.shift();
+        this.reactions.push({ i: m.i, pid, name: p.name, color: p.color, x: 160 + Math.random() * 1600, born: now });
+        if (this.reactions.length > 30) this.reactions.shift();
         const st = this.statsOf(pid);
         st.reacts++;
         if (r.rude) st.rude++;

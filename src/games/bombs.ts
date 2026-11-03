@@ -4,7 +4,7 @@ import { dozing } from './botSkill';
 // Stick = bouger · A = poser un pétard · B = shooter dans un pétard. Le dernier au sec gagne.
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
-import { roundRectText, candy } from './draw';
+import { roundRectText, candy, playerRing, playerTag } from './draw';
 
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
@@ -527,6 +527,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       for (const i of order) {
         const p = players[i];
         if (!p.alive) continue;
+        playerRing(g, ox + (p.x + 0.5) * cs, oy + (p.y + 0.9) * cs, cs * 0.42, p.profile.color);
         drawCharacter(g, ox + (p.x + 0.5) * cs, oy + (p.y + 0.92) * cs, cs * 0.95, {
           food: p.profile.food,
           color: p.profile.color,
@@ -539,6 +540,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           dir: p.dir,
           run: p.inp.x || p.inp.y ? 0.6 : 0,
         });
+        playerTag(g, ox + (p.x + 0.5) * cs, oy + (p.y - 0.05) * cs, p.profile.name, p.profile.color);
         if (p.shield || p.invuln > 0) {
           g.strokeStyle = p.invuln > 0 ? 'rgba(46,197,255,0.4)' : 'rgba(46,197,255,0.85)';
           g.lineWidth = 5;

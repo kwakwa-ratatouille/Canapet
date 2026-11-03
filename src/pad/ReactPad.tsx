@@ -5,6 +5,8 @@ import { REACTIONS } from '../shared/reactions';
 
 export function ReactButton({ lang, family, send, inline }: { lang: Lang; family: boolean; send: (m: ToTv) => void; inline?: boolean }) {
   const [open, setOpen] = useState(false);
+  // Petite recharge après chaque réaction (la télé en refuse de toute façon au-delà)
+  const [cool, setCool] = useState(false);
   const fr = lang === 'fr';
   return (
     <>
@@ -19,14 +21,17 @@ export function ReactButton({ lang, family, send, inline }: { lang: Lang; family
               ✕
             </button>
           </header>
-          <div className="react-grid">
+          <div className={`react-grid ${cool ? 'cool' : ''}`}>
             {REACTIONS.map((r, i) =>
               family && r.rude ? null : (
                 <button
                   key={i}
                   className={r.txt ? 'txt' : ''}
+                  disabled={cool}
                   onClick={() => {
                     send({ t: 'react', i });
+                    setCool(true);
+                    setTimeout(() => setCool(false), 900);
                     if (navigator.vibrate) navigator.vibrate(10);
                   }}
                 >

@@ -164,3 +164,8 @@
   transform: translateY(6px);
   box-shadow: 0 2px 0 var(--ink);
 }
+
+/* Réactions : grisées pendant la petite recharge */
+.react-grid.cool button {
+  opacity: 0.4;
+}

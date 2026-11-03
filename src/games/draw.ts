@@ -162,3 +162,42 @@ export function candy(g: CanvasRenderingContext2D, x: number, y: number, w: numb
   g.roundRect(x + Math.min(10, w * 0.12), y + Math.min(6, h * 0.12), w - Math.min(20, w * 0.24), Math.max(5, h * 0.2), rr);
   g.fill();
 }
+
+/** Anneau de la couleur du joueur sous ses pieds : on repère son perso d'un coup d'œil. */
+export function playerRing(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string) {
+  g.save();
+  g.fillStyle = color;
+  g.globalAlpha = 0.55;
+  g.beginPath();
+  g.ellipse(x, y, r, r * 0.38, 0, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 1;
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  g.stroke();
+  g.restore();
+}
+
+/** Petite étiquette avec le pseudo et une pointe vers le perso. */
+export function playerTag(g: CanvasRenderingContext2D, x: number, y: number, name: string, color: string) {
+  g.save();
+  g.font = '700 28px Fredoka, sans-serif';
+  const w = Math.min(220, g.measureText(name).width + 24);
+  g.fillStyle = color;
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  g.beginPath();
+  g.roundRect(x - w / 2, y - 40, w, 36, 18);
+  g.moveTo(x - 9, y - 5);
+  g.lineTo(x, y + 8);
+  g.lineTo(x + 9, y - 5);
+  g.fill();
+  g.stroke();
+  g.fillStyle = luminance(color) > 0.6 ? INK : '#fff';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  let s = name;
+  while (s.length > 1 && g.measureText(s).width > w - 16) s = s.slice(0, -1);
+  g.fillText(s, x, y - 21);
+  g.restore();
+}

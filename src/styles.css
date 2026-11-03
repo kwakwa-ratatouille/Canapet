@@ -2156,10 +2156,11 @@ h3,
   font-size: 24px;
 }
 .slot-level {
+  /* En haut à gauche de la carte (avant, il cachait le pseudo) */
   position: absolute;
-  bottom: calc(-16 * var(--u));
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(-14 * var(--u));
+  left: calc(-10 * var(--u));
+  transform: rotate(-6deg);
   white-space: nowrap;
   font-family: var(--cp-font-titre);
   font-weight: 700;
