@@ -84,6 +84,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const nTeams = ctx.opts.teams === 4 ? 4 : 2;
   const nBalls = Math.max(1, Math.min(3, ctx.opts.balls ?? 1));
+  // Option de l'hôte : on peut couper l'attrape (X) pour un foot plus simple
+  const canCatch = ctx.opts.catch !== 0;
   // Terrain : large à 2 équipes, carré à 4
   const F = nTeams === 4 ? { x: 300, y: 95, w: 1340, h: 800 } : { x: 140, y: 170, w: 1640, h: 820 };
   const cx = F.x + F.w / 2;
@@ -326,7 +328,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         p.dash = 0.25;
         p.dashCd = 1.3;
       }
-      if (m.c && !p.lastC) p.catchT = 0.3;
+      if (canCatch && m.c && !p.lastC) p.catchT = 0.3;
       p.lastA = m.a;
       p.lastB = m.b;
       p.lastC = !!m.c;
@@ -758,6 +760,14 @@ export const foot: GameBase = {
         { v: 1, label: { fr: '1 ballon', en: '1 ball' } },
         { v: 2, label: { fr: '2 ballons', en: '2 balls' } },
         { v: 3, label: { fr: '3 ballons', en: '3 balls' } },
+      ],
+    },
+    {
+      id: 'catch',
+      label: { fr: 'Attraper le ballon (X)', en: 'Catch the ball (X)' },
+      choices: [
+        { v: 1, label: { fr: 'Activé', en: 'On' } },
+        { v: 0, label: { fr: 'Désactivé', en: 'Off' } },
       ],
     },
   ],

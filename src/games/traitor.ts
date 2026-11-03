@@ -9,12 +9,14 @@ import { INK } from '../shared/palette';
 
 const T_ROLES = 9;
 const T_NIGHT = 22;
-const T_MORNING = 6;
+const T_MORNING = 11;
 const T_DEBATE = 75;
 const T_VOTE = 25;
-const T_VERDICT = 6;
+const T_VERDICT = 8;
 
 type Phase = TraitorPadData['phase'];
+/** Vote pour ne mettre personne à la porte. */
+const SKIP = -2;
 
 interface Pl extends Runner {
   role: Role;
@@ -204,6 +206,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let winner: 'pique' | 'gourmand' | 'glouton' | null = null;
   let deaths = 0;
   let lastVotes = new Map<number, number>();
+  // Victime de la nuit, annoncée seulement après « le jour se lève »
+  let pending: number | null = null;
+  let revealed = true;
   const botDelay: number[] = pls.map(() => rnd(2, 8));
 
   const name = (i: number) => pls[i].profile.name;
@@ -250,7 +255,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   /** Choix de la majorité (null si égalité ou personne). */
   function majority(voters: Pl[]): number | null {
     const count = new Map<number, number>();
-    for (const v of voters) if (v.pick >= 0) count.set(v.pick, (count.get(v.pick) ?? 0) + 1);
+    for (const v of voters) if (v.pick >= 0 || v.pick === SKIP) count.set(v.pick, (count.get(v.pick) ?? 0) + 1);
     lastVotes = count;
     let best = -1;
     let bc = 0;
@@ -262,7 +267,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         tie = false;
       } else if (c === bc) tie = true;
     }
-    return best < 0 || tie ? null : best;
+    return best === -1 || best === SKIP || tie ? null : best;
   }
 
   function endNight() {
@@ -273,18 +278,31 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       victim = picks.length ? picks[0] : null;
     }
     day++;
-    if (victim !== null && pls[victim].alive) {
+    pending = victim !== null && pls[victim].alive ? victim : null;
+    revealed = false;
+    headline = fr ? `☀️ Jour ${day} : le soleil se lève sur la cuisine…` : `☀️ Day ${day}: the sun rises on the kitchen…`;
+    sub = fr ? 'Tout le monde se réveille… enfin, presque ?' : 'Everyone wakes up… or almost?';
+    speak(headline, ctx.lang);
+    go('morning', T_MORNING);
+  }
+
+  /** Deuxième temps du matin : on découvre ce qui s'est passé cette nuit. */
+  function revealNight() {
+    revealed = true;
+    const victim = pending;
+    pending = null;
+    if (victim !== null) {
       kill(victim);
       headline = ctx.family
         ? fr ? `${name(victim)} s'est endormi dans le frigo !` : `${name(victim)} fell asleep in the fridge!`
         : fr ? `${name(victim)} a été retrouvé la tête dans le frigo !` : `${name(victim)} was found head-first in the fridge!`;
       sub = fr ? `C'était un ${roleName(pls[victim].role)}.` : `They were a ${roleName(pls[victim].role)}.`;
     } else {
-      headline = fr ? 'Nuit calme : le frigo est intact.' : 'Quiet night: the fridge is untouched.';
-      sub = '';
+      headline = fr ? 'Nuit calme : le frigo est intact !' : 'Quiet night: the fridge is untouched!';
+      sub = fr ? 'Le Goûteur a peut-être flairé quelque chose…' : 'Maybe the Taster sniffed something…';
+      sfx.win();
     }
     speak(headline, ctx.lang);
-    go('morning', T_MORNING);
   }
 
   function endVote() {
@@ -303,7 +321,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       headline = fr ? `${name(v)} est mis à la porte !` : `${name(v)} is kicked out!`;
       sub = fr ? `C'était un ${roleName(pls[v].role)}.` : `They were a ${roleName(pls[v].role)}.`;
     } else {
-      headline = fr ? 'Égalité : personne ne sort.' : 'Tie: nobody leaves.';
+      const skipped = (lastVotes.get(SKIP) ?? 0) > 0 && [...lastVotes.values()].every((c) => c <= (lastVotes.get(SKIP) ?? 0));
+      headline = skipped ? (fr ? 'Vote passé : personne ne sort.' : 'Vote skipped: nobody leaves.') : fr ? 'Égalité : personne ne sort.' : 'Tie: nobody leaves.';
       sub = '';
     }
     speak(headline, ctx.lang);
@@ -326,8 +345,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     } else if (phase === 'vote') {
       const known = [...p.sniffed].find(([k, bad]) => bad && pls[k].alive);
       const pool = p.role === 'pique' ? others.filter((x) => x.p.role !== 'pique') : others;
-      p.pick = known ? known[0] : pool[Math.floor(Math.random() * pool.length)]?.i ?? -1;
-    } else if (phase === 'debate') p.ready = true;
+      p.pick = known ? known[0] : Math.random() < 0.2 ? SKIP : pool[Math.floor(Math.random() * pool.length)]?.i ?? -1;
+    } else if (phase === 'debate' && timer < T_DEBATE - 25) p.ready = true;
   }
 
   const game: GameInstance = {
@@ -338,6 +357,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const p = pls[i];
       if (!p || !p.alive) return;
       if (m.a === 'ready' && phase === 'debate') p.ready = true;
+      if (m.a === 'skip' && phase === 'vote') {
+        p.pick = SKIP;
+        sfx.click();
+      }
       if (m.a === 'pick') {
         const k = m.n?.[0] ?? -1;
         if (k < 0 || k >= pls.length || !pls[k].alive || k === i) return;
@@ -353,9 +376,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       timer -= dt;
+      if (phase === 'morning' && !revealed && timer <= 6) timer = 0;
       pls.forEach((p, i) => {
         if (p.bot && (botDelay[i] -= dt) <= 0) {
           botAct(i);
+          if (phase === 'debate' && !p.ready) {
+            botDelay[i] = 3;
+            return;
+          }
           if (p.role === 'gouteur' && phase === 'night' && p.pick >= 0 && !p.sniffed.has(p.pick)) p.sniffed.set(p.pick, pls[p.pick].role === 'pique');
           botDelay[i] = 99;
         }
@@ -363,7 +391,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const a = alive().map((x) => x.p);
       // On passe à la suite dès que tout le monde a choisi.
       if (phase === 'night' && a.filter((p) => p.role !== 'gourmand').every((p) => p.pick >= 0)) timer = Math.min(timer, 1);
-      if (phase === 'vote' && a.every((p) => p.pick >= 0)) timer = Math.min(timer, 1.5);
+      if (phase === 'vote' && a.every((p) => p.pick >= 0 || p.pick === SKIP)) timer = Math.min(timer, 1.5);
       if (phase === 'debate' && a.every((p) => p.ready)) timer = Math.min(timer, 1);
       if (timer > 0) return;
       switch (phase) {
@@ -377,14 +405,20 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           endNight();
           break;
         case 'morning':
+          if (!revealed) {
+            revealNight();
+            timer = 6;
+            break;
+          }
           if (checkWin()) break;
           headline = fr ? 'Débat : qui pille le frigo ?' : 'Debate: who’s raiding the fridge?';
-          sub = fr ? 'Parlez entre vous, puis votez.' : 'Talk it out, then vote.';
+          sub = fr ? 'Parlez entre vous ! Accusez, défendez-vous… puis on vote.' : 'Talk it out! Accuse, defend yourselves… then vote.';
+          speak(headline, ctx.lang);
           go('debate', T_DEBATE);
           break;
         case 'debate':
           headline = fr ? 'Votez sur votre téléphone !' : 'Vote on your phone!';
-          sub = '';
+          sub = fr ? 'Pas sûr ? Tu peux passer ton vote.' : 'Not sure? You can skip your vote.';
           speak(headline, ctx.lang);
           go('vote', T_VOTE);
           break;
@@ -486,7 +520,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         if (phase === 'vote' && p.alive) {
           g.font = '28px sans-serif';
-          g.fillText(p.pick >= 0 ? '🗳️' : '…', x, y - 175);
+          g.fillText(p.pick >= 0 || p.pick === SKIP ? '🗳️' : '…', x, y - 175);
         }
         if (phase === 'verdict' && lastVotes.get(i)) {
           g.font = '700 30px Fredoka, sans-serif';
@@ -534,6 +568,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         act,
         picked: p.pick,
         info: sniffs.join(' · '),
+        skipped: p.pick === SKIP,
         left: Math.ceil(timer),
       };
     },

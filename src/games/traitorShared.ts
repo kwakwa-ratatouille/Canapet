@@ -13,4 +13,6 @@ export interface TraitorPadData {
   picked: number;
   info: string;
   left: number;
+  /** A voté « passer ». */
+  skipped?: boolean;
 }

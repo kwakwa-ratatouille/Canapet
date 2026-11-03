@@ -2230,7 +2230,7 @@ h3,
   border: 0;
 }
 
-/* Croix de 4 boutons façon Switch : X en haut, A à droite, B en bas, Y à gauche */
+/* Croix de 4 boutons : X en haut, B à droite, A (saut / action principale) en bas sous le pouce, Y à gauche */
 .ab.four .ab-btn {
   width: min(27vmin, 100px);
   height: min(27vmin, 100px);
@@ -2248,12 +2248,12 @@ h3,
   background: var(--cp-ciel, #2ec5ff);
 }
 .ab.four .ab-btn.a {
-  left: 80%;
-  top: 50%;
-}
-.ab.four .ab-btn.b {
   left: 50%;
   top: 78%;
+}
+.ab.four .ab-btn.b {
+  left: 80%;
+  top: 50%;
 }
 .ab.four .ab-btn.d {
   left: 20%;
@@ -2511,14 +2511,16 @@ h3,
 .ab.four .ab-btn.c {
   top: 18%;
 }
-.ab.four .ab-btn.b {
+.ab.four .ab-btn.a {
+  left: 50%;
   top: 82%;
 }
 .ab.four .ab-btn.d {
   left: 18%;
 }
-.ab.four .ab-btn.a {
+.ab.four .ab-btn.b {
   left: 82%;
+  top: 50%;
 }
 .ab.four .ab-btn.down {
   transform: translate(-50%, -50%) scale(0.93);

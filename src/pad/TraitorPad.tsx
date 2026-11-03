@@ -16,6 +16,8 @@ const TXT = {
     sniff: 'Qui veux-tu renifler ?',
     vote: 'Qui met-on à la porte ?',
     ready: 'J’ai fini de débattre ✋',
+    debate: 'Débat ! Parlez à voix haute : qui est louche ?',
+    skip: '🤷 Passer (je ne vote contre personne)',
     wait: 'Patiente…',
     dead: 'Tu es éliminé. Chut, ne dis rien ! 🤐',
     hide: 'Cacher mon rôle',
@@ -35,6 +37,8 @@ const TXT = {
     sniff: 'Who do you want to sniff?',
     vote: 'Who gets kicked out?',
     ready: 'Done debating ✋',
+    debate: 'Debate! Talk out loud: who’s suspicious?',
+    skip: '🤷 Skip (I vote for nobody)',
     wait: 'Wait…',
     dead: 'You’re out. Shh, don’t say a word! 🤐',
     hide: 'Hide my role',
@@ -80,9 +84,14 @@ export function TraitorPad({ data, lang, send }: { data: TraitorPadData; lang: L
       {!data.alive ? (
         <p className="pad-title">{T.dead}</p>
       ) : data.act === 'ready' ? (
-        <button className="btn big" onClick={() => send({ t: 'act', a: 'ready' })}>
-          {T.ready}
-        </button>
+        <>
+          <p className="pad-title">
+            {T.debate} <span className="pad-small">⏱ {data.left}</span>
+          </p>
+          <button className="btn big" onClick={() => send({ t: 'act', a: 'ready' })}>
+            {T.ready}
+          </button>
+        </>
       ) : data.act ? (
         <>
           <p className="pad-title">{T[data.act]}</p>
@@ -98,6 +107,12 @@ export function TraitorPad({ data, lang, send }: { data: TraitorPadData; lang: L
               </button>
             ))}
           </div>
+          {data.act === 'vote' && (
+            <button className={`btn ghost ${data.skipped ? 'on' : ''}`} onClick={() => send({ t: 'act', a: 'skip' })}>
+              {data.skipped ? '✓ ' : ''}
+              {T.skip}
+            </button>
+          )}
         </>
       ) : (
         <p className="pad-title pulse">{T.wait}</p>

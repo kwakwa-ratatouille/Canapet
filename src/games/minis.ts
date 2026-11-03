@@ -525,15 +525,94 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
 
 // ————————————————————————————————————————— Pluie de bonbons —————————————————————————————————————————
 
+/** Bonbon dessiné (plus d'émojis, qui sortaient gris sur certains PC) : papillote, étoile dorée ou bonbon piégé. */
+function drawCandy(g: CanvasRenderingContext2D, x: number, y: number, s: number, kind: 'bonbon' | 'or' | 'piege', color: string, t: number) {
+  g.save();
+  g.translate(x, y);
+  g.scale(s, s);
+  g.lineJoin = 'round';
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  if (kind === 'or') {
+    g.rotate(Math.sin(t * 3 + x) * 0.2);
+    g.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = (Math.PI / 5) * i - Math.PI / 2;
+      const r = i % 2 ? 11 : 26;
+      g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    g.closePath();
+    g.fillStyle = SOLEIL;
+    g.fill();
+    g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.7)';
+    g.beginPath();
+    g.arc(-6, -8, 4, 0, Math.PI * 2);
+    g.fill();
+  } else {
+    const c = kind === 'piege' ? '#5a7a2a' : color;
+    // Papillote : deux bouts en éventail et un bonbon rond rayé
+    for (const k of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(k * 14, 0);
+      g.lineTo(k * 32, -13);
+      g.lineTo(k * 32, 13);
+      g.closePath();
+      g.fillStyle = c;
+      g.fill();
+      g.stroke();
+    }
+    g.beginPath();
+    g.arc(0, 0, 17, 0, Math.PI * 2);
+    g.fillStyle = c;
+    g.fill();
+    g.stroke();
+    g.strokeStyle = kind === 'piege' ? '#b8e05a' : 'rgba(255,255,255,0.85)';
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(-9, -12);
+    g.quadraticCurveTo(-2, 0, -9, 12);
+    g.moveTo(3, -15);
+    g.quadraticCurveTo(10, 0, 3, 15);
+    g.stroke();
+    if (kind === 'piege') {
+      // Petite tête de mort verte : on ne le mange pas !
+      g.fillStyle = '#fff';
+      g.strokeStyle = INK;
+      g.lineWidth = 3;
+      g.beginPath();
+      g.arc(0, -30, 10, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = INK;
+      g.fillRect(-5, -33, 3, 3);
+      g.fillRect(2, -33, 3, 3);
+    } else {
+      g.fillStyle = 'rgba(255,255,255,0.75)';
+      g.beginPath();
+      g.arc(-7, -7, 4, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  g.restore();
+}
+
 function candyRain(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const ps = makePlayers(runners);
-  type Drop = { x: number; y: number; t: number; max: number; kind: 'bonbon' | 'or' | 'enclume' };
+  type Kind = 'bonbon' | 'or' | 'enclume' | 'sirop' | 'piege';
+  type Drop = { x: number; y: number; t: number; max: number; kind: Kind; c: string };
   let drops: Drop[] = [];
-  const ground: { x: number; y: number; kind: 'bonbon' | 'or'; life: number }[] = [];
+  const ground: { x: number; y: number; kind: 'bonbon' | 'or' | 'piege'; life: number; c: string; land: number }[] = [];
+  // Flaques de sirop : on y avance au ralenti
+  const puddles: { x: number; y: number; r: number; life: number }[] = [];
   let spawn = 0;
   let time = 0;
-  const COLORS = ['#ff4f9a', '#2ec5ff', '#ffd60a', '#1fc9a0', '#9b5cff'];
+  // Ruée vers l'or : quelques secondes où il pleut des étoiles
+  let rush = 0;
+  let nextRush = rnd(18, 26);
+  const COLORS = ['#ff4f9a', '#2ec5ff', '#ffd60a', '#1fc9a0', '#9b5cff', '#ff9a1f'];
+  const inSyrup = (p: P) => puddles.some((q) => Math.hypot(p.x - q.x, (p.y - q.y) * 1.6) < q.r);
 
   const game: GameInstance = {
     over: false,
@@ -545,12 +624,21 @@ function candyRain(runners: Runner[], ctx: GameCtx): GameInstance {
     update(dt) {
       time += dt;
       spawn -= dt;
+      if (rush > 0) rush -= dt;
+      else if ((nextRush -= dt) <= 0) {
+        rush = 4;
+        nextRush = rnd(20, 28);
+        speak(fr ? 'Pluie d’étoiles !' : 'Star shower!', ctx.lang);
+        sfx.win();
+      }
       // Ça tombe de plus en plus, avec de plus en plus d'enclumes
       if (spawn <= 0) {
-        spawn = Math.max(0.12, 0.45 - time * 0.006);
+        spawn = rush > 0 ? 0.08 : Math.max(0.12, 0.45 - time * 0.006);
         const r = Math.random();
-        const anvil = r < 0.18 + time * 0.004;
-        drops.push({ x: rnd(AX + 40, AX + AW - 40), y: rnd(AY + 60, AY + AH - 30), t: anvil ? 1.3 : 1, max: anvil ? 1.3 : 1, kind: anvil ? 'enclume' : r > 0.93 ? 'or' : 'bonbon' });
+        const anvil = rush <= 0 && r < 0.16 + time * 0.004;
+        const kind: Kind = rush > 0 ? (r < 0.7 ? 'or' : 'bonbon') : anvil ? 'enclume' : r > 0.95 ? 'or' : r > 0.89 ? 'sirop' : r > 0.8 ? 'piege' : 'bonbon';
+        const fall = kind === 'enclume' ? 1.3 : kind === 'sirop' ? 1.1 : 1;
+        drops.push({ x: rnd(AX + 40, AX + AW - 40), y: rnd(AY + 60, AY + AH - 30), t: fall, max: fall, kind, c: COLORS[Math.floor(Math.random() * COLORS.length)] });
       }
       for (const d of drops) {
         d.t -= dt;
@@ -562,16 +650,24 @@ function candyRain(runners: Runner[], ctx: GameCtx): GameInstance {
               p.stun = 1.6;
               const lost = Math.min(3, p.score);
               p.score -= lost;
-              for (let k = 0; k < lost; k++) ground.push({ x: p.x + rnd(-90, 90), y: p.y + rnd(-60, 60), kind: 'bonbon', life: 6 });
+              for (let k = 0; k < lost; k++) ground.push({ x: p.x + rnd(-90, 90), y: p.y + rnd(-60, 60), kind: 'bonbon', life: 6, c: COLORS[k % COLORS.length], land: 0 });
               p.pop = { text: fr ? `BONK ! -${lost}` : `BONK! -${lost}`, t: 0.9, c: '#ff3b3b' };
               sfx.boing();
               if (!p.bot) ctx.buzz(p.pid, 300);
             }
-        } else ground.push({ x: d.x, y: d.y, kind: d.kind, life: 7 });
+        } else if (d.kind === 'sirop') {
+          sfx.pop();
+          puddles.push({ x: d.x, y: d.y, r: 110, life: 9 });
+        } else ground.push({ x: d.x, y: d.y, kind: d.kind, life: d.kind === 'piege' ? 20 : 7, c: d.c, land: 0 });
       }
       drops = drops.filter((d) => d.t > 0);
-      for (const c of ground) c.life -= dt;
-      // Bots : le bonbon le plus proche, en évitant les ombres d'enclume
+      for (const c of ground) {
+        c.life -= dt;
+        c.land += dt;
+      }
+      for (const q of puddles) q.life -= dt;
+      for (let k = puddles.length - 1; k >= 0; k--) if (puddles[k].life <= 0) puddles.splice(k, 1);
+      // Bots : le bonbon le plus proche, en évitant les ombres d'enclume et les bonbons piégés
       for (const p of ps) {
         if (!p.bot) continue;
         const danger = drops.find((d) => d.kind === 'enclume' && d.t < 0.8 && Math.hypot(p.x - d.x, p.y - d.y) < 110);
@@ -579,7 +675,8 @@ function candyRain(runners: Runner[], ctx: GameCtx): GameInstance {
           p.tx = p.x + (p.x - danger.x) * 2;
           p.ty = p.y + (p.y - danger.y) * 2;
         } else {
-          const best = ground.filter((c) => c.life > 0).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - (a.kind === 'or' ? 200 : 0) - (Math.hypot(b.x - p.x, b.y - p.y) - (b.kind === 'or' ? 200 : 0)))[0];
+          const val = (c: (typeof ground)[number]) => Math.hypot(c.x - p.x, c.y - p.y) - (c.kind === 'or' ? 200 : 0);
+          const best = ground.filter((c) => c.life > 0 && c.kind !== 'piege').sort((x, y) => val(x) - val(y))[0];
           if (best) {
             p.tx = best.x;
             p.ty = best.y;
@@ -587,30 +684,76 @@ function candyRain(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         botGo(p, ctx, dt);
       }
-      step(ps, dt, () => 440);
+      step(ps, dt, (p) => (inSyrup(p) ? 190 : 440));
       for (const c of ground) {
-        if (c.life <= 0) continue;
+        if (c.life <= 0 || c.land < 0.15) continue;
         const p = ps.find((q) => q.stun <= 0 && Math.hypot(q.x - c.x, (q.y - c.y) * 1.3) < 52);
-        if (p) {
-          c.life = 0;
-          const v = c.kind === 'or' ? 5 : 1;
-          p.score += v;
-          if (v > 1) p.pop = { text: '+5 ⭐', t: 0.8, c: SOLEIL };
-          sfx.pop();
+        if (!p) continue;
+        c.life = 0;
+        if (c.kind === 'piege') {
+          const lost = Math.min(3, p.score);
+          p.score -= lost;
+          p.stun = 0.9;
+          p.pop = { text: fr ? `BEURK ! -${lost}` : `YUCK! -${lost}`, t: 1, c: '#b8e05a' };
+          sfx.pet();
+          if (!p.bot) ctx.buzz(p.pid, 250);
+          continue;
         }
+        const v = c.kind === 'or' ? 5 : 1;
+        p.score += v;
+        if (v > 1) p.pop = { text: '+5 ⭐', t: 0.8, c: SOLEIL };
+        sfx.pop();
       }
       for (let k = ground.length - 1; k >= 0; k--) if (ground[k].life <= 0) ground.splice(k, 1);
     },
     render(g, t) {
       drawFloor(g, '#e3f7ff', '#cfeeff', '#bfe6ff');
-      // Ombres de ce qui va tomber
+      // Flaques de sirop (brillantes, elles collent)
+      for (const q of puddles) {
+        const k = Math.min(1, q.life / 1.2);
+        g.globalAlpha = k;
+        g.fillStyle = '#c96a1f';
+        g.strokeStyle = INK;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.ellipse(q.x, q.y, q.r, q.r / 1.6, 0, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = '#f0a040';
+        g.beginPath();
+        g.ellipse(q.x - 10, q.y - 6, q.r * 0.7, q.r / 2.6, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.6)';
+        g.beginPath();
+        g.ellipse(q.x - q.r * 0.35, q.y - q.r * 0.2, 16, 6, -0.3, 0, Math.PI * 2);
+        g.fill();
+        g.globalAlpha = 1;
+      }
+      // Ce qui est au sol : en couleur, qui sautille, avec un petit rebond à l'atterrissage
+      for (const c of ground) {
+        g.globalAlpha = c.life < 1 ? Math.max(0, c.life) * (Math.floor(t * 10) % 2 ? 1 : 0.5) : 1;
+        const bounce = c.land < 0.3 ? Math.sin((c.land / 0.3) * Math.PI) * 14 : Math.sin(t * 4 + c.x) * 2;
+        g.fillStyle = 'rgba(58,33,64,0.22)';
+        g.beginPath();
+        g.ellipse(c.x, c.y + 18, 26, 9, 0, 0, Math.PI * 2);
+        g.fill();
+        if (c.kind === 'or') {
+          g.fillStyle = 'rgba(255,214,10,0.35)';
+          g.beginPath();
+          g.arc(c.x, c.y, 36 + Math.sin(t * 6) * 4, 0, Math.PI * 2);
+          g.fill();
+        }
+        drawCandy(g, c.x, c.y - bounce, c.kind === 'or' ? 1.15 : 1, c.kind, c.c, t);
+        g.globalAlpha = 1;
+      }
+      // Ombres de ce qui va tomber + l'objet en l'air (plus petit et plus haut tant qu'il est loin)
       for (const d of drops) {
         const k = 1 - d.t / d.max;
-        g.fillStyle = d.kind === 'enclume' ? `rgba(255,59,59,${0.25 + k * 0.4})` : 'rgba(58,33,64,0.18)';
+        const big = d.kind === 'enclume' || d.kind === 'sirop';
+        g.fillStyle = d.kind === 'enclume' ? `rgba(255,59,59,${0.25 + k * 0.4})` : d.kind === 'sirop' ? `rgba(201,106,31,${0.2 + k * 0.3})` : 'rgba(58,33,64,0.22)';
         g.beginPath();
-        g.ellipse(d.x, d.y, (d.kind === 'enclume' ? 70 : 26) * (0.4 + k * 0.6), (d.kind === 'enclume' ? 34 : 13) * (0.4 + k * 0.6), 0, 0, Math.PI * 2);
+        g.ellipse(d.x, d.y, (big ? 70 : 26) * (0.4 + k * 0.6), (big ? 34 : 13) * (0.4 + k * 0.6), 0, 0, Math.PI * 2);
         g.fill();
-        // L'objet qui tombe
         const fy = d.y - d.t * 700;
         if (d.kind === 'enclume') {
           g.fillStyle = '#6b6b7b';
@@ -624,22 +767,22 @@ function candyRain(runners: Runner[], ctx: GameCtx): GameInstance {
           g.font = '700 28px Fredoka, sans-serif';
           g.textAlign = 'center';
           g.fillText('10T', d.x, fy - 15);
-        } else {
-          g.font = d.kind === 'or' ? '46px sans-serif' : '38px sans-serif';
-          g.textAlign = 'center';
-          g.fillText(d.kind === 'or' ? '⭐' : '🍬', d.x, fy);
-        }
-      }
-      for (const c of ground) {
-        g.globalAlpha = Math.min(1, c.life);
-        g.font = c.kind === 'or' ? '50px sans-serif' : '40px sans-serif';
-        g.textAlign = 'center';
-        g.fillText(c.kind === 'or' ? '⭐' : '🍬', c.x, c.y + 12 + Math.sin(t * 4 + c.x) * 3);
-        g.globalAlpha = 1;
-        void COLORS;
+        } else if (d.kind === 'sirop') {
+          // Pot de sirop qui tombe
+          g.fillStyle = '#f0a040';
+          g.strokeStyle = INK;
+          g.lineWidth = 5;
+          g.beginPath();
+          g.roundRect(d.x - 26, fy - 56, 52, 56, 12);
+          g.fill();
+          g.stroke();
+          g.fillStyle = '#ff4f9a';
+          g.fillRect(d.x - 28, fy - 62, 56, 12);
+          g.strokeRect(d.x - 28, fy - 62, 56, 12);
+        } else drawCandy(g, d.x, fy - 10, 0.75 + k * 0.25, d.kind as 'bonbon' | 'or' | 'piege', d.c, t);
       }
       const order = ps.map((_, i) => i).sort((a, b) => ps[a].y - ps[b].y);
-      for (const i of order) drawP(g, ps[i], t, i, { mood: ps[i].stun > 0 ? 'sad' : undefined });
+      for (const i of order) drawP(g, ps[i], t, i, { mood: ps[i].stun > 0 ? 'sad' : inSyrup(ps[i]) ? 'wow' : undefined });
       for (const p of ps)
         if (p.stun > 0) {
           g.font = '34px sans-serif';
@@ -647,6 +790,8 @@ function candyRain(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillText('💫', p.x + Math.cos(t * 8) * 30, p.y - 120);
         }
       hud(g, ps, true);
+      if (rush > 0) bigText(g, fr ? '⭐ PLUIE D’ÉTOILES ! ⭐' : '⭐ STAR SHOWER! ⭐', SOLEIL, 0.6 + Math.sin(t * 10) * 0.03, 170);
+      else bigText(g, fr ? 'Évite les bonbons verts 💀 et le sirop !' : 'Avoid green candy 💀 and syrup!', '#fff', 0.36, 170);
     },
     ranking: () => byScore(ps),
     leader() {
@@ -668,8 +813,15 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
   const OX = AX + (AW - GW * CS) / 2;
   // État des dalles : 0 = solide, >0 = craquelle (temps avant la chute), -1 = tombée
   const tiles: number[][] = Array.from({ length: GH }, () => Array(GW).fill(0));
+  // Dalles qui viennent de tomber : petite chute animée (temps écoulé depuis la chute)
+  const falling: { x: number; y: number; t: number }[] = [];
+  // Joueurs en train de fondre dans la lave (temps écoulé)
+  const melting = new Map<P, number>();
+  const MELT = 1.5;
+  const embers: { x: number; y: number; vy: number; t: number }[] = [];
   let outCount = 0;
   let time = 0;
+  let shake = 0;
   const alive = () => ps.filter((p) => p.alive);
   const cell = (x: number, y: number) => [Math.floor((x - OX) / CS), Math.floor((y - 10 - AY) / CS)];
   const solid = (cx: number, cy: number) => cx >= 0 && cy >= 0 && cx < GW && cy < GH && tiles[cy][cx] >= 0;
@@ -678,7 +830,7 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
     over: false,
     input(pid, m) {
       const p = readInput(ps, pid, m as never);
-      if (!p) return;
+      if (!p || melting.has(p)) return;
       // A : petit saut (on franchit un trou d'une case)
       if (p.a && !p.lastA && p.hop <= 0 && p.cd <= 0 && p.alive) {
         p.hop = 0.5;
@@ -690,13 +842,19 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       time += dt;
+      shake = Math.max(0, shake - dt * 2);
       // Les dalles qu'on piétine craquellent puis tombent
       for (let y = 0; y < GH; y++)
         for (let x = 0; x < GW; x++)
           if (tiles[y][x] > 0) {
             tiles[y][x] -= dt;
-            if (tiles[y][x] <= 0) tiles[y][x] = -1;
+            if (tiles[y][x] <= 0) {
+              tiles[y][x] = -1;
+              falling.push({ x, y, t: 0 });
+            }
           }
+      for (const f of falling) f.t += dt;
+      while (falling.length && falling[0].t > 0.6) falling.shift();
       // Au bout de 30 s, des dalles au hasard tombent toutes seules
       if (time > 30 && Math.random() < dt * (0.6 + (time - 30) * 0.05)) {
         const x = Math.floor(Math.random() * GW);
@@ -704,7 +862,7 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
         if (tiles[y][x] === 0) tiles[y][x] = 1;
       }
       for (const p of ps) {
-        if (!p.bot || !p.alive) continue;
+        if (!p.bot || !p.alive || melting.has(p)) continue;
         // Bot : vise la dalle solide la plus sûre autour de lui
         if ((p.botT -= dt) <= 0) {
           p.botT = rnd(0.25, 0.6);
@@ -714,9 +872,9 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
             const ty = p.y + rnd(-200, 200);
             const [cx, cy] = cell(tx, ty);
             if (!solid(cx, cy) || tiles[cy][cx] > 0) continue;
-            let s = 0;
-            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (solid(cx + dx, cy + dy) && tiles[cy + dy][cx + dx] === 0) s++;
-            if (s > best.s) best = { x: OX + cx * CS + 50, y: AY + cy * CS + 60, s };
+            let sc = 0;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (solid(cx + dx, cy + dy) && tiles[cy + dy][cx + dx] === 0) sc++;
+            if (sc > best.s) best = { x: OX + cx * CS + 50, y: AY + cy * CS + 60, s: sc };
           }
           p.tx = best.x;
           p.ty = best.y;
@@ -732,34 +890,80 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
           p.cd = 1.1;
         }
       }
-      step(ps, dt, (p) => (p.hop > 0 ? 520 : 400));
+      for (const p of melting.keys()) p.inp = { x: 0, y: 0 };
+      step(ps, dt, (p) => (melting.has(p) ? 0 : p.hop > 0 ? 520 : 400));
+      // Les bords du plateau sont des murs : on ne tombe plus en allant tout au bord
       for (const p of ps) {
-        if (!p.alive || p.hop > 0) continue;
+        if (!p.alive || melting.has(p)) continue;
+        p.x = Math.max(OX + 26, Math.min(OX + GW * CS - 26, p.x));
+        p.y = Math.max(AY + 30, Math.min(AY + GH * CS - 4, p.y));
+      }
+      for (const p of ps) {
+        if (!p.alive) continue;
+        const m = melting.get(p);
+        if (m !== undefined) {
+          // On fond doucement… puis on est éliminé
+          melting.set(p, m + dt);
+          p.vx = p.vy = 0;
+          if (!ctx.light && Math.random() < dt * 14) embers.push({ x: p.x + rnd(-30, 30), y: p.y - rnd(0, 20), vy: rnd(-160, -60), t: 1 });
+          if (m + dt >= MELT) {
+            melting.delete(p);
+            p.alive = false;
+            p.out = ++outCount;
+          }
+          continue;
+        }
+        if (p.hop > 0) continue;
         const [cx, cy] = cell(p.x, p.y);
         if (!solid(cx, cy)) {
-          p.alive = false;
-          p.out = ++outCount;
+          // Plouf dans la lave : on recentre sur le trou et on commence à fondre
+          melting.set(p, 0);
+          p.x = OX + cx * CS + CS / 2;
+          p.y = AY + cy * CS + CS / 2 + 14;
+          p.pop = { text: fr ? 'AÏE AÏE AÏE !' : 'OUCH OUCH!', t: 1.2, c: '#ffd60a' };
+          shake = 0.6;
           sfx.pet();
-          if (!p.bot) ctx.buzz(p.pid, 500);
+          if (!p.bot) ctx.buzz(p.pid, 600);
           continue;
         }
         if (tiles[cy][cx] === 0 && time > 1.5) tiles[cy][cx] = 1.6;
       }
-      if (alive().length <= (ps.length > 1 ? 1 : 0)) game.over = true;
+      for (const e of embers) {
+        e.y += e.vy * dt;
+        e.t -= dt;
+      }
+      for (let i = embers.length - 1; i >= 0; i--) if (embers[i].t <= 0) embers.splice(i, 1);
+      if (alive().length <= (ps.length > 1 ? 1 : 0) && !melting.size) game.over = true;
     },
     render(g, t) {
+      g.save();
+      if (shake > 0) g.translate(rnd(-1, 1) * shake * 14, rnd(-1, 1) * shake * 14);
       g.fillStyle = '#2a1838';
-      g.fillRect(0, 0, 1920, 1080);
-      // La lave qui bouillonne
-      g.fillStyle = '#ff5a1f';
-      g.fillRect(AX - 20, AY - 20, AW + 40, AH + 40);
+      g.fillRect(-40, -40, 2000, 1160);
+      // La lave qui bouillonne, avec des vagues de lumière
+      const lavaG = g.createLinearGradient(0, AY, 0, AY + AH);
+      lavaG.addColorStop(0, '#ff7a1f');
+      lavaG.addColorStop(0.5, '#ff4a1a');
+      lavaG.addColorStop(1, '#d92e12');
+      g.fillStyle = lavaG;
+      g.beginPath();
+      g.roundRect(AX - 20, AY - 20, AW + 40, AH + 40, 30);
+      g.fill();
       if (!ctx.light) {
-        g.fillStyle = '#ffb21f';
-        for (let k = 0; k < 18; k++) {
+        g.strokeStyle = 'rgba(255,214,10,0.45)';
+        g.lineWidth = 6;
+        for (let k = 0; k < 7; k++) {
+          const y = AY + 40 + k * 115;
+          g.beginPath();
+          for (let x = AX - 20; x <= AX + AW + 20; x += 40) g.lineTo(x, y + Math.sin(x / 70 + t * 2 + k) * 10);
+          g.stroke();
+        }
+        g.fillStyle = '#ffd60a';
+        for (let k = 0; k < 22; k++) {
           const q = (t * 0.6 + k * 0.37) % 1;
           g.globalAlpha = 1 - q;
           g.beginPath();
-          g.arc(AX + ((k * 271) % AW), AY + ((k * 157) % AH), 10 + q * 26, 0, Math.PI * 2);
+          g.arc(AX + ((k * 271) % AW), AY + ((k * 157) % AH), 8 + q * 24, 0, Math.PI * 2);
           g.fill();
         }
         g.globalAlpha = 1;
@@ -768,31 +972,92 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
         for (let x = 0; x < GW; x++) {
           const v = tiles[y][x];
           if (v < 0) continue;
-          const shake = v > 0 ? rnd(-3, 3) : 0;
-          const px = OX + x * CS + 4 + shake;
+          const shk = v > 0 && v < 0.8 ? rnd(-3, 3) : 0;
+          const px = OX + x * CS + 4 + shk;
           const py = AY + y * CS + 4;
           g.fillStyle = INK;
           g.fillRect(px, py + 8, CS - 8, CS - 8);
-          g.fillStyle = v > 0 ? (v < 0.5 ? '#c98a5a' : '#e0b48a') : (x + y) % 2 ? '#fff1c9' : '#ffe6a6';
+          // Dalle qui craquelle : elle rougit en chauffant
+          const heat = v > 0 ? 1 - v / 1.6 : 0;
+          g.fillStyle = v > 0 ? (heat > 0.6 ? '#ff8a4a' : heat > 0.3 ? '#f0b07a' : '#f5d2a0') : (x + y) % 2 ? '#fff1c9' : '#ffe6a6';
           g.strokeStyle = INK;
           g.lineWidth = 4;
           g.beginPath();
-          g.roundRect(px, py, CS - 8, CS - 8, 10);
+          g.roundRect(px, py, CS - 8, CS - 8, 12);
           g.fill();
           g.stroke();
+          candy(g, px, py, CS - 8, CS - 8, 12);
           if (v > 0) {
+            g.lineWidth = 3;
             g.beginPath();
             g.moveTo(px + 20, py + 20);
             g.lineTo(px + 50, py + 46);
             g.lineTo(px + 40, py + 76);
+            if (heat > 0.4) {
+              g.moveTo(px + 50, py + 46);
+              g.lineTo(px + 76, py + 40);
+            }
             g.stroke();
           }
         }
+      // Dalles qui s'enfoncent dans la lave
+      for (const f of falling) {
+        const k = f.t / 0.6;
+        const w = (CS - 8) * (1 - k * 0.5);
+        const cx = OX + f.x * CS + CS / 2;
+        const cy = AY + f.y * CS + CS / 2 + k * 20;
+        g.globalAlpha = 1 - k;
+        g.fillStyle = '#c98a5a';
+        g.strokeStyle = INK;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.roundRect(cx - w / 2, cy - w / 2, w, w, 10);
+        g.fill();
+        g.stroke();
+        g.globalAlpha = 1;
+      }
       const order = ps.map((_, i) => i).sort((a, b) => ps[a].y - ps[b].y);
       for (const i of order) {
         const p = ps[i];
+        if (!p.alive) continue;
+        const m = melting.get(p);
+        if (m !== undefined) {
+          // Il s'enfonce dans la lave en fondant : coupé au ras de la surface, bulles et fumée
+          const k = m / MELT;
+          g.fillStyle = 'rgba(255,214,10,0.6)';
+          g.beginPath();
+          g.ellipse(p.x, p.y + 4, 46 + Math.sin(t * 12) * 4, 16, 0, 0, Math.PI * 2);
+          g.fill();
+          g.save();
+          g.beginPath();
+          g.rect(p.x - 100, p.y - 220, 200, 222);
+          g.clip();
+          g.translate(p.x, p.y + k * 110);
+          g.rotate(Math.sin(t * 10) * 0.12 * (1 - k));
+          g.globalAlpha = 1 - k * 0.4;
+          drawCharacter(g, 0, 0, 96 * (1 - k * 0.25), {
+            food: p.profile.food,
+            color: p.profile.color,
+            hat: p.profile.hat,
+            acc: p.profile.acc,
+            eyes: p.profile.eyes,
+            pose: p.profile.pose,
+            selfie: p.selfie,
+            t: t + i,
+            dir: p.dir,
+            mood: k < 0.25 ? 'wow' : 'sad',
+          });
+          g.restore();
+          // Rougeoiement de la lave sur le perso + anneau d'éclaboussure
+          g.strokeStyle = '#ffd60a';
+          g.lineWidth = 6 * (1 - k);
+          g.beginPath();
+          g.ellipse(p.x, p.y + 4, 30 + k * 60, 10 + k * 18, 0, 0, Math.PI * 2);
+          g.stroke();
+          continue;
+        }
         const lift = p.hop > 0 ? Math.sin((p.hop / 0.5) * Math.PI) * 60 : 0;
-        if (lift && p.alive) {
+        if (lift) {
           g.fillStyle = 'rgba(0,0,0,0.25)';
           g.beginPath();
           g.ellipse(p.x, p.y, 34, 12, 0, 0, Math.PI * 2);
@@ -800,13 +1065,35 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         drawP(g, p, t, i, { lift });
       }
+      // Fumée et braises de ceux qui fondent
+      for (const e of embers) {
+        g.globalAlpha = e.t;
+        g.fillStyle = e.t > 0.6 ? '#ffd60a' : '#9a8a9e';
+        g.beginPath();
+        g.arc(e.x, e.y, 6 + (1 - e.t) * 14, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      // Texte « AÏE » au-dessus de ceux qui fondent
+      for (const p of melting.keys()) {
+        if (!p.pop) continue;
+        g.font = '700 40px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.lineWidth = 8;
+        g.strokeStyle = INK;
+        const y = p.y - 150 - (1.2 - p.pop.t) * 40;
+        g.strokeText(p.pop.text, p.x, y);
+        g.fillStyle = p.pop.c;
+        g.fillText(p.pop.text, p.x, y);
+      }
+      g.restore();
       hud(g, ps, false);
       bigText(g, fr ? '🌋 Ne reste pas en place ! A = sauter un trou' : '🌋 Keep moving! A = jump a hole', '#fff', 0.42, 130);
     },
     out: (pid) => !!ps.find((p) => p.pid === pid && !p.alive),
     ranking: () => byOut(ps),
     leader() {
-      const a = alive();
+      const a = alive().filter((p) => !melting.has(p));
       return a.length === 1 ? a[0].profile.name : null;
     },
   };

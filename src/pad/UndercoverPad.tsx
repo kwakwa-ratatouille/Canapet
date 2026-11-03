@@ -15,6 +15,7 @@ const TXT = {
     waitTurn: (n: string) => `C’est au tour de ${n}…`,
     ready: 'J’ai fini de débattre ✋',
     vote: 'Qui est l’imposteur ?',
+    skip: '🤷 Passer (je ne vote contre personne)',
     guess: 'Devine le mot des civils !',
     out: 'Tu es éliminé. Chut ! 🤐',
     wait: 'Patiente…',
@@ -32,6 +33,7 @@ const TXT = {
     waitTurn: (n: string) => `${n}’s turn…`,
     ready: 'Done debating ✋',
     vote: 'Who’s the impostor?',
+    skip: '🤷 Skip (I vote for nobody)',
     guess: 'Guess the civilians’ word!',
     out: 'You’re out. Shh! 🤐',
     wait: 'Wait…',
@@ -114,6 +116,10 @@ export function UndercoverPad({ data, lang, send }: { data: UndercoverPadData; l
               </button>
             ))}
           </div>
+          <button className="btn ghost" onClick={() => send({ t: 'act', a: 'skip' })}>
+            {data.picked === -2 ? '✓ ' : ''}
+            {T.skip}
+          </button>
         </>
       ) : (
         <p className="pad-title pulse">{data.turn ? T.waitTurn(data.turn) : T.wait}</p>

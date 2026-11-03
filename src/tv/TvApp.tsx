@@ -310,14 +310,66 @@ function drawEvent(g: CanvasRenderingContext2D, session: Session, ev: NonNullabl
     g.fillStyle = SOLEIL;
     g.fillRect(0, 0, W, H);
   } else if (ev.kind === 'ralenti') {
-    g.globalAlpha = 0.2 * k;
-    g.fillStyle = '#2e7dff';
+    // Ralenti « escargot » (rien à voir avec le replay de fin) : bords baveux verts, escargots qui rampent
+    // en bas de l'écran en laissant une traînée, et bulles qui montent tout doucement.
+    g.globalAlpha = 0.14 * k;
+    g.fillStyle = '#7bd13b';
     g.fillRect(0, 0, W, H);
-    // Bandes sombres en haut et en bas, façon ralenti de film
-    g.globalAlpha = 0.85 * k;
-    g.fillStyle = INK;
-    g.fillRect(0, 0, W, 70 * k);
-    g.fillRect(0, H - 70 * k, W, 70 * k);
+    g.globalAlpha = 0.75 * k;
+    g.fillStyle = '#9be05a';
+    g.strokeStyle = INK;
+    g.lineWidth = 5;
+    for (const top of [true, false]) {
+      g.beginPath();
+      const y0 = top ? 0 : H;
+      g.moveTo(0, y0);
+      for (let x = 0; x <= W; x += 60) {
+        const drip = 26 + Math.abs(Math.sin(x * 0.013 + (top ? 0 : 2))) * 34 + Math.sin(t * 1.2 + x * 0.05) * 6;
+        g.lineTo(x, top ? drip : H - drip);
+      }
+      g.lineTo(W, y0);
+      g.closePath();
+      g.fill();
+      g.stroke();
+    }
+    for (let i = 0; i < 3; i++) {
+      const x = ((since * 45 + i * 700) % (W + 300)) - 150;
+      const y = H - 80;
+      // Traînée de bave
+      g.globalAlpha = 0.5 * k;
+      g.fillStyle = '#d8f5b0';
+      g.fillRect(x - 260, y + 22, 260, 10);
+      g.globalAlpha = k;
+      // Coquille en spirale + corps
+      g.fillStyle = '#c9e86a';
+      g.beginPath();
+      g.ellipse(x + 10, y + 20, 56, 16, 0, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#ff9a1f';
+      g.beginPath();
+      g.arc(x - 6, y - 8, 30, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.beginPath();
+      g.arc(x - 6, y - 8, 16, 0, Math.PI * 1.6);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(x + 46, y + 10);
+      g.lineTo(x + 56, y - 22);
+      g.moveTo(x + 56, y + 10);
+      g.lineTo(x + 70, y - 18);
+      g.stroke();
+    }
+    g.globalAlpha = 0.6 * k;
+    g.fillStyle = '#fff';
+    for (let i = 0; i < 10; i++) {
+      const bx = (i * 197) % W;
+      const by = H - ((since * 30 + i * 110) % H);
+      g.beginPath();
+      g.arc(bx, by, 10 + (i % 3) * 6, 0, Math.PI * 2);
+      g.fill();
+    }
   } else if (ev.kind === 'brouillard') {
     // Gros nuages qui traversent lentement l’écran
     g.globalAlpha = 0.93 * k;

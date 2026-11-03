@@ -296,10 +296,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     go('end', 8);
   }
 
+  /** Vote « passer » : personne ne sort si c'est le choix le plus voté. */
+  const SKIP = -2;
   /** Majorité des votes (null si égalité ou personne). */
   function majority(): number | null {
     const count = new Map<number, number>();
-    for (const { p } of alive()) if (p.pick >= 0) count.set(p.pick, (count.get(p.pick) ?? 0) + 1);
+    for (const { p } of alive()) if (p.pick >= 0 || p.pick === SKIP) count.set(p.pick, (count.get(p.pick) ?? 0) + 1);
     lastVotes = count;
     let best = -1;
     let bc = 0;
@@ -311,14 +313,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         tie = false;
       } else if (c === bc) tie = true;
     }
-    return best < 0 || tie ? null : best;
+    return best === -1 || best === SKIP || tie ? null : best;
   }
 
   function endVote() {
     const v = majority();
     lastOut = v ?? -1;
     if (v === null) {
-      headline = fr ? 'Égalité : personne ne sort.' : 'Tie: nobody is out.';
+      const sk = lastVotes.get(SKIP) ?? 0;
+      const skipped = sk > 0 && [...lastVotes.values()].every((c) => c <= sk);
+      headline = skipped ? (fr ? 'Vote passé : personne ne sort.' : 'Vote skipped: nobody is out.') : fr ? 'Égalité : personne ne sort.' : 'Tie: nobody is out.';
       sub = '';
     } else {
       pls[v].alive = false;
@@ -343,7 +347,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     } else if (phase === 'debate') p.ready = true;
     else if (phase === 'vote' && p.pick < 0) {
       const others = alive().filter((x) => x.i !== i);
-      p.pick = others[Math.floor(Math.random() * others.length)]?.i ?? -1;
+      p.pick = Math.random() < 0.15 ? SKIP : others[Math.floor(Math.random() * others.length)]?.i ?? -1;
     } else if (phase === 'guess' && i === lastOut) {
       // Un bot Mr White devine rarement juste
       if (Math.random() < 0.25) {
@@ -375,6 +379,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (!p) return;
       if (m.a === 'clue' && phase === 'clues' && turnOrder[turnPos] === i && p.alive) giveClue(i, m.s ?? '');
       else if (m.a === 'ready' && phase === 'debate' && p.alive) p.ready = true;
+      else if (m.a === 'skip' && phase === 'vote' && p.alive) {
+        p.pick = SKIP;
+        sfx.click();
+      }
       else if (m.a === 'pick' && phase === 'vote' && p.alive) {
         const k = m.n?.[0] ?? -1;
         if (k >= 0 && k < pls.length && k !== i && pls[k].alive) {
@@ -399,7 +407,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       const a = alive().map((x) => x.p);
       if (phase === 'debate' && a.every((p) => p.ready)) timer = Math.min(timer, 1);
-      if (phase === 'vote' && a.every((p) => p.pick >= 0)) timer = Math.min(timer, 1.5);
+      if (phase === 'vote' && a.every((p) => p.pick >= 0 || p.pick === SKIP)) timer = Math.min(timer, 1.5);
       if (timer > 0) return;
       switch (phase) {
         case 'roles':
@@ -598,7 +606,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         if (phase === 'vote' && p.alive) {
           g.font = '34px sans-serif';
-          g.fillText(p.pick >= 0 ? '🗳️' : '…', x, y - 220);
+          g.fillText(p.pick >= 0 || p.pick === SKIP ? '🗳️' : '…', x, y - 220);
         }
         if (phase === 'reveal' && lastVotes.get(i)) {
           g.font = '700 34px Fredoka, sans-serif';
