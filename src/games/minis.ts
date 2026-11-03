@@ -290,35 +290,36 @@ function chairs(runners: Runner[], ctx: GameCtx): GameInstance {
   let props: { x: number; y: number; r: number; kind: 'plante' | 'pouf' }[] = [];
   let loser = -1;
   let flash = 0;
-  let spin = 0;
-  const CX = 960;
-  const CY = 640;
   const SEAT_COLORS = ['#ff4f9a', '#2ec5ff', '#ffd60a', '#1fc9a0', '#9b5cff', '#ff9a1f', '#7bd13b'];
   const alive = () => ps.filter((p) => p.alive);
 
-  /** Les chaises en cercle au milieu, une de moins que de joueurs. */
-  function placeChairs() {
-    const n = Math.max(1, alive().length - 1);
-    const rx = 150 + n * 26;
-    const ry = 90 + n * 14;
-    spin = Math.random() * Math.PI * 2;
-    seats = [];
-    for (let k = 0; k < n; k++) {
-      const a = spin + (k / n) * Math.PI * 2;
-      seats.push({ x: CX + Math.cos(a) * rx, y: CY + Math.sin(a) * ry, by: -1, c: SEAT_COLORS[k % SEAT_COLORS.length] });
-    }
+  /** Nouveaux obstacles à chaque manche, posés au hasard (jamais sur un joueur). */
+  function placeProps() {
     props = [];
-    for (let k = 0; k < 300 && props.length < 4; k++) {
+    const want = 5 + Math.floor(Math.random() * 3);
+    for (let k = 0; k < 400 && props.length < want; k++) {
       const x = rnd(AX + 90, AX + AW - 90);
-      const y = rnd(AY + 90, AY + AH - 40);
-      const far = Math.hypot((x - CX) / (rx + 170), (y - CY) / (ry + 130)) > 1;
-      if (far && props.every((q) => Math.hypot(q.x - x, q.y - y) > 260)) props.push({ x, y, r: 46, kind: props.length % 2 ? 'pouf' : 'plante' });
+      const y = rnd(AY + 110, AY + AH - 40);
+      if (props.every((q) => Math.hypot(q.x - x, q.y - y) > 230) && ps.every((o) => !o.alive || Math.hypot(o.x - x, o.y - y) > 120))
+        props.push({ x, y, r: 46, kind: Math.random() < 0.5 ? 'pouf' : 'plante' });
     }
   }
-  placeChairs();
+  /** Au STOP, les chaises surgissent n'importe où (une de moins que de joueurs) : impossible de camper. */
+  function placeChairs() {
+    const n = Math.max(1, alive().length - 1);
+    seats = [];
+    for (let k = 0; k < 400 && seats.length < n; k++) {
+      const x = rnd(AX + 110, AX + AW - 110);
+      const y = rnd(AY + 130, AY + AH - 50);
+      if (seats.every((q) => Math.hypot(q.x - x, q.y - y) > 230) && props.every((q) => Math.hypot(q.x - x, q.y - y) > 130))
+        seats.push({ x, y, by: -1, c: SEAT_COLORS[seats.length % SEAT_COLORS.length] });
+    }
+  }
+  placeProps();
 
   function stopMusic() {
     phase = 'rush';
+    placeChairs();
     timer = 7;
     flash = 1;
     sfx.boom();
@@ -355,9 +356,11 @@ function chairs(runners: Runner[], ctx: GameCtx): GameInstance {
         if (!p.bot || !p.alive) continue;
         if (phase === 'music') {
           // On tourne autour des chaises, comme à une vraie fête
-          const a = Date.now() / 1600 + ps.indexOf(p) * 0.9;
-          p.tx = CX + Math.cos(a) * 480;
-          p.ty = CY + Math.sin(a) * 280;
+          if ((p.botT -= dt) <= 0) {
+            p.botT = rnd(1, 2.5);
+            p.tx = rnd(AX + 100, AX + AW - 100);
+            p.ty = rnd(AY + 120, AY + AH - 60);
+          }
         } else if (phase === 'rush') {
           if ((p.botT -= dt) > 0) {
             p.inp = { x: 0, y: 0 };
@@ -411,30 +414,17 @@ function chairs(runners: Runner[], ctx: GameCtx): GameInstance {
           phase = 'music';
           timer = rnd(5, 10);
           loser = -1;
-          placeChairs();
+          seats = [];
+          placeProps();
           sfx.go();
         }
       }
     },
     render(g, t) {
       drawFloor(g, '#ffe1ef', '#ffd0e6', phase === 'music' && !ctx.light && Math.floor(t * 2) % 2 ? '#fff1c9' : '#ffe9b8');
-      // Tapis rond au milieu + flèches qui tournent pendant la musique
-      g.fillStyle = 'rgba(155,92,255,0.18)';
-      g.beginPath();
-      g.ellipse(CX, CY, 520, 320, 0, 0, Math.PI * 2);
-      g.fill();
       if (phase === 'music') {
-        g.font = '700 54px Fredoka, sans-serif';
         g.textAlign = 'center';
-        g.fillStyle = 'rgba(58,33,64,0.35)';
-        for (let k = 0; k < 8; k++) {
-          const a = t * 0.8 + (k / 8) * Math.PI * 2;
-          g.save();
-          g.translate(CX + Math.cos(a) * 470, CY + Math.sin(a) * 285);
-          g.rotate(a + Math.PI / 2);
-          g.fillText('➜', 0, 16);
-          g.restore();
-        }
+        g.fillStyle = INK;
         g.font = '60px sans-serif';
         for (let k = 0; k < 6; k++) g.fillText(k % 2 ? '♪' : '♫', 300 + k * 270, 190 + Math.sin(t * 4 + k) * 14);
       }
@@ -470,11 +460,22 @@ function chairs(runners: Runner[], ctx: GameCtx): GameInstance {
             }
           },
         });
-      for (const q of seats) items.push({ y: q.y - 1, draw: () => drawChair(g, q.x, q.y, q.by >= 0 ? ps[q.by].profile.color : q.c, q.by < 0, phase === 'rush', t) });
+      const pop = phase === 'rush' ? Math.min(1, (7 - timer) / 0.35) : 1;
+      for (const q of seats)
+        items.push({
+          y: q.y - 1,
+          draw: () => {
+            g.save();
+            g.translate(q.x, q.y);
+            g.scale(pop, pop * (pop < 1 ? 1.2 : 1));
+            drawChair(g, 0, 0, q.by >= 0 ? ps[q.by].profile.color : q.c, q.by < 0, phase === 'rush', t);
+            g.restore();
+          },
+        });
       ps.forEach((p, i) => items.push({ y: p.y, draw: () => drawP(g, p, t, i, { mood: i === loser ? 'sad' : undefined, lift: seats.some((q) => q.by === i) ? 14 : 0 }) }));
       items.sort((a, b) => a.y - b.y).forEach((it) => it.draw());
       hud(g, ps, false);
-      if (phase === 'music') bigText(g, fr ? '🎵 Tourne autour des chaises…' : '🎵 Walk around the chairs…', '#fff', 0.5, 130);
+      if (phase === 'music') bigText(g, fr ? '🎵 Promène-toi… les chaises arrivent au STOP !' : '🎵 Walk around… chairs pop up at STOP!', '#fff', 0.45, 130);
       if (phase === 'rush' && flash > 0) bigText(g, 'STOP !', ROSE, 1 + flash * 0.4);
       if (phase === 'rush') bigText(g, fr ? `Assieds-toi ! ${seats.filter((q) => q.by < 0).length} chaise(s) libre(s)` : `Sit down! ${seats.filter((q) => q.by < 0).length} free`, SOLEIL, 0.5, 130);
       if (phase === 'result' && loser >= 0) bigText(g, fr ? `${ps[loser].profile.name} éliminé !` : `${ps[loser].profile.name} is out!`, '#fff', 0.7);
@@ -503,20 +504,64 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
   let pause = 0;
   let boomAt: { x: number; y: number; t: number } | null = null;
   const alive = () => ps.filter((p) => p.alive);
-  // Murs (x, y, largeur, hauteur) : canapé, table, et les rebords de l'estrade (ouverte par une rampe en bas)
-  const ST = { x: AX + AW - 420, y: AY + 40, w: 360, h: 300 };
-  const walls: { x: number; y: number; w: number; h: number; kind: 'canape' | 'table' | 'bord' }[] = [
-    { x: AX + 300, y: AY + 470, w: 260, h: 70, kind: 'canape' },
-    { x: AX + 680, y: AY + 240, w: 150, h: 110, kind: 'table' },
-    { x: AX + 820, y: AY + 560, w: 150, h: 110, kind: 'table' },
+  // Carte tirée au hasard à chaque partie : estrade (deux rampes = on peut faire la boucle),
+  // meubles qui bloquent, flaques de sirop qui ralentissent, deux tuyaux qui téléportent.
+  type Box = { x: number; y: number; w: number; h: number };
+  const hit = (q: Box, list: Box[], m = 70) => list.some((o) => q.x < o.x + o.w + m && q.x + q.w + m > o.x && q.y < o.y + o.h + m && q.y + q.h + m > o.y);
+  const STW = 340;
+  const STH = 260;
+  // L'estrade se pose loin du milieu (là où tout le monde commence)
+  let ST: Box = { x: AX + 80, y: AY + 60, w: STW, h: STH };
+  for (let k = 0; k < 200; k++) {
+    ST = { x: rnd(AX + 80, AX + AW - STW - 80), y: rnd(AY + 80, AY + AH - STH - 90), w: STW, h: STH };
+    if (!hit(ST, [{ x: 960 - 360, y: 620 - 260, w: 720, h: 520 }], 20)) break;
+  }
+  const GAP = 120;
+  // Rampes : une en haut à gauche, une en bas à droite (ou l'inverse)
+  const flip = Math.random() < 0.5;
+  const ramps = [
+    { x: flip ? ST.x + ST.w - GAP : ST.x, side: 'top' as const },
+    { x: flip ? ST.x : ST.x + ST.w - GAP, side: 'bottom' as const },
+  ];
+  const walls: (Box & { kind: 'canape' | 'table' | 'bord' })[] = [
     { x: ST.x - 16, y: ST.y, w: 16, h: ST.h, kind: 'bord' },
-    { x: ST.x, y: ST.y + ST.h, w: ST.w - 120, h: 16, kind: 'bord' },
+    { x: ST.x + ST.w, y: ST.y, w: 16, h: ST.h, kind: 'bord' },
+    { x: ramps[0].x === ST.x ? ST.x + GAP : ST.x, y: ST.y - 16, w: ST.w - GAP, h: 16, kind: 'bord' },
+    { x: ramps[1].x === ST.x ? ST.x + GAP : ST.x, y: ST.y + ST.h, w: ST.w - GAP, h: 16, kind: 'bord' },
   ];
-  // Tuyaux : on entre dans l'un, on ressort par l'autre
-  const pipes = [
-    { x: AX + 120, y: AY + 120 },
-    { x: AX + AW - 160, y: AY + AH - 100 },
-  ];
+  const taken: Box[] = [{ x: ST.x - 40, y: ST.y - 80, w: ST.w + 80, h: ST.h + 160 }];
+  // Personne ne commence dans un meuble : on garde libre la zone de départ au milieu
+  taken.push({ x: 960 - 360, y: 620 - 260, w: 720, h: 520 });
+  const furniture: (Box & { kind: 'canape' | 'table' })[] = [];
+  for (let k = 0; k < 300 && furniture.length < 4; k++) {
+    const kind = furniture.length % 2 ? 'table' : 'canape';
+    const w = kind === 'canape' ? 240 : 140;
+    const h = kind === 'canape' ? 70 : 100;
+    const q = { x: rnd(AX + 40, AX + AW - w - 40), y: rnd(AY + 40, AY + AH - h - 40), w, h, kind } as const;
+    if (!hit(q, taken)) {
+      furniture.push(q);
+      taken.push(q);
+    }
+  }
+  walls.push(...furniture);
+  const puddles: { x: number; y: number; r: number }[] = [];
+  for (let k = 0; k < 300 && puddles.length < 3; k++) {
+    const q = { x: rnd(AX + 120, AX + AW - 120), y: rnd(AY + 100, AY + AH - 80), r: 90 };
+    if (!hit({ x: q.x - q.r, y: q.y - q.r / 2, w: q.r * 2, h: q.r }, taken, 20)) {
+      puddles.push(q);
+      taken.push({ x: q.x - q.r, y: q.y - q.r / 2, w: q.r * 2, h: q.r });
+    }
+  }
+  const inSyrup = (pl: P) => puddles.some((q) => Math.hypot(pl.x - q.x, (pl.y - q.y) * 1.8) < q.r);
+  const pipes: { x: number; y: number }[] = [];
+  for (let k = 0; k < 300 && pipes.length < 2; k++) {
+    const q = { x: rnd(AX + 90, AX + AW - 90), y: rnd(AY + 80, AY + AH - 60) };
+    const box = { x: q.x - 60, y: q.y - 40, w: 120, h: 80 };
+    if (!hit(box, taken, 30) && (!pipes.length || Math.hypot(q.x - pipes[0].x, q.y - pipes[0].y) > 550)) {
+      pipes.push(q);
+      taken.push(box);
+    }
+  }
   const pipeCd = new Map<P, number>();
   const blockWalls = () => {
     for (const p of ps) {
@@ -591,7 +636,7 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         botGo(p, ctx, dt);
       }
-      step(ps, dt, (p) => (p === h ? 470 : 420));
+      step(ps, dt, (p) => (inSyrup(p) ? 200 : p === h ? 470 : 420));
       blockWalls();
       for (const p of ps) {
         if (!p.alive) continue;
@@ -647,19 +692,41 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
       g.fill();
       g.stroke();
       candy(g, ST.x, ST.y, ST.w, ST.h, 20);
-      g.fillStyle = '#ff9cc8';
-      g.beginPath();
-      g.moveTo(ST.x + ST.w - 120, ST.y + ST.h);
-      g.lineTo(ST.x + ST.w, ST.y + ST.h);
-      g.lineTo(ST.x + ST.w + 10, ST.y + ST.h + 60);
-      g.lineTo(ST.x + ST.w - 130, ST.y + ST.h + 60);
-      g.closePath();
-      g.fill();
-      g.stroke();
-      g.font = '700 30px Fredoka, sans-serif';
-      g.textAlign = 'center';
-      g.fillStyle = INK;
-      g.fillText(fr ? '⬆ RAMPE' : '⬆ RAMP', ST.x + ST.w - 60, ST.y + ST.h + 44);
+      for (const rp of ramps) {
+        const y0 = rp.side === 'top' ? ST.y : ST.y + ST.h;
+        const y1 = rp.side === 'top' ? ST.y - 60 : ST.y + ST.h + 60;
+        g.fillStyle = '#ff9cc8';
+        g.beginPath();
+        g.moveTo(rp.x, y0);
+        g.lineTo(rp.x + GAP, y0);
+        g.lineTo(rp.x + GAP + 10, y1);
+        g.lineTo(rp.x - 10, y1);
+        g.closePath();
+        g.fill();
+        g.stroke();
+        g.font = '700 28px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.fillStyle = INK;
+        g.fillText(fr ? 'RAMPE' : 'RAMP', rp.x + GAP / 2, (y0 + y1) / 2 + 10);
+      }
+      // Flaques de sirop : on y colle
+      for (const q of puddles) {
+        g.fillStyle = '#c96a1f';
+        g.strokeStyle = INK;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.ellipse(q.x, q.y, q.r, q.r / 1.8, 0, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = '#f0a040';
+        g.beginPath();
+        g.ellipse(q.x - 8, q.y - 5, q.r * 0.68, q.r / 2.9, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.6)';
+        g.beginPath();
+        g.ellipse(q.x - q.r * 0.35, q.y - q.r * 0.18, 16, 6, -0.3, 0, Math.PI * 2);
+        g.fill();
+      }
       // Tuyaux verts
       for (const q of pipes) {
         g.fillStyle = INK;
