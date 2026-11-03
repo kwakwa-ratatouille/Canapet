@@ -19,6 +19,7 @@ const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> =
   lave: { fr: ['SAUT', ''], en: ['JUMP', ''] },
   trappe: { fr: ['', 'POUSSER'], en: ['', 'SHOVE'] },
   couleur: { fr: ['', 'POUSSER'], en: ['', 'SHOVE'] },
+  maree: { fr: ['SAUT', 'POUSSER'], en: ['JUMP', 'SHOVE'] },
   foot: { fr: ['TIR', 'SPRINT', 'ATTRAPE'], en: ['SHOOT', 'SPRINT', 'CATCH'] },
 };
 

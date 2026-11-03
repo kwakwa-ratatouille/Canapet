@@ -152,6 +152,24 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  maree: {
+    fr: {
+      goal: 'Sois le dernier au sec !',
+      steps: [
+        ['🌊', 'La mer monte de plus en plus vite'],
+        ['🅰️', 'A : sauter de plateforme en plateforme'],
+        ['⚠️', 'Les plateformes marron s’effondrent, les violettes bougent · B : pousser'],
+      ],
+    },
+    en: {
+      goal: 'Be the last one dry!',
+      steps: [
+        ['🌊', 'The sea rises faster and faster'],
+        ['🅰️', 'A: jump from platform to platform'],
+        ['⚠️', 'Brown platforms crumble, purple ones move · B: shove'],
+      ],
+    },
+  },
   lave: {
     fr: {
       goal: 'Sois le dernier debout !',

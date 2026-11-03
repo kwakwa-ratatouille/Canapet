@@ -16,6 +16,7 @@ import { undercover } from './undercover';
 import { roulette } from './roulette';
 import { president } from './president';
 import { trapGame } from './trap';
+import { mareeGame } from './maree';
 import { chairsGame, colorGame, lavaGame, potatoGame, rainGame } from './minis';
 import type { GameBase, GameDef } from './types';
 import type { GameInfo } from '../shared/protocol';
@@ -44,10 +45,11 @@ const ART: Record<string, string> = {
   lave: 'lave',
   trappe: 'trappe',
   couleur: 'couleur',
+  maree: 'maree',
 };
 
 /** Couleur des jeux ajoutés après la DA. */
-const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f', trappe: '#9b5cff', couleur: '#2ec5ff' };
+const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f', trappe: '#9b5cff', couleur: '#2ec5ff', maree: '#1e8fc0' };
 
 const withArt = (g: GameBase): GameDef => {
   const slug = ART[g.id];
@@ -77,6 +79,7 @@ export const GAMES: GameDef[] = [
   lavaGame,
   trapGame,
   colorGame,
+  mareeGame,
   clash,
 ].map(withArt);
 
