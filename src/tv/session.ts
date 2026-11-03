@@ -332,6 +332,9 @@ export class Session {
         if (!p && this.players.size >= MAX_PLAYERS && this.phase === 'lobby') this.removeStale(true);
         this.addPlayer(pid, m.profile);
         return;
+      case 'bye':
+        this.onLeave(pid);
+        return;
       case 'profile':
         if (!p) return;
         Object.assign(p, m.profile, { name: clean(m.profile.name), color: this.freeColor(m.profile.color, pid) });

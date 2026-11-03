@@ -143,6 +143,16 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     void signOut();
   };
   const account = { user, cloud, connect, disconnect };
+  /** Quitter la partie : la télé est prévenue, on revient à l'accueil (on peut revenir avec le même code). */
+  const leave = () => {
+    if (!confirm(lang === 'fr' ? 'Quitter la partie ?' : 'Leave the game?')) return;
+    send({ t: 'bye' });
+    save('lastGame', null);
+    setTimeout(() => {
+      netRef.current?.stop();
+      location.hash = '#/';
+    }, 200);
+  };
   const [live, setLive] = useState<{ rank: number; of: number; left: number | null } | null>(demo === 'stick' ? { rank: 2, of: 4, left: 83 } : null);
   const profileRef = useRef(profile);
   profileRef.current = profile;
@@ -282,6 +292,11 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         )}
         {/* Réactions : toujours au même endroit, en haut à droite (avant, la bulle flottante cachait l'écran) */}
         {status === 'ok' && screen && ['wait', 'results', 'podium', 'paused', 'recap'].includes(screen.s) && <ReactButton lang={lang} family={family} send={send} inline />}
+        {!playing && status === 'ok' && (
+          <button className="pill" onClick={leave} aria-label={lang === 'fr' ? 'Quitter la partie' : 'Leave the game'}>
+            🚪
+          </button>
+        )}
         {!playing && (
           <button className="pill" onClick={() => setEditing(true)} aria-label={t(lang, 'editChar')}>
             ✏️

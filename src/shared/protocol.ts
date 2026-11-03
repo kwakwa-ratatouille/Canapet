@@ -88,6 +88,8 @@ export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | '
 /** Téléphone → télé */
 export type ToTv =
   | { t: 'hello'; pid: string; profile: Profile }
+  /** Le joueur quitte la partie (bouton 🚪 de la manette). */
+  | { t: 'bye' }
   | { t: 'profile'; profile: Profile }
   | { t: 'tap'; side: 0 | 1 }
   /** Stick + boutons ; c = bouton X, d = bouton Y (manette façon Switch). */
