@@ -239,29 +239,88 @@ function botGo(p: P, ctx: GameCtx, dt: number) {
 
 // ————————————————————————————————————————— Chaises musicales —————————————————————————————————————————
 
+/** Une vraie chaise vue de trois quarts : dossier, assise, pieds. La place libre brille. */
+function drawChair(g: CanvasRenderingContext2D, x: number, y: number, color: string, free: boolean, rush: boolean, t: number) {
+  if (free && rush) {
+    // Cible au sol : c'est ici qu'il faut aller
+    g.strokeStyle = SOLEIL;
+    g.lineWidth = 8;
+    g.globalAlpha = 0.6 + Math.sin(t * 10) * 0.3;
+    g.beginPath();
+    g.ellipse(x, y + 10, 70, 30, 0, 0, Math.PI * 2);
+    g.stroke();
+    g.globalAlpha = 1;
+  }
+  g.strokeStyle = INK;
+  g.lineWidth = 5;
+  g.lineJoin = 'round';
+  // Pieds
+  g.fillStyle = '#a0643a';
+  for (const [dx, dy] of [[-34, 0], [34, 0], [-26, 14], [26, 14]]) {
+    g.beginPath();
+    g.roundRect(x + dx - 5, y + dy - 6, 10, 32, 4);
+    g.fill();
+    g.stroke();
+  }
+  // Dossier
+  g.fillStyle = color;
+  g.beginPath();
+  g.roundRect(x - 40, y - 78, 80, 62, 14);
+  g.fill();
+  g.stroke();
+  g.fillStyle = 'rgba(255,255,255,0.35)';
+  g.fillRect(x - 28, y - 70, 56, 10);
+  // Assise
+  g.fillStyle = color;
+  g.beginPath();
+  g.roundRect(x - 46, y - 20, 92, 30, 12);
+  g.fill();
+  g.stroke();
+  candy(g, x - 46, y - 20, 92, 30, 12);
+}
+
 function chairs(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const ps = makePlayers(runners);
   let phase: 'music' | 'rush' | 'result' = 'music';
-  let timer = rnd(4, 8);
+  let timer = rnd(5, 9);
   let outCount = 0;
-  let seats: { x: number; y: number; by: number; t: number }[] = [];
+  let seats: { x: number; y: number; by: number; c: string }[] = [];
+  // Obstacles (plantes en pot, poufs) : ils bloquent le passage, changent à chaque manche
+  let props: { x: number; y: number; r: number; kind: 'plante' | 'pouf' }[] = [];
   let loser = -1;
   let flash = 0;
+  let spin = 0;
+  const CX = 960;
+  const CY = 640;
+  const SEAT_COLORS = ['#ff4f9a', '#2ec5ff', '#ffd60a', '#1fc9a0', '#9b5cff', '#ff9a1f', '#7bd13b'];
   const alive = () => ps.filter((p) => p.alive);
+
+  /** Les chaises en cercle au milieu, une de moins que de joueurs. */
+  function placeChairs() {
+    const n = Math.max(1, alive().length - 1);
+    const rx = 150 + n * 26;
+    const ry = 90 + n * 14;
+    spin = Math.random() * Math.PI * 2;
+    seats = [];
+    for (let k = 0; k < n; k++) {
+      const a = spin + (k / n) * Math.PI * 2;
+      seats.push({ x: CX + Math.cos(a) * rx, y: CY + Math.sin(a) * ry, by: -1, c: SEAT_COLORS[k % SEAT_COLORS.length] });
+    }
+    props = [];
+    for (let k = 0; k < 300 && props.length < 4; k++) {
+      const x = rnd(AX + 90, AX + AW - 90);
+      const y = rnd(AY + 90, AY + AH - 40);
+      const far = Math.hypot((x - CX) / (rx + 170), (y - CY) / (ry + 130)) > 1;
+      if (far && props.every((q) => Math.hypot(q.x - x, q.y - y) > 260)) props.push({ x, y, r: 46, kind: props.length % 2 ? 'pouf' : 'plante' });
+    }
+  }
+  placeChairs();
 
   function stopMusic() {
     phase = 'rush';
     timer = 7;
     flash = 1;
-    const n = alive().length - 1;
-    // Les coussins jaillissent du sol, n'importe où : impossible de camper
-    seats = [];
-    for (let k = 0; k < 300 && seats.length < n; k++) {
-      const x = rnd(AX + 120, AX + AW - 120);
-      const y = rnd(AY + 120, AY + AH - 60);
-      if (seats.every((s) => Math.hypot(s.x - x, s.y - y) > 220)) seats.push({ x, y, by: -1, t: 0 });
-    }
     sfx.boom();
     speak(fr ? 'Stop ! Assis !' : 'Stop! Sit down!', ctx.lang);
     // Les bots réagissent plus ou moins vite
@@ -295,16 +354,16 @@ function chairs(runners: Runner[], ctx: GameCtx): GameInstance {
       for (const p of ps) {
         if (!p.bot || !p.alive) continue;
         if (phase === 'music') {
-          // Promenade en rond
-          const a = Date.now() / 1400 + ps.indexOf(p);
-          p.tx = 960 + Math.cos(a) * 420;
-          p.ty = 620 + Math.sin(a) * 260;
+          // On tourne autour des chaises, comme à une vraie fête
+          const a = Date.now() / 1600 + ps.indexOf(p) * 0.9;
+          p.tx = CX + Math.cos(a) * 480;
+          p.ty = CY + Math.sin(a) * 280;
         } else if (phase === 'rush') {
           if ((p.botT -= dt) > 0) {
             p.inp = { x: 0, y: 0 };
             continue;
           }
-          const free = seats.filter((s) => s.by < 0).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+          const free = seats.filter((q) => q.by < 0).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
           if (free) {
             p.tx = free.x;
             p.ty = free.y;
@@ -314,64 +373,110 @@ function chairs(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         botGo(p, ctx, dt);
       }
-      // Assis = immobile sur son coussin
-      step(ps, dt, (p) => (seats.some((s) => s.by === ps.indexOf(p)) ? 0 : 430));
+      // Assis = immobile sur sa chaise
+      step(ps, dt, (p) => (seats.some((q) => q.by === ps.indexOf(p)) ? 0 : 430));
+      // Les obstacles repoussent
+      for (const p of ps) {
+        if (!p.alive) continue;
+        for (const q of props) {
+          const dx = p.x - q.x;
+          const dy = (p.y - q.y) * 1.3;
+          const d = Math.hypot(dx, dy);
+          if (d > 0 && d < q.r + BODY) {
+            p.x = q.x + (dx / d) * (q.r + BODY);
+            p.y = q.y + ((dy / d) * (q.r + BODY)) / 1.3;
+          }
+        }
+      }
       if (phase === 'rush') {
-        for (const s of seats) {
-          if (s.by >= 0) {
-            const o = ps[s.by];
-            o.x = s.x;
-            o.y = s.y + 6;
+        for (const q of seats) {
+          if (q.by >= 0) {
+            const o = ps[q.by];
+            o.x = q.x;
+            o.y = q.y + 4;
             continue;
           }
-          const p = ps.find((q, i) => q.alive && q.stun <= 0 && !seats.some((x) => x.by === i) && Math.hypot(q.x - s.x, (q.y - s.y) * 1.3) < 56);
+          const p = ps.find((o, i) => o.alive && o.stun <= 0 && !seats.some((x) => x.by === i) && Math.hypot(o.x - q.x, (o.y - q.y) * 1.3) < 60);
           if (p) {
-            s.by = ps.indexOf(p);
-            s.t = 0;
+            q.by = ps.indexOf(p);
             sfx.pop();
             p.pop = { text: fr ? 'ASSIS !' : 'SEATED!', t: 0.8, c: SOLEIL };
           }
         }
-        if (seats.every((s) => s.by >= 0) || timer <= 0) endRush();
+        if (seats.every((q) => q.by >= 0) || timer <= 0) endRush();
       } else if (phase === 'music' && timer <= 0) stopMusic();
       else if (phase === 'result' && timer <= 0) {
         if (alive().length <= 1) game.over = true;
         else {
           phase = 'music';
-          timer = rnd(4, 9);
-          seats = [];
+          timer = rnd(5, 10);
           loser = -1;
+          placeChairs();
           sfx.go();
         }
       }
     },
     render(g, t) {
       drawFloor(g, '#ffe1ef', '#ffd0e6', phase === 'music' && !ctx.light && Math.floor(t * 2) % 2 ? '#fff1c9' : '#ffe9b8');
-      // Notes qui dansent pendant la musique
+      // Tapis rond au milieu + flèches qui tournent pendant la musique
+      g.fillStyle = 'rgba(155,92,255,0.18)';
+      g.beginPath();
+      g.ellipse(CX, CY, 520, 320, 0, 0, Math.PI * 2);
+      g.fill();
       if (phase === 'music') {
-        g.font = '60px sans-serif';
+        g.font = '700 54px Fredoka, sans-serif';
         g.textAlign = 'center';
+        g.fillStyle = 'rgba(58,33,64,0.35)';
+        for (let k = 0; k < 8; k++) {
+          const a = t * 0.8 + (k / 8) * Math.PI * 2;
+          g.save();
+          g.translate(CX + Math.cos(a) * 470, CY + Math.sin(a) * 285);
+          g.rotate(a + Math.PI / 2);
+          g.fillText('➜', 0, 16);
+          g.restore();
+        }
+        g.font = '60px sans-serif';
         for (let k = 0; k < 6; k++) g.fillText(k % 2 ? '♪' : '♫', 300 + k * 270, 190 + Math.sin(t * 4 + k) * 14);
       }
-      for (const s of seats) {
-        g.fillStyle = INK;
-        g.beginPath();
-        g.ellipse(s.x, s.y + 6, 62, 30, 0, 0, Math.PI * 2);
-        g.fill();
-        g.fillStyle = s.by >= 0 ? ps[s.by].profile.color : ROSE;
-        g.beginPath();
-        g.ellipse(s.x, s.y, 58, 28, 0, 0, Math.PI * 2);
-        g.fill();
-        g.strokeStyle = INK;
-        g.lineWidth = 5;
-        g.stroke();
-      }
-      const order = ps.map((_, i) => i).sort((a, b) => ps[a].y - ps[b].y);
-      for (const i of order) drawP(g, ps[i], t, i, { mood: i === loser ? 'sad' : undefined });
+      // Obstacles, chaises et joueurs triés du fond vers le devant
+      type Item = { y: number; draw: () => void };
+      const items: Item[] = [];
+      for (const q of props)
+        items.push({
+          y: q.y,
+          draw: () => {
+            g.strokeStyle = INK;
+            g.lineWidth = 5;
+            if (q.kind === 'plante') {
+              g.fillStyle = '#d9654a';
+              g.beginPath();
+              g.roundRect(q.x - 34, q.y - 40, 68, 52, 10);
+              g.fill();
+              g.stroke();
+              g.fillStyle = '#3fa34a';
+              for (const [dx, dy, r] of [[-22, -60, 26], [20, -64, 24], [0, -86, 26]]) {
+                g.beginPath();
+                g.arc(q.x + dx, q.y + dy, r, 0, Math.PI * 2);
+                g.fill();
+                g.stroke();
+              }
+            } else {
+              g.fillStyle = '#9b5cff';
+              g.beginPath();
+              g.ellipse(q.x, q.y - 16, 50, 34, 0, 0, Math.PI * 2);
+              g.fill();
+              g.stroke();
+              candy(g, q.x - 50, q.y - 50, 100, 68, 30);
+            }
+          },
+        });
+      for (const q of seats) items.push({ y: q.y - 1, draw: () => drawChair(g, q.x, q.y, q.by >= 0 ? ps[q.by].profile.color : q.c, q.by < 0, phase === 'rush', t) });
+      ps.forEach((p, i) => items.push({ y: p.y, draw: () => drawP(g, p, t, i, { mood: i === loser ? 'sad' : undefined, lift: seats.some((q) => q.by === i) ? 14 : 0 }) }));
+      items.sort((a, b) => a.y - b.y).forEach((it) => it.draw());
       hud(g, ps, false);
-      if (phase === 'music') bigText(g, fr ? '🎵 Promène-toi…' : '🎵 Walk around…', '#fff', 0.55, 130);
+      if (phase === 'music') bigText(g, fr ? '🎵 Tourne autour des chaises…' : '🎵 Walk around the chairs…', '#fff', 0.5, 130);
       if (phase === 'rush' && flash > 0) bigText(g, 'STOP !', ROSE, 1 + flash * 0.4);
-      if (phase === 'rush') bigText(g, fr ? `Assieds-toi ! ${seats.filter((s) => s.by < 0).length} coussin(s) libre(s)` : `Sit down! ${seats.filter((s) => s.by < 0).length} free`, SOLEIL, 0.5, 130);
+      if (phase === 'rush') bigText(g, fr ? `Assieds-toi ! ${seats.filter((q) => q.by < 0).length} chaise(s) libre(s)` : `Sit down! ${seats.filter((q) => q.by < 0).length} free`, SOLEIL, 0.5, 130);
       if (phase === 'result' && loser >= 0) bigText(g, fr ? `${ps[loser].profile.name} éliminé !` : `${ps[loser].profile.name} is out!`, '#fff', 0.7);
     },
     out: (pid) => !!ps.find((p) => p.pid === pid && !p.alive),
