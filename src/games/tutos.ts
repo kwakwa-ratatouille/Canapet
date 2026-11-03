@@ -170,6 +170,24 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  pixel: {
+    fr: {
+      goal: 'Aie le plus de cases à ta couleur !',
+      steps: [
+        ['🎨', 'Chaque case où tu marches prend ta couleur'],
+        ['🔁', 'Repasse sur les cases des autres pour les voler'],
+        ['🪣', 'Pot de peinture = grosse éclaboussure · A : glissade · B : pousser'],
+      ],
+    },
+    en: {
+      goal: 'Own the most tiles!',
+      steps: [
+        ['🎨', 'Every tile you walk on takes your color'],
+        ['🔁', 'Walk over others’ tiles to steal them'],
+        ['🪣', 'Paint pot = big splash · A: slide · B: shove'],
+      ],
+    },
+  },
   lave: {
     fr: {
       goal: 'Sois le dernier debout !',

@@ -4,7 +4,7 @@ import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { candy, roundRectText } from './draw';
+import { candy, playerRing, roundRectText } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 // Aire de jeu commune (repère télé 1920 × 1080)
@@ -1653,6 +1653,206 @@ function colorBlock(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
+// ————————————————————————————————————————— Pixel Art —————————————————————————————————————————
+// Le sol est une grande grille : chaque case où l'on marche prend sa couleur. On peut repeindre celles des autres.
+// A = glissade (on peint une traînée plus vite), B = pousser. Bonus : pot de peinture (éclabousse 5×5).
+
+function pixelArt(runners: Runner[], ctx: GameCtx): GameInstance {
+  const fr = ctx.lang === 'fr';
+  const ps = makePlayers(runners);
+  const CS = 50;
+  const GW = Math.floor(AW / CS);
+  const GH = Math.floor(AH / CS);
+  const OX = AX + (AW - GW * CS) / 2;
+  const OY = AY + (AH - GH * CS) / 2;
+  // Propriétaire de chaque case (-1 = blanche)
+  const cells: number[] = Array(GW * GH).fill(-1);
+  const counts = ps.map(() => 0);
+  const pots: { x: number; y: number; t: number }[] = [];
+  const splats: { x: number; y: number; c: string; t: number }[] = [];
+  let nextPot = rnd(4, 7);
+  let time = 0;
+  const cellAt = (x: number, y: number) => {
+    const cx = Math.floor((x - OX) / CS);
+    const cy = Math.floor((y - 10 - OY) / CS);
+    return cx >= 0 && cy >= 0 && cx < GW && cy < GH ? cy * GW + cx : -1;
+  };
+  const paint = (idx: number, who: number) => {
+    if (idx < 0 || cells[idx] === who) return;
+    if (cells[idx] >= 0) counts[cells[idx]]--;
+    cells[idx] = who;
+    counts[who]++;
+  };
+  const splash = (x: number, y: number, who: number, r: number) => {
+    const c = cellAt(x, y);
+    if (c < 0) return;
+    const cx = c % GW;
+    const cy = Math.floor(c / GW);
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++) {
+        const nx = cx + dx;
+        const ny = cy + dy;
+        if (nx >= 0 && ny >= 0 && nx < GW && ny < GH && dx * dx + dy * dy <= r * r + 1) paint(ny * GW + nx, who);
+      }
+  };
+
+  const game: GameInstance = {
+    over: false,
+    input(pid, m) {
+      const p = readInput(ps, pid, m as never);
+      if (!p) return;
+      if (p.b && !p.lastB) shove(ps, p, ctx);
+      p.lastB = p.b;
+      // A : glissade (petite accélération qui peint une traînée)
+      if (p.a && !p.lastA && p.hop <= 0 && p.cd <= 0) {
+        p.hop = 0.35;
+        p.cd = 1.2;
+        if (!p.bot) ctx.cool(p.pid, 'a', 1.2);
+        sfx.whoosh();
+      }
+      p.lastA = p.a;
+    },
+    update(dt) {
+      time += dt;
+      if ((nextPot -= dt) <= 0 && pots.length < 2) {
+        nextPot = rnd(5, 9);
+        pots.push({ x: rnd(AX + 100, AX + AW - 100), y: rnd(AY + 100, AY + AH - 60), t: 9 });
+      }
+      for (const q of pots) q.t -= dt;
+      for (let i = pots.length - 1; i >= 0; i--) if (pots[i].t <= 0) pots.splice(i, 1);
+      for (const sp of splats) sp.t -= dt;
+      for (let i = splats.length - 1; i >= 0; i--) if (splats[i].t <= 0) splats.splice(i, 1);
+      ps.forEach((p, i) => {
+        if (!p.bot || !p.alive) return;
+        if ((p.botT -= dt) <= 0) {
+          p.botT = rnd(0.8, 1.8);
+          // Un pot proche ? Sinon une zone qui n'est pas à moi
+          const pot = pots.find((q) => Math.hypot(q.x - p.x, q.y - p.y) < 500);
+          if (pot && Math.random() < 0.7) {
+            p.tx = pot.x;
+            p.ty = pot.y;
+          } else {
+            for (let k = 0; k < 12; k++) {
+              const idx = Math.floor(Math.random() * cells.length);
+              if (cells[idx] !== i) {
+                p.tx = OX + (idx % GW) * CS + CS / 2;
+                p.ty = OY + Math.floor(idx / GW) * CS + CS / 2;
+                break;
+              }
+            }
+          }
+        }
+        if (p.hop <= 0 && p.cd <= 0 && Math.random() < dt * 0.6) {
+          p.hop = 0.35;
+          p.cd = 1.2;
+        }
+        botGo(p, ctx, dt);
+      });
+      step(ps, dt, (p) => (p.hop > 0 ? 820 : 420));
+      ps.forEach((p, i) => {
+        if (!p.alive) return;
+        paint(cellAt(p.x, p.y), i);
+        // La glissade peint un peu plus large
+        if (p.hop > 0) {
+          paint(cellAt(p.x + 30, p.y), i);
+          paint(cellAt(p.x - 30, p.y), i);
+          paint(cellAt(p.x, p.y + 25), i);
+        }
+        const pot = pots.findIndex((q) => Math.hypot(q.x - p.x, (q.y - p.y) * 1.3) < 50);
+        if (pot >= 0) {
+          const q = pots[pot];
+          pots.splice(pot, 1);
+          splash(q.x, q.y, i, 3);
+          splats.push({ x: q.x, y: q.y, c: p.profile.color, t: 0.6 });
+          p.pop = { text: fr ? 'SPLASH !' : 'SPLASH!', t: 0.8, c: p.profile.color };
+          sfx.pop();
+          if (!p.bot) ctx.buzz(p.pid, 120);
+        }
+      });
+    },
+    render(g, t) {
+      g.fillStyle = '#e3f2ff';
+      g.fillRect(0, 0, 1920, 1080);
+      // Toile blanche + cases peintes
+      g.fillStyle = INK;
+      g.beginPath();
+      g.roundRect(OX - 14, OY - 4, GW * CS + 28, GH * CS + 28, 24);
+      g.fill();
+      g.fillStyle = '#ffffff';
+      g.beginPath();
+      g.roundRect(OX - 14, OY - 14, GW * CS + 28, GH * CS + 28, 24);
+      g.fill();
+      for (let i = 0; i < cells.length; i++) {
+        const o = cells[i];
+        const x = OX + (i % GW) * CS;
+        const y = OY + Math.floor(i / GW) * CS;
+        if (o >= 0) {
+          g.fillStyle = ps[o].profile.color;
+          g.fillRect(x, y, CS, CS);
+          g.fillStyle = 'rgba(255,255,255,0.18)';
+          g.fillRect(x + 4, y + 4, CS - 8, 8);
+        } else if (((i % GW) + Math.floor(i / GW)) % 2) {
+          g.fillStyle = '#f2f6fb';
+          g.fillRect(x, y, CS, CS);
+        }
+      }
+      g.strokeStyle = 'rgba(58,33,64,0.08)';
+      g.lineWidth = 1;
+      for (let x = 0; x <= GW; x++) {
+        g.beginPath();
+        g.moveTo(OX + x * CS, OY);
+        g.lineTo(OX + x * CS, OY + GH * CS);
+        g.stroke();
+      }
+      // Pots de peinture qui clignotent avant de disparaître
+      for (const q of pots) {
+        if (q.t < 2 && Math.floor(t * 8) % 2) continue;
+        g.fillStyle = INK;
+        g.beginPath();
+        g.roundRect(q.x - 26, q.y - 34, 52, 56, 10);
+        g.fill();
+        g.fillStyle = ['#ff4f9a', '#ffd60a', '#2ec5ff', '#7bd13b'][Math.floor(t * 3) % 4];
+        g.beginPath();
+        g.roundRect(q.x - 22, q.y - 42, 44, 52, 10);
+        g.fill();
+        g.strokeStyle = INK;
+        g.lineWidth = 4;
+        g.stroke();
+        g.fillStyle = '#fff';
+        g.font = '700 28px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.fillText('🎨', q.x, q.y - 6);
+      }
+      for (const sp of splats) {
+        g.globalAlpha = sp.t / 0.6;
+        g.fillStyle = sp.c;
+        g.beginPath();
+        g.arc(sp.x, sp.y, 60 + (0.6 - sp.t) * 300, 0, Math.PI * 2);
+        g.fill();
+        g.globalAlpha = 1;
+      }
+      const order = ps.map((_, i) => i).sort((a, b) => ps[a].y - ps[b].y);
+      for (const i of order) {
+        const p = ps[i];
+        playerRing(g, p.x, p.y, 34, p.profile.color);
+        drawP(g, p, t, i, { mood: p.hop > 0 ? 'wow' : undefined });
+      }
+      // Bandeau : pourcentage de chacun
+      const total = cells.length;
+      const w = Math.min(220, 1840 / ps.length);
+      ps.forEach((p, i) => {
+        roundRectText(g, `${p.profile.name} ${Math.round((counts[i] / total) * 100)} %`, 40 + i * w, 30, w - 10, 26, p.profile.color);
+      });
+      if (time < 3) bigText(g, fr ? '🎨 Colorie le plus de cases !' : '🎨 Paint the most tiles!', '#fff', 0.5, 140);
+    },
+    ranking: () => ps.map((_, i) => i).sort((a, b) => counts[b] - counts[a]).map((i) => ps[i].pid),
+    leader() {
+      return null;
+    },
+  };
+  return game;
+}
+
 // ————————————————————————————————————————— Fiches des jeux —————————————————————————————————————————
 
 const base = { inspired: 'Jeux de fête classiques', layout: 'stick' as const, min: 2, max: 8, botFill: 4 };
@@ -1697,6 +1897,18 @@ export const colorGame: GameBase = {
   limit: 120,
   create: colorBlock,
 };
+export const pixelGame: GameBase = {
+  ...base,
+  max: 12,
+  id: 'pixel',
+  emoji: '🎨',
+  name: { fr: 'Pixel Art', en: 'Pixel Paint' },
+  how: { fr: 'Chaque case où tu marches prend ta couleur : colorie le plus de sol ! · A = glissade · B = pousser', en: 'Every tile you walk on takes your color: paint the most floor! · A = slide · B = shove' },
+  music: 'party',
+  limit: 60,
+  create: pixelArt,
+};
+
 export const lavaGame: GameBase = {
   ...base,
   id: 'lave',

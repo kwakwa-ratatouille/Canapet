@@ -75,6 +75,7 @@ export function TvApp() {
         '2': 'trappe',
         '3': 'couleur',
         '4': 'maree',
+        '5': 'pixel',
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');
