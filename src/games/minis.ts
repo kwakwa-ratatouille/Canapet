@@ -503,6 +503,41 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
   let pause = 0;
   let boomAt: { x: number; y: number; t: number } | null = null;
   const alive = () => ps.filter((p) => p.alive);
+  // Murs (x, y, largeur, hauteur) : canapé, table, et les rebords de l'estrade (ouverte par une rampe en bas)
+  const ST = { x: AX + AW - 420, y: AY + 40, w: 360, h: 300 };
+  const walls: { x: number; y: number; w: number; h: number; kind: 'canape' | 'table' | 'bord' }[] = [
+    { x: AX + 300, y: AY + 470, w: 260, h: 70, kind: 'canape' },
+    { x: AX + 680, y: AY + 240, w: 150, h: 110, kind: 'table' },
+    { x: AX + 820, y: AY + 560, w: 150, h: 110, kind: 'table' },
+    { x: ST.x - 16, y: ST.y, w: 16, h: ST.h, kind: 'bord' },
+    { x: ST.x, y: ST.y + ST.h, w: ST.w - 120, h: 16, kind: 'bord' },
+  ];
+  // Tuyaux : on entre dans l'un, on ressort par l'autre
+  const pipes = [
+    { x: AX + 120, y: AY + 120 },
+    { x: AX + AW - 160, y: AY + AH - 100 },
+  ];
+  const pipeCd = new Map<P, number>();
+  const blockWalls = () => {
+    for (const p of ps) {
+      if (!p.alive) continue;
+      for (const w of walls) {
+        const cx = Math.max(w.x, Math.min(w.x + w.w, p.x));
+        const cy = Math.max(w.y, Math.min(w.y + w.h, p.y));
+        const dx = p.x - cx;
+        const dy = p.y - cy;
+        const d = Math.hypot(dx, dy);
+        const R = 26;
+        if (d < R) {
+          if (d === 0) p.y = w.y + w.h + R;
+          else {
+            p.x = cx + (dx / d) * R;
+            p.y = cy + (dy / d) * R;
+          }
+        }
+      }
+    }
+  };
 
   function newRound() {
     const a = alive();
@@ -549,10 +584,30 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
           p.tx = Math.max(AX + 60, Math.min(AX + AW - 60, p.x + (dx / d) * 300 + (p.x < 400 || p.x > 1500 ? (960 - p.x) * 0.5 : 0)));
           p.ty = Math.max(AY + 60, Math.min(AY + AH - 60, p.y + (dy / d) * 300 + (p.y < 300 || p.y > 940 ? (620 - p.y) * 0.5 : 0)));
           if (d < 110 && Math.random() < 0.04) shove(ps, p, ctx);
+          if (Math.hypot(p.vx, p.vy) < 40 && Math.random() < 0.05) {
+            p.tx = rnd(AX + 80, AX + AW - 80);
+            p.ty = rnd(AY + 80, AY + AH - 60);
+          }
         }
         botGo(p, ctx, dt);
       }
       step(ps, dt, (p) => (p === h ? 470 : 420));
+      blockWalls();
+      for (const p of ps) {
+        if (!p.alive) continue;
+        const cd = (pipeCd.get(p) ?? 0) - dt;
+        pipeCd.set(p, cd);
+        if (cd > 0) continue;
+        const k = pipes.findIndex((q) => Math.hypot(p.x - q.x, (p.y - q.y) * 1.3) < 40);
+        if (k >= 0) {
+          const out = pipes[1 - k];
+          p.x = out.x + 70;
+          p.y = out.y + 10;
+          pipeCd.set(p, 1.6);
+          p.pop = { text: 'BLOOP !', t: 0.7, c: '#7bd13b' };
+          sfx.pop();
+        }
+      }
       // Passe : on touche quelqu'un (pas celui qui vient de nous la donner, pendant 0,6 s)
       for (const o of ps) {
         if (o === h || !o.alive || (ps.indexOf(o) === immune && immuneT > 0)) continue;
@@ -579,6 +634,78 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     render(g, t) {
       drawFloor(g, '#fff1c9', '#ffe6a6', '#ffd6a0');
+      // Estrade surélevée (on y monte par la rampe en bas à droite)
+      g.fillStyle = INK;
+      g.beginPath();
+      g.roundRect(ST.x, ST.y + 14, ST.w, ST.h, 20);
+      g.fill();
+      g.fillStyle = '#ffd0e6';
+      g.strokeStyle = INK;
+      g.lineWidth = 5;
+      g.beginPath();
+      g.roundRect(ST.x, ST.y, ST.w, ST.h, 20);
+      g.fill();
+      g.stroke();
+      candy(g, ST.x, ST.y, ST.w, ST.h, 20);
+      g.fillStyle = '#ff9cc8';
+      g.beginPath();
+      g.moveTo(ST.x + ST.w - 120, ST.y + ST.h);
+      g.lineTo(ST.x + ST.w, ST.y + ST.h);
+      g.lineTo(ST.x + ST.w + 10, ST.y + ST.h + 60);
+      g.lineTo(ST.x + ST.w - 130, ST.y + ST.h + 60);
+      g.closePath();
+      g.fill();
+      g.stroke();
+      g.font = '700 30px Fredoka, sans-serif';
+      g.textAlign = 'center';
+      g.fillStyle = INK;
+      g.fillText(fr ? '⬆ RAMPE' : '⬆ RAMP', ST.x + ST.w - 60, ST.y + ST.h + 44);
+      // Tuyaux verts
+      for (const q of pipes) {
+        g.fillStyle = INK;
+        g.beginPath();
+        g.ellipse(q.x, q.y + 8, 46, 22, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#3fa34a';
+        g.strokeStyle = INK;
+        g.lineWidth = 5;
+        g.beginPath();
+        g.ellipse(q.x, q.y, 46, 22, 0, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = '#1d3a1f';
+        g.beginPath();
+        g.ellipse(q.x, q.y, 30, 13, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      // Meubles et rebords
+      for (const w of walls) {
+        if (w.kind === 'bord') {
+          g.fillStyle = '#c94f8a';
+          g.fillRect(w.x, w.y, w.w, w.h);
+          g.strokeStyle = INK;
+          g.lineWidth = 4;
+          g.strokeRect(w.x, w.y, w.w, w.h);
+          continue;
+        }
+        g.fillStyle = INK;
+        g.beginPath();
+        g.roundRect(w.x, w.y + 12, w.w, w.h, 18);
+        g.fill();
+        g.fillStyle = w.kind === 'canape' ? '#7b4dff' : '#a0643a';
+        g.strokeStyle = INK;
+        g.lineWidth = 5;
+        g.beginPath();
+        g.roundRect(w.x, w.y, w.w, w.h, 18);
+        g.fill();
+        g.stroke();
+        candy(g, w.x, w.y, w.w, w.h, 18);
+        if (w.kind === 'table') {
+          g.font = '44px sans-serif';
+          g.textAlign = 'center';
+          g.fillText('🍿', w.x + w.w / 2, w.y + w.h / 2 + 14);
+        }
+      }
       const order = ps.map((_, i) => i).sort((a, b) => ps[a].y - ps[b].y);
       for (const i of order) {
         const p = ps[i];
