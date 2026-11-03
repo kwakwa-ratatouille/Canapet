@@ -1171,6 +1171,30 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
   const OX = AX + (AW - GW * CS) / 2;
   // État des dalles : 0 = solide, >0 = craquelle (temps avant la chute), -1 = tombée
   const tiles: number[][] = Array.from({ length: GH }, () => Array(GW).fill(0));
+  // Forme de la carte tirée au hasard (certaines ont déjà des trous)
+  const SHAPES = [
+    { name: { fr: 'Le Grand Carré', en: 'The Big Square' }, keep: () => true },
+    { name: { fr: 'La Croix', en: 'The Cross' }, keep: (x: number, y: number) => Math.abs(x - (GW - 1) / 2) < 3 || Math.abs(y - (GH - 1) / 2) < 2.5 },
+    { name: { fr: 'L’Anneau', en: 'The Ring' }, keep: (x: number, y: number) => !(Math.abs(x - (GW - 1) / 2) < 2.5 && Math.abs(y - (GH - 1) / 2) < 1.5) },
+    { name: { fr: 'Le Gruyère', en: 'Swiss Cheese' }, keep: () => Math.random() > 0.1 },
+    { name: { fr: 'Le Losange', en: 'The Diamond' }, keep: (x: number, y: number) => Math.abs(x - (GW - 1) / 2) / (GW / 2) + Math.abs(y - (GH - 1) / 2) / (GH / 2) < 1.05 },
+    { name: { fr: 'Les Îles', en: 'The Islands' }, keep: (x: number, y: number) => x % 5 !== 4 && y !== 4 },
+  ];
+  const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (!shape.keep(x, y)) tiles[y][x] = -1;
+  // Chacun démarre sur une dalle solide
+  {
+    const free: [number, number][] = [];
+    for (let y = 1; y < GH - 1; y++) for (let x = 1; x < GW - 1; x++) if (tiles[y][x] === 0) free.push([x, y]);
+    free.sort(() => Math.random() - 0.5);
+    ps.forEach((pl, i) => {
+      const c = free[(i * 3) % Math.max(1, free.length)];
+      if (c) {
+        pl.x = OX + c[0] * CS + CS / 2;
+        pl.y = AY + c[1] * CS + CS / 2 + 10;
+      }
+    });
+  }
   // Dalles qui viennent de tomber : petite chute animée (temps écoulé depuis la chute)
   const falling: { x: number; y: number; t: number }[] = [];
   // Joueurs en train de fondre dans la lave (temps écoulé)
@@ -1448,6 +1472,7 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
       hud(g, ps, false);
       bigText(g, fr ? '🌋 Ne reste pas en place ! A = sauter un trou' : '🌋 Keep moving! A = jump a hole', '#fff', 0.42, 130);
     },
+    mapName: shape.name,
     out: (pid) => !!ps.find((p) => p.pid === pid && !p.alive),
     ranking: () => byOut(ps),
     leader() {

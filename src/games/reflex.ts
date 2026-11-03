@@ -9,8 +9,10 @@ import type { ReflexPadData } from './reflexShared';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { TRAP_QUESTIONS, type TrapQ } from './trapQuestions';
 
-type Kind = 'vert' | 'intrus' | 'compte' | 'couleur' | 'marteau' | 'jauge' | 'calcul' | 'plus' | 'memo' | 'vf' | 'chrono' | 'fleche';
-const KINDS: Kind[] = ['vert', 'intrus', 'compte', 'couleur', 'marteau', 'jauge', 'calcul', 'plus', 'memo', 'vf', 'chrono', 'fleche'];
+type Kind = 'vert' | 'intrus' | 'compte' | 'couleur' | 'marteau' | 'jauge' | 'calcul' | 'plus' | 'memo' | 'vf' | 'chrono' | 'fleche' | 'corde' | 'boites' | 'peche';
+const KINDS: Kind[] = ['vert', 'intrus', 'compte', 'couleur', 'marteau', 'jauge', 'calcul', 'plus', 'memo', 'vf', 'chrono', 'fleche', 'corde', 'boites', 'peche'];
+// Boîtes mystères : ce qu'il y a dedans (une seule piégée)
+const BOX_GIFTS = [3, 2, 1];
 // Mémoire : on retient une rangée de dessins
 const MEMO = ['🍕', '🦆', '🚀', '🧦', '🍩', '🐙', '🎸', '🌵', '🦄', '🧀', '🎩', '🐸'];
 // Flèches : il faut toucher le sens INVERSE
@@ -67,6 +69,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let memoOpts: string[] = [];
   let vf: TrapQ = TRAP_QUESTIONS[0];
   let arrow = 0;
+  // Tir à la corde : position de la corde (-1 = équipe gauche gagne, 1 = équipe droite)
+  let rope = 0;
+  // Boîtes : contenu de chacune (-2 = piège)
+  let boxes: number[] = [];
+  // Pêche : le canard passe sous la ligne ; on note où il était au moment du tap
+  let duck = 0;
   const vfPool = TRAP_QUESTIONS.filter((q) => !(ctx.family && q.fam === false) && q.a[0].fr === 'Vrai').sort(() => Math.random() - 0.5);
 
   const titles: Record<Kind, [string, string]> = {
@@ -82,7 +90,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     vf: ['Vrai ou faux ? Vite !', 'True or false? Quick!'],
     chrono: [`Arrête le chrono à ${CHRONO} secondes pile… à l’aveugle !`, `Stop the clock at exactly ${CHRONO} seconds… blind!`],
     fleche: ['Touche le sens INVERSE de la flèche !', 'Tap the OPPOSITE way of the arrow!'],
+    corde: ['Tir à la corde ! Martèle pour ton équipe !', 'Tug of war! Mash for your team!'],
+    boites: ['Choisis une boîte… une seule est piégée !', 'Pick a box… only one is a trap!'],
+    peche: ['Pêche au canard : tape quand il passe sous l’hameçon !', 'Duck fishing: tap when it’s under the hook!'],
   };
+  const team = (pl: Pl) => pls.indexOf(pl) % 2;
   const ordinal = (n: number) => (fr ? ['1er', '2e', '3e', '4e'][n] : ['1st', '2nd', '3rd', '4th'][n]);
 
   function next() {
@@ -168,6 +180,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       arrow = Math.floor(Math.random() * 4);
       correct = OPPOSITE[arrow];
     }
+    if (kind === 'corde') rope = 0;
+    if (kind === 'boites') {
+      boxes = [...BOX_GIFTS, -2].sort(() => Math.random() - 0.5);
+    }
+    if (kind === 'peche') duck = 0;
     ctx.refresh();
   }
 
@@ -177,6 +194,37 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (kind === 'marteau') ranked = [...pls].filter((p) => p.taps > 0).sort((a, b) => b.taps - a.taps);
     else if (kind === 'jauge') ranked = [...pls].filter((p) => p.answer >= 0).sort((a, b) => Math.abs(a.answer / 1000 - target) - Math.abs(b.answer / 1000 - target));
     else if (kind === 'vert') ranked = [...pls].filter((p) => !p.out && p.answer >= 0).sort((a, b) => a.at - b.at);
+    else if (kind === 'corde') {
+      // Toute l'équipe gagnante marque
+      const win = rope <= 0 ? 0 : 1;
+      ranked = [];
+      pls.forEach((pl) => {
+        if (team(pl) === win) {
+          pl.gain = 3;
+          pl.score += 3;
+        }
+      });
+      headline = fr ? `L’équipe ${win === 0 ? 'de gauche' : 'de droite'} gagne le tir à la corde !` : `The ${win === 0 ? 'left' : 'right'} team wins the tug of war!`;
+      sfx.win();
+      phase = 'result';
+      timer = 3;
+      ctx.refresh();
+      return;
+    } else if (kind === 'boites') {
+      ranked = [];
+      pls.forEach((pl) => {
+        if (pl.answer < 0) return;
+        const v = boxes[pl.answer];
+        pl.gain = v;
+        pl.score = Math.max(0, pl.score + v);
+      });
+      headline = fr ? 'On ouvre les boîtes… 🎁' : 'Opening the boxes… 🎁';
+      sfx.win();
+      phase = 'result';
+      timer = 3.5;
+      ctx.refresh();
+      return;
+    } else if (kind === 'peche') ranked = [...pls].filter((p) => p.answer >= 0).sort((a, b) => Math.abs(a.answer / 1000 - 0.5) - Math.abs(b.answer / 1000 - 0.5));
     else if (kind === 'chrono') ranked = [...pls].filter((p) => p.answer >= 0).sort((a, b) => Math.abs(a.answer / 1000 - CHRONO) - Math.abs(b.answer / 1000 - CHRONO));
     else ranked = [...pls].filter((p) => p.answer === correct).sort((a, b) => a.at - b.at);
     ranked.forEach((p, i) => {
@@ -195,7 +243,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   function bots(dt: number) {
     for (const p of pls) {
       if (!p.bot || dozing(p, ctx.botSkill, dt)) continue;
-      if (kind === 'marteau' && Math.random() < dt * rnd(4, 9)) p.taps++;
+      if ((kind === 'marteau' || kind === 'corde') && Math.random() < dt * rnd(4, 9)) {
+        p.taps++;
+        if (kind === 'corde') rope += team(p) ? 0.012 : -0.012;
+      }
+      if (kind === 'boites' && p.answer < 0 && t0 > rnd(1, 4) && Math.random() < 0.05) p.answer = Math.floor(Math.random() * 4);
+      if (kind === 'peche' && p.answer < 0 && Math.abs(duck - 0.5) < 0.05 + (1 - ctx.botSkill) * 0.1 && Math.random() < 0.3) p.answer = Math.round(duck * 1000);
       if (p.answer >= 0 || p.out) continue;
       if (kind === 'vert' && t0 > goAt + rnd(0.3, 0.6) && Math.random() < 0.1) {
         p.answer = 0;
@@ -219,6 +272,17 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (m.a === 'tap') {
         if (kind === 'marteau') {
           p.taps++;
+          return;
+        }
+        if (kind === 'corde') {
+          p.taps++;
+          rope += team(p) ? 0.012 : -0.012;
+          return;
+        }
+        if (kind === 'peche' && p.answer < 0) {
+          p.answer = Math.round(duck * 1000);
+          sfx.click();
+          ctx.refresh();
           return;
         }
         if (kind === 'vert') {
@@ -260,7 +324,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (timer <= 0) {
           phase = 'play';
           t0 = 0;
-          timer = kind === 'marteau' ? 5 : kind === 'vert' ? goAt + 3 : kind === 'jauge' ? 6 : kind === 'chrono' ? CHRONO + 3 : kind === 'memo' ? 10 : 8;
+          timer = kind === 'marteau' || kind === 'corde' ? 6 : kind === 'peche' ? 4.5 : kind === 'vert' ? goAt + 3 : kind === 'jauge' ? 6 : kind === 'chrono' ? CHRONO + 3 : kind === 'memo' ? 10 : 8;
           sfx.go();
           ctx.refresh();
         }
@@ -269,6 +333,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (phase === 'play') {
         t0 += dt;
         if (kind === 'jauge') gauge = Math.min(1, gauge + dt / 4.5);
+        if (kind === 'peche') duck = Math.min(1, t0 / 4);
+        if (kind === 'corde') rope = Math.max(-1, Math.min(1, rope));
         // Mémoire : les choix arrivent sur les téléphones quand la rangée se cache
         if (kind === 'memo' && t0 >= 2.5 && t0 - dt < 2.5) ctx.refresh();
         if (kind === 'vert' && t0 >= goAt && t0 - dt < goAt) {
@@ -277,7 +343,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         bots(dt);
         const humans = pls.filter((p) => !p.bot);
-        const allDone = kind !== 'marteau' && pls.every((p) => p.answer >= 0 || p.out);
+        const allDone = kind !== 'marteau' && kind !== 'corde' && pls.every((p) => p.answer >= 0 || p.out);
+        if (kind === 'corde' && Math.abs(rope) >= 1) {
+          finish();
+          return;
+        }
         if (timer <= 0 || (allDone && humans.length)) finish();
         return;
       }
@@ -425,6 +495,81 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillText(`→ ${ARROWS[OPPOSITE[arrow]]}`, 960, 800);
         }
       }
+      if (showPlay && kind === 'corde') {
+        // La corde, le foulard du milieu et les deux équipes
+        const cx = 960 + rope * 520;
+        g.strokeStyle = '#a0643a';
+        g.lineWidth = 22;
+        g.beginPath();
+        g.moveTo(200, 560);
+        g.lineTo(1720, 560);
+        g.stroke();
+        g.fillStyle = ROSE;
+        g.strokeStyle = INK;
+        g.lineWidth = 5;
+        g.beginPath();
+        g.moveTo(cx, 560);
+        g.lineTo(cx - 30, 640);
+        g.lineTo(cx + 30, 640);
+        g.closePath();
+        g.fill();
+        g.stroke();
+        g.fillStyle = INK;
+        g.fillRect(958, 470, 4, 180);
+        g.font = '700 50px Fredoka, sans-serif';
+        g.fillStyle = INK;
+        g.fillText(fr ? '⬅ Équipe gauche' : '⬅ Left team', 420, 460);
+        g.fillText(fr ? 'Équipe droite ➡' : 'Right team ➡', 1500, 460);
+      }
+      if (showPlay && kind === 'boites') {
+        boxes.forEach((v, i) => {
+          const x = 420 + i * 360;
+          const open = phase === 'result';
+          g.fillStyle = QUAD[i];
+          g.strokeStyle = INK;
+          g.lineWidth = 6;
+          g.beginPath();
+          g.roundRect(x - 120, 380, 240, 220, 24);
+          g.fill();
+          g.stroke();
+          candy(g, x - 120, 380, 240, 220, 24);
+          g.fillStyle = '#fff';
+          g.fillRect(x - 14, 380, 28, 220);
+          g.font = '700 110px Fredoka, sans-serif';
+          g.fillStyle = INK;
+          g.fillText(open ? (v < 0 ? '💣' : `+${v}`) : String(i + 1), x, 530);
+          const who = pls.filter((pl) => pl.answer === i);
+          g.font = '700 30px Fredoka, sans-serif';
+          who.forEach((pl, k) => {
+            g.fillStyle = pl.profile.color;
+            g.fillText(pl.profile.name, x, 650 + k * 34);
+          });
+        });
+      }
+      if (showPlay && kind === 'peche') {
+        // L'eau, l'hameçon au milieu et le canard qui passe
+        g.fillStyle = '#2ec5ff';
+        g.fillRect(200, 560, 1520, 200);
+        g.strokeStyle = INK;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.moveTo(960, 250);
+        g.lineTo(960, 600);
+        g.stroke();
+        g.font = '60px sans-serif';
+        g.fillText('🪝', 960, 640);
+        const dx = 200 + duck * 1520;
+        g.font = '120px sans-serif';
+        g.fillText('🦆', dx, 600);
+        pls.forEach((pl) => {
+          if (pl.answer < 0) return;
+          g.fillStyle = pl.profile.color;
+          g.beginPath();
+          g.arc(200 + (pl.answer / 1000) * 1520, 800, 16, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+        });
+      }
       if (showPlay && kind === 'marteau') {
         g.font = '700 180px Fredoka, sans-serif';
         g.fillText(phase === 'play' ? `${Math.ceil(Math.max(0, timer))}` : '🔨', 960, 560);
@@ -513,7 +658,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         k = 'choice';
         options = ARROWS.map((a, i) => ({ label: a, color: QUAD[i] }));
       }
-      if (play && kind === 'marteau') k = 'mash';
+      if (play && (kind === 'marteau' || kind === 'corde')) k = 'mash';
+      if (play && kind === 'peche') k = 'buzz';
+      if (play && kind === 'boites') {
+        k = 'choice';
+        options = QUAD.map((c, i) => ({ label: `🎁 ${i + 1}`, color: c }));
+      }
       if (play && kind === 'intrus') {
         k = 'choice';
         options = QUAD.map((c, i) => ({ label: fr ? ['Haut gauche', 'Haut droite', 'Bas gauche', 'Bas droite'][i] : ['Top left', 'Top right', 'Bottom left', 'Bottom right'][i], color: c }));
@@ -536,7 +686,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       return {
         kind: k,
-        title: headline,
+        title: kind === 'corde' && play ? `${headline} (${team(p) ? (fr ? 'droite' : 'right') : fr ? 'gauche' : 'left'})` : headline,
         options,
         locked: p.out || (kind !== 'marteau' && p.answer >= 0),
         note: p.out ? (fr ? 'Trop tôt ! Piégé 💥' : 'Too early! Gotcha 💥') : '',
