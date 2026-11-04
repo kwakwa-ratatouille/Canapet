@@ -14,6 +14,10 @@ export interface PresidentPadData {
   need: number;
   /** Valeur minimum à poser (-1 = libre). */
   min: number;
+  /** « X ou rien » : seule cette valeur est autorisée (-1 = non). */
+  forced?: number;
+  /** Sorti du pli en cours (a passé). */
+  out?: boolean;
   /** Cartes à choisir pour les donner (Président : 2, Vice-président : 1). */
   give: number;
   giveTo: string;

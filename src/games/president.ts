@@ -58,6 +58,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let under: number[][] = [];
   let need = 0;
   let passes = 0;
+  /** Joueurs sortis du pli en cours (ils ont passé ou n'avaient pas la valeur imposée). */
+  const outTrick = new Set<number>();
+  /** Valeur imposée (« 4 ou rien »), ou -1. */
+  let forced = -1;
   let finished = 0;
   let message = '';
   let swapLines: string[] = [];
@@ -74,6 +78,25 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (active(j)) return j;
     }
     return i;
+  }
+  /** Prochain joueur encore dans le pli. */
+  function nextInTrick(i: number) {
+    for (let k = 1; k <= n; k++) {
+      const j = (i + k) % n;
+      if (active(j) && !outTrick.has(j)) return j;
+    }
+    return -1;
+  }
+  /** A-t-il de quoi suivre ? */
+  function canFollow(i: number) {
+    const h = seats[i].hand;
+    const by = new Map<number, number>();
+    for (const c of h) by.set(rankOf(c), (by.get(rankOf(c)) ?? 0) + 1);
+    for (const [rv, cnt] of by) {
+      if (cnt < need) continue;
+      if (forced >= 0 ? rv === forced : rv >= rankOf(pile[0])) return true;
+    }
+    return false;
   }
   const say = (t: string, voice = false) => {
     message = t;
@@ -98,6 +121,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     pileBy = -1;
     need = 0;
     passes = 0;
+    outTrick.clear();
+    forced = -1;
     finished = 0;
     order = [];
     phase = 'deal';
@@ -166,6 +191,21 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     startTurn(first);
   }
 
+  /** Passe au joueur suivant encore dans le pli (ou ramasse le pli s'il n'y a plus personne). */
+  function advance(from: number) {
+    let j = nextInTrick(from);
+    // Personne d'autre que celui qui a posé : il ramasse et rejoue
+    while (j >= 0 && j !== pileBy && need && !canFollow(j) && forced >= 0) {
+      // « X ou rien » : il n'a pas la valeur, il est sorti du pli
+      outTrick.add(j);
+      seats[j].passT = 1.6;
+      say(fr ? `${name(j)} n'a pas de ${rk(pile[0])} : sorti du pli !` : `${name(j)} has no ${rk(pile[0])}: out of the trick!`);
+      j = nextInTrick(j);
+    }
+    if (j < 0 || j === pileBy) return clearTrick(active(pileBy) ? pileBy : nextActive(pileBy));
+    startTurn(j);
+  }
+
   function startTurn(i: number) {
     turn = i;
     timer = seats[i].bot ? rnd(1.1, 2.2) : TURN_TIME;
@@ -179,6 +219,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     pileBy = -1;
     need = 0;
     passes = 0;
+    outTrick.clear();
+    forced = -1;
     pause = 1.1;
     leaderNext = leader;
     say(fr ? `Pli ramassé : ${name(leader)} ouvre` : `Trick over: ${name(leader)} leads`);
@@ -217,6 +259,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const r = rankOf(uniq[0]);
     if (uniq.some((c) => rankOf(c) !== r)) return;
     if (need && (uniq.length !== need || r < rankOf(pile[0]))) return;
+    if (forced >= 0 && r !== forced) return;
+    // Même valeur que la pose d'avant : « X ou rien » pour le suivant
+    const same = need > 0 && r === rankOf(pile[0]);
     s.hand = s.hand.filter((c) => !uniq.includes(c));
     if (pile.length) under = [...under.slice(-2), pile];
     pile = sortHand(uniq);
@@ -225,6 +270,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     passes = 0;
     flies.push({ from: i, to: -1, cards: uniq, t: 0, back: false });
     say(fr ? `${name(i)} pose ${uniq.length > 1 ? `${uniq.length} × ` : ''}${rk(uniq[0])}` : `${name(i)} plays ${uniq.length > 1 ? `${uniq.length} × ` : ''}${rk(uniq[0])}`);
+    if (same) {
+      forced = r;
+      say(fr ? `${rk(uniq[0])} ou rien !` : `${rk(uniq[0])} or nothing!`, true);
+    }
     sfx.cards();
     if (!s.hand.length) {
       s.done = ++finished;
@@ -236,17 +285,20 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (activeCount() <= 1) return finishRound();
     // Un 2 (la plus forte) ferme le pli : celui qui l'a posé rejoue
     if (r === 12) return clearTrick(active(i) ? i : nextActive(i));
-    startTurn(nextActive(i));
+    // Les 4 cartes de cette valeur sont sur la table : le pli est fermé
+    const all = [...under.flat(), ...pile].filter((c) => rankOf(c) === r).length;
+    if (all >= 4) return clearTrick(active(i) ? i : nextActive(i));
+    advance(i);
   }
 
   function pass(i: number) {
     if (phase !== 'play' || pause > 0 || turn !== i || !need) return;
     seats[i].passT = 1.6;
     passes++;
+    // Qui passe ne rejoue plus dans ce pli
+    outTrick.add(i);
     sfx.click();
-    const others = activeCount() - (active(pileBy) ? 1 : 0);
-    if (passes >= others) return clearTrick(active(pileBy) ? pileBy : nextActive(pileBy));
-    startTurn(nextActive(i));
+    advance(i);
   }
 
   function botTurn(i: number) {
@@ -260,7 +312,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       return play(i, groups.get(r)!);
     }
     const min = rankOf(pile[0]);
-    const ok = ranks.filter((r) => r >= min && groups.get(r)!.length >= need);
+    const ok = ranks.filter((r) => (forced >= 0 ? r === forced : r >= min) && groups.get(r)!.length >= need);
     // On évite de casser un gros paquet et de gâcher ses 2, sauf en fin de main
     const cheap = ok.filter((r) => r !== 12 && (groups.get(r)!.length === need || Math.random() < 0.4));
     const pick = cheap[0] ?? (ok.includes(12) && (h.length <= 4 || Math.random() < 0.35) ? 12 : undefined);
@@ -286,7 +338,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       for (const f of flies) f.t += dt;
-      for (let k = flies.length - 1; k >= 0; k--) if (flies[k].t > 1) flies.splice(k, 1);
+      for (let k = flies.length - 1; k >= 0; k--) if (flies[k].t > (flies[k].to >= 0 ? 2.4 : 1)) flies.splice(k, 1);
       seats.forEach((s) => (s.passT = Math.max(0, s.passT - dt)));
       if (pause > 0) {
         pause -= dt;
@@ -415,16 +467,45 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       });
       // Cartes qui volent (vers la table, ou d'un joueur à l'autre pendant l'échange)
       for (const f of flies) {
-        const e = 1 - Math.pow(1 - Math.min(1, f.t / 0.7), 3);
-        const a = pos[f.from];
-        const b = f.to < 0 ? { x: 960, y: 560 } : pos[f.to];
+        const swap = f.to >= 0;
         f.cards.forEach((c, k) => {
+          // Pendant l'échange : chaque carte part à son tour, grossit au milieu (on voit ce qui est donné), puis arrive
+          const tt = swap ? Math.max(0, f.t - k * 0.35) : f.t;
+          const e = 1 - Math.pow(1 - Math.min(1, tt / (swap ? 1.5 : 0.7)), 3);
+          const a = pos[f.from];
+          const b = swap ? pos[f.to] : { x: 960, y: 560 };
+          const grow = swap ? 1 + Math.sin(e * Math.PI) * 1.2 : 1;
           g.save();
-          g.translate(a.x + (b.x - a.x) * e + k * 18, a.y + (b.y - a.y) * e - Math.sin(e * Math.PI) * 140);
-          g.rotate((1 - e) * 5 * (k % 2 ? 1 : -1));
-          drawCard(g, 0, 0, 90, 126, f.to < 0 ? c : null, ctx.lang);
+          g.translate(a.x + (b.x - a.x) * e + k * 18, a.y + (b.y - a.y) * e - Math.sin(e * Math.PI) * (swap ? 260 : 140));
+          g.rotate((1 - e) * (swap ? 2 : 5) * (k % 2 ? 1 : -1));
+          g.scale(grow, grow);
+          // Le Bouffon donne ses meilleures cartes face visible (tout le monde voit) ; le Président rend face cachée
+          drawCard(g, 0, 0, 90, 126, !swap || !f.back ? c : null, ctx.lang);
           g.restore();
+          if (swap && !f.back && e > 0.2 && e < 0.85) {
+            g.font = '700 40px Fredoka, sans-serif';
+            g.textAlign = 'center';
+            g.lineWidth = 8;
+            g.strokeStyle = INK;
+            const tx = a.x + (b.x - a.x) * e;
+            const ty = a.y + (b.y - a.y) * e - Math.sin(e * Math.PI) * 260 - 120;
+            const lab = fr ? `🎁 pour ${name(f.to)}` : `🎁 for ${name(f.to)}`;
+            g.strokeText(lab, tx, ty);
+            g.fillStyle = '#ffd60a';
+            g.fillText(lab, tx, ty);
+          }
         });
+      }
+      // « X ou rien » bien visible au-dessus du pli
+      if (phase === 'play' && forced >= 0 && pile.length) {
+        g.font = '700 64px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.lineWidth = 12;
+        g.strokeStyle = INK;
+        const txt = fr ? `${rk(pile[0])} OU RIEN !` : `${rk(pile[0])} OR NOTHING!`;
+        g.strokeText(txt, 960, 420 + Math.sin(t * 6) * 4);
+        g.fillStyle = '#ff4f9a';
+        g.fillText(txt, 960, 420 + Math.sin(t * 6) * 4);
       }
       // Bandeau du haut
       let top = '';
@@ -476,6 +557,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         myTurn,
         need,
         min: pile.length ? rankOf(pile[0]) : -1,
+        forced,
+        out: outTrick.has(i),
         give: s && phase === 'swap' && !s.given ? s.mustGive : 0,
         giveTo: s && s.giveTo >= 0 ? name(s.giveTo) : '',
         role: s && (round > 1 || phase === 'round' || phase === 'end') ? `${ROLE_ICON[s.role]} ${roleName(s.role)}` : '',

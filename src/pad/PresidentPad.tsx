@@ -67,11 +67,13 @@ export function PresidentPad({ data, lang, send }: { data: PresidentPadData; lan
     data.myTurn &&
     sel.length > 0 &&
     (data.need ? sel.length === data.need && rankOf(sel[0]) >= data.min : sel.length <= 4) &&
+    ((data.forced ?? -1) < 0 || rankOf(sel[0]) === data.forced) &&
     sel.every((c) => rankOf(c) === rankOf(sel[0]));
   // Les cartes qui peuvent être jouées sont mises en avant
   const playable = (c: number) => {
     if (!data.myTurn) return true;
     if (!data.need) return true;
+    if ((data.forced ?? -1) >= 0 && rankOf(c) !== data.forced) return false;
     return rankOf(c) >= data.min && data.hand.filter((x) => rankOf(x) === rankOf(c)).length >= data.need;
   };
 
@@ -81,6 +83,8 @@ export function PresidentPad({ data, lang, send }: { data: PresidentPadData; lan
   else if (data.give) status = T.give(data.give, data.giveTo);
   else if (data.phase === 'swap') status = T.swapWait;
   else if (data.done) status = T.done(data.done);
+  else if (data.out) status = lang === 'en' ? 'You passed: out until this trick ends.' : 'Tu as passé : sorti jusqu’à la fin du pli.';
+  else if (data.myTurn && (data.forced ?? -1) >= 0) status = lang === 'en' ? `${R[data.forced!]} or nothing!` : `${R[data.forced!]} ou rien !`;
   else if (data.myTurn) status = `${T.yourTurn} ${data.need ? T.follow(data.need, R[data.min]) : T.lead}`;
   else status = T.waiting(data.turnName);
 
