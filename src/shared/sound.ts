@@ -549,27 +549,27 @@ export function playMusic(track: MusicId | '') {
 // ——— Présentateur (voix de synthèse du navigateur) ———
 
 /** Voix du présentateur, au choix de l'hôte. `accent` = langue de la voix qui lit le texte (fr, puis en). */
-export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; rate: number; pitch: number }[] = [
+export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; rate: number; pitch: number }[] = [
   { id: 'classique', fr: 'Classique', en: 'Classic', rate: 1.05, pitch: 1.15 },
   { id: 'naturelle', fr: 'Naturelle (IA)', en: 'Natural (AI)', nice: true, rate: 1.02, pitch: 1 },
   { id: 'quebec', fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05 },
   { id: 'anglais', fr: 'Accent anglais', en: 'French accent', accent: ['en-gb', 'fr-fr'], rate: 0.95, pitch: 1.05 },
   { id: 'italien', fr: 'Accent italien', en: 'Italian accent', accent: ['it', 'it'], rate: 1.05, pitch: 1.1 },
   { id: 'espagnol', fr: 'Accent espagnol', en: 'Spanish accent', accent: ['es', 'es'], rate: 1.05, pitch: 1.05 },
-  { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', local: true, rate: 0.82, pitch: 0.3 },
+  { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', local: true, male: true, rate: 0.82, pitch: 0.3 },
   { id: 'ecureuil', fr: 'Écureuil', en: 'Chipmunk', local: true, rate: 1.35, pitch: 2 },
-  { id: 'robot', fr: 'Robot', en: 'Robot', local: true, rate: 0.8, pitch: 0.1 },
+  { id: 'robot', fr: 'Robot', en: 'Robot', local: true, male: true, rate: 0.8, pitch: 0.1 },
   // Accents du monde : une voix de cette langue lit le texte (si le PC l'a ; « a|b » = la première trouvée)
-  { id: 'japonais', fr: 'Accent japonais', en: 'Japanese accent', accent: ['ja', 'ja'], rate: 1.05, pitch: 1.1 },
-  { id: 'chinois', fr: 'Accent chinois', en: 'Chinese accent', accent: ['zh', 'zh'], rate: 1, pitch: 1.05 },
-  { id: 'indien', fr: 'Accent indien', en: 'Indian accent', accent: ['en-in|hi', 'en-in|hi'], rate: 1.05, pitch: 1.05 },
-  { id: 'africain', fr: 'Accent africain', en: 'African accent', accent: ['fr-sn|fr-ci|fr-cm|en-ng|en-za|sw', 'en-ng|en-za|en-ke|sw'], rate: 1, pitch: 1 },
+  { id: 'japonais', fr: 'Accent japonais', en: 'Japanese accent', accent: ['ja', 'ja'], male: true, rate: 1.05, pitch: 1.1 },
+  { id: 'chinois', fr: 'Accent chinois', en: 'Chinese accent', accent: ['zh', 'zh'], male: true, rate: 1, pitch: 1.05 },
+  { id: 'indien', fr: 'Accent indien', en: 'Indian accent', accent: ['en-in|hi', 'en-in|hi'], male: true, rate: 1.05, pitch: 1.05 },
+  { id: 'africain', fr: 'Accent africain', en: 'African accent', accent: ['fr-sn|fr-ci|fr-cm|en-ng|en-za|sw', 'en-ng|en-za|en-ke|sw'], male: true, rate: 1, pitch: 1 },
   // Voix drôles (hauteur et vitesse poussées à fond)
   { id: 'mamie', fr: 'Mamie', en: 'Granny', local: true, rate: 0.75, pitch: 1.6 },
-  { id: 'ogre', fr: 'Ogre', en: 'Ogre', local: true, rate: 0.7, pitch: 0.15 },
-  { id: 'speede', fr: 'Speedé', en: 'Hyper', local: true, rate: 1.9, pitch: 1.3 },
-  { id: 'fantome', fr: 'Fantôme', en: 'Ghost', local: true, rate: 0.6, pitch: 1.9 },
-  { id: 'escargot', fr: 'Escargot', en: 'Snail', local: true, rate: 0.45, pitch: 0.8 },
+  { id: 'ogre', fr: 'Ogre', en: 'Ogre', local: true, male: true, rate: 0.7, pitch: 0.15 },
+  { id: 'speede', fr: 'Speedé', en: 'Hyper', local: true, male: true, rate: 1.9, pitch: 1.3 },
+  { id: 'fantome', fr: 'Fantôme', en: 'Ghost', local: true, male: true, rate: 0.6, pitch: 1.9 },
+  { id: 'escargot', fr: 'Escargot', en: 'Snail', local: true, male: true, rate: 0.45, pitch: 0.8 },
 ];
 let voiceIdx = 0;
 export function setVoice(i: number) {
@@ -582,16 +582,21 @@ const NICE = /natural|neural|online|google|premium|enhanced|siri|wavenet/i;
  * Les voix « en ligne » (Natural, Google…) ignorent la hauteur de la voix : Bande-annonce, Écureuil et Robot
  * sonnaient comme la voix normale. Pour elles, on prend une voix installée sur le PC, qui la respecte.
  */
-function findVoice(prefix: string, nice: boolean, local = false): SpeechSynthesisVoice | undefined {
+/** Voix d'homme, reconnues à leur prénom (les navigateurs ne donnent pas le genre). */
+const MALE = /(male|homme|paul|henri|r[eé]my|claude|antoine|jean|thomas|guy|david|mark|george|james|ryan|christopher|eric|andrew|brian|roger|steffan|ichiro|keita|naoki|daichi|kangkang|yunxi|yunyang|yunjian|ravi|prabhat|hemant|madhur|abeo|chilemba|elimu|rafiki|luke|william|liam|connor|mitchell|ken|wayne|fabrice|g[eé]rard|alain|denis|maurice|ousmane|kofi|kwame|emeka|sello|thabo|daniel|diego|pablo|jorge|alvaro|giuseppe|cosimo|benigno|kenji|yan)/i;
+
+function findVoice(prefix: string, nice: boolean, local = false, male = false): SpeechSynthesisVoice | undefined {
   // Plusieurs langues possibles « a|b » : on prend la première que le PC possède
   if (prefix.includes('|')) {
     for (const one of prefix.split('|')) {
-      const v = findVoice(one, nice, local);
+      const v = findVoice(one, nice, local, male);
       if (v) return v;
     }
     return undefined;
   }
-  const all = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith(prefix));
+  let all = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith(prefix));
+  // Voix d'homme demandée : on garde les voix d'homme s'il y en a
+  if (male && all.some((v) => MALE.test(v.name))) all = all.filter((v) => MALE.test(v.name));
   if (local) return all.find((v) => v.localService && !NICE.test(v.name)) ?? all.find((v) => v.localService) ?? all[0];
   return (nice ? all.find((v) => NICE.test(v.name)) : undefined) ?? all.find((v) => !NICE.test(v.name)) ?? all[0];
 }
@@ -602,8 +607,8 @@ export function speak(text: string, lang: Lang) {
   const pre = VOICES[voiceIdx] ?? VOICES[0];
   const base = lang === 'fr' ? 'fr' : 'en';
   // Accent : une voix d'une autre langue lit le texte (si le PC l'a, sinon voix normale)
-  const acc = pre.accent ? findVoice(pre.accent[lang === 'fr' ? 0 : 1], true) : undefined;
-  const voice = acc ?? findVoice(base, !!pre.nice, !!pre.local);
+  const acc = pre.accent ? findVoice(pre.accent[lang === 'fr' ? 0 : 1], true, false, !!pre.male) : undefined;
+  const voice = acc ?? findVoice(base, !!pre.nice, !!pre.local, !!pre.male);
   u.lang = voice?.lang ?? (lang === 'fr' ? 'fr-FR' : 'en-US');
   if (voice) u.voice = voice;
   u.rate = pre.rate;
