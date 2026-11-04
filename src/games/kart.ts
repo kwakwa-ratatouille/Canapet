@@ -83,8 +83,8 @@ const CIRCUITS: {
   },
 ];
 
-type Item = 'turbo' | 'sirop' | 'petard' | 'banane' | 'bouclier' | 'nuage' | 'fusee';
-const ITEM_ICON: Record<Item, string> = { turbo: '⚡', sirop: '🍯', petard: '🧨', banane: '🍌', bouclier: '🛡️', nuage: '🌩️', fusee: '🚀' };
+type Item = 'turbo' | 'sirop' | 'petard' | 'banane' | 'bouclier' | 'nuage' | 'fusee' | 'fantome' | 'piment';
+const ITEM_ICON: Record<Item, string> = { turbo: '⚡', sirop: '🍯', petard: '🧨', banane: '🍌', bouclier: '🛡️', nuage: '🌩️', fusee: '🚀', fantome: '👻', piment: '🌶️' };
 
 interface K extends Runner {
   x: number;
@@ -245,6 +245,22 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const i = Math.floor(f * N);
     return { i, cx: PATH[i][0], cy: PATH[i][1], n: along(i) + Math.PI / 2, x: 0, y: 0, sp: rnd(1.1, 1.7), ph: rnd(0, 6), c: ['#ff4f9a', '#2ec5ff', '#ffd60a'][Math.floor(Math.random() * 3)] };
   });
+  // Raccourcis : un tuyau d'entrée au bord de la route, et sa sortie un peu plus loin sur le circuit
+  const pipes = [0.28, 0.66].map((f) => {
+    const i = Math.floor(f * N);
+    const j = Math.floor((f + 0.07) * N) % N;
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const n1 = along(i) + Math.PI / 2;
+    const n2 = along(j) + Math.PI / 2;
+    return {
+      i,
+      j,
+      x: PATH[i][0] + Math.cos(n1) * WALL * 0.75 * side,
+      y: PATH[i][1] + Math.sin(n1) * WALL * 0.75 * side,
+      ox: PATH[j][0] + Math.cos(n2) * WALL * 0.5 * side,
+      oy: PATH[j][1] + Math.sin(n2) * WALL * 0.5 * side,
+    };
+  });
   // Décor au bord de la piste : sucettes géantes, buissons et fleurs, jamais sur la route.
   const decor: { x: number; y: number; kind: number; c: string }[] = [];
   for (let k = 0; k < 400 && decor.length < 26; k++) {
@@ -291,6 +307,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let endDelay = -1;
 
   const progress = (k: K) => k.lap * N + k.idx;
+  const ghosts = new Map<K, number>();
+  const chili = new Map<K, number>();
 
   function useItem(k: K, i: number) {
     if (!k.item) return;
@@ -308,6 +326,18 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       k.safe = Math.max(k.safe, 2.4);
       sfx.whoosh();
       pops.push({ x: k.x, y: k.y - 60, text: fr ? 'FUSÉE !' : 'ROCKET!', c: '#ff8a3d', t: 1 });
+    } else if (k.item === 'fantome') {
+      // Fantôme : on devient transparent, rien ne nous touche pendant 3 s
+      ghosts.set(k, 3);
+      k.safe = Math.max(k.safe, 3);
+      pops.push({ x: k.x, y: k.y - 60, text: fr ? 'FANTÔME !' : 'GHOST!', c: '#fff', t: 1 });
+      sfx.whoosh();
+    } else if (k.item === 'piment') {
+      // Piment : turbo enflammé qui fait valser ceux qu'on touche
+      chili.set(k, 2.2);
+      k.turbo = Math.max(k.turbo, 2.2);
+      pops.push({ x: k.x, y: k.y - 60, text: fr ? 'ÇA PIQUE !' : 'SPICY!', c: '#ff3b3b', t: 1 });
+      sfx.go();
     } else if (k.item === 'nuage') {
       // Le nuage d'orage file au-dessus du premier (ou du suivant si c'est soi)
       const lead = [...ks].filter((o) => !o.done && o !== k).sort((a, b) => progress(b) - progress(a))[0];
@@ -488,7 +518,25 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             }
           }
         }
-        for (const r of rollers) if (Math.hypot(r.x - k.x, r.y - k.y) < 50) spinOut(k);
+        if (!ghosts.has(k)) for (const r of rollers) if (Math.hypot(r.x - k.x, r.y - k.y) < 50) spinOut(k);
+        // Tuyau raccourci : on ressort plus loin, dans le sens de la course
+        for (const pp of pipes)
+          if (k.padT <= 0 && Math.hypot(pp.x - k.x, pp.y - k.y) < 40) {
+            k.x = pp.ox;
+            k.y = pp.oy;
+            k.idx = pp.j;
+            k.a = along(pp.j);
+            k.vx = Math.cos(k.a) * Math.max(200, k.v);
+            k.vy = Math.sin(k.a) * Math.max(200, k.v);
+            k.padT = 1;
+            puff(pp.ox, pp.oy, 12, '#7bd13b', 260, 8);
+            pops.push({ x: pp.ox, y: pp.oy - 60, text: fr ? 'RACCOURCI !' : 'SHORTCUT!', c: '#7bd13b', t: 1 });
+            sfx.pop();
+          }
+        // Piment : on bouscule les karts qu'on touche
+        if (chili.has(k))
+          for (const o of ks)
+            if (o !== k && !ghosts.has(o) && Math.hypot(o.x - k.x, o.y - k.y) < 56) spinOut(o);
         {
           const pa = along(k.idx);
           const fwd = Math.cos(pa) * k.vx + Math.sin(pa) * k.vy;
@@ -544,7 +592,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             b.t = 4;
             const ahead = ks.filter((o) => progress(o) > progress(k)).length;
             const pool: Item[] =
-              ahead === 0 ? ['sirop', 'banane', 'bouclier', 'petard'] : ahead > 2 ? ['turbo', 'fusee', 'nuage', 'turbo', 'petard'] : ['turbo', 'sirop', 'petard', 'banane', 'nuage', 'bouclier'];
+              ahead === 0 ? ['sirop', 'banane', 'bouclier', 'petard', 'fantome'] : ahead > 2 ? ['turbo', 'fusee', 'nuage', 'piment', 'fantome', 'petard'] : ['turbo', 'sirop', 'petard', 'banane', 'nuage', 'bouclier', 'piment', 'fantome'];
             k.item = pool[Math.floor(Math.random() * pool.length)];
             puff(b.x, b.y, 10, '#9b5cff', 240, 7);
             sfx.join();
@@ -555,6 +603,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             p.t = 0;
           }
       });
+      for (const [k, t2] of ghosts) (t2 - dt <= 0 ? ghosts.delete(k) : ghosts.set(k, t2 - dt));
+      for (const [k, t2] of chili) (t2 - dt <= 0 ? chili.delete(k) : chili.set(k, t2 - dt));
       for (const r of rollers) {
         const o = Math.sin(time * r.sp + r.ph) * WALL;
         r.x = r.cx + Math.cos(r.n) * o;
@@ -775,22 +825,86 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillRect(c.x - 13, c.y - 6, 26, 9);
       }
       for (const r of rollers) {
+        // Bande de danger peinte en travers de la route, là où la boule passe
+        g.save();
+        g.translate(r.cx, r.cy);
+        g.rotate(r.n);
+        g.globalAlpha = 0.55;
+        for (let k2 = -4; k2 < 4; k2++) {
+          g.fillStyle = k2 % 2 ? '#ff3b3b' : '#fff';
+          g.fillRect(k2 * (WALL / 4), -16, WALL / 4, 32);
+        }
+        g.globalAlpha = 1;
+        g.restore();
+        // Ombre puis grosse boule-bonbon qui roule, avec des yeux méchants
+        g.fillStyle = 'rgba(58,33,64,0.3)';
+        g.beginPath();
+        g.ellipse(r.x, r.y + 30, 34, 12, 0, 0, Math.PI * 2);
+        g.fill();
         g.save();
         g.translate(r.x, r.y);
-        g.rotate(t * 6);
         g.fillStyle = r.c;
         g.strokeStyle = INK;
         g.lineWidth = 5;
         g.beginPath();
-        g.arc(0, 0, 34, 0, Math.PI * 2);
+        g.arc(0, 0, 36, 0, Math.PI * 2);
         g.fill();
         g.stroke();
-        g.strokeStyle = '#fff';
-        g.lineWidth = 6;
+        g.save();
+        g.rotate(t * 6);
+        g.strokeStyle = 'rgba(255,255,255,0.8)';
+        g.lineWidth = 7;
         g.beginPath();
-        g.arc(0, 0, 18, 0, Math.PI * 1.4);
+        g.arc(0, 0, 22, 0, Math.PI * 1.2);
         g.stroke();
         g.restore();
+        for (const ex of [-12, 12]) {
+          g.fillStyle = '#fff';
+          g.beginPath();
+          g.ellipse(ex, -6, 8, 9, 0, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.fillStyle = INK;
+          g.beginPath();
+          g.arc(ex, -4, 4, 0, Math.PI * 2);
+          g.fill();
+        }
+        g.lineWidth = 4;
+        g.beginPath();
+        g.moveTo(-20, -18);
+        g.lineTo(-6, -12);
+        g.moveTo(20, -18);
+        g.lineTo(6, -12);
+        g.stroke();
+        g.restore();
+      }
+      // Tuyaux raccourcis (entrée + sortie)
+      for (const pp of pipes) {
+        for (const [x, y, k2] of [[pp.x, pp.y, 0], [pp.ox, pp.oy, 1]] as [number, number, number][]) {
+          g.fillStyle = INK;
+          g.beginPath();
+          g.ellipse(x, y + 8, 34, 18, 0, 0, Math.PI * 2);
+          g.fill();
+          g.fillStyle = '#3fa34a';
+          g.strokeStyle = INK;
+          g.lineWidth = 5;
+          g.beginPath();
+          g.ellipse(x, y, 34, 18, 0, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.fillStyle = '#1d3a1f';
+          g.beginPath();
+          g.ellipse(x, y, 22, 10, 0, 0, Math.PI * 2);
+          g.fill();
+          if (!k2) {
+            g.font = '700 28px Fredoka, sans-serif';
+            g.textAlign = 'center';
+            g.lineWidth = 6;
+            g.strokeText(fr ? 'RACCOURCI' : 'SHORTCUT', x, y - 30);
+            g.fillStyle = '#7bd13b';
+            g.fillText(fr ? 'RACCOURCI' : 'SHORTCUT', x, y - 30);
+          }
+        }
       }
       // Ligne d'arrivée
       const [fx, fy] = PATH[0];
@@ -894,6 +1008,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.translate(k.x, k.y);
         g.rotate(k.a);
         if (k.safe > 0 && k.spin <= 0 && Math.floor(t * 10) % 2) g.globalAlpha = 0.5;
+        if (ghosts.has(k)) g.globalAlpha = 0.35;
+        if (chili.has(k)) {
+          g.fillStyle = Math.floor(t * 20) % 2 ? '#ff3b3b' : '#ff9a1f';
+          g.beginPath();
+          g.moveTo(-30, -16);
+          g.lineTo(-74 - Math.random() * 20, 0);
+          g.lineTo(-30, 16);
+          g.fill();
+        }
         g.fillStyle = INK;
         for (const [wx, wy] of [[-18, -22], [18, -22], [-18, 22], [18, 22]]) g.fillRect(wx - 8, wy - 5, 16, 10);
         g.fillStyle = k.profile.color;
