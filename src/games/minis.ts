@@ -1200,6 +1200,10 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
   // Joueurs en train de fondre dans la lave (temps écoulé)
   const melting = new Map<P, number>();
   const MELT = 1.5;
+  // Plongeon en cours (temps restant) et temps passé au sol à se relever
+  const diving = new Map<P, number>();
+  const DIVE = 0.4;
+  const GETUP = 0.7;
   const embers: { x: number; y: number; vy: number; t: number }[] = [];
   let outCount = 0;
   let time = 0;
@@ -1221,6 +1225,22 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
         sfx.boing();
       }
       p.lastA = p.a;
+      // B : plongeon dans la direction du stick (ou du regard)
+      if (p.b && !p.lastB && p.alive && p.hop <= 0 && p.stun <= 0 && !diving.has(p)) {
+        const ix = p.inp.x;
+        const iy = p.inp.y;
+        const m = Math.hypot(ix, iy);
+        const dx = m > 0.2 ? ix / m : p.dir;
+        const dy = m > 0.2 ? iy / m : 0;
+        p.vx = dx * 900;
+        p.vy = dy * 900;
+        p.hop = DIVE;
+        diving.set(p, DIVE);
+        p.cd = Math.max(p.cd, DIVE + GETUP);
+        if (!p.bot) ctx.cool(p.pid, 'b', DIVE + GETUP);
+        sfx.whoosh();
+      }
+      p.lastB = p.b;
     },
     update(dt) {
       time += dt;
@@ -1271,9 +1291,26 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
           p.hop = 0.5;
           p.cd = 1.1;
         }
+        const [fx, fy] = cell(p.x + p.vx * 0.5, p.y + p.vy * 0.5);
+        if (!solid(fx, fy) && solid(...(cell(p.x + p.vx * 0.9, p.y + p.vy * 0.9) as [number, number])) && p.hop <= 0 && p.cd <= 0 && Math.random() < 0.08 * ctx.botSkill) {
+          p.hop = DIVE;
+          diving.set(p, DIVE);
+          p.cd = DIVE + GETUP;
+          const m = Math.hypot(p.vx, p.vy) || 1;
+          p.vx = (p.vx / m) * 900;
+          p.vy = (p.vy / m) * 900;
+        }
       }
       for (const p of melting.keys()) p.inp = { x: 0, y: 0 };
-      step(ps, dt, (p) => (melting.has(p) ? 0 : p.hop > 0 ? 520 : 400));
+      for (const [p, t] of diving) {
+        const left = t - dt;
+        if (left <= 0) {
+          diving.delete(p);
+          p.stun = GETUP;
+          p.pop = { text: fr ? 'OUPS…' : 'OOF…', t: 0.6, c: '#fff' };
+        } else diving.set(p, left);
+      }
+      step(ps, dt, (p) => (melting.has(p) ? 0 : diving.has(p) ? 900 : p.hop > 0 ? 520 : 400));
       // Les bords du plateau sont des murs : on ne tombe plus en allant tout au bord
       for (const p of ps) {
         if (!p.alive || melting.has(p)) continue;
@@ -1438,6 +1475,31 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
           g.stroke();
           continue;
         }
+        if (diving.has(p) || (p.stun > 0 && !melting.has(p))) {
+          const dv = diving.has(p);
+          const lift2 = dv ? Math.sin(((diving.get(p) ?? 0) / DIVE) * Math.PI) * 40 : 0;
+          g.fillStyle = 'rgba(0,0,0,0.25)';
+          g.beginPath();
+          g.ellipse(p.x, p.y, 44, 14, 0, 0, Math.PI * 2);
+          g.fill();
+          g.save();
+          g.translate(p.x, p.y - lift2);
+          g.rotate((p.vx >= 0 ? 1 : -1) * Math.PI * 0.42);
+          drawCharacter(g, 0, 30, 90, {
+            food: p.profile.food,
+            color: p.profile.color,
+            hat: p.profile.hat,
+            acc: p.profile.acc,
+            eyes: p.profile.eyes,
+            pose: p.profile.pose,
+            selfie: p.selfie,
+            t: t + i,
+            dir: p.dir,
+            mood: dv ? 'wow' : 'sad',
+          });
+          g.restore();
+          continue;
+        }
         const lift = p.hop > 0 ? Math.sin((p.hop / 0.5) * Math.PI) * 60 : 0;
         if (lift) {
           g.fillStyle = 'rgba(0,0,0,0.25)';
@@ -1470,7 +1532,7 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       g.restore();
       hud(g, ps, false);
-      bigText(g, fr ? '🌋 Ne reste pas en place ! A = sauter un trou' : '🌋 Keep moving! A = jump a hole', '#fff', 0.42, 130);
+      bigText(g, fr ? '🌋 Bouge ! A = sauter · B = plonger (loin, mais on met du temps à se relever)' : '🌋 Keep moving! A = jump · B = dive (far, but slow to get up)', '#fff', 0.36, 130);
     },
     mapName: shape.name,
     out: (pid) => !!ps.find((p) => p.pid === pid && !p.alive),
@@ -1914,7 +1976,7 @@ export const lavaGame: GameBase = {
   id: 'lave',
   emoji: '🌋',
   name: { fr: 'Le Sol est de la Lave', en: 'The Floor is Lava' },
-  how: { fr: 'Les dalles s’effondrent après ton passage : bouge sans arrêt ! A = sauter un trou', en: 'Tiles crumble after you step on them: keep moving! A = jump a hole' },
+  how: { fr: 'Les dalles s’effondrent après ton passage : bouge sans arrêt ! A = sauter · B = plonger', en: 'Tiles crumble after you step on them: keep moving! A = jump · B = dive' },
   music: 'fight',
   limit: 90,
   create: lava,

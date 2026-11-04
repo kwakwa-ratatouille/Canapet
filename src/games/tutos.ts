@@ -194,7 +194,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🧱', 'Chaque dalle où tu passes s’effondre une seconde après'],
         ['🌋', 'Tombe dans la lave et c’est fini : bouge sans arrêt'],
-        ['🅰️', 'A : sauter par-dessus un trou'],
+        ['🅰️', 'A : sauter un trou · B : plonger loin (on met du temps à se relever)'],
       ],
     },
     en: {
@@ -202,7 +202,7 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       steps: [
         ['🧱', 'Every tile you step on crumbles a second later'],
         ['🌋', 'Fall into the lava and you’re out: keep moving'],
-        ['🅰️', 'A: jump over a hole'],
+        ['🅰️', 'A: jump a hole · B: dive far (slow to get up)'],
       ],
     },
   },
