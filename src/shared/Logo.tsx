@@ -1,7 +1,8 @@
-import { monogramSvg, wordmarkSvg } from './art/canapet-art.js';
+import { monogramSvg } from './art/canapet-art.js';
+import { LOGO_SVG } from './logoSvg';
 
 // Les SVG du logo sont générés une seule fois.
-const WORDMARK = wordmarkSvg();
+const WORDMARK = LOGO_SVG;
 const MONOGRAM = monogramSvg();
 
 /** Logotype « Cana'pet » avec l'apostrophe-nuage (tête des écrans télé et accueil téléphone). */

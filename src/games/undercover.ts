@@ -10,7 +10,7 @@ import type { UndercoverPadData } from './undercoverShared';
 import { THEMES } from './undercoverWords';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 
-const T_ROLES = 10;
+const T_ROLES = 5;
 const T_CLUE = 30;
 const T_DEBATE = 45;
 const T_VOTE = 30;

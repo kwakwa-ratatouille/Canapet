@@ -1202,7 +1202,7 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
   const MELT = 1.5;
   // Plongeon en cours (temps restant) et temps passé au sol à se relever
   const diving = new Map<P, number>();
-  const DIVE = 0.4;
+  const DIVE = 0.3;
   const GETUP = 0.7;
   const embers: { x: number; y: number; vy: number; t: number }[] = [];
   let outCount = 0;
@@ -1232,8 +1232,8 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
         const m = Math.hypot(ix, iy);
         const dx = m > 0.2 ? ix / m : p.dir;
         const dy = m > 0.2 ? iy / m : 0;
-        p.vx = dx * 900;
-        p.vy = dy * 900;
+        p.vx = dx * 640;
+        p.vy = dy * 640;
         p.hop = DIVE;
         diving.set(p, DIVE);
         p.cd = Math.max(p.cd, DIVE + GETUP);
@@ -1297,8 +1297,8 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
           diving.set(p, DIVE);
           p.cd = DIVE + GETUP;
           const m = Math.hypot(p.vx, p.vy) || 1;
-          p.vx = (p.vx / m) * 900;
-          p.vy = (p.vy / m) * 900;
+          p.vx = (p.vx / m) * 640;
+          p.vy = (p.vy / m) * 640;
         }
       }
       for (const p of melting.keys()) p.inp = { x: 0, y: 0 };
@@ -1310,7 +1310,7 @@ function lava(runners: Runner[], ctx: GameCtx): GameInstance {
           p.pop = { text: fr ? 'OUPS…' : 'OOF…', t: 0.6, c: '#fff' };
         } else diving.set(p, left);
       }
-      step(ps, dt, (p) => (melting.has(p) ? 0 : diving.has(p) ? 900 : p.hop > 0 ? 520 : 400));
+      step(ps, dt, (p) => (melting.has(p) ? 0 : diving.has(p) ? 640 : p.hop > 0 ? 520 : 400));
       // Les bords du plateau sont des murs : on ne tombe plus en allant tout au bord
       for (const p of ps) {
         if (!p.alive || melting.has(p)) continue;

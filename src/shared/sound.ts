@@ -549,8 +549,19 @@ export function playMusic(track: MusicId | '') {
 // ——— Présentateur (voix de synthèse du navigateur) ———
 
 /** Voix du présentateur, au choix de l'hôte. `accent` = langue de la voix qui lit le texte (fr, puis en). */
-export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; rate: number; pitch: number }[] = [
+export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; piper?: [string, string]; speed?: number; rate: number; pitch: number }[] = [
   { id: 'classique', fr: 'Classique', en: 'Classic', rate: 1.05, pitch: 1.15 },
+  // Voix réalistes (Piper) : fabriquées par le PC, téléchargées une fois (≈ 60 Mo), voix d'homme
+  { id: 'tom', fr: 'Tom (réaliste)', en: 'Ryan (realistic)', piper: ['fr_FR-tom-medium', 'en_US-ryan-medium'], rate: 1, pitch: 1 },
+  { id: 'gilles', fr: 'Gilles (réaliste)', en: 'Joe (realistic)', piper: ['fr_FR-gilles-low', 'en_US-joe-medium'], rate: 1, pitch: 1 },
+  { id: 'alan', fr: 'Accent anglais (réaliste)', en: 'Alan, British (realistic)', piper: ['en_GB-alan-medium', 'en_GB-alan-medium'], rate: 1, pitch: 1 },
+  { id: 'trailerP', fr: 'Bande-annonce (réaliste)', en: 'Movie trailer (realistic)', piper: ['fr_FR-tom-medium', 'en_US-ryan-medium'], speed: 0.78, rate: 1, pitch: 1 },
+  { id: 'ogreP', fr: 'Ogre (réaliste)', en: 'Ogre (realistic)', piper: ['fr_FR-gilles-low', 'en_US-joe-medium'], speed: 0.66, rate: 1, pitch: 1 },
+  { id: 'helium', fr: 'Hélium (réaliste)', en: 'Helium (realistic)', piper: ['fr_FR-tom-medium', 'en_US-ryan-medium'], speed: 1.55, rate: 1, pitch: 1 },
+  { id: 'italienP', fr: 'Accent italien (réaliste)', en: 'Italian accent (realistic)', piper: ['it_IT-riccardo-x_low', 'it_IT-riccardo-x_low'], rate: 1, pitch: 1 },
+  { id: 'russeP', fr: 'Accent russe (réaliste)', en: 'Russian accent (realistic)', piper: ['ru_RU-dmitri-medium', 'ru_RU-dmitri-medium'], rate: 1, pitch: 1 },
+  { id: 'allemandP', fr: 'Accent allemand (réaliste)', en: 'German accent (realistic)', piper: ['de_DE-thorsten-medium', 'de_DE-thorsten-medium'], rate: 1, pitch: 1 },
+  { id: 'espagnolP', fr: 'Accent espagnol (réaliste)', en: 'Spanish accent (realistic)', piper: ['es_MX-claude-high', 'es_MX-claude-high'], rate: 1, pitch: 1 },
   { id: 'naturelle', fr: 'Naturelle (IA)', en: 'Natural (AI)', nice: true, rate: 1.02, pitch: 1 },
   { id: 'quebec', fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05 },
   { id: 'anglais', fr: 'Accent anglais', en: 'French accent', accent: ['en-gb', 'fr-fr'], rate: 0.95, pitch: 1.05 },
@@ -574,6 +585,55 @@ export const VOICES: { id: string; fr: string; en: string; accent?: [string, str
 let voiceIdx = 0;
 export function setVoice(i: number) {
   voiceIdx = Math.max(0, Math.min(VOICES.length - 1, i));
+  // Voix réaliste choisie : on la télécharge tout de suite en arrière-plan
+  const pre = VOICES[voiceIdx];
+  if (pre?.piper && !piperOff()) for (const v of new Set(pre.piper)) void piperReady(v);
+}
+
+// ——— Voix réalistes (Piper, module chargé seulement si on en choisit une) ———
+type Piper = typeof import('./piper');
+let piperMod: Promise<Piper> | null = null;
+const piperLoad = () => (piperMod ??= import('./piper'));
+/** Voix déjà téléchargées (ou en cours) : on ne parle avec elles qu'une fois prêtes. */
+const piperState = new Map<string, 'loading' | 'ok' | 'error'>();
+/** Chromecast et petits appareils : trop lourd, on garde les voix du système. */
+const piperOff = () => /CrKey|Android/i.test(navigator.userAgent) || (navigator.hardwareConcurrency ?? 4) < 4;
+function piperReady(id: string): boolean {
+  const st = piperState.get(id);
+  if (st === 'ok') return true;
+  if (st) return false;
+  piperState.set(id, 'loading');
+  piperLoad()
+    .then(async (m) => {
+      await m.loadVoice(id);
+      piperState.set(id, 'ok');
+    })
+    .catch(() => piperState.set(id, 'error'));
+  return false;
+}
+let piperAudio: HTMLAudioElement | null = null;
+let piperTicket = 0;
+function piperSpeak(text: string, id: string, speed: number): boolean {
+  if (!piperReady(id)) return false;
+  const ticket = ++piperTicket;
+  speechSynthesis?.cancel();
+  piperAudio?.pause();
+  piperLoad()
+    .then((m) => m.synth(text, id))
+    .then((wav) => {
+      // Une phrase plus récente a été demandée entre-temps : on laisse tomber celle-ci
+      if (ticket !== piperTicket || muted) return;
+      const a = new Audio(URL.createObjectURL(wav));
+      // Vitesse sans garder la hauteur : plus lent = plus grave (bande-annonce, ogre), plus rapide = plus aigu (hélium)
+      a.preservesPitch = false;
+      a.playbackRate = speed;
+      a.volume = 0.95;
+      piperAudio = a;
+      void a.play();
+      a.onended = () => URL.revokeObjectURL(a.src);
+    })
+    .catch(() => piperState.set(id, 'error'));
+  return true;
 }
 
 const NICE = /natural|neural|online|google|premium|enhanced|siri|wavenet/i;
@@ -603,8 +663,12 @@ function findVoice(prefix: string, nice: boolean, local = false, male = false): 
 
 export function speak(text: string, lang: Lang) {
   if (muted || !('speechSynthesis' in window)) return;
-  const u = new SpeechSynthesisUtterance(text);
   const pre = VOICES[voiceIdx] ?? VOICES[0];
+  // Voix réaliste prête : c'est elle qui parle ; sinon (téléchargement en cours, Chromecast) la voix du système
+  if (pre.piper && !piperOff() && piperSpeak(text, pre.piper[lang === 'fr' ? 0 : 1], pre.speed ?? 1)) return;
+  piperTicket++;
+  piperAudio?.pause();
+  const u = new SpeechSynthesisUtterance(text);
   const base = lang === 'fr' ? 'fr' : 'en';
   // Accent : une voix d'une autre langue lit le texte (si le PC l'a, sinon voix normale)
   const acc = pre.accent ? findVoice(pre.accent[lang === 'fr' ? 0 : 1], true, false, !!pre.male) : undefined;
