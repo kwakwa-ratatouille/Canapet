@@ -546,6 +546,43 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       // Joueurs en arc, avec leurs indices
       const cnt = pls.length;
       const cur = phase === 'clues' ? turnOrder[turnPos] : -1;
+      // Celui qui doit écrire : projecteur, anneau lumineux à ses pieds et grand bandeau à sa couleur
+      if (cur >= 0) {
+        const a = Math.PI * (0.06 + (0.88 * cur) / Math.max(1, cnt - 1));
+        const cx = 960 - Math.cos(a) * 800;
+        const cy = 1000 - Math.sin(a) * 300;
+        g.fillStyle = 'rgba(255,240,180,0.22)';
+        g.beginPath();
+        g.moveTo(cx - 40, 0);
+        g.lineTo(cx + 40, 0);
+        g.lineTo(cx + 150, cy + 10);
+        g.lineTo(cx - 150, cy + 10);
+        g.closePath();
+        g.fill();
+        g.strokeStyle = SOLEIL;
+        g.lineWidth = 8;
+        g.globalAlpha = 0.6 + Math.sin(t * 6) * 0.3;
+        g.beginPath();
+        g.ellipse(cx, cy - 20, 110, 34, 0, 0, Math.PI * 2);
+        g.stroke();
+        g.globalAlpha = 1;
+        const nm = pls[cur].profile.name;
+        const txt = fr ? `✍️ Au tour de ${nm} d’écrire son indice !` : `✍️ ${nm}’s turn to write a clue!`;
+        g.font = '700 52px Fredoka, sans-serif';
+        const bw = g.measureText(txt).width + 80;
+        g.fillStyle = pls[cur].profile.color;
+        g.strokeStyle = INK;
+        g.lineWidth = 7;
+        g.beginPath();
+        g.roundRect(960 - bw / 2, 300, bw, 86, 43);
+        g.fill();
+        g.stroke();
+        g.fillStyle = '#fff';
+        g.lineWidth = 9;
+        g.textAlign = 'center';
+        g.strokeText(txt, 960, 360);
+        g.fillText(txt, 960, 360);
+      }
       pls.forEach((p, i) => {
         const a = Math.PI * (0.06 + (0.88 * i) / Math.max(1, cnt - 1));
         const x = 960 - Math.cos(a) * 800;

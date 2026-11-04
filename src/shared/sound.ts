@@ -559,6 +559,17 @@ export const VOICES: { id: string; fr: string; en: string; accent?: [string, str
   { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', local: true, rate: 0.82, pitch: 0.3 },
   { id: 'ecureuil', fr: 'Écureuil', en: 'Chipmunk', local: true, rate: 1.35, pitch: 2 },
   { id: 'robot', fr: 'Robot', en: 'Robot', local: true, rate: 0.8, pitch: 0.1 },
+  // Accents du monde : une voix de cette langue lit le texte (si le PC l'a ; « a|b » = la première trouvée)
+  { id: 'japonais', fr: 'Accent japonais', en: 'Japanese accent', accent: ['ja', 'ja'], rate: 1.05, pitch: 1.1 },
+  { id: 'chinois', fr: 'Accent chinois', en: 'Chinese accent', accent: ['zh', 'zh'], rate: 1, pitch: 1.05 },
+  { id: 'indien', fr: 'Accent indien', en: 'Indian accent', accent: ['en-in|hi', 'en-in|hi'], rate: 1.05, pitch: 1.05 },
+  { id: 'africain', fr: 'Accent africain', en: 'African accent', accent: ['fr-sn|fr-ci|fr-cm|en-ng|en-za|sw', 'en-ng|en-za|en-ke|sw'], rate: 1, pitch: 1 },
+  // Voix drôles (hauteur et vitesse poussées à fond)
+  { id: 'mamie', fr: 'Mamie', en: 'Granny', local: true, rate: 0.75, pitch: 1.6 },
+  { id: 'ogre', fr: 'Ogre', en: 'Ogre', local: true, rate: 0.7, pitch: 0.15 },
+  { id: 'speede', fr: 'Speedé', en: 'Hyper', local: true, rate: 1.9, pitch: 1.3 },
+  { id: 'fantome', fr: 'Fantôme', en: 'Ghost', local: true, rate: 0.6, pitch: 1.9 },
+  { id: 'escargot', fr: 'Escargot', en: 'Snail', local: true, rate: 0.45, pitch: 0.8 },
 ];
 let voiceIdx = 0;
 export function setVoice(i: number) {
@@ -572,6 +583,14 @@ const NICE = /natural|neural|online|google|premium|enhanced|siri|wavenet/i;
  * sonnaient comme la voix normale. Pour elles, on prend une voix installée sur le PC, qui la respecte.
  */
 function findVoice(prefix: string, nice: boolean, local = false): SpeechSynthesisVoice | undefined {
+  // Plusieurs langues possibles « a|b » : on prend la première que le PC possède
+  if (prefix.includes('|')) {
+    for (const one of prefix.split('|')) {
+      const v = findVoice(one, nice, local);
+      if (v) return v;
+    }
+    return undefined;
+  }
   const all = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith(prefix));
   if (local) return all.find((v) => v.localService && !NICE.test(v.name)) ?? all.find((v) => v.localService) ?? all[0];
   return (nice ? all.find((v) => NICE.test(v.name)) : undefined) ?? all.find((v) => !NICE.test(v.name)) ?? all[0];
