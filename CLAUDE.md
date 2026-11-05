@@ -110,6 +110,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Jeux au micro (`src/games/voice.ts`, `VoicePad.tsx`, `voiceShared.ts`) : Le Grand Bruiteur (imite), C’est Quoi Ce Bruit ? (devine), Le Perroquet Enrhumé (perroquet), Le Disque à l’Envers (envers), La Voix Mystère (voix), Le Téléphone Cassé (casse, 3 humains mini, pas de bots). MediaRecorder sur le téléphone, envoi en morceaux de 48 Ko (`act up`), lecture à la télé par `playClip` (déformée, à l’envers). Bots : `fakeVoice`. Bruits à imiter : `referenceSound`. Pas de vidéos YouTube (droits, pubs, publication refusée possible). Micro des applis : `patch.cjs`, `ios.yml`.
 - Aussi : Le Doublage (`doublage`, `SCENES`, `drawScene`) et Le Karaoké Bidon (`karaoke`, `karaokeTune`, `LYRICS`) dans voice.ts ; Crie Plus Fort (`shout.ts`, `ShoutPad.tsx`, id `cri`) : le téléphone envoie seulement un chiffre de volume (`act vol`) ; rouge = silence sinon on recule ; sans micro on tape.
 - Salon : 6 joueurs sans Pass, 12 avec (`FREE_PLAYERS`, `roomLimit`, message `full`), seulement si `SALES_ON`.
+- Persos rares : légendaires burger, telecommande, manette, ananas ; mythiques canape, ovni, bouledisco. Micro iPhone : `MIC_NEEDS_UPDATE` (native.ts) : sans `CanapetMic` dans l’identifiant du navigateur (`appendUserAgent`), l’appli est ancienne et iOS la tuerait : on ne demande pas le micro.
 - Images Play : `store/images`, refaites par `store/make-images.cjs`.
 
 ## Mode équipes et musique

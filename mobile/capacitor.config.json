@@ -2,6 +2,7 @@
   "appId": "com.canapet.app",
   "appName": "Cana'pet",
   "webDir": "www",
+  "appendUserAgent": "CanapetMic",
   "server": {
     "url": "https://kwakwa-ratatouille.github.io/Canapet/",
     "androidScheme": "https",

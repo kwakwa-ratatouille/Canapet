@@ -20,6 +20,8 @@ const cap = () => (window as unknown as { Capacitor?: Cap }).Capacitor;
 export const IS_NATIVE = !!cap()?.isNativePlatform?.();
 
 /** Vrai dans la version installée depuis Google Play (pas de galerie ; achats par Google Play). */
+/** iPhone : une ancienne appli n'a pas le droit au micro, et iOS la ferme d'un coup si on le demande. Il faut donc d'abord la mettre à jour. */
+export const MIC_NEEDS_UPDATE = IS_NATIVE && IS_IOS && !/CanapetMic/.test(navigator.userAgent);
 export const IS_PLAY = /CanapetPlay/.test(navigator.userAgent);
 
 /** Ouvert depuis l'écran d'accueil (appli installée, sans barre d'adresse). */

@@ -185,6 +185,7 @@ export const TABLE: Record<Rarity, string[]> = {
     ...list('winfx', 'etoiles pets billets'),
   ],
   legendaire: [
+    ...list('food', 'burger telecommande manette ananas'),
     ...list('hat', 'couronne aureole licorne flammes samourai pharaon'),
     ...list('acc', 'ailes cyborg'),
     ...list('skin', 'or arcenciel'),
@@ -195,6 +196,7 @@ export const TABLE: Record<Rarity, string[]> = {
     ...list('winfx', 'feu disco'),
   ],
   mythique: [
+    ...list('food', 'canape ovni bouledisco'),
     ...list('hat', 'dragon cosmique'),
     ...list('acc', 'ailesdragon'),
     ...list('skin', 'galaxie diamant'),

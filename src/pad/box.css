@@ -350,3 +350,28 @@
 .shout-track { width: 100%; max-width: 340px; height: 18px; overflow: hidden; background: #fff; border: 4px solid #3a2140; border-radius: 99px; }
 .shout-track i { display: block; height: 100%; background: #ff4f9a; transition: width .2s; }
 .shout-pad { align-items: center; }
+
+/* Éditeur sur téléphone : tout tient dans la largeur */
+.pad.editor { touch-action: pan-y; overscroll-behavior-x: none; box-sizing: border-box; }
+.pad.editor > * { box-sizing: border-box; max-width: min(440px, 100%); }
+.ed-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ed-cat { min-width: 0; box-sizing: border-box; }
+.ed-cat-txt b { font-size: 15.5px; line-height: 1.08; overflow-wrap: anywhere; }
+.pick-grid, .ed-in .pick-grid { box-sizing: border-box; }
+.ed-in .pick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pick { min-width: 0; box-sizing: border-box; }
+
+/* Le perso bien centré dans son rond */
+.editor-preview .thumb-frame { position: absolute; inset: 0; display: block; }
+.editor-preview .thumb-frame .char { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); }
+.ed-in .editor-preview .char { width: 96px !important; height: 120px !important; bottom: 3px; }
+.ed-in .editor-preview { overflow: visible; }
+
+/* En-tête de catégorie : rien ne passe au-dessus quand on fait défiler */
+.pad.editor.ed-in { padding-top: 0; }
+.ed-in .ed-head { max-width: none; width: calc(100% + 32px); margin: 0 -16px; padding: max(14px, env(safe-area-inset-top)) 16px 8px; }
+
+/* Toutes les raretés sur la même ligne */
+.ed-in .pick { height: 100%; }
+.ed-in .pick small { flex: 1 0 2.3em; display: flex; align-items: center; justify-content: center; line-height: 1.1; }
+.rar-tag { margin-top: auto; flex: none; }
