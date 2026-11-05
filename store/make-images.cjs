@@ -1,5 +1,5 @@
 // Fabrique les images de la fiche Google Play dans store/images (site lancé en local : npm run dev).
-// Usage, depuis desktop/ : npx electron ../store/make-images.cjs
+// Usage, depuis desktop/ : npx electron ../store/make-images.cjs (fenêtre hors de l'écran : cachée, le navigateur n'anime plus rien)
 const { app, BrowserWindow } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +12,7 @@ app.commandLine.appendSwitch('force-device-scale-factor', '2');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 async function open(w, h, hash, zoom = 1) {
-  const win = new BrowserWindow({ width: w, height: h, show: false, frame: false, useContentSize: true, enableLargerThanScreen: true, webPreferences: { backgroundThrottling: false } });
+  const win = new BrowserWindow({ width: w, height: h, show: true, x: -4000, y: 0, skipTaskbar: true, frame: false, useContentSize: true, enableLargerThanScreen: true, webPreferences: { backgroundThrottling: false } });
   win.setContentSize(w, h);
   win.webContents.setAudioMuted(true);
   await win.loadURL(BASE + hash).catch(() => wait(1500));
@@ -30,16 +30,12 @@ const js = (win, code) => win.webContents.executeJavaScript(code);
 const press = (win, key) => js(win, `window.dispatchEvent(new KeyboardEvent('keydown',{key:${JSON.stringify(key)},bubbles:true})),1`);
 /** Attend que le jeu ait vraiment commencé (tuto et compte à rebours finis). */
 async function untilPlaying(win, extra) {
-  // Fenêtre cachée : le navigateur ralentit l'animation, on fait donc avancer le jeu nous-mêmes
-  const run = (secs) => js(win, `(()=>{window.__t=Math.max(window.__t||0,performance.now());for(let i=0;i<${Math.round(secs * 60)};i++){window.__t+=16.67;__session.frame(window.__t);}return 1})()`);
   let on = false;
-  for (let i = 0; i < 40 && !on; i++) {
-    await run(1);
+  for (let i = 0; i < 90 && !on; i++) {
     on = await js(win, '!!(__session.phase === "game" && __session.clock >= __session.intro + 3.5)');
-    await wait(30);
+    if (!on) await wait(500);
   }
-  await run(extra / 1000);
-  await wait(400);
+  await wait(extra);
   return on;
 }
 
