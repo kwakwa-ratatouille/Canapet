@@ -92,6 +92,8 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Fiche et réponses Play : `store/google-play.md`. Version Play : `PLAY=1` dans `mobile/native/patch.cjs` (sans galerie, `IS_PLAY`), Capacitor 8 / API 36 ; iPhone reste en Capacitor 6. Clé d'envoi hors dépôt (`BureauCanapet-cle-android`), secrets GitHub `UPLOAD_KEY_*`. Pages `#/confidentialite`, `#/conditions`, `#/supprimer-compte` (`Legal.tsx`, EDITOR et CONTACT à remplir).
 - Licences : **pas de voix Piper** (espeak-ng GPL, Tom AGPL, Ryan non commerciale). Polices via @fontsource. Noms : Le Mot Intrus (ex-Undercover, rôles Intrus et Sans-Mot), Photo Mystère (bouton 🚩 pour masquer). Nouveaux jeux : Le Tribunal (`tribunal.ts`, touche 0), Le Dico Bidon (`dico.ts`, touche ;), Plutôt Ça et Le Bon Chiffre (`quick.ts`), manette `QuizPad.tsx`. Prix du Pass décidé : 3,99 €. Public : potes et familles (choix demandé une fois à l'hôte, `moodAsked`). Écran : téléphone en plus + recopie d'écran, PC, ou navigateur de la télé (guide sur l'accueil des téléphones) ; Chromecast direct en attente de `CAST_APP_ID`.
 
+- Salon du téléphone en 3 onglets (`tab` dans PadScreenView) : Jouer, Mon perso, Réglages. Manette réglable (`src/shared/controls.ts`, `ControlsCard.tsx`) : échanger les boutons, stick à droite, taille, vibrations ; appliqué dans `Stick.tsx` (classes `slot-*`).
+
 ## Mode équipes et musique
 
 - **Chrono** : `limit` (+ `timerTop`) dans chaque `GameBase` ; la session (`limitTick`, `timeLeft`) annonce « Plus que 30 secondes ! » et accélère la musique (`setMusicRush`), tic-tac sur les 10 dernières, sirène + « Temps écoulé ! » (2,2 s) puis résultats avec le classement du moment. Pastille dessinée par `drawTimer` (TvApp). Pas de chrono pour Cuisine (le sien) ni Traître.

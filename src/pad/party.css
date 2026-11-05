@@ -181,3 +181,26 @@
 
 .pass-card { gap: 10px; text-align: center; }
 .pass-card ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+
+/* Salon en onglets : les actions d'abord, jamais tout en bas */
+.pad-body.lobby { padding-bottom: 0; }
+.lobby-tabs { position: sticky; bottom: 0; margin-top: auto; align-self: stretch; display: flex; gap: 6px; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--cp-fond, #ffe9f3); }
+.lobby-tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border: 4px solid #3a2140; border-radius: 16px; background: #fff; color: #3a2140; font-family: var(--cp-font-titre); font-weight: 700; font-size: 14px; box-shadow: 0 4px 0 #3a2140; }
+.lobby-tabs button i { font-style: normal; font-size: 20px; }
+.lobby-tabs button.on { background: #ff4f9a; color: #fff; }
+.perso-hero { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; padding: 10px; border: 0; background: none; color: inherit; font-family: var(--cp-font-titre); font-size: 22px; }
+.perso-hero.small { padding: 0; }
+/* Réglages de la manette */
+.controls-card { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+.ab.four.ctl-preview { width: auto; flex: none; position: static; }
+.ctl-rows { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.ctl-toggle { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border: 4px solid #3a2140; border-radius: 16px; background: #fff; color: #3a2140; font-weight: 700; font-size: 15px; text-align: left; }
+.ctl-toggle.on { background: #d6f7ea; }
+.ctl-size { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.ctl-size span { flex: 1; text-align: left; }
+.ab-btn.picked { outline: 6px solid #ffd60a; }
+.stick-pad.mirror { flex-direction: row-reverse; }
+.ab.four .ab-btn.slot-top { left: 50%; top: 18%; }
+.ab.four .ab-btn.slot-bottom { left: 50%; top: 82%; }
+.ab.four .ab-btn.slot-left { left: 18%; top: 50%; }
+.ab.four .ab-btn.slot-right { left: 82%; top: 50%; }

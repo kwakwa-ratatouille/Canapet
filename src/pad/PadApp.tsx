@@ -12,7 +12,7 @@ import { CharCanvas } from '../shared/CharCanvas';
 import { ACCS, COLORS, EYE_LIST, FOODS, HATS, POSE_LIST } from '../shared/characters';
 import { IS_IOS, newId, save, store } from '../shared/device';
 import { defaultLang, ordinal, t } from '../shared/i18n';
-import { gameIcon, Wordmark } from '../shared/Logo';
+import { gameIcon } from '../shared/Logo';
 import type { GameInfo, HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
 import { sfx, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
@@ -24,6 +24,8 @@ import { TraitorPad } from './TraitorPad';
 import { UndercoverPad } from './UndercoverPad';
 import { QuizPad } from './QuizPad';
 import { PassCard } from './PassCard';
+import { ControlsCard } from './ControlsCard';
+import { LegalLinks } from '../pages/Legal';
 import type { QuizPadData } from '../games/quizShared';
 import { afterGame, questsNow } from '../shared/quests';
 import { isLocked, gameOfDay, PASS_GIFT, SALES_ON } from '../shared/offer';
@@ -407,6 +409,8 @@ function PadScreenView({
 }) {
   const [picking, setPicking] = useState(false);
   const [passOpen, setPassOpen] = useState(false);
+  /** Onglet du salon : jouer, mon perso, réglages. */
+  const [tab, setTab] = useState<'play' | 'perso' | 'settings'>('play');
   const [touring, setTouring] = useState(false);
   const [noTour, setNoTour] = useState<string[]>(() => store<string[]>('noTour', []));
   const [moodAsked, setMoodAsked] = useState(() => store<boolean>('moodAsked', false));
@@ -556,8 +560,7 @@ function PadScreenView({
           </div>
         );
       return (
-        <div className="pad-body host">
-          <Wordmark className="pad-wordmark" />
+        <div className="pad-body host lobby">
           <div className="code-card">
             <div>
               <small>{t(lang, 'codeLabel')}</small>
@@ -572,8 +575,17 @@ function PadScreenView({
               </span>
             </div>
           </div>
-          <ProgressCard progress={progress} lang={lang} onShop={edit} account={account} />
-          {screen.teams && (
+          {tab === 'perso' && (
+            <>
+              <button className="perso-hero" onClick={edit}>
+                <CharCanvas profile={profile} size={170} />
+                <b>{profile.name || '???'}</b>
+                <span className="btn big mint">✏️ {lang === 'fr' ? 'Modifier mon perso' : 'Edit my character'}</span>
+              </button>
+              <ProgressCard progress={progress} lang={lang} onShop={edit} account={account} />
+            </>
+          )}
+          {tab === 'play' && screen.teams && (
             <div className="team-box">
               <p className="opt-title">{t(lang, 'yourTeam')}</p>
               <div className="team-pick">
@@ -593,7 +605,7 @@ function PadScreenView({
               </div>
             </div>
           )}
-          {screen.host ? (
+          {tab === 'play' && screen.host && (
             <>
               {!moodAsked && (
                 <div className="mood-ask">
@@ -657,6 +669,11 @@ function PadScreenView({
                   📊 {lang === 'fr' ? 'Bilan de la soirée' : 'Tonight’s awards'}
                 </button>
               )}
+            </>
+          )}
+          {tab === 'settings' && <ControlsCard lang={lang} />}
+          {tab === 'settings' && screen.host && (
+            <>
               {screen.players.length > 0 && (
                 <>
                   <p className="opt-title">{lang === 'fr' ? 'Joueurs' : 'Players'}</p>
@@ -724,8 +741,13 @@ function PadScreenView({
                 </button>
               </div>
             </>
-          ) : (
+          )}
+          {tab === 'settings' && <LegalLinks lang={lang} />}
+          {tab === 'play' && !screen.host && (
             <>
+              <button className="perso-hero small" onClick={() => setTab('perso')}>
+                <CharCanvas profile={profile} size={120} />
+              </button>
               <p className="pad-title pulse">{t(lang, 'waitHost', { name: screen.hostName })}</p>
               {screen.family && <p className="pad-small">👨‍👩‍👧 {t(lang, 'family')}</p>}
             </>
@@ -767,9 +789,20 @@ function PadScreenView({
               </div>
             </div>
           )}
-          <button className="btn ghost" onClick={edit}>
-            ✏️ {t(lang, 'editChar')}
-          </button>
+          <nav className="lobby-tabs">
+            {(
+              [
+                ['play', '🎮', lang === 'fr' ? 'Jouer' : 'Play'],
+                ['perso', '🧑', lang === 'fr' ? 'Mon perso' : 'My character'],
+                ['settings', '⚙️', lang === 'fr' ? 'Réglages' : 'Settings'],
+              ] as const
+            ).map(([id, ico, label]) => (
+              <button key={id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)} aria-pressed={tab === id}>
+                <i>{ico}</i>
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
       );
     case 'play':

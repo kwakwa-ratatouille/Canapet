@@ -3,6 +3,7 @@ import { t } from '../shared/i18n';
 import { ordinal } from '../shared/i18n';
 import type { Lang, Profile, ToTv } from '../shared/protocol';
 import { ReactButton } from './ReactPad';
+import { loadControls } from '../shared/controls';
 
 /** Rôle des boutons A, B, X, Y selon le jeu (X et Y n'apparaissent que s'ils servent). */
 const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> = {
@@ -79,6 +80,7 @@ export function Stick({
     return () => cancelAnimationFrame(raf);
   }, [cools]);
   const [la, lb, lx, ly] = LABELS[game ?? '']?.[lang] ?? ['A', 'B'];
+  const [controls] = useState(loadControls);
   const state = useRef({ x: 0, y: 0, a: false, b: false, c: false, d: false });
   // Le stick est visible au repos ; s'il est touché ailleurs, il vient sous le pouce.
   const [knob, setKnob] = useState({ ox: 0, oy: 0, x: 0, y: 0, on: false });
@@ -162,12 +164,12 @@ export function Stick({
     e.preventDefault();
     state.current[k] = v;
     setPressed((p) => ({ ...p, [k]: v }));
-    if (v && navigator.vibrate) navigator.vibrate(10);
+    if (v && controls.vibrate && navigator.vibrate) navigator.vibrate(10);
     flush(true);
   };
 
   return (
-    <div className="stick-pad">
+    <div className={`stick-pad ${controls.mirror ? 'mirror' : ''}`}>
       <div ref={zone} className="stick-zone" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
         <div
           className={`stick-base ${knob.on ? 'on' : ''}`}
@@ -199,7 +201,7 @@ export function Stick({
         <ReactButton lang={lang} family={!!family} send={send} inline />
       </div>
       <div className="ab four">
-        <div className="ab-cluster">
+        <div className="ab-cluster" style={{ transform: `scale(${controls.size})` }}>
         {(
           [
             ['c', 'X', lx],
@@ -214,7 +216,7 @@ export function Stick({
             <button
               key={k}
               disabled={!label}
-              className={`ab-btn ${k} ${pressed[k] ? 'down' : ''} ${label ? '' : 'off'} ${left > 0 ? 'cooling' : ''}`}
+              className={`ab-btn ${k} slot-${controls.slots[k]} ${pressed[k] ? 'down' : ''} ${label ? '' : 'off'} ${left > 0 ? 'cooling' : ''}`}
               onPointerDown={btn(k, true)}
               onPointerUp={btn(k, false)}
               onPointerCancel={btn(k, false)}
