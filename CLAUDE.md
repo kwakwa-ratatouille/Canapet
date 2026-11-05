@@ -111,6 +111,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Aussi : Le Doublage (`doublage`, `SCENES`, `drawScene`) et Le Karaoké Bidon (`karaoke`, `karaokeTune`, `LYRICS`) dans voice.ts ; Crie Plus Fort (`shout.ts`, `ShoutPad.tsx`, id `cri`) : le téléphone envoie seulement un chiffre de volume (`act vol`) ; rouge = silence sinon on recule ; sans micro on tape.
 - Salon : 6 joueurs sans Pass, 12 avec (`FREE_PLAYERS`, `roomLimit`, message `full`), seulement si `SALES_ON`.
 - Persos rares : légendaires burger, telecommande, manette, ananas ; mythiques canape, ovni, bouledisco. Micro iPhone : `MIC_NEEDS_UPDATE` (native.ts) : sans `CanapetMic` dans l’identifiant du navigateur (`appendUserAgent`), l’appli est ancienne et iOS la tuerait : on ne demande pas le micro.
+- Contenu : grande réserve dans `src/games/moreContent.ts`. Tirage sans redite : `freshDeck` (`decks.ts`) retient sur la télé ce qui est sorti (`canapet.seen.*`), et ne repart de zéro qu’une fois tout passé. Pour Le Juste Pif, seulement des faits sûrs dont la réponse est la même en français et en anglais.
 - Images Play : `store/images`, refaites par `store/make-images.cjs`.
 
 ## Mode équipes et musique

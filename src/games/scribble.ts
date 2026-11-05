@@ -1,5 +1,7 @@
 // Gribouillis : un joueur dessine sur son téléphone un mot secret, le dessin s'affiche en direct sur la télé,
 // les autres tapent leurs propositions. Plus on trouve vite, plus on marque.
+import { freshDeck } from './decks';
+import { MORE_SCRIBBLE } from './moreContent';
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
 import { roundRectText } from './draw';
@@ -95,7 +97,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   // Partie courte : chacun dessine une fois (deux fois à 2)
   const turns = Math.min(MAX_TURNS, drawers.length * (drawers.length <= 2 ? 2 : 1));
   const FAMILY_SKIP = new Set(['toilettes', 'papier toilette', 'vampire', 'zombie', 'sorcière', 'slip', 'crotte', 'pet', 'fesses', 'bisou', 'squelette', 'momie', 'bombe', 'rot', 'pieds qui puent', 'caleçon à cœurs', 'bave', 'zombie qui danse', 'coussin péteur']);
-  const words = WORDS.filter((w) => !ctx.family || !FAMILY_SKIP.has(w[0])).sort(() => Math.random() - 0.5);
+  const known = new Set(WORDS.map((w) => w[0]));
+  const allWords = [...WORDS, ...MORE_SCRIBBLE.filter((w) => !known.has(w[0]))].filter((w) => !ctx.family || !FAMILY_SKIP.has(w[0]));
+  const words = freshDeck('dessin', allWords, 8, (w) => w[0]);
   let turn = -1;
   let drawer = 0;
   let word: [string, string] = words[0];

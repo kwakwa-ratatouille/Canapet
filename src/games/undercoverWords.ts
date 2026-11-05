@@ -1,6 +1,8 @@
 // Undercover : paires de mots proches, rangées par thème. [mot A, mot B] en français puis en anglais.
 // Les civils reçoivent un mot, l'Undercover l'autre (tiré au hasard), Mr White aucun.
 
+import { MORE_UNDERCOVER } from './moreContent';
+
 export interface Theme {
   name: { fr: string; en: string };
   emoji: string;
@@ -294,3 +296,9 @@ export const THEMES: Theme[] = [
     ],
   },
 ];
+
+// La réserve s'ajoute à chaque thème
+for (const th of THEMES) {
+  const more = MORE_UNDERCOVER[th.name.fr];
+  if (more) th.pairs = [...th.pairs, ...more.filter((p) => !th.pairs.some((q) => q[0] === p[0] && q[1] === p[1]))];
+}

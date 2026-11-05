@@ -1,6 +1,7 @@
 // Undercover : chacun reçoit un mot en secret sur son téléphone. Les civils ont le même,
 // l'Undercover un mot proche, Mr White aucun. À tour de rôle, on tape un indice d'un mot (affiché à la télé),
 // on débat, puis on vote. Mr White éliminé peut encore gagner en devinant le mot des civils.
+import { freshDeck } from './decks';
 import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL, MENTHE } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
@@ -143,7 +144,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const themes = THEMES.filter((th) => !(ctx.family && th.adult));
   const theme = themes[Math.floor(Math.random() * themes.length)];
-  const pair = theme.pairs[Math.floor(Math.random() * theme.pairs.length)];
+  const pair = freshDeck(`intrus-${theme.name.fr}`, theme.pairs, 1, (p) => p[0] + p[1])[0];
   const [wa, wb] = fr ? [pair[0], pair[1]] : [pair[2], pair[3]];
   // Le mot des civils et celui de l'Undercover sont tirés au hasard dans la paire.
   const [civilWord, underWord] = Math.random() < 0.5 ? [wa, wb] : [wb, wa];

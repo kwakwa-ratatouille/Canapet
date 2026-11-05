@@ -7,7 +7,7 @@ import { sfx, speak } from '../shared/sound';
 import { candy, roundRectText } from './draw';
 import type { ReflexPadData } from './reflexShared';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
-import { TRAP_QUESTIONS, type TrapQ } from './trapQuestions';
+import { ALL_TRAP, type TrapQ } from './trapQuestions';
 
 type Kind = 'vert' | 'intrus' | 'compte' | 'couleur' | 'marteau' | 'jauge' | 'calcul' | 'plus' | 'memo' | 'vf' | 'chrono' | 'fleche' | 'corde' | 'boites' | 'peche';
 const KINDS: Kind[] = ['vert', 'intrus', 'compte', 'couleur', 'marteau', 'jauge', 'calcul', 'plus', 'memo', 'vf', 'chrono', 'fleche', 'corde', 'boites', 'peche'];
@@ -67,7 +67,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let memo: string[] = [];
   let memoAsk = 0;
   let memoOpts: string[] = [];
-  let vf: TrapQ = TRAP_QUESTIONS[0];
+  let vf: TrapQ = ALL_TRAP[0];
   let arrow = 0;
   // Tir à la corde : position de la corde (-1 = équipe gauche gagne, 1 = équipe droite)
   let rope = 0;
@@ -75,7 +75,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let boxes: number[] = [];
   // Pêche : le canard passe sous la ligne ; on note où il était au moment du tap
   let duck = 0;
-  const vfPool = TRAP_QUESTIONS.filter((q) => !(ctx.family && q.fam === false) && q.a[0].fr === 'Vrai').sort(() => Math.random() - 0.5);
+  const vfPool = ALL_TRAP.filter((q) => !(ctx.family && q.fam === false) && q.a[0].fr === 'Vrai').sort(() => Math.random() - 0.5);
 
   const titles: Record<Kind, [string, string]> = {
     vert: ['Attends le VERT… puis tape !', 'Wait for GREEN… then tap!'],
@@ -173,7 +173,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       correct = memoOpts.indexOf(memo[memoAsk]);
     }
     if (kind === 'vf') {
-      vf = vfPool[round % Math.max(1, vfPool.length)] ?? TRAP_QUESTIONS[0];
+      vf = vfPool[round % Math.max(1, vfPool.length)] ?? ALL_TRAP[0];
       correct = vf.ok;
     }
     if (kind === 'fleche') {

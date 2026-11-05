@@ -6,6 +6,8 @@ import { sfx, speak } from '../shared/sound';
 import { candy, roundRectText } from './draw';
 import { PACKS, PACK_OPTION } from '../shared/offer';
 import { PACK_CASES } from './packsData';
+import { freshDeck } from './decks';
+import { MORE_CASES, MORE_SENTENCES } from './moreContent';
 import type { QuizPadData } from './quizShared';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
@@ -87,11 +89,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const pls: Pl[] = runners.slice(0, 12).map((r) => ({ ...r, score: 0, pick: -1, gain: 0 }));
   const pack = ctx.opts.pack ? PACKS[ctx.opts.pack - 1] : null;
-  const deck = (pack ? PACK_CASES[pack.id] : CASES.filter((c) => !(ctx.family && c[0].startsWith('!'))))
-    .slice()
-    .sort(() => Math.random() - 0.5)
-    .slice(0, ROUNDS)
-    .map((c) => c[fr ? 0 : 1].replace(/^!/, ''));
+  const deck = freshDeck(pack ? `tribunal-${pack.id}` : 'tribunal', pack ? PACK_CASES[pack.id] : [...CASES, ...MORE_CASES].filter((c) => !(ctx.family && c[0].startsWith('!'))), ROUNDS, (c) => c[0]).map((c) => c[fr ? 0 : 1].replace(/^!/, ''));
   let round = -1;
   let phase: QuizPadData['phase'] = 'choose';
   let timer = 0;
@@ -103,6 +101,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const SENTENCES = fr
     ? ['condamné à faire la vaisselle jusqu’à Noël', 'condamné à dire « merci chef » à tout le monde ce soir', 'condamné à porter le plateau de l’apéro', 'condamné à imiter un pigeon au prochain tour', 'condamné à perdre la télécommande pour un mois', 'condamné à raconter sa pire honte', 'condamné à applaudir le gagnant de la soirée', 'condamné à parler en chuchotant pendant une partie', 'condamné à chanter le générique de son choix', 'condamné à servir à boire à tout le salon', 'condamné à faire un compliment à chacun', 'condamné à rester debout au prochain jeu', 'condamné à trois jours de Wi-Fi lent', 'condamné à garder la place sur le coussin qui pète']
     : ['sentenced to do the dishes until Christmas', 'sentenced to say “yes boss” to everyone tonight', 'sentenced to carry the snack tray', 'sentenced to impersonate a pigeon next round', 'sentenced to lose the remote for a month', 'sentenced to tell their worst embarrassment', 'sentenced to applaud tonight’s winner', 'sentenced to whisper for a whole game', 'sentenced to sing a theme song', 'sentenced to serve drinks to the whole room', 'sentenced to compliment everyone', 'sentenced to stand during the next game', 'sentenced to three days of slow Wi-Fi', 'sentenced to sit on the whoopee cushion'];
+  const ALL_SENTENCES = [...SENTENCES, ...MORE_SENTENCES.map((x) => x[fr ? 0 : 1])];
 
   function next() {
     round++;
@@ -141,7 +140,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     phase = 'reveal';
     timer = SHOW_TIME;
     verdictT = 0;
-    sentence = SENTENCES[Math.floor(Math.random() * SENTENCES.length)];
+    sentence = ALL_SENTENCES[Math.floor(Math.random() * ALL_SENTENCES.length)];
     sfx.boom();
     setTimeout(() => sfx.boom(), 240);
     setTimeout(() => sfx.boom(), 480);

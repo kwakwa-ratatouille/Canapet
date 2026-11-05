@@ -7,6 +7,8 @@ import { sfx, speak } from '../shared/sound';
 import { candy } from './draw';
 import { PACKS, PACK_OPTION } from '../shared/offer';
 import { PACK_PAIRS } from './packsData';
+import { freshDeck } from './decks';
+import { MORE_FACTS, MORE_PAIRS } from './moreContent';
 import type { QuizPadData } from './quizShared';
 import { wrap } from './tribunal';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
@@ -138,10 +140,7 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
   const VOTE = 15;
   const SHOW = 5;
   const pack = ctx.opts.pack ? PACKS[ctx.opts.pack - 1] : null;
-  const deck = (pack ? PACK_PAIRS[pack.id] : PAIRS.filter((q) => !(ctx.family && q[0].startsWith('!'))))
-    .slice()
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 10)
+  const deck = freshDeck(pack ? `plutot-${pack.id}` : 'plutot', pack ? PACK_PAIRS[pack.id] : [...PAIRS, ...MORE_PAIRS].filter((q) => !(ctx.family && q[0].startsWith('!'))), 10, (q) => q[0] + q[1])
     .map((q) => (fr ? [q[0], q[1]] : [q[2], q[3]]).map((s) => s.replace(/^!/, '')));
   let round = -1;
   let phase: QuizPadData['phase'] = 'choose';
@@ -293,7 +292,8 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
   let worstName = '';
   let shownAt = 0;
   let clock = 0;
-  const deck = [...FACTS].sort(() => Math.random() - 0.5).slice(0, 8);
+  const all = [...FACTS, ...MORE_FACTS].filter((f, i, a) => a.findIndex((x) => x[0] === f[0]) === i);
+  const deck = freshDeck('chiffre', all, 8, (f) => f[0]);
   let round = -1;
   let phase: QuizPadData['phase'] = 'write';
   let timer = 0;

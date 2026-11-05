@@ -1,5 +1,7 @@
 // Le Dico Bidon : un vrai mot rare. Chacun invente une fausse définition sur son téléphone, puis tout le monde cherche la vraie.
 // Trouver la vraie rapporte 3 points ; chaque joueur piégé par ta définition t'en rapporte 2.
+import { freshDeck } from './decks';
+import { MORE_DICO } from './moreContent';
 import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
@@ -135,7 +137,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const pls: Pl[] = runners.slice(0, 8).map((r) => ({ ...r, score: 0, lie: '', pick: -1, gain: 0 }));
   const rounds = ctx.opts.rounds || 5;
-  const deck = [...WORDS[ctx.lang]].sort(() => Math.random() - 0.5).slice(0, rounds);
+  const deck = freshDeck(`dico-${ctx.lang}`, [...WORDS[ctx.lang], ...MORE_DICO[ctx.lang].filter((m) => !WORDS[ctx.lang].some((w) => w[0] === m[0]))], rounds, (w) => w[0]);
   let round = -1;
   let phase: QuizPadData['phase'] = 'write';
   let timer = 0;

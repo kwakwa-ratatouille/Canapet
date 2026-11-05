@@ -6,6 +6,8 @@ import { decodeClip, fakeVoice, karaokeTune, playClip, playMusic, referenceSound
 import { candy } from './draw';
 import { wrap } from './tribunal';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
+import { freshDeck } from './decks';
+import { MORE_GUESS, MORE_IMITATE, MORE_LYRICS, MORE_PHRASES, MORE_SCENES, MORE_WHO, type SceneAnim } from './moreContent';
 import type { VoicePadData } from './voiceShared';
 
 type Mode = 'imite' | 'devine' | 'perroquet' | 'envers' | 'voix' | 'casse' | 'doublage' | 'karaoke';
@@ -83,7 +85,7 @@ const WHO_LINES: [string, string][] = [
 ];
 
 /** Scènes à doubler : deux marionnettes jouent, ta voix leur donne vie. */
-type Anim = 'duel' | 'rupture' | 'poursuite' | 'calin' | 'annonce' | 'peur';
+type Anim = SceneAnim;
 const SCENES: { fr: string; en: string; a: string; b: string; anim: Anim }[] = [
   { fr: 'Le cornichon quitte la tartine… pour une baguette', en: 'The pickle leaves the toast… for a baguette', a: 'cornichon', b: 'tartine', anim: 'rupture' },
   { fr: 'La tomate accuse le fromage d’avoir volé son chapeau', en: 'The tomato accuses the cheese of stealing her hat', a: 'tomate', b: 'fromage', anim: 'duel' },
@@ -154,11 +156,14 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
   const humans = pls.filter((p) => !p.bot);
   const tune = TUNE[mode];
   const voteMode = mode === 'imite' || mode === 'perroquet' || mode === 'doublage' || mode === 'karaoke';
-  const scenes = shuffle(SCENES);
+  const ALL_SCENES = [...SCENES, ...MORE_SCENES];
+  const scenes = mode === 'doublage' ? freshDeck('doublage', ALL_SCENES, tune.rounds, (s) => s.fr) : ALL_SCENES.slice(0, 1);
   let scene = scenes[0];
   let backing: ClipPlayer | null = null;
   const rounds = mode === 'devine' || mode === 'envers' ? Math.min(tune.rounds, Math.max(3, humans.length * 2)) : tune.rounds;
-  const deck = shuffle(clean(mode === 'imite' ? IMITATE : mode === 'devine' ? GUESS : mode === 'voix' ? WHO_LINES : mode === 'karaoke' ? LYRICS : mode === 'doublage' ? SCENES.map((s) => [s.fr, s.en] as [string, string]) : PHRASES));
+  // La réserve complète : assez pour ne pas retomber sur les mêmes défis d'une soirée à l'autre
+  const pool = clean(mode === 'imite' ? [...IMITATE, ...MORE_IMITATE] : mode === 'devine' ? [...GUESS, ...MORE_GUESS] : mode === 'voix' ? [...WHO_LINES, ...MORE_WHO] : mode === 'karaoke' ? [...LYRICS, ...MORE_LYRICS] : mode === 'doublage' ? ALL_SCENES.map((s) => [s.fr, s.en] as [string, string]) : [...PHRASES, ...MORE_PHRASES]);
+  const deck = freshDeck(`voix-${mode === 'casse' ? 'envers' : mode}`, pool, rounds, (x) => x[0]);
   const refs = shuffle(REF_SOUNDS);
   const rate = () => (Math.random() < 0.5 ? 1.55 : 0.68);
 
@@ -252,7 +257,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       actor = list[round % list.length];
       const secret = deck[round % deck.length];
       prompt = L(secret);
-      const decoys = shuffle(deck.filter((d) => d !== secret)).slice(0, 3);
+      const decoys = shuffle(pool.filter((d) => d !== secret)).slice(0, 3);
       const all = shuffle([secret, ...decoys]);
       options = all.map((d, i) => ({ i, label: L(d), color: COLORS[i] }));
       answer = all.indexOf(secret);

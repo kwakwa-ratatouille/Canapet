@@ -5,7 +5,8 @@ import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
 import { candy, roundRectText } from './draw';
-import { TRAP_QUESTIONS, type TrapQ } from './trapQuestions';
+import { ALL_TRAP, type TrapQ } from './trapQuestions';
+import { freshDeck } from './decks';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 // Plateau (repère télé 1920 × 1080) : moitié gauche = réponse A, moitié droite = réponse B
@@ -73,7 +74,7 @@ function trap(runners: Runner[], ctx: GameCtx): GameInstance {
     ty: Y0 + 200,
     pop: null,
   }));
-  const pool: TrapQ[] = TRAP_QUESTIONS.filter((q) => !(ctx.family && q.fam === false)).sort(() => Math.random() - 0.5);
+  const pool: TrapQ[] = freshDeck('trappe', ALL_TRAP.filter((q) => !(ctx.family && q.fam === false)), 12, (q) => q.q.fr + q.a[0].fr);
   const MAX_ROUNDS = Math.min(12, pool.length);
   let round = -1;
   let q: TrapQ = pool[0];

@@ -1,6 +1,7 @@
 // Questions de La Trappe : deux réponses, gauche ou droite. ok = index de la bonne réponse.
 // fam: false = cachée en mode famille.
 import type { Lang } from '../shared/protocol';
+import { MORE_TRAP_QA, MORE_TRAP_TF } from './moreContent';
 
 type T = Record<Lang, string>;
 export interface TrapQ {
@@ -149,3 +150,6 @@ export const TRAP_QUESTIONS: TrapQ[] = [
   VF('Une crotte de wombat est en forme de cube.', 'Wombat poop is cube-shaped.', true, false),
   VF('Le vomi des abeilles, c’est le miel.', 'Honey is basically bee vomit.', true, false),
 ];
+
+/** Toutes les questions, réserve comprise. */
+export const ALL_TRAP: TrapQ[] = [...TRAP_QUESTIONS, ...MORE_TRAP_TF.map(([fr, en, v]) => VF(fr, en, v)), ...MORE_TRAP_QA.map(([fr, en, a, b, ok]) => Q(fr, en, a, b, ok))];
