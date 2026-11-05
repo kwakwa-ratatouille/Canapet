@@ -1,5 +1,6 @@
 // Cosmétiques et boîtes : rareté de chaque objet, contenu et chances des boîtes.
 // Règles : jamais de doublon tant qu'il reste quelque chose à gagner, chances affichées, aucun avantage en jeu, rien à revendre.
+import { ENTRIES, FRAMES, PAD_THEMES, PLATES, REACT_ITEMS, SEASON_WIN_FX, SEASONS, TITLES, TRAILS, currentSeason } from './cosmetics2';
 import type { Lang } from './protocol';
 
 type Name = Record<Lang, string>;
@@ -16,7 +17,7 @@ export const RARITIES: Record<Rarity, { name: Name; color: string; price: number
   mythique: { name: { fr: 'Mythique', en: 'Mythic' }, color: '#ff2f7e', price: 0 },
 };
 
-export type LootKind = 'food' | 'hat' | 'acc' | 'color' | 'eyes' | 'skin' | 'pose' | 'winpose' | 'winsound' | 'ko' | 'winfx';
+export type LootKind = 'food' | 'hat' | 'acc' | 'color' | 'eyes' | 'skin' | 'pose' | 'winpose' | 'winsound' | 'ko' | 'winfx' | 'trail' | 'frame' | 'plate' | 'title' | 'react' | 'entry' | 'padtheme';
 
 /** 6 de chaque de base : le reste s'obtient dans les boîtes. */
 export const BASE = {
@@ -120,7 +121,8 @@ export const KO_FX: { id: string; name: Name; emoji: string; icons: string[]; ri
 ];
 
 /** Effet d'écran : pluie sur toute la télé quand on gagne. */
-export const WIN_FX: { id: string; name: Name; emoji: string; icons: string[] }[] = [
+export const WIN_FX: { id: string; name: Name; emoji: string; icons: string[]; season?: string }[] = [
+  ...SEASON_WIN_FX,
   { id: 'bonbons', name: { fr: 'Pluie de bonbons', en: 'Candy rain' }, emoji: '🍬', icons: ['🍬', '🍭'] },
   { id: 'ballons', name: { fr: 'Ballons', en: 'Balloons' }, emoji: '🎈', icons: ['🎈', '🎉'] },
   { id: 'pizza', name: { fr: 'Pluie de pizza', en: 'Pizza rain' }, emoji: '🍕', icons: ['🍕'] },
@@ -130,13 +132,13 @@ export const WIN_FX: { id: string; name: Name; emoji: string; icons: string[] }[
   { id: 'billets', name: { fr: 'Pluie de billets', en: 'Money rain' }, emoji: '💸', icons: ['💸', '🪙'] },
   { id: 'feu', name: { fr: 'En feu', en: 'On fire' }, emoji: '🔥', icons: ['🔥', '🧨'] },
   { id: 'disco', name: { fr: 'Soirée disco', en: 'Disco night' }, emoji: '🪩', icons: ['🪩', '🎶', '✨'] },
-  { id: 'cosmos', name: { fr: 'Cosmos', en: 'Cosmos' }, emoji: '🪐', icons: ['🪐', '🌠', '🛸'] },
+  { id: 'cosmos', name: { fr: 'Cosmos', en: 'Cosmos' }, emoji: '🪐', icons: ['🪐', '💫', '🛸'] },
 ];
 
 /** Bouton « essayer » et étiquette des objets sans dessin. */
 export const iconOf = (key: string): string => {
   const [kind, id] = key.split(':');
-  const list = kind === 'winpose' ? WIN_POSES : kind === 'winsound' ? WIN_SOUNDS : kind === 'ko' ? KO_FX : kind === 'winfx' ? WIN_FX : [];
+  const list: { id: string; emoji: string }[] = kind === 'winpose' ? WIN_POSES : kind === 'winsound' ? WIN_SOUNDS : kind === 'ko' ? KO_FX : kind === 'winfx' ? WIN_FX : kind === 'trail' ? TRAILS : kind === 'entry' ? ENTRIES : kind === 'frame' ? FRAMES : kind === 'plate' ? PLATES : kind === 'padtheme' ? PAD_THEMES : [];
   return list.find((x) => x.id === id)?.emoji ?? '🎁';
 };
 
@@ -203,6 +205,18 @@ export const TABLE: Record<Rarity, string[]> = {
   ],
 };
 
+// Deuxième vague : chaque objet porte sa rareté
+const WAVE2: [LootKind, { id: string; r: Rarity }[]][] = [['trail', TRAILS], ['frame', FRAMES], ['plate', PLATES], ['title', TITLES], ['react', REACT_ITEMS], ['entry', ENTRIES], ['padtheme', PAD_THEMES]];
+for (const [kind, items] of WAVE2) for (const it of items) TABLE[it.r].push(`${kind}:${it.id}`);
+const SEASON_FX_RARITY: Rarity = 'epique';
+for (const fx of SEASON_WIN_FX) TABLE[SEASON_FX_RARITY].push(`winfx:${fx.id}`);
+
+/** Objets de saison : on ne les gagne que pendant leur saison, dans la boîte de saison. */
+export const SEASON_OF: Record<string, string> = {};
+for (const [kind, items] of WAVE2) for (const it of items as { id: string; season?: string }[]) if (it.season) SEASON_OF[`${kind}:${it.id}`] = it.season;
+for (const fx of SEASON_WIN_FX) SEASON_OF[`winfx:${fx.id}`] = fx.season;
+export const seasonOf = (key: string) => SEASONS.find((s) => s.id === SEASON_OF[key]) ?? null;
+
 export const rarityOf = (key: string): Rarity | null => RARITY_ORDER.find((r) => TABLE[r].includes(key)) ?? null;
 
 /** Objets déjà vendus en collection (Pass Soirée à part) : on peut aussi les gagner dans les boîtes. */
@@ -225,7 +239,7 @@ export const LOOT_PRICES: Record<string, { price: number; rarity: Rarity; coll?:
 
 // ——— Boîtes ———
 
-export type BoxId = 'petite' | 'moyenne' | 'grosse' | 'coffre';
+export type BoxId = 'petite' | 'moyenne' | 'grosse' | 'coffre' | 'saison';
 
 export interface BoxDef {
   id: BoxId;
@@ -241,6 +255,8 @@ export interface BoxDef {
   top: Rarity;
   /** Taille du dessin. */
   scale: number;
+  /** Ne donne que les objets de cette saison. */
+  season?: string;
 }
 
 export const BOXES: BoxDef[] = [
@@ -249,7 +265,14 @@ export const BOXES: BoxDef[] = [
   { id: 'grosse', name: { fr: 'Grosse boîte', en: 'Big box' }, emoji: '🎁', color: '#9b5cff', price: 900, odds: { epique: 70, legendaire: 27, mythique: 3 }, pity: 20, top: 'mythique', scale: 1 },
   { id: 'coffre', name: { fr: 'Coffre à clé', en: 'Key chest' }, emoji: '🧰', color: '#ff2f7e', price: 0, odds: { legendaire: 88, mythique: 12 }, pity: 8, top: 'mythique', scale: 1.08 },
 ];
-export const boxById = (id: string) => BOXES.find((b) => b.id === id);
+/** Les boîtes du moment : la boîte de saison n'existe que pendant la saison. */
+export function boxesNow(now = Date.now()): BoxDef[] {
+  const s = currentSeason(now);
+  if (!s) return BOXES;
+  return [{ id: 'saison', name: { fr: `Boîte ${s.name.fr}`, en: `${s.name.en} box` }, emoji: s.emoji, color: s.color, price: 400, odds: { rare: 62, epique: 30, legendaire: 8 }, pity: 12, top: 'legendaire', scale: 0.95, season: s.id }, ...BOXES];
+}
+/** Ce qu'une boîte peut donner dans cette rareté. */
+const poolOf = (box: BoxDef, r: Rarity) => TABLE[r].filter((k) => (box.season ? SEASON_OF[k] === box.season : !SEASON_OF[k]));
 
 /** Clé d'essai tant que les ventes sont coupées (en bonbons). */
 export const TEST_KEY_PRICE = 500;
@@ -274,7 +297,7 @@ export interface BoxRoll {
 
 /** Ouvre une boîte : tire la rareté, puis un objet qu'on n'a pas encore. */
 export function rollBox(box: BoxDef, owned: string[], pity: number, rng: () => number = Math.random): BoxRoll {
-  const left = (r: Rarity) => TABLE[r].filter((k) => !owned.includes(k));
+  const left = (r: Rarity) => poolOf(box, r).filter((k) => !owned.includes(k));
   const count = pity + 1;
   const wanted = count >= box.pity ? box.top : pickRarity(box, rng);
   const tiers = RARITY_ORDER.filter((r) => box.odds[r]);
@@ -290,7 +313,7 @@ export function rollBox(box: BoxDef, owned: string[], pity: number, rng: () => n
 export function reelItems(box: BoxDef, winner: string | null, winnerRarity: Rarity, at: number, length: number): { key: string; rarity: Rarity }[] {
   const out = Array.from({ length }, () => {
     const r = pickRarity(box, Math.random);
-    return { key: pickOf(TABLE[r], Math.random), rarity: r };
+    return { key: pickOf(poolOf(box, r), Math.random), rarity: r };
   });
   if (winner) out[at] = { key: winner, rarity: winnerRarity };
   return out;

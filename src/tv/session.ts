@@ -1,6 +1,7 @@
 // La soirée côté télé : joueurs, enchaînement des jeux, scores. La télé fait autorité.
 import { KO_FX, WIN_FX } from '../shared/lootTable';
-import { setRoomSkins } from '../shared/characters';
+import { ENTRIES, TRAIL_MODE } from '../shared/cosmetics2';
+import { setRoomSkins, setTrailMode } from '../shared/characters';
 import { FREE_PLAYERS, isLocked, PACKS, PASS, SALES_ON } from '../shared/offer';
 import { SKILLS } from '../games/botSkill';
 import { GAMES, gameById, playable, gameInfo } from '../games/registry';
@@ -300,6 +301,12 @@ export class Session {
     };
     this.players.set(pid, p);
     if (!existing) sfx.join();
+    // Annonce d'entrée choisie par le joueur
+    const entry = !existing && !fake ? ENTRIES.find((x) => x.id === profile.entry) : null;
+    if (entry) {
+      if (entry.sound) playWinSound(entry.sound);
+      setTimeout(() => speak(entry.line[this.lang()].replace('{n}', p.name), this.lang(), { rate: entry.rate, pitch: entry.pitch }), entry.sound ? 500 : 150);
+    }
     if (!fake) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code, games: GAMES_INFO() });
     this.changed();
     this.pushScreens();
@@ -394,6 +401,12 @@ export class Session {
         st.reacts++;
         if (r.rude) st.rude++;
         st.emoji[m.i] = (st.emoji[m.i] ?? 0) + 1;
+        // Réactions de boîte : un son, et les plus rares inondent l'écran
+        if (r.sound) {
+          if (r.sound === 'boing' || r.sound === 'boom' || r.sound === 'pet') sfx[r.sound]();
+          else playWinSound(r.sound);
+        }
+        if (r.rain) this.screenFx = { icons: [r.e], born: now, name: p.name };
         if (r.pet && now - this.lastPet > 1200) {
           this.lastPet = now;
           sfx.pet();
@@ -640,13 +653,14 @@ export class Session {
   }
 
   private syncSkins() {
-    setRoomSkins(this.list().map((p) => ({ color: p.color, skin: p.skin })));
+    setRoomSkins(this.list().map((p) => ({ color: p.color, skin: p.skin, trail: p.trail })));
   }
 
   startGame(id: string, opts?: Record<string, number>) {
     const def = gameById(id);
     if (!def?.create) return;
     this.syncSkins();
+    setTrailMode(TRAIL_MODE[id] ?? null);
     this.wasOut.clear();
     this.koFx = [];
     this.screenFx = null;

@@ -14,7 +14,7 @@ import { IS_IOS, newId, save, store } from '../shared/device';
 import { defaultLang, ordinal, t } from '../shared/i18n';
 import { gameIcon } from '../shared/Logo';
 import type { GameInfo, HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
-import { playWinSound, sfx, unlockAudio } from '../shared/sound';
+import { playWinSound, sfx, speak, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
 import { Stick, type Cools } from './Stick';
 import { ReactButton, SecretCard } from './ReactPad';
@@ -29,7 +29,9 @@ import { LegalLinks } from '../pages/Legal';
 import type { QuizPadData } from '../games/quizShared';
 import { afterGame } from '../shared/quests';
 import { BoxShop, FIELD, ItemThumb, Missions } from './BoxPad';
-import { COLOR_ITEMS, KO_FX, RARITIES, SKINS, WIN_FX, WIN_POSES, WIN_SOUNDS, rarityOf, type Rarity } from '../shared/lootTable';
+import { COLOR_ITEMS, KO_FX, RARITIES, seasonOf, SKINS, WIN_FX, WIN_POSES, WIN_SOUNDS, rarityOf, type Rarity } from '../shared/lootTable';
+import { currentSeason, ENTRIES, FRAMES, PAD_THEMES, PLATES, REACT_ITEMS, seasonStart, TITLES, TRAILS } from '../shared/cosmetics2';
+import { PlayerFrame, PlateName, PlayerTitle } from '../shared/PlayerDeco';
 import { KEY_PACKS, KEYS_ALLOWED } from '../shared/offer';
 import { isLocked, gameOfDay, PACKS, PASS, PASS_GIFT, SALES_ON } from '../shared/offer';
 import { RoulettePad } from './RoulettePad';
@@ -340,9 +342,10 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const playing = screen?.s === 'play' && status === 'ok';
   const gameName = screen && 'game' in screen ? catalog.find((g) => g.id === screen.game)?.name?.[lang] : '';
 
+  const padTheme = playing ? PAD_THEMES.find((x) => x.id === profile.padTheme) : undefined;
   return (
     // Manettes stick et tapotage : toujours en paysage, même si le téléphone reste droit (on tourne l'écran).
-    <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (screen.layout === 'stick' || screen.layout === 'tap') && !['traitre', 'dessin'].includes(screen.game) ? 'turn' : ''}`} style={{ ['--c' as string]: profile.color }} onPointerDown={unlockAudio}>
+    <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (screen.layout === 'stick' || screen.layout === 'tap') && !['traitre', 'dessin'].includes(screen.game) ? 'turn' : ''} ${padTheme?.anim ? 'pt-anim' : ''}`} data-pt={padTheme?.id} style={{ ['--c' as string]: profile.color, ...(padTheme ? { ['--pt-bg' as string]: padTheme.bg, ['--pt-grip' as string]: padTheme.grip, ['--pt-ink' as string]: padTheme.ink } : {}) }} onPointerDown={unlockAudio}>
       {status === 'lost' && !lostLong && screen && <div className="net-blip">⚡ {lang === 'fr' ? 'Reconnexion…' : 'Reconnecting…'}</div>}
       <header className={`pad-head ${playing ? 'slim' : ''}`}>
         <CharCanvas profile={profile} size={playing ? 34 : 46} still />
@@ -1115,7 +1118,7 @@ function TapPad({ lang, send }: { lang: Lang; send: (m: ToTv) => void }) {
   );
 }
 
-type Tab = 'perso' | 'color' | 'skin' | 'eyes' | 'pose' | 'hat' | 'deco' | 'winpose' | 'winsound' | 'ko' | 'winfx' | 'more';
+type Tab = 'perso' | 'color' | 'skin' | 'eyes' | 'pose' | 'hat' | 'deco' | 'winpose' | 'winsound' | 'ko' | 'winfx' | 'trail' | 'frame' | 'plate' | 'title' | 'reactions' | 'entry' | 'padtheme' | 'more';
 
 function Editor({
   profile,
@@ -1147,6 +1150,11 @@ function Editor({
     if (owned(kind, id)) {
       set({ [FIELD[kind]]: id || undefined });
       if (kind === 'winsound' && id) playWinSound(id);
+      if (kind === 'entry' && id) {
+        const en = ENTRIES.find((x) => x.id === id)!;
+        if (en.sound) playWinSound(en.sound);
+        speak(en.line[lang].replace('{n}', profile.name || 'Cana’pet'), lang, { rate: en.rate, pitch: en.pitch });
+      }
     } else {
       sfx.click();
       setBuying({ kind, id, name });
@@ -1155,11 +1163,15 @@ function Editor({
   const buy = () => {
     if (!buying) return;
     const it = PRICES[itemKey(buying.kind, buying.id)];
-    if (!it || !it.price || (SALES_ON && it.coll) || progress.coins < it.price) return;
+    if (!it || !it.price || (SALES_ON && it.coll) || progress.coins < it.price || outOfSeason(itemKey(buying.kind, buying.id))) return;
     setProgress((p) => ({ ...p, coins: p.coins - it.price, owned: [...p.owned, itemKey(buying.kind, buying.id)] }));
-    set({ [FIELD[buying.kind]]: buying.id });
+    if (buying.kind !== 'react') set({ [FIELD[buying.kind]]: buying.id });
     sfx.win();
     setBuying(null);
+  };
+  const outOfSeason = (key: string) => {
+    const s = seasonOf(key);
+    return !!s && currentSeason()?.id !== s.id;
   };
   const lock = (kind: Kind, id: string) => {
     const r = rarityOf(itemKey(kind, id));
@@ -1167,6 +1179,7 @@ function Editor({
     if (owned(kind, id)) return dot;
     const it = PRICES[itemKey(kind, id)];
     if (SALES_ON && it.coll) return <>{dot}<span className="lock">🎁</span></>;
+    if (outOfSeason(itemKey(kind, id))) return <>{dot}<span className="lock">{seasonOf(itemKey(kind, id))!.emoji}</span></>;
     return (
       <>
         {dot}
@@ -1232,6 +1245,13 @@ function Editor({
     ['winsound', '🎺', fr ? 'Son de victoire' : 'Victory sound', nameOf(WIN_SOUNDS, profile.winSound ?? '', fr ? 'Classique' : 'Classic')],
     ['winfx', '🎆', fr ? 'Effet d’écran' : 'Screen effect', nameOf(WIN_FX, profile.winFx ?? '', fr ? 'Aucun' : 'None')],
     ['ko', '💥', fr ? 'Effet d’élimination' : 'Knockout effect', nameOf(KO_FX, profile.koFx ?? '', fr ? 'Aucun' : 'None')],
+    ['frame', '💫', fr ? 'Cadre animé' : 'Animated frame', nameOf(FRAMES, profile.frame ?? '', fr ? 'Aucun' : 'None')],
+    ['plate', '🔤', fr ? 'Style de nom' : 'Name style', nameOf(PLATES, profile.plate ?? '', fr ? 'Normal' : 'Normal')],
+    ['title', '🏷️', fr ? 'Titre' : 'Title', nameOf(TITLES, profile.title ?? '', fr ? 'Aucun' : 'None')],
+    ['entry', '🎙️', fr ? 'Annonce d’entrée' : 'Entrance', nameOf(ENTRIES, profile.entry ?? '', fr ? 'Aucune' : 'None')],
+    ['trail', '☄️', fr ? 'Traînée' : 'Trail', nameOf(TRAILS, profile.trail ?? '', fr ? 'Aucune' : 'None')],
+    ['reactions', '😂', fr ? 'Réactions' : 'Reactions', ''],
+    ['padtheme', '🎮', fr ? 'Thème de manette' : 'Controller theme', nameOf(PAD_THEMES, profile.padTheme ?? '', fr ? 'Classique' : 'Classic')],
     ['more', '⚙️', fr ? 'Langue' : 'Language', lang === 'fr' ? 'Français' : 'English'],
   ];
   const open = (k: Tab) => {
@@ -1263,7 +1283,13 @@ function Editor({
       )}
       <div className="ed-stage">
         <div className="editor-preview">
-          <CharCanvas profile={profile} size={tab ? 96 : 150} />
+          <span className="thumb-frame" style={{ ['--pf-r' as string]: `${(tab ? 96 : 150) * 0.62}px` }}>
+            <PlayerFrame id={profile.frame} inset={0} />
+            <CharCanvas profile={profile} size={tab ? 96 : 150} />
+          </span>
+          {!tab && (profile.plate || profile.title) && (
+            <p className="ed-name-preview"><PlateName name={profile.name || 'Cana’pet'} plate={profile.plate} /><PlayerTitle id={profile.title} lang={lang} /></p>
+          )}
         </div>
         {!tab && (
           <div className="ed-quick">
@@ -1312,6 +1338,31 @@ function Editor({
         </div>
       )}
       {tab === 'skin' && extraGrid('skin', SKINS, fr ? 'Normale' : 'Normal')}
+      {tab === 'frame' && extraGrid('frame', FRAMES, fr ? 'Aucun' : 'None')}
+      {tab === 'plate' && extraGrid('plate', PLATES, fr ? 'Normal' : 'Normal')}
+      {tab === 'title' && extraGrid('title', TITLES, fr ? 'Aucun' : 'None')}
+      {tab === 'entry' && extraGrid('entry', ENTRIES, fr ? 'Aucune' : 'None')}
+      {tab === 'trail' && (
+        <>
+          <p className="pad-small center">{fr ? 'Elle s’adapte au jeu : double sillage en kart, longue en course, discrète dans les jeux vus de dessus.' : 'It adapts to the game: double trail in karts, long when racing, subtle in top-down games.'}</p>
+          {extraGrid('trail', TRAILS, fr ? 'Aucune' : 'None')}
+        </>
+      )}
+      {tab === 'padtheme' && extraGrid('padtheme', PAD_THEMES, fr ? 'Classique' : 'Classic')}
+      {tab === 'reactions' && (
+        <>
+          <p className="pad-small center">{fr ? 'Celles que tu as gagnées rejoignent ta liste 😂 sur la manette.' : 'The ones you win join your 😂 list on the controller.'}</p>
+          <div className="pick-grid">
+            {REACT_ITEMS.map((x) => (
+              <button key={x.id} className={`pick ${owned('react', x.id) ? '' : 'locked'}`} onClick={() => !owned('react', x.id) && choose('react', x.id, x.name[lang])}>
+                <ItemThumb item={itemKey('react', x.id)} profile={profile} size={64} />
+                <small>{x.name[lang]}</small>
+                {lock('react', x.id)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       {tab === 'winpose' && extraGrid('winpose', WIN_POSES, fr ? 'Classique' : 'Classic')}
       {tab === 'winsound' && extraGrid('winsound', WIN_SOUNDS, fr ? 'Classique' : 'Classic')}
       {tab === 'winfx' && extraGrid('winfx', WIN_FX, fr ? 'Aucun' : 'None')}
@@ -1442,6 +1493,8 @@ function Editor({
                   />
                 );
               if (!it.price) return <p className="pad-small">{fr ? 'Seulement dans le Coffre à clé 🔑' : 'Only in the Key chest 🔑'}</p>;
+              const sea = seasonOf(itemKey(buying.kind, buying.id));
+              if (sea && currentSeason()?.id !== sea.id) return <p className="pad-small">{sea.emoji} {fr ? `Collection ${sea.name.fr} : revient le ${seasonStart(sea, 'fr')}.` : `${sea.name.en} collection: back on ${seasonStart(sea, 'en')}.`}</p>;
               if (progress.coins < it.price) return <p className="pad-small">{t(lang, 'needCoins', { n: it.price - progress.coins })}</p>;
               return (
                 <button className="btn big sun" onClick={buy}>

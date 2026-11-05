@@ -1,7 +1,14 @@
 // Réactions envoyées depuis les téléphones et qui s'envolent sur la télé.
 // Les « rude » sont cachées en mode famille ; les « pet » font le bruitage du coussin péteur.
 
+import { REACT_ITEMS } from './cosmetics2';
+
 export interface Reaction {
+  /** À gagner dans les boîtes. */
+  id?: string;
+  big?: boolean;
+  rain?: boolean;
+  sound?: string;
   /** Emoji, ou texte crié (txt) affiché dans une bulle. */
   e: string;
   txt?: { fr: string; en: string };
@@ -54,6 +61,7 @@ export const REACTIONS: Reaction[] = [
   { e: '💬', txt: { fr: 'FERME-LA', en: 'SHUT UP' }, rude: true },
   { e: '💬', txt: { fr: 'NOOB', en: 'NOOB' } },
   { e: '💬', txt: { fr: 'QUOICOUBEH', en: 'SKILL ISSUE' } },
+  ...REACT_ITEMS.map((r) => ({ id: r.id, e: r.e, txt: r.txt, big: r.big, rain: r.rain, sound: r.sound })),
 ];
 
 /** Réactions « mal élevées » : comptées pour le titre du plus vulgaire au bilan de soirée. */

@@ -5,6 +5,7 @@
 import { characterSvg, faceSlot, PLAYER_COLORS, CHARACTERS } from './art/canapet-art.js';
 import { LIGHT } from './device';
 import { SKINS, type SkinDef } from './lootTable';
+import { TRAILS, type TrailDef, type TrailMode } from './cosmetics2';
 import type { Lang } from './protocol';
 
 type Name = Record<Lang, string>;
@@ -182,9 +183,110 @@ export interface DrawOpts {
 
 // À la télé, les jeux ne connaissent que la couleur du joueur : elle est unique, elle donne donc aussi son skin.
 const roomSkins = new Map<string, string>();
-export function setRoomSkins(list: { color: string; skin?: string }[]) {
+const roomTrails = new Map<string, TrailDef>();
+export function setRoomSkins(list: { color: string; skin?: string; trail?: string }[]) {
   roomSkins.clear();
-  list.forEach((p) => p.skin && roomSkins.set(p.color, p.skin));
+  roomTrails.clear();
+  list.forEach((p) => {
+    if (p.skin) roomSkins.set(p.color, p.skin);
+    const tr = TRAILS.find((x) => x.id === p.trail);
+    if (tr) roomTrails.set(p.color, tr);
+  });
+}
+
+// ——— Traînées : retenues en coordonnées de l'écran, donc les jeux n'ont rien à faire ———
+let trailMode: TrailMode | null = null;
+/** Réglage de la traînée selon le jeu : rythme (ms), taille, durée (s), écart, vitesse vers l'arrière. */
+const MODES: Record<TrailMode, { every: number; size: number; life: number; spread: number; back: number; twin?: boolean }> = {
+  kart: { every: 45, size: 0.5, life: 0.75, spread: 0.1, back: 30, twin: true },
+  lane: { every: 60, size: 0.42, life: 0.65, spread: 0.18, back: 340 },
+  run: { every: 70, size: 0.36, life: 0.55, spread: 0.2, back: 70 },
+  top: { every: 95, size: 0.28, life: 0.45, spread: 0.16, back: 30 },
+};
+export function setTrailMode(m: TrailMode | null) {
+  trailMode = LIGHT ? null : m;
+  trails.clear();
+}
+interface Spark { x: number; y: number; vx: number; vy: number; born: number; size: number; icon?: string; color?: string; life: number }
+const trails = new Map<string, { x: number; y: number; last: number; parts: Spark[] }>();
+const emojiCache = new Map<string, HTMLCanvasElement>();
+function emojiBitmap(e: string) {
+  let c = emojiCache.get(e);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = c.height = 72;
+    const g = c.getContext('2d')!;
+    g.font = '56px sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(e, 36, 40);
+    emojiCache.set(e, c);
+  }
+  return c;
+}
+/** Sème et dessine la traînée, juste avant le perso. */
+function drawTrail(g: CanvasRenderingContext2D, x: number, y: number, s: number, o: DrawOpts, def: TrailDef) {
+  const mode = MODES[trailMode!];
+  const m = g.getTransform();
+  const sx = m.a * x + m.c * y + m.e;
+  const sy = m.b * x + m.d * y + m.f;
+  const scale = Math.hypot(m.a, m.b) * s;
+  const key = o.color + '|' + Math.round(s);
+  const now = performance.now();
+  let t = trails.get(key);
+  if (!t) trails.set(key, (t = { x: sx, y: sy, last: now, parts: [] }));
+  const moved = Math.hypot(sx - t.x, sy - t.y);
+  const jump = moved > scale * 2.5;
+  const running = !o.ghost && !jump && (moved > 0.8 || (o.run ?? 0) > 0.2);
+  if (running && now - t.last > mode.every && t.parts.length < 26) {
+    t.last = now;
+    const k = Math.hypot(m.a, m.b);
+    // Vers l'arrière : le sens du déplacement à l'écran, sinon celui où regarde le perso
+    const dx = moved > 0.8 ? (sx - t.x) / moved : o.dir ?? 1;
+    const dy = moved > 0.8 ? (sy - t.y) / moved : 0;
+    const spawn = (off: number) =>
+      t!.parts.push({
+        x: sx + (-dy * off) * scale + (Math.random() - 0.5) * scale * mode.spread,
+        y: sy - scale * 0.06 + dx * off * scale + (Math.random() - 0.5) * scale * mode.spread * 0.6,
+        vx: -dx * mode.back * k + (Math.random() - 0.5) * 40 * k,
+        vy: -dy * mode.back * k - 20 * k,
+        born: now,
+        size: scale * mode.size * (0.7 + Math.random() * 0.5),
+        life: mode.life,
+        icon: def.icons ? def.icons[Math.floor(Math.random() * def.icons.length)] : undefined,
+        color: def.colors ? def.colors[Math.floor(Math.random() * def.colors.length)] : undefined,
+      });
+    if (mode.twin) {
+      spawn(-0.28);
+      spawn(0.28);
+    } else spawn(0);
+  }
+  t.x = sx;
+  t.y = sy;
+  if (!t.parts.length) return;
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const keep: Spark[] = [];
+  for (const p of t.parts) {
+    const a = (now - p.born) / 1000;
+    if (a >= p.life) continue;
+    keep.push(p);
+    const left = 1 - a / p.life;
+    const px = p.x + p.vx * a;
+    const py = p.y + p.vy * a;
+    g.globalAlpha = Math.min(1, left * 1.6);
+    if (p.icon) {
+      const z = p.size * (0.7 + left * 0.3);
+      g.drawImage(emojiBitmap(p.icon), px - z / 2, py - z / 2, z, z);
+    } else {
+      g.fillStyle = p.color ?? '#fff';
+      g.beginPath();
+      g.arc(px, py, (p.size / 3) * (0.4 + left * 0.6), 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  t.parts = keep;
+  g.restore();
 }
 
 /** Repeint le perso une seule fois, sur son image en cache : aucun coût pendant le jeu. */
@@ -294,6 +396,10 @@ export function preloadCharacter(o: Omit<DrawOpts, 't'>) {
 }
 
 export function drawCharacter(g: CanvasRenderingContext2D, x: number, y: number, s: number, o: DrawOpts) {
+  if (trailMode) {
+    const def = roomTrails.get(o.color);
+    if (def) drawTrail(g, x, y, s, o, def);
+  }
   // Clignement des yeux de temps en temps (le visage « yeux fermés » de la DA), décalé pour chacun.
   const blink = (!o.mood || o.mood === 'happy') && o.t > 0 && o.t % 4.3 < 0.13;
   const img = sprite(blink ? { ...o, mood: 'toot' } : o);

@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CharCanvas } from '../shared/CharCanvas';
 import { ACCS, EYE_LIST, FOODS, HATS, POSE_LIST } from '../shared/characters';
+import { ENTRIES, FRAMES, PAD_THEMES, PLATES, REACT_ITEMS, seasonEnd, currentSeason, TITLES, TRAILS } from '../shared/cosmetics2';
+import { PlateName, PlayerFrame } from '../shared/PlayerDeco';
 import { loadControls } from '../shared/controls';
-import { BOXES, COLOR_ITEMS, iconOf, KO_FX, LOOT_PRICES, RARITIES, rarityOf, reelItems, rollBox, SKINS, TEST_KEY_PRICE, WIN_FX, WIN_POSES, WIN_SOUNDS, type BoxDef, type BoxRoll, type LootKind, type Rarity } from '../shared/lootTable';
+import { boxesNow, COLOR_ITEMS, iconOf, KO_FX, LOOT_PRICES, RARITIES, rarityOf, reelItems, rollBox, SKINS, TEST_KEY_PRICE, WIN_FX, WIN_POSES, WIN_SOUNDS, type BoxDef, type BoxRoll, type LootKind, type Rarity } from '../shared/lootTable';
 import { KEYS_ALLOWED, SALES_ON } from '../shared/offer';
 import type { Progress } from '../shared/progress';
 import type { Lang, Profile } from '../shared/protocol';
 import { dailyNow, questsNow, weekNow } from '../shared/quests';
-import { playWinSound, sfx } from '../shared/sound';
+import { playWinSound, sfx, speak } from '../shared/sound';
 import './box.css';
 
 /** Champ du profil qui porte chaque type d'objet. */
-export const FIELD: Record<LootKind, keyof Profile> = { food: 'food', hat: 'hat', acc: 'acc', color: 'color', eyes: 'eyes', skin: 'skin', pose: 'pose', winpose: 'winPose', winsound: 'winSound', ko: 'koFx', winfx: 'winFx' };
+export const FIELD: Record<LootKind, keyof Profile> = { food: 'food', hat: 'hat', acc: 'acc', color: 'color', eyes: 'eyes', skin: 'skin', pose: 'pose', winpose: 'winPose', winsound: 'winSound', ko: 'koFx', winfx: 'winFx', trail: 'trail', frame: 'frame', plate: 'plate', title: 'title', react: 'name', entry: 'entry', padtheme: 'padTheme' };
 
 const KIND_NAME: Record<LootKind, Record<Lang, string>> = {
   food: { fr: 'Perso', en: 'Character' },
@@ -25,11 +27,18 @@ const KIND_NAME: Record<LootKind, Record<Lang, string>> = {
   winsound: { fr: 'Son de victoire', en: 'Victory sound' },
   ko: { fr: 'Effet d’élimination', en: 'Knockout effect' },
   winfx: { fr: 'Effet d’écran', en: 'Screen effect' },
+  trail: { fr: 'Traînée', en: 'Trail' },
+  frame: { fr: 'Cadre animé', en: 'Animated frame' },
+  plate: { fr: 'Style de nom', en: 'Name style' },
+  title: { fr: 'Titre', en: 'Title' },
+  react: { fr: 'Réaction', en: 'Reaction' },
+  entry: { fr: 'Annonce d’entrée', en: 'Entrance' },
+  padtheme: { fr: 'Thème de manette', en: 'Controller theme' },
 };
 
 export function itemName(key: string, lang: Lang): string {
   const [kind, id] = key.split(':');
-  const lists: Record<string, { id: string; name: Record<Lang, string> }[]> = { food: FOODS, hat: HATS, acc: ACCS, color: COLOR_ITEMS, eyes: EYE_LIST, pose: POSE_LIST, skin: SKINS, winpose: WIN_POSES, winsound: WIN_SOUNDS, ko: KO_FX, winfx: WIN_FX };
+  const lists: Record<string, { id: string; name: Record<Lang, string> }[]> = { food: FOODS, hat: HATS, acc: ACCS, color: COLOR_ITEMS, eyes: EYE_LIST, pose: POSE_LIST, skin: SKINS, trail: TRAILS, frame: FRAMES, plate: PLATES, title: TITLES, react: REACT_ITEMS, entry: ENTRIES, padtheme: PAD_THEMES, winpose: WIN_POSES, winsound: WIN_SOUNDS, ko: KO_FX, winfx: WIN_FX };
   return lists[kind]?.find((x) => x.id === id)?.name[lang] ?? id;
 }
 
@@ -41,12 +50,40 @@ export function ItemThumb({ item, profile, size }: { item: string; profile: Prof
     const shown = kind === 'food' ? { ...base, food: id, hat: 'aucun', acc: 'aucun' } : { ...base, [FIELD[kind]]: id };
     return <CharCanvas profile={shown} size={size} still={size < 80} />;
   }
+  if (kind === 'frame')
+    return (
+      <span className="thumb-frame" style={{ ['--pf-r' as string]: `${size * 0.62}px` }}>
+        <PlayerFrame id={id} inset={0} />
+        <CharCanvas profile={{ ...profile, selfie: undefined }} size={size} still={size < 80} />
+      </span>
+    );
+  if (kind === 'plate') return <span className="thumb-name"><PlateName name={profile.name || 'Cana’pet'} plate={id} /></span>;
+  if (kind === 'title') return <span className="thumb-title">« {TITLES.find((x) => x.id === id)?.name[profile.lang]} »</span>;
+  if (kind === 'react') {
+    const r = REACT_ITEMS.find((x) => x.id === id);
+    return r?.txt ? <span className="thumb-react">{r.txt[profile.lang]}</span> : <span className="thumb-ico" style={{ fontSize: size * 0.7 }}>{r?.e}</span>;
+  }
+  if (kind === 'padtheme') {
+    const th = PAD_THEMES.find((x) => x.id === id);
+    return <span className="thumb-theme" style={{ background: th?.bg }}>🎮</span>;
+  }
   return <span className="thumb-ico" style={{ fontSize: size * 0.7 }}>{iconOf(item)}</span>;
 }
 
 /** La boîte dessinée, à sa couleur : plus elle est grosse, plus elle est décorée. */
 function BoxIcon({ box, size }: { box: BoxDef; size: number }) {
   const ink = '#3a2140';
+  if (box.season)
+    return (
+      <span style={{ display: 'inline-flex', position: 'relative', lineHeight: 0 }}>
+        <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
+          <rect x="16" y="42" width="68" height="46" rx="6" fill={box.color} stroke={ink} strokeWidth="5" />
+          <rect x="10" y="28" width="80" height="20" rx="6" fill={box.color} stroke={ink} strokeWidth="5" />
+          <rect x="42" y="28" width="16" height="60" fill="#fff" stroke={ink} strokeWidth="4" />
+        </svg>
+        <span style={{ position: 'absolute', left: '50%', top: -size * 0.04, transform: 'translateX(-50%)', fontSize: size * 0.42, lineHeight: 1 }}>{box.emoji}</span>
+      </span>
+    );
   if (box.id === 'coffre')
     return (
       <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
@@ -238,8 +275,17 @@ function Opening({ box, roll, profile, lang, equip, close }: { box: BoxDef; roll
                   🔊 {fr ? 'Écouter' : 'Listen'}
                 </button>
               )}
+              {kind === 'entry' && (
+                <button className="btn alt" onClick={() => {
+                  const en = ENTRIES.find((x) => x.id === roll.key!.split(':')[1])!;
+                  if (en.sound) playWinSound(en.sound);
+                  speak(en.line[lang].replace('{n}', profile.name || 'Cana’pet'), lang, { rate: en.rate, pitch: en.pitch });
+                }}>
+                  🔊 {fr ? 'Écouter' : 'Listen'}
+                </button>
+              )}
               <button className="btn big mint" onClick={() => { equip(roll.key!); close(); }}>
-                ✨ {fr ? 'Équiper' : 'Equip'}
+                {kind === 'react' ? (fr ? '🎉 Ajoutée à mes réactions' : '🎉 Added to my reactions') : `✨ ${fr ? 'Équiper' : 'Equip'}`}
               </button>
               <button className="btn ghost" onClick={close}>
                 {fr ? 'Garder pour plus tard' : 'Keep for later'}
@@ -304,6 +350,7 @@ export function BoxShop({ progress, setProgress, profile, setProfile, lang, acco
   };
   const equip = (key: string) => {
     const [kind, id] = key.split(':') as [LootKind, string];
+    if (kind === 'react') return; // Une réaction n'a pas besoin d'être équipée : elle rejoint la liste
     setProfile((p) => ({ ...p, [FIELD[kind]]: id }));
   };
   const left = (box: BoxDef) => Math.max(1, box.pity - (progress.pity?.[box.id] ?? 0));
@@ -315,7 +362,7 @@ export function BoxShop({ progress, setProgress, profile, setProfile, lang, acco
         <span>🔑 {SALES_ON ? account.keys : progress.testKeys ?? 0}</span>
       </div>
       <div className="box-list">
-        {BOXES.map((box) => {
+        {boxesNow().map((box) => {
           const free = progress.boxes?.[box.id] ?? 0;
           const chest = box.id === 'coffre';
           const myKeys = SALES_ON ? account.keys : progress.testKeys ?? 0;
@@ -329,6 +376,7 @@ export function BoxShop({ progress, setProgress, profile, setProfile, lang, acco
                     <em key={r} style={{ background: RARITIES[r].color }}>{RARITIES[r].name[lang]} {box.odds[r]} %</em>
                   ))}
                 </span>
+                {box.season && <small>🗓️ {fr ? `Jusqu’au ${seasonEnd(currentSeason()!, 'fr')} (revient chaque année)` : `Until ${seasonEnd(currentSeason()!, 'en')} (back every year)`}</small>}
                 <small>{fr ? `${RARITIES[box.top].name.fr} garanti dans ${left(box)} boîte${left(box) > 1 ? 's' : ''} max` : `${RARITIES[box.top].name.en} guaranteed within ${left(box)} box${left(box) > 1 ? 'es' : ''}`}</small>
               </div>
               <div className="box-acts">

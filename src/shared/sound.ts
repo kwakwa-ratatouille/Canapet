@@ -667,7 +667,8 @@ function findVoice(prefix: string, nice: boolean, local = false, male = false): 
   return (nice ? all.find((v) => NICE.test(v.name)) : undefined) ?? all.find((v) => !NICE.test(v.name)) ?? all[0];
 }
 
-export function speak(text: string, lang: Lang) {
+/** `voice` : voix propre à une annonce (vitesse et hauteur). */
+export function speak(text: string, lang: Lang, voice_?: { rate?: number; pitch?: number }) {
   if (muted || !('speechSynthesis' in window)) return;
   const pre = VOICES[voiceIdx] ?? VOICES[0];
   const u = new SpeechSynthesisUtterance(text);
@@ -677,8 +678,8 @@ export function speak(text: string, lang: Lang) {
   const voice = acc ?? findVoice(base, !!pre.nice, !!pre.local, !!pre.male);
   u.lang = voice?.lang ?? (lang === 'fr' ? 'fr-FR' : 'en-US');
   if (voice) u.voice = voice;
-  u.rate = pre.rate;
-  u.pitch = pre.pitch;
+  u.rate = voice_?.rate ?? pre.rate;
+  u.pitch = voice_?.pitch ?? pre.pitch;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }

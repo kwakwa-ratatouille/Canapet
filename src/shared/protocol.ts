@@ -22,6 +22,12 @@ export interface Profile {
   winSound?: string;
   koFx?: string;
   winFx?: string;
+  trail?: string;
+  frame?: string;
+  plate?: string;
+  title?: string;
+  entry?: string;
+  padTheme?: string;
   /** Achats du joueur (Pass, packs, collections), vérifiés par le serveur. */
   items?: string[];
 }

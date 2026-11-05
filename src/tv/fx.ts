@@ -82,7 +82,7 @@ function drawOne(g: CanvasRenderingContext2D, r: FlyingReaction, a: number, fr: 
   if (re.txt) {
     stickerText(g, re.txt[fr ? 'fr' : 'en'], 0, 0, 62, r.color);
   } else {
-    const size = re.rude ? 132 : 104;
+    const size = re.big ? 200 : re.rude ? 132 : 104;
     g.font = `${size}px sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
