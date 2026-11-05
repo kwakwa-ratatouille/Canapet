@@ -1,4 +1,5 @@
 // La soirée côté télé : joueurs, enchaînement des jeux, scores. La télé fait autorité.
+import { isLocked } from '../shared/offer';
 import { SKILLS } from '../games/botSkill';
 import { GAMES, gameById, playable, gameInfo } from '../games/registry';
 import { TEAMS } from '../games/teams';
@@ -410,6 +411,12 @@ export class Session {
     }
   }
 
+  /** Jeu réservé au Pass, et personne dans le salon ne l'a. */
+  private locked(id: string) {
+    const pass = this.list().some((p) => p.connected && p.pass);
+    return isLocked(id, playable().map((g) => g.id), pass);
+  }
+
   /** Commandes de l'hôte (téléphone) ou du clavier de la télé. */
   hostAction(action: string, game?: string, opts?: Record<string, number>) {
     switch (action) {
@@ -417,7 +424,7 @@ export class Session {
         // Seulement les jeux jouables avec le nombre de joueurs présents (les bots complètent quand le jeu le permet).
         const count = this.list().filter((p) => p.connected).length;
         // L'hôte peut enlever des jeux (opts = { idDuJeu: 1 })
-        const allowed = playable().filter((g) => !opts?.[g.id]);
+        const allowed = playable().filter((g) => !opts?.[g.id] && !this.locked(g.id));
         const base = allowed.length ? allowed : playable();
         const fit = base.filter((g) => Math.max(count, g.botFill) >= g.min);
         const pool = (fit.length ? fit : base).map((g) => g.id);
@@ -441,7 +448,7 @@ export class Session {
         break;
       }
       case 'pick':
-        if (game && gameById(game) && !gameById(game)!.soon) {
+        if (game && gameById(game) && !gameById(game)!.soon && !this.locked(game)) {
           this.mode = 'host';
           this.startGame(game, opts);
         }

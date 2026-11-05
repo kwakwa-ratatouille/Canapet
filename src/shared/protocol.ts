@@ -16,6 +16,8 @@ export interface Profile {
   /** Regard et pose choisis (sinon ceux du perso). */
   eyes?: string;
   pose?: string;
+  /** A le Pass Soirée : débloque tous les jeux pour le salon. */
+  pass?: boolean;
 }
 
 export type PadLayout = 'tap' | 'stick' | 'bluff' | 'buttons';

@@ -16,6 +16,8 @@ import { undercover } from './undercover';
 import { roulette } from './roulette';
 import { president } from './president';
 import { trapGame } from './trap';
+import { tribunal } from './tribunal';
+import { dico } from './dico';
 import { mareeGame } from './maree';
 import { chairsGame, colorGame, lavaGame, pixelGame, potatoGame, rainGame } from './minis';
 import type { GameBase, GameDef } from './types';
@@ -47,10 +49,12 @@ const ART: Record<string, string> = {
   couleur: 'couleur',
   maree: 'maree',
   pixel: 'pixel',
+  tribunal: 'tribunal',
+  dico: 'dico',
 };
 
 /** Couleur des jeux ajoutés après la DA. */
-const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f', trappe: '#9b5cff', couleur: '#2ec5ff', maree: '#1e8fc0', pixel: '#9b5cff' };
+const EXTRA_COLORS: Record<string, string> = { undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f', trappe: '#9b5cff', couleur: '#2ec5ff', maree: '#1e8fc0', pixel: '#9b5cff', tribunal: '#9b5cff', dico: '#2ec5ff' };
 
 const withArt = (g: GameBase): GameDef => {
   const slug = ART[g.id];
@@ -59,6 +63,8 @@ const withArt = (g: GameBase): GameDef => {
 
 /** Catalogue complet, dans l'ordre de la DA. */
 export const GAMES: GameDef[] = [
+  tribunal,
+  dico,
   thumbRace,
   tumble,
   bluff,

@@ -7,6 +7,42 @@ export interface Tuto {
 }
 
 export const TUTOS: Record<string, Record<Lang, Tuto>> = {
+  tribunal: {
+    fr: {
+      goal: 'Qui de vous serait le premier à… ? Condamnez vos amis !',
+      steps: [
+        ['📱', 'Lis l’affaire et touche un joueur sur ton téléphone'],
+        ['⚖️', 'Le plus désigné est déclaré COUPABLE'],
+        ['⭐', 'Voter avec la majorité = 2 points. Le condamné gagne 1 point'],
+      ],
+    },
+    en: {
+      goal: 'Which of you would be first to…? Convict your friends!',
+      steps: [
+        ['📱', 'Read the case and tap a player on your phone'],
+        ['⚖️', 'The most voted is found GUILTY'],
+        ['⭐', 'Vote with the majority = 2 points. The convict gets 1 point'],
+      ],
+    },
+  },
+  dico: {
+    fr: {
+      goal: 'Un vrai mot rare : invente une fausse définition crédible !',
+      steps: [
+        ['✍️', 'Tape ta fausse définition sur ton téléphone'],
+        ['🔎', 'Cherche la vraie parmi toutes les propositions'],
+        ['⭐', 'La vraie trouvée = 3 points. Chaque joueur piégé = 2 points'],
+      ],
+    },
+    en: {
+      goal: 'A real rare word: make up a believable fake meaning!',
+      steps: [
+        ['✍️', 'Type your fake meaning on your phone'],
+        ['🔎', 'Find the real one among all the answers'],
+        ['⭐', 'Real one found = 3 points. Each player fooled = 2 points'],
+      ],
+    },
+  },
   pouces: {
     fr: {
       goal: 'Arrive le premier ! Ton perso court tout seul, à toi de franchir les obstacles',

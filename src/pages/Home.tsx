@@ -6,7 +6,8 @@ import { CODE_LETTERS, type Lang } from '../shared/protocol';
 import { save, store, IS_PHONE } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import { ANDROID_APK_URL, IOS_IPA_URL, IOS_SOURCE_URL, IS_INSTALLED, PLATFORM } from '../shared/native';
-import { VIA_BROWSER, loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
+import { LegalLinks } from './Legal';
+import { VIA_BROWSER, deleteAccount, loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
 import { levelInfo, loadProgress, saveProgress } from '../shared/progress';
 import { GoogleLogo } from '../shared/GoogleLogo';
 
@@ -49,6 +50,17 @@ function AccountCard({ lang }: { lang: Lang }) {
     signIn().catch(() => setState('error'));
   };
   const lv = levelInfo(loadProgress().xp).level;
+  const [ask, setAsk] = useState(false);
+  const [delMsg, setDelMsg] = useState('');
+  const erase = () => {
+    setAsk(false);
+    deleteAccount()
+      .then(() => setDelMsg(fr ? 'Compte supprimé.' : 'Account deleted.'))
+      .catch((e: { code?: string }) => {
+        setDelMsg(e?.code === 'auth/requires-recent-login' ? (fr ? 'Par sécurité, reconnecte-toi puis recommence.' : 'For safety, sign in again and retry.') : fr ? 'Ça n’a pas marché, réessaie.' : 'That didn’t work, try again.');
+        if (e?.code === 'auth/requires-recent-login') void signOut();
+      });
+  };
   return (
     <div className="home-card account-card">
       <h2>👤 {fr ? 'Mon compte' : 'My account'}</h2>
@@ -60,7 +72,18 @@ function AccountCard({ lang }: { lang: Lang }) {
           </span>
           <button onClick={() => void signOut()}>{t(lang, 'signOut')}</button>
         </div>
+      ) : null}
+      {user && (ask ? (
+        <div className="account-del">
+          <p>{fr ? 'Effacer ton compte et ta progression en ligne ? C’est définitif.' : 'Erase your account and online progress? This is final.'}</p>
+          <button className="btn alt" onClick={() => setAsk(false)}>{fr ? 'Annuler' : 'Cancel'}</button>
+          <button className="btn" onClick={erase}>{fr ? 'Oui, supprimer' : 'Yes, delete'}</button>
+        </div>
       ) : (
+        <button className="link-btn" onClick={() => setAsk(true)}>{fr ? 'Supprimer mon compte' : 'Delete my account'}</button>
+      ))}
+      {delMsg && <p className="pad-small">{delMsg}</p>}
+      {!user ? (
         <>
           <p>{fr ? 'Garde ton niveau, tes bonbons et tes objets, même en changeant de téléphone.' : 'Keep your level, candies and items, even on a new phone.'}</p>
           <button className="google-btn" onClick={connect} disabled={state === 'busy'}>
@@ -69,7 +92,7 @@ function AccountCard({ lang }: { lang: Lang }) {
           </button>
           {state === 'busy' && VIA_BROWSER && <p className="pad-small">{fr ? 'Connecte-toi dans la page qui s’ouvre, puis reviens ici.' : 'Sign in on the page that opens, then come back here.'}</p>}
         </>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -236,6 +259,7 @@ export function Home() {
       <a className="home-help" href="#/aide">
         {t(lang, 'howTv')}
       </a>
+      <LegalLinks lang={lang} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 // Progression du joueur, gardée sur son téléphone : expérience, niveaux, bonbons 🍬 et objets achetés.
 // (Plus tard : synchronisée avec le compte Google quand le projet Firebase existera.)
 import { save, store } from './device';
+import type { Habits } from './quests';
 
 export interface Progress {
   xp: number;
@@ -9,6 +10,8 @@ export interface Progress {
   owned: string[];
   games: number;
   wins: number;
+  /** Série de jours et défis de la semaine. */
+  habits?: Habits;
   /** Dernière partie déjà comptée (code de la télé + numéro), pour ne jamais compter deux fois. */
   last: string;
 }

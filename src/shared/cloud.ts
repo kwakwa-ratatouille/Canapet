@@ -78,6 +78,7 @@ export function googleReturn(): (Pending & { token: string | null; error: string
   return { ...(JSON.parse(raw) as Pending), token: q.get('id_token'), error: q.get('error') };
 }
 export const signOut = () => impl().then((m) => m.signOut());
+export const deleteAccount = () => impl().then((m) => m.deleteAccount());
 export const loadCloud = (uid: string) => impl().then((m) => m.load(uid));
 export const saveCloud = (uid: string, p: Progress) => impl().then((m) => m.save(uid, p));
 

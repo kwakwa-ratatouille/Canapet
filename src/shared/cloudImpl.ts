@@ -1,6 +1,6 @@
 // Partie Firebase de cloud.ts (chargée seulement quand on en a besoin).
 import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as fbSignOut, type Auth } from 'firebase/auth';
+import { deleteUser, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as fbSignOut, type Auth } from 'firebase/auth';
 import { get, getDatabase, goOffline, goOnline, onValue, ref, remove, serverTimestamp, set, type Database, type DataSnapshot } from 'firebase/database';
 import type { CloudUser } from './cloud';
 import type { Progress } from './progress';
@@ -36,6 +36,14 @@ export async function signIn() {
 }
 
 export const signOut = () => fbSignOut(auth);
+
+/** Efface la progression en ligne puis le compte. Google peut demander une connexion récente (erreur auth/requires-recent-login). */
+export async function deleteAccount() {
+  const u = auth.currentUser;
+  if (!u) return;
+  await remove(ref(db, `players/${u.uid}`));
+  await deleteUser(u);
+}
 
 // Connexion Google dans les applis (iPhone, Android, .exe) : Google refuse sa fenêtre de connexion dans une appli.
 // On ouvre la page relais du site dans le vrai navigateur ; elle connecte le joueur, chiffre le jeton et le dépose

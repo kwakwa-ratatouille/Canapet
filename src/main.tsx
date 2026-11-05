@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Help } from './pages/Help';
 import { Home } from './pages/Home';
+import { Legal, isLegal } from './pages/Legal';
 import { Relay } from './pages/Relay';
 import { googleReturn } from './shared/cloud';
 import '@fontsource/fredoka/600.css';
@@ -49,6 +50,7 @@ function App() {
     );
   }
   if (page === 'aide') return <Help />;
+  if (page && isLegal(page)) return <Legal page={page} />;
   if (fromGoogle && !route.parts.length) return <Relay id={fromGoogle.id} k={fromGoogle.k} back={fromGoogle} />;
   if (page === 'relais-google') return <Relay id={route.query.get('id') ?? ''} k={route.query.get('k') ?? ''} here={route.query.has('ici')} />;
   return <Home />;

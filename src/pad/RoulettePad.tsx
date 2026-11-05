@@ -5,6 +5,7 @@ import type { Lang, ToTv } from '../shared/protocol';
 
 const TXT = {
   fr: {
+    hide: 'Masquer cette image',
     pick: 'Sélectionne une large partie de ta galerie. Trois photos seront tirées au sort, sans que tu saches lesquelles.',
     auto: 'Seize photos tirées au sort dans ta galerie. Relance si elles ne te conviennent pas, puis valide : la télé en gardera trois.',
     autoBtn: 'Tirer au sort',
@@ -33,6 +34,7 @@ const TXT = {
     privacy: 'Les fichiers ne sont pas conservés : ils transitent seulement par la télé.',
   },
   en: {
+    hide: 'Hide this picture',
     pick: 'Select a large part of your gallery. Three photos will be drawn at random, without you knowing which.',
     auto: 'Sixteen random photos from your gallery. Draw again if you don’t like them, then confirm: the TV will keep three.',
     autoBtn: 'Draw at random',
@@ -104,7 +106,7 @@ const readAsDataUrl = (file: File) =>
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Manette de Photo Roulette : envoi des photos/vidéos, puis vote. */
+/** Manette de Photo Mystère : envoi des photos/vidéos, puis vote. */
 export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang: Lang; send: (m: ToTv) => void }) {
   const T = TXT[lang];
   const fileRef = useRef<HTMLInputElement>(null);
@@ -265,6 +267,11 @@ export function RoulettePad({ data, lang, send }: { data: RoulettePadData; lang:
   return (
     <div className="traitor">
       <p className="pad-small">{T.score(data.score)}</p>
+      {(data.phase === 'show' || data.phase === 'reveal') && (
+        <button className="report-btn" onClick={() => send({ t: 'act', a: 'hide' })}>
+          🚩 {T.hide}
+        </button>
+      )}
       {data.act === 'vote' ? (
         <>
           <p className="pad-title">{T.vote}</p>

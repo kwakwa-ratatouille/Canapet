@@ -1,4 +1,4 @@
-// Photo Roulette : chacun choisit des photos et petites vidéos de son téléphone. La télé les montre
+// Photo Mystère : chacun choisit des photos et petites vidéos de son téléphone. La télé les montre
 // une par une ; les autres devinent sur leur téléphone de qui ça vient. Rien n'est gardé après la partie.
 import { drawCharacter } from '../shared/characters';
 import { INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
@@ -206,6 +206,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         p.ready = true;
         sfx.join();
         ctx.refresh();
+      }
+      // 🚩 Un joueur masque l'image : elle disparaît tout de suite et on passe à la suivante
+      if (m.a === 'hide' && (phase === 'show' || phase === 'reveal')) {
+        sfx.boing();
+        next();
+        return;
       }
       if (m.a === 'pick' && phase === 'show') {
         const k = m.n?.[0] ?? -1;

@@ -22,6 +22,10 @@ import { BluffPad } from './BluffPad';
 import { ScribblePad } from './ScribblePad';
 import { TraitorPad } from './TraitorPad';
 import { UndercoverPad } from './UndercoverPad';
+import { QuizPad } from './QuizPad';
+import type { QuizPadData } from '../games/quizShared';
+import { afterGame, questsNow } from '../shared/quests';
+import { isLocked, gameOfDay, SALES_ON } from '../shared/offer';
 import { RoulettePad } from './RoulettePad';
 import { ReflexPad } from './ReflexPad';
 import type { ReflexPadData } from '../games/reflexShared';
@@ -97,7 +101,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     }
     return p;
   });
-  const [reward, setReward] = useState<{ xp: number; coins: number; level: number | null } | null>(null);
+  const [reward, setReward] = useState<Reward | null>(null);
   const level = levelInfo(progress.xp).level;
   // Compte Google : on ne charge Firebase que si le joueur s'est déjà connecté une fois (ou le demande).
   const [user, setUser] = useState<CloudUser | null>(null);
@@ -212,6 +216,10 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     if (profile.level !== level) setProfile((p) => ({ ...p, level }));
   }, [level, profile.level]);
 
+  // Dernier jeu joué (pour les défis de la semaine)
+  const lastGameId = useRef<string | undefined>(undefined);
+  if (screen?.s === 'play') lastGameId.current = screen.game;
+
   // Gains de fin de partie et de podium, comptés une seule fois.
   useEffect(() => {
     if (!screen || (screen.s !== 'results' && screen.s !== 'podium') || screen.rank <= 0) return;
@@ -221,15 +229,17 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     const before = levelInfo(progress.xp).level;
     const after = levelInfo(progress.xp + gain.xp).level;
     const up = after > before;
+    const habit = afterGame(progress.habits, { rank: screen.rank, game: lastGameId.current, podium: screen.s === 'podium' });
     setProgress((p) => ({
       ...p,
       last: key,
+      habits: habit.habits,
       xp: p.xp + gain.xp,
-      coins: p.coins + gain.coins + (up ? LEVEL_GIFT * (after - before) : 0),
+      coins: p.coins + gain.coins + habit.coins + (up ? LEVEL_GIFT * (after - before) : 0),
       games: p.games + (screen.s === 'results' ? 1 : 0),
       wins: p.wins + (screen.rank === 1 ? 1 : 0),
     }));
-    setReward({ xp: gain.xp, coins: gain.coins, level: up ? after : null });
+    setReward({ xp: gain.xp, coins: gain.coins + habit.coins, level: up ? after : null, daily: habit.daily, streak: habit.streak, quests: habit.quests.map((q) => q.label[lang]) });
     if (up) sfx.win();
     else sfx.join();
   }, [screen, code]);
@@ -484,12 +494,14 @@ function PadScreenView({
             <div className="game-list">
               {screen.games.map((g) => {
                 const def = g;
+                const ids = screen.games.map((x) => x.id);
+                const locked = isLocked(g.id, ids, !!profile.pass);
                 return (
                   <button
                     key={g.id}
                     className="game-card"
                     style={{ ['--g' as string]: def.color }}
-                    disabled={g.soon}
+                    disabled={g.soon || locked}
                     onClick={() => {
                       if (def.options?.length) {
                         setOpts({});
@@ -503,6 +515,8 @@ function PadScreenView({
                     <img src={gameIcon(def.slug)} alt="" />
                     <b>{def.name?.[lang] ?? def.id}</b>
                     {g.soon && <small>{t(lang, 'soon')}</small>}
+                    {locked && <small>🔒 Pass</small>}
+                    {SALES_ON && gameOfDay(ids) === g.id && <small>🎁 {lang === 'fr' ? 'Offert aujourd’hui' : 'Free today'}</small>}
                   </button>
                 );
               })}
@@ -717,6 +731,7 @@ function PadScreenView({
         );
       if (screen.game === 'reflexes' && screen.data) return <ReflexPad data={screen.data as ReflexPadData} lang={lang} send={send} />;
       if (screen.game === 'roulette' && screen.data) return <RoulettePad data={screen.data as RoulettePadData} lang={lang} send={send} />;
+      if ((screen.game === 'tribunal' || screen.game === 'dico') && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
       if (screen.game === 'undercover' && screen.data) return <UndercoverPad data={screen.data as UndercoverPadData} lang={lang} send={send} />;
       if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
       if (screen.game === 'president' && screen.data) return <PresidentPad data={screen.data as PresidentPadData} lang={lang} send={send} />;
@@ -860,6 +875,15 @@ function ProgressCard({ progress, lang, onShop, account }: { progress: Progress;
         🛍️ <span>{t(lang, 'shop')}</span>
       </button>
     </div>
+      <div className="quests">
+        <b>🎯 {lang === 'fr' ? 'Défis de la semaine' : 'This week’s challenges'}{(progress.habits?.streak ?? 0) > 1 ? ` · 🔥 ${progress.habits!.streak} ${lang === 'fr' ? 'jours' : 'days'}` : ''}</b>
+        {questsNow(progress.habits).map((q) => (
+          <div key={q.id} className={`quest ${q.ok ? 'ok' : ''}`}>
+            <span>{q.ok ? '✅' : '▫️'} {q.label[lang]}</span>
+            <small>{q.have}/{q.n} · +{q.gift} 🍬</small>
+          </div>
+        ))}
+      </div>
       {user ? (
         <div className="cloud-row">
           {user.photo ? <img src={user.photo} alt="" referrerPolicy="no-referrer" /> : <span className="cloud-ini">{user.name.slice(0, 1)}</span>}
@@ -878,11 +902,15 @@ function ProgressCard({ progress, lang, onShop, account }: { progress: Progress;
   );
 }
 
+type Reward = { xp: number; coins: number; level: number | null; daily?: number; streak?: number; quests?: string[] };
+
 /** Ce que la partie vient de rapporter (et le niveau gagné). */
-function RewardCard({ reward, progress, lang }: { reward: { xp: number; coins: number; level: number | null }; progress: Progress; lang: Lang }) {
+function RewardCard({ reward, progress, lang }: { reward: Reward; progress: Progress; lang: Lang }) {
   const { level, into, need } = levelInfo(progress.xp);
   return (
     <div className={`reward-card ${reward.level ? 'up' : ''}`}>
+      {!!reward.daily && <p className="reward-up">🎁 {lang === 'fr' ? `Cadeau du jour : +${reward.daily} 🍬 (série de ${reward.streak})` : `Daily gift: +${reward.daily} 🍬 (${reward.streak}-day streak)`}</p>}
+      {reward.quests?.map((q) => <p key={q} className="reward-up">🎯 {lang === 'fr' ? 'Défi réussi' : 'Challenge done'} : {q}</p>)}
       {reward.level && <p className="reward-up">🎉 {t(lang, 'levelUp', { n: reward.level })} +{LEVEL_GIFT} 🍬</p>}
       <div className="reward-row">
         {reward.xp > 0 && <span className="reward-pill xp">+{reward.xp} XP</span>}

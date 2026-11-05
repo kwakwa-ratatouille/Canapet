@@ -1,10 +1,10 @@
-// Photo Roulette : ce que la télé envoie en privé à chaque téléphone.
+// Photo Mystère : ce que la télé envoie en privé à chaque téléphone.
 
 export interface RoulettePadData {
   phase: 'upload' | 'show' | 'reveal' | 'end';
   /** Nombre de photos et vidéos de ce joueur bien reçues par la télé. */
   sent: number;
-  /** Vidéo Roulette (sinon photos). */
+  /** Version vidéos (sinon photos). */
   video: boolean;
   ready: boolean;
   /** 'vote' : deviner ; 'owner' : c'est ta photo, fais semblant. */

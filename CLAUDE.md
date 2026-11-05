@@ -86,6 +86,12 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Personnages dessinés par le code : `src/shared/characters.ts`. Sons : `src/shared/sound.ts`. Textes FR/EN : `src/shared/i18n.ts`.
 - Mode léger automatique (`LIGHT`, Chromecast et petits Android) : canvas en 1280×720, moins d'effets.
 
+## Publication et modèle économique (nov. 2026)
+
+- Modèle : appli gratuite + **Pass Soirée** acheté une fois par l'hôte (`src/shared/offer.ts` : `SALES_ON` faux pendant le test, `FREE_GAMES`, jeu du jour offert, verrou `isLocked` côté télé et manette). Pas de pub ni d'abonnement ; achat réel pas encore branché (Play Billing + serveur). Pour revenir : cadeau quotidien et 3 défis par semaine (`src/shared/quests.ts`).
+- Fiche et réponses Play : `store/google-play.md`. Version Play : `PLAY=1` dans `mobile/native/patch.cjs` (sans galerie, `IS_PLAY`), Capacitor 8 / API 36 ; iPhone reste en Capacitor 6. Clé d'envoi hors dépôt (`BureauCanapet-cle-android`), secrets GitHub `UPLOAD_KEY_*`. Pages `#/confidentialite`, `#/conditions`, `#/supprimer-compte` (`Legal.tsx`, EDITOR et CONTACT à remplir).
+- Licences : **pas de voix Piper** (espeak-ng GPL, Tom AGPL, Ryan non commerciale). Polices via @fontsource. Noms : Le Mot Intrus (ex-Undercover, rôles Intrus et Sans-Mot), Photo Mystère (bouton 🚩 pour masquer). Nouveaux jeux : Le Tribunal (`tribunal.ts`, touche 0), Le Dico Bidon (`dico.ts`, touche ;), manette `QuizPad.tsx`.
+
 ## Mode équipes et musique
 
 - **Chrono** : `limit` (+ `timerTop`) dans chaque `GameBase` ; la session (`limitTick`, `timeLeft`) annonce « Plus que 30 secondes ! » et accélère la musique (`setMusicRush`), tic-tac sur les 10 dernières, sirène + « Temps écoulé ! » (2,2 s) puis résultats avec le classement du moment. Pastille dessinée par `drawTimer` (TvApp). Pas de chrono pour Cuisine (le sien) ni Traître.
