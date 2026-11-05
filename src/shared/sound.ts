@@ -102,7 +102,7 @@ export function decodeClip(data: ArrayBuffer): Promise<AudioBuffer> {
 }
 
 /** Joue un enregistrement : `rate` déforme la voix, `reverse` la joue à l'envers. */
-export function playClip(buf: AudioBuffer, o: { rate?: number; reverse?: boolean }): ClipPlayer {
+export function playClip(buf: AudioBuffer, o: { rate?: number; reverse?: boolean; gain?: number; loop?: boolean }): ClipPlayer {
   const c = ctx()!;
   let use = buf;
   if (o.reverse) {
@@ -117,7 +117,8 @@ export function playClip(buf: AudioBuffer, o: { rate?: number; reverse?: boolean
   s.buffer = use;
   s.playbackRate.value = o.rate ?? 1;
   const boost = c.createGain();
-  boost.gain.value = 1.6;
+  boost.gain.value = o.gain ?? 1.6;
+  s.loop = !!o.loop;
   const an = c.createAnalyser();
   an.fftSize = 256;
   const data = new Uint8Array(an.frequencyBinCount);
@@ -169,6 +170,27 @@ export function fakeVoice(dur: number): AudioBuffer {
     const syll = Math.max(0, Math.sin(t * b * 3.14));
     const saw = (ph % 1) * 2 - 1;
     return (saw * 0.5 + Math.sin(ph * 6.28 * 3) * 0.3) * syll * 0.45;
+  });
+}
+
+/** Une mélodie de karaoké inventée, toujours différente : gamme joyeuse, basse et petite batterie. */
+export function karaokeTune(): AudioBuffer {
+  const scale = [60, 62, 64, 67, 69, 72, 74, 76];
+  const beat = 0.42;
+  const notes = Array.from({ length: 8 }, (_, i) => (i === 7 ? 60 : scale[Math.floor(Math.random() * scale.length)]));
+  const bass = [48, 45, 41, 43][Math.floor(Math.random() * 4)];
+  const sr = ctx()!.sampleRate;
+  let a = 0;
+  let b = 0;
+  return synth(beat * 8, (t) => {
+    const i = Math.min(7, Math.floor(t / beat));
+    const p = (t % beat) / beat;
+    a += midi(notes[i]) / sr;
+    b += midi(i < 4 ? bass : bass + 5) / sr;
+    const lead = Math.sin(a * 6.283) * Math.exp(-p * 2) * 0.42;
+    const low = ((b % 1) * 2 - 1) * 0.14;
+    const kick = Math.sin(p * 40) * Math.exp(-p * 12) * (i % 2 ? 0 : 0.3);
+    return lead + low + kick;
   });
 }
 

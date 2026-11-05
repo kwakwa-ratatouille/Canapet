@@ -1,5 +1,5 @@
 // Jeux au micro : ce que la télé envoie en privé à chaque téléphone.
-export const VOICE_GAMES = ['imite', 'devine', 'perroquet', 'envers', 'voix', 'casse'];
+export const VOICE_GAMES = ['imite', 'devine', 'perroquet', 'envers', 'voix', 'casse', 'doublage', 'karaoke'];
 
 export interface VoicePadData {
   phase: 'record' | 'listen' | 'choose' | 'write' | 'reveal' | 'end';

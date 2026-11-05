@@ -2,13 +2,13 @@
 // Rien n'est gardé : les sons restent en mémoire pendant la partie, puis disparaissent.
 import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
-import { decodeClip, fakeVoice, playClip, playMusic, referenceSound, REF_SOUNDS, sfx, speak, type ClipPlayer, type MusicId } from '../shared/sound';
+import { decodeClip, fakeVoice, karaokeTune, playClip, playMusic, referenceSound, REF_SOUNDS, sfx, speak, type ClipPlayer, type MusicId } from '../shared/sound';
 import { candy } from './draw';
 import { wrap } from './tribunal';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 import type { VoicePadData } from './voiceShared';
 
-type Mode = 'imite' | 'devine' | 'perroquet' | 'envers' | 'voix' | 'casse';
+type Mode = 'imite' | 'devine' | 'perroquet' | 'envers' | 'voix' | 'casse' | 'doublage' | 'karaoke';
 type Phase = VoicePadData['phase'];
 
 /** [français, anglais] ; `!` au début = caché en mode famille. */
@@ -82,7 +82,42 @@ const WHO_LINES: [string, string][] = [
   ['J’adore les lundis', 'I love Mondays'],
 ];
 
+/** Scènes à doubler : deux marionnettes jouent, ta voix leur donne vie. */
+type Anim = 'duel' | 'rupture' | 'poursuite' | 'calin' | 'annonce' | 'peur';
+const SCENES: { fr: string; en: string; a: string; b: string; anim: Anim }[] = [
+  { fr: 'Le cornichon quitte la tartine… pour une baguette', en: 'The pickle leaves the toast… for a baguette', a: 'cornichon', b: 'tartine', anim: 'rupture' },
+  { fr: 'La tomate accuse le fromage d’avoir volé son chapeau', en: 'The tomato accuses the cheese of stealing her hat', a: 'tomate', b: 'fromage', anim: 'duel' },
+  { fr: 'La banane poursuit le cookie qui lui doit de l’argent', en: 'The banana chases the cookie who owes her money', a: 'banane', b: 'cookie', anim: 'poursuite' },
+  { fr: 'Le coussin retrouve son fils perdu, la chaussette', en: 'The cushion finds their long-lost son, the sock', a: 'coussin', b: 'chaussette', anim: 'calin' },
+  { fr: 'La pizza annonce au nuage qu’il va être papa', en: 'The pizza tells the cloud he’s going to be a dad', a: 'pizza', b: 'nuage', anim: 'annonce' },
+  { fr: 'L’œuf a très peur du cupcake, et il a raison', en: 'The egg is terrified of the cupcake, and rightly so', a: 'oeuf', b: 'cupcake', anim: 'peur' },
+  { fr: 'Le sushi et les frites se disputent la télécommande', en: 'The sushi and the fries fight over the remote', a: 'sushi', b: 'frites', anim: 'duel' },
+  { fr: 'L’avocat plaide devant le juge macaron', en: 'The avocado pleads before Judge Macaron', a: 'avocat', b: 'macaron', anim: 'annonce' },
+  { fr: 'Le brocoli demande la gaufre en mariage', en: 'The broccoli proposes to the waffle', a: 'brocoli', b: 'gaufre', anim: 'calin' },
+  { fr: 'Le pop-corn fuit le ketchup, qui veut « juste parler »', en: 'The popcorn flees the ketchup, who “just wants to talk”', a: 'popcorn', b: 'ketchup', anim: 'poursuite' },
+  { fr: 'La patate annonce à l’oignon qu’elle sait tout', en: 'The potato tells the onion she knows everything', a: 'patate', b: 'oignon', anim: 'rupture' },
+  { fr: 'Le beignet découvre le monstre dans le frigo : la saucisse', en: 'The donut finds the monster in the fridge: the sausage', a: 'beignet', b: 'saucisse', anim: 'peur' },
+];
+
+/** Paroles à chanter sur la mélodie. */
+const LYRICS: [string, string][] = [
+  ['Mon cornichon m’a quitté en mai', 'My pickle left me back in May'],
+  ['Oh ma tartine, tu tombes toujours du mauvais côté', 'Oh my toast, you always land the wrong way'],
+  ['J’ai perdu mes chaussettes dans la machine', 'I lost my socks inside the machine'],
+  ['Le Wi-Fi est parti sans dire au revoir', 'The Wi-Fi left without goodbye'],
+  ['Je t’aime plus que le fromage, mais moins que le dessert', 'I love you more than cheese, but less than dessert'],
+  ['Ma belle-mère a pris la télécommande', 'My mother-in-law took the remote'],
+  ['Le lundi matin, je pleure dans mon café', 'On Monday morning, I cry in my coffee'],
+  ['Mon chat me regarde et il me juge encore', 'My cat is looking and judging me again'],
+  ['Y’a plus de batterie, y’a plus d’amour', 'No more battery, no more love'],
+  ['Une pizza pour deux, mais je la mange tout seul', 'A pizza for two, but I eat it alone'],
+  ['Baby, tu as encore oublié les poubelles', 'Baby, you forgot the bins again'],
+  ['Mon cœur fait pouet quand tu t’assois dessus', 'My heart goes toot when you sit on it'],
+];
+
 const TUNE: Record<Mode, { rounds: number; rec: number; max: number }> = {
+  doublage: { rounds: 4, rec: 35, max: 7 },
+  karaoke: { rounds: 4, rec: 35, max: 7 },
   imite: { rounds: 4, rec: 30, max: 6 },
   perroquet: { rounds: 4, rec: 25, max: 5 },
   devine: { rounds: 6, rec: 25, max: 6 },
@@ -118,8 +153,12 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
   const pls: Pl[] = runners.map((r) => ({ pid: r.pid, profile: r.profile, bot: r.bot, selfie: r.selfie, score: 0, gain: 0, pick: -1, sent: false, text: '' }));
   const humans = pls.filter((p) => !p.bot);
   const tune = TUNE[mode];
+  const voteMode = mode === 'imite' || mode === 'perroquet' || mode === 'doublage' || mode === 'karaoke';
+  const scenes = shuffle(SCENES);
+  let scene = scenes[0];
+  let backing: ClipPlayer | null = null;
   const rounds = mode === 'devine' || mode === 'envers' ? Math.min(tune.rounds, Math.max(3, humans.length * 2)) : tune.rounds;
-  const deck = shuffle(clean(mode === 'imite' ? IMITATE : mode === 'devine' ? GUESS : mode === 'voix' ? WHO_LINES : PHRASES));
+  const deck = shuffle(clean(mode === 'imite' ? IMITATE : mode === 'devine' ? GUESS : mode === 'voix' ? WHO_LINES : mode === 'karaoke' ? LYRICS : mode === 'doublage' ? SCENES.map((s) => [s.fr, s.en] as [string, string]) : PHRASES));
   const refs = shuffle(REF_SOUNDS);
   const rate = () => (Math.random() < 0.5 ? 1.55 : 0.68);
 
@@ -151,6 +190,8 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
   const stopPlay = () => {
     playing?.stop();
     playing = null;
+    backing?.stop();
+    backing = null;
     speaking = null;
   };
 
@@ -183,7 +224,18 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
     refBuf = null;
     botsDue = [];
     options = [];
-    if (mode === 'imite' || mode === 'voix') {
+    if (mode === 'doublage') {
+      scene = scenes[round % scenes.length];
+      prompt = scene[fr ? 'fr' : 'en'];
+      speak(fr ? `Doublez cette scène : ${prompt}` : `Dub this scene: ${prompt}`, ctx.lang);
+      pls.filter((p) => p.bot).forEach((p) => botsDue.push({ p, at: clock + 5 + Math.random() * 9 }));
+    } else if (mode === 'karaoke') {
+      refBuf = karaokeTune();
+      prompt = L(deck[round % deck.length]);
+      speak(fr ? 'Écoutez la mélodie et chantez ces paroles !' : 'Listen to the tune and sing these words!', ctx.lang);
+      refAgain = clock + 3;
+      pls.filter((p) => p.bot).forEach((p) => botsDue.push({ p, at: clock + 8 + Math.random() * 10 }));
+    } else if (mode === 'imite' || mode === 'voix') {
       prompt = L(deck[round % deck.length]);
       speak(mode === 'imite' ? (fr ? `À vous : ${prompt}` : `Your turn: ${prompt}`) : fr ? `Tout le monde dit : ${prompt}` : `Everyone says: ${prompt}`, ctx.lang);
       pls.filter((p) => p.bot).forEach((p) => botsDue.push({ p, at: clock + 4 + Math.random() * 8 }));
@@ -264,7 +316,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
     phase = 'listen';
     timer = 999;
     const order = shuffle(clips);
-    if (mode === 'imite') queue = order.map((c) => ({ clip: c }));
+    if (mode === 'imite' || mode === 'doublage' || mode === 'karaoke') queue = order.map((c) => ({ clip: c }));
     else if (mode === 'perroquet') queue = [{ clip: null, ref: refBuf ?? undefined, label: fr ? 'Le vrai bruit' : 'The real sound' }, ...order.map((c) => ({ clip: c }))];
     else if (mode === 'devine') {
       const c = clips[0];
@@ -304,6 +356,8 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
     speaking = item.who === null ? null : owner;
     listenLabel = item.label ?? (speaking ? speaking.profile.name : '');
     playing = playClip(buf, { rate: item.rate, reverse: item.reverse });
+    // Karaoké : la musique joue en dessous de la voix
+    if (mode === 'karaoke' && refBuf) backing = playClip(refBuf, { gain: 0.3, loop: true });
     timer = playing.dur + 0.8;
   }
 
@@ -316,13 +370,13 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
     phase = 'choose';
     timer = 15;
     botVoteAt = clock + 2 + Math.random() * 5;
-    if (mode === 'imite' || mode === 'perroquet') {
+    if (voteMode) {
       options = clips.map((c, i) => {
         const p = pls.find((x) => x.pid === c.pid)!;
         return { i, label: p.profile.name, color: p.profile.color };
       });
     }
-    speak(mode === 'imite' ? (fr ? 'Votez pour le meilleur !' : 'Vote for the best!') : mode === 'perroquet' ? (fr ? 'Qui était le plus ressemblant ?' : 'Who sounded closest?') : fr ? 'À vous de deviner !' : 'Take your guess!', ctx.lang);
+    speak(mode === 'imite' || mode === 'doublage' || mode === 'karaoke' ? (fr ? 'Votez pour le meilleur !' : 'Vote for the best!') : mode === 'perroquet' ? (fr ? 'Qui était le plus ressemblant ?' : 'Who sounded closest?') : fr ? 'À vous de deviner !' : 'Take your guess!', ctx.lang);
     sfx.pop();
     ctx.refresh();
   }
@@ -332,7 +386,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
     stopPlay();
     phase = 'reveal';
     timer = 6;
-    if (mode === 'imite' || mode === 'perroquet') {
+    if (voteMode) {
       const votes = options.map((o) => pls.filter((p) => p.pick === o.i).length);
       clips.forEach((c, i) => {
         const p = pls.find((x) => x.pid === c.pid)!;
@@ -344,6 +398,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
         note = fr ? `Le public a choisi : ${winners.map((w) => w.profile.name).join(' et ')} !` : `The crowd chose: ${winners.map((w) => w.profile.name).join(' and ')}!`;
         const c = clips.find((x) => x.pid === winners[0].pid);
         if (c) playing = playClip(c.buf, {});
+        if (mode === 'karaoke' && refBuf) backing = playClip(refBuf, { gain: 0.3, loop: true });
         speaking = winners[0];
       }
     } else if (mode === 'devine' || mode === 'envers') {
@@ -411,7 +466,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       if (m.a === 'pick' && phase === 'choose') {
         const k = m.n?.[0] ?? -1;
         if (!options[k]) return;
-        const c = mode === 'imite' || mode === 'perroquet' ? clips[k] : null;
+        const c = voteMode ? clips[k] : null;
         if (c && c.pid === pid) return; // Pas de vote pour soi
         if ((mode === 'devine' || mode === 'envers') && p === actor) return;
         p.pick = k;
@@ -433,7 +488,8 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
         if (refBuf && refAgain && clock >= refAgain) {
           stopPlay();
           playing = playClip(refBuf, {});
-          refAgain = clock < 8 ? clock + playing.dur + 1 : 0;
+          // La mélodie du karaoké tourne en boucle pendant qu'on répète
+          refAgain = mode === 'karaoke' ? clock + playing.dur + 2 : clock < 8 ? clock + playing.dur + 1 : 0;
         }
         for (const d of botsDue) {
           if (clock >= d.at && !d.p.sent) {
@@ -459,7 +515,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
           botVoteAt = Infinity;
           pls.forEach((p, i) => {
             if (!p.bot || p.pick >= 0 || p === actor) return;
-            const can = options.map((o) => o.i).filter((k) => !((mode === 'imite' || mode === 'perroquet') && clips[k]?.pid === p.pid) && !(mode === 'voix' && k === i));
+            const can = options.map((o) => o.i).filter((k) => !(voteMode && clips[k]?.pid === p.pid) && !(mode === 'voix' && k === i));
             p.pick = can[Math.floor(Math.random() * can.length)] ?? -1;
           });
         }
@@ -524,7 +580,16 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       }
       // Égaliseur de la voix en cours
       const lvl = playing?.level() ?? 0;
-      if (playing && phase !== 'record') {
+      // Le Doublage : la scène se joue au centre, la voix fait parler les marionnettes
+      if (mode === 'doublage' && phase !== 'end') drawScene(g, t, phase === 'record' ? 0.25 : lvl);
+      // Karaoké : les paroles s'affichent en grand
+      if (mode === 'karaoke' && phase !== 'end' && phase !== 'choose') {
+        g.fillStyle = '#ffd60a';
+        g.font = '700 46px Fredoka, sans-serif';
+        const words = wrap(g, `🎤 ${prompt}`, 1300, '700 46px Fredoka, sans-serif');
+        words.slice(0, 2).forEach((l, i) => g.fillText(l, 960, 360 + i * 56));
+      }
+      if (playing && phase !== 'record' && mode !== 'doublage') {
         const n = 24;
         for (let i = 0; i < n; i++) {
           const h = 16 + lvl * (120 + 90 * Math.sin(i * 1.3 + t * 9));
@@ -554,7 +619,8 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       }
       // Les joueurs
       const n = pls.length;
-      const size = n > 8 ? 110 : n > 5 ? 140 : 180;
+      const small = mode === 'doublage' && phase !== 'end';
+      const size = small ? Math.min(80, 640 / n) : n > 8 ? 110 : n > 5 ? 140 : 180;
       pls.forEach((p, i) => {
         const x = 960 + (i - (n - 1) / 2) * Math.min(250, 1420 / n);
         const talk = speaking === p && !!playing;
@@ -619,7 +685,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
           } else myPrompt = `${actor?.profile.name ?? ''} ${fr ? 'a le téléphone cassé…' : 'has the broken phone…'}`;
         } else {
           act = 'record';
-          myPrompt = mode === 'imite' ? (fr ? `Imite : ${prompt}` : `Imitate: ${prompt}`) : mode === 'voix' ? (fr ? `Dis : ${prompt}` : `Say: ${prompt}`) : fr ? 'Imite le bruit que tu viens d’entendre !' : 'Imitate the sound you just heard!';
+          myPrompt = mode === 'doublage' ? (fr ? `Fais toutes les voix : ${prompt}` : `Do all the voices: ${prompt}`) : mode === 'karaoke' ? (fr ? `Chante sur la musique de la télé : « ${prompt} »` : `Sing along with the TV: “${prompt}”`) : mode === 'imite' ? (fr ? `Imite : ${prompt}` : `Imitate: ${prompt}`) : mode === 'voix' ? (fr ? `Dis : ${prompt}` : `Say: ${prompt}`) : fr ? 'Imite le bruit que tu viens d’entendre !' : 'Imitate the sound you just heard!';
         }
       } else if (phase === 'write') {
         if (p === actor) {
@@ -630,14 +696,85 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       } else if (phase === 'choose') {
         const excluded = (mode === 'devine' || mode === 'envers') && p === actor;
         if (!excluded) act = 'choose';
-        myPrompt = excluded ? (fr ? 'Les autres cherchent…' : 'The others are guessing…') : mode === 'imite' ? (fr ? 'Le meilleur ?' : 'The best?') : mode === 'perroquet' ? (fr ? 'Le plus ressemblant ?' : 'The closest?') : mode === 'voix' ? (fr ? 'Qui parlait ?' : 'Who was speaking?') : fr ? 'C’était quoi ?' : 'What was it?';
+        myPrompt = excluded ? (fr ? 'Les autres cherchent…' : 'The others are guessing…') : mode === 'imite' || mode === 'doublage' || mode === 'karaoke' ? (fr ? 'Le meilleur ?' : 'The best?') : mode === 'perroquet' ? (fr ? 'Le plus ressemblant ?' : 'The closest?') : mode === 'voix' ? (fr ? 'Qui parlait ?' : 'Who was speaking?') : fr ? 'C’était quoi ?' : 'What was it?';
       } else myPrompt = phase === 'reveal' ? note : '';
-      const opts = phase === 'choose' ? options.filter((o) => !((mode === 'imite' || mode === 'perroquet') && clips[o.i]?.pid === pid)) : [];
+      const opts = phase === 'choose' ? options.filter((o) => !(voteMode && clips[o.i]?.pid === pid)) : [];
       return { phase, prompt: myPrompt, step: `${Math.min(round + 1, rounds)}/${rounds}`, act, clip: clipNo, maxSec: tune.max, sent: p.sent, options: opts, picked: p.pick, score: p.score, left, note: '', heard };
     },
   };
 
+  /** Deux marionnettes jouent la scène ; elles s'animent avec la voix. */
+  function drawScene(g: CanvasRenderingContext2D, t: number, lvl: number) {
+    const loop = t % 6;
+    const talkA = Math.floor(t * 1.1) % 2 === 0;
+    let ax = 700;
+    let bx = 1220;
+    let dirA: 1 | -1 = 1;
+    let dirB: 1 | -1 = -1;
+    let moodA: 'happy' | 'wow' | 'sad' | 'win' = 'happy';
+    let moodB: 'happy' | 'wow' | 'sad' | 'win' = 'happy';
+    let run = 0;
+    if (scene.anim === 'duel') {
+      const c = Math.sin(t * 2.4) * 70;
+      ax = 760 + c;
+      bx = 1160 - c;
+      moodA = moodB = 'wow';
+    } else if (scene.anim === 'rupture') {
+      bx = 1220 + Math.min(240, loop * 60);
+      dirA = 1;
+      dirB = loop > 1.5 ? 1 : -1;
+      moodA = 'sad';
+      run = loop > 1.5 ? 0.5 : 0;
+    } else if (scene.anim === 'poursuite') {
+      const k = (t * 170) % 1500;
+      bx = 320 + k;
+      ax = 320 + ((k - 260 + 1500) % 1500);
+      dirB = 1;
+      moodA = 'wow';
+      moodB = 'sad';
+      run = 1;
+    } else if (scene.anim === 'calin') {
+      const c = Math.min(1, loop / 3);
+      ax = 640 + 240 * c;
+      bx = 1280 - 240 * c;
+      moodA = moodB = 'win';
+      run = c < 1 ? 0.5 : 0;
+    } else if (scene.anim === 'annonce') {
+      moodB = loop > 2.5 ? 'wow' : 'happy';
+      bx = loop > 2.5 ? 1220 + Math.sin(t * 40) * 8 : 1220;
+    } else {
+      ax = 760 - Math.min(170, loop * 40) + Math.sin(t * 50) * 6;
+      bx = 1200 - Math.min(120, loop * 30);
+      dirA = -1;
+      moodA = 'sad';
+      moodB = 'wow';
+    }
+    const y = 730;
+    const hop = (on: boolean) => (on ? Math.abs(Math.sin(t * 15)) * lvl * 46 : 0);
+    const puppet = (food: string, x: number, on: boolean, dir: 1 | -1, mood: 'happy' | 'wow' | 'sad' | 'win', col: string) =>
+      drawCharacter(g, x, y - hop(on), 300 * (1 + (on ? lvl * 0.08 : 0)), { food, color: col, hat: 'aucun', acc: 'aucun', t, run, dir, mood: on && lvl > 0.2 ? 'wow' : mood, skin: '' });
+    puppet(scene.a, ax, talkA, dirA, moodA, '#ff4f9a');
+    puppet(scene.b, bx, !talkA, dirB, moodB, '#2ec5ff');
+    // Bulle quand quelqu'un parle
+    if (lvl > 0.15) {
+      const bx2 = talkA ? ax : bx;
+      g.fillStyle = '#fff';
+      g.strokeStyle = INK;
+      g.lineWidth = 5;
+      g.beginPath();
+      g.ellipse(bx2 + 100, y - 330, 62 + lvl * 26, 38 + lvl * 16, 0, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = INK;
+      g.font = '700 34px Fredoka, sans-serif';
+      g.textAlign = 'center';
+      g.fillText('!?#', bx2 + 100, y - 328);
+    }
+  }
+
   function recordTitle() {
+    if (mode === 'doublage') return prompt;
+    if (mode === 'karaoke') return fr ? 'Écoutez la mélodie et chantez sur vos téléphones !' : 'Listen to the tune and sing into your phones!';
     if (mode === 'imite') return fr ? `Imitez : ${prompt}` : `Imitate: ${prompt}`;
     if (mode === 'voix') return fr ? `Tout le monde dit : « ${prompt} »` : `Everyone says: “${prompt}”`;
     if (mode === 'perroquet') return fr ? 'Écoutez le bruit, puis imitez-le !' : 'Listen, then imitate the sound!';
@@ -663,6 +800,8 @@ const base = (id: Mode, emoji: string, name: [string, string], how: [string, str
   create: (r: Runner[], c: GameCtx) => createVoice(id, r, c),
 });
 
+export const doublage = base('doublage', '🎬', ['Le Doublage', 'The Dub'], ['Une scène absurde : fais toutes les voix au micro. La télé la joue avec ta voix !', 'An absurd scene: do all the voices on the mic. The TV plays it with your voice!'], 2, 3);
+export const karaoke = base('karaoke', '🎤', ['Le Karaoké Bidon', 'Fake Karaoke'], ['Une mélodie inventée, des paroles absurdes : chante, et que le meilleur gagne !', 'A made-up tune, absurd lyrics: sing, and may the best win!'], 2, 3);
 export const imite = base('imite', '🎙️', ['Le Grand Bruiteur', 'The Great Noisemaker'], ['Un défi absurde, ton téléphone est le micro. La télé fait écouter, tout le monde vote !', 'An absurd challenge, your phone is the mic. The TV plays it back, everyone votes!'], 2, 3);
 export const devine = base('devine', '🔊', ['C’est Quoi Ce Bruit ?', 'What’s That Noise?'], ['Un joueur fait un bruit mystère au micro, les autres devinent.', 'One player makes a mystery sound, the others guess.'], 2, 3);
 export const perroquet = base('perroquet', '🦜', ['Le Perroquet Enrhumé', 'The Sniffly Parrot'], ['La télé fait un drôle de bruit. Imite-le le mieux possible !', 'The TV makes a funny sound. Imitate it as well as you can!'], 2, 3);

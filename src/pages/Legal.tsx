@@ -80,7 +80,7 @@ const DOCS: Record<string, (fr: boolean) => Doc> = {
                 'Si tu nous écris : ton adresse et ton message, le temps de te répondre.',
                 'Selfie et Photo Mystère (facultatifs) : seules les images que tu choisis sont envoyées à la télé de la partie, pour les afficher. Elles ne sont pas gardées quand la partie se termine.',
                 'Textes et dessins : ce que tu tapes ou dessines dans un jeu s’affiche à la télé de la partie et n’est pas gardé.',
-                'Micro (facultatif) : ton téléphone n’enregistre que quand tu appuies sur le bouton, dans les jeux au micro. Le son est envoyé à la télé de la partie pour que le salon l’écoute, et n’est pas gardé quand la partie se termine.',
+                'Micro (facultatif) : ton téléphone n’enregistre que quand tu appuies sur le bouton, dans les jeux au micro. Le son est envoyé à la télé de la partie pour que le salon l’écoute, et n’est pas gardé quand la partie se termine. Dans Crie Plus Fort, seul un chiffre de volume est envoyé, jamais le son.',
               ],
             ],
             [
@@ -111,7 +111,7 @@ const DOCS: Record<string, (fr: boolean) => Doc> = {
                 'If you write to us: your address and message, long enough to answer you.',
                 'Selfie and Mystery Photo (optional): only the pictures you choose are sent to the TV of the game, to display them. They are not kept when the game ends.',
                 'Text and drawings: what you type or draw in a game appears on the TV of the game and is not kept.',
-                'Microphone (optional): your phone only records when you press the button, in microphone games. The sound is sent to the TV of the game so the room can hear it, and is not kept when the game ends.',
+                'Microphone (optional): your phone only records when you press the button, in microphone games. The sound is sent to the TV of the game so the room can hear it, and is not kept when the game ends. In Shout Louder, only a volume number is sent, never the sound.',
               ],
             ],
             [

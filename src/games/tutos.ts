@@ -43,6 +43,18 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  cri: {
+    fr: { goal: 'Crie dans ton téléphone pour avancer !', steps: [['📣', 'Plus tu cries fort, plus tu cours vite'], ['🤫', 'Quand l’écran devient rouge : silence ! Le moindre bruit te fait reculer'], ['🏁', 'Le premier à la ligne gagne']] },
+    en: { goal: 'Shout into your phone to move!', steps: [['📣', 'The louder you shout, the faster you run'], ['🤫', 'When the screen turns red: silence! Any noise pushes you back'], ['🏁', 'First to the line wins']] },
+  },
+  doublage: {
+    fr: { goal: 'Donne ta voix à une scène absurde !', steps: [['🎬', 'Lis la scène jouée par deux marionnettes'], ['🎙️', 'Enregistre toutes les voix, 7 secondes maximum'], ['🗳️', 'La télé joue chaque version : votez pour la plus drôle']] },
+    en: { goal: 'Voice an absurd scene!', steps: [['🎬', 'Read the scene played by two puppets'], ['🎙️', 'Record all the voices, 7 seconds max'], ['🗳️', 'The TV plays each version: vote for the funniest']] },
+  },
+  karaoke: {
+    fr: { goal: 'Une mélodie inventée, des paroles absurdes !', steps: [['🎵', 'Écoute la mélodie qui tourne à la télé'], ['🎤', 'Chante les paroles dans ton téléphone'], ['🗳️', 'La télé repasse les chansons : votez pour la star']] },
+    en: { goal: 'A made-up tune, absurd lyrics!', steps: [['🎵', 'Listen to the tune playing on the TV'], ['🎤', 'Sing the words into your phone'], ['🗳️', 'The TV replays the songs: vote for the star']] },
+  },
   imite: {
     fr: { goal: 'Un défi absurde : ton téléphone est le micro !', steps: [['🎙️', 'Touche Enregistrer et imite ce qui est demandé'], ['📺', 'La télé fait écouter tout le monde'], ['🗳️', 'Votez pour le meilleur : 2 points par voix']] },
     en: { goal: 'An absurd challenge: your phone is the mic!', steps: [['🎙️', 'Tap Record and imitate what’s asked'], ['📺', 'The TV plays everyone back'], ['🗳️', 'Vote for the best: 2 points per vote']] },

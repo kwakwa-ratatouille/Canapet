@@ -33,6 +33,8 @@ import { FriendsCard, InviteBanner, usePresence } from './Friends';
 import { ItemPreview, playItem } from './ItemPreview';
 import { Missions } from './Missions';
 import { VoicePad } from './VoicePad';
+import { ShoutPad } from './ShoutPad';
+import type { ShoutPadData } from '../games/shout';
 import { VOICE_GAMES, type VoicePadData } from '../games/voiceShared';
 import { boxesNow, COLOR_ITEMS, KO_FX, LEVEL_UNLOCKS, levelOf, RARITIES, RARITY_ORDER, seasonOf, SKINS, WIN_FX, WIN_POSES, WIN_SOUNDS, rarityOf, type Rarity } from '../shared/lootTable';
 import { currentSeason, ENTRIES, FRAMES, PAD_THEMES, PLATES, REACT_ITEMS, seasonStart, TITLES, TRAILS } from '../shared/cosmetics2';
@@ -919,6 +921,7 @@ function PadScreenView({
         );
       if (screen.game === 'reflexes' && screen.data) return <ReflexPad data={screen.data as ReflexPadData} lang={lang} send={send} />;
       if (screen.game === 'roulette' && screen.data) return <RoulettePad data={screen.data as RoulettePadData} lang={lang} send={send} />;
+      if (screen.game === 'cri' && screen.data) return <ShoutPad data={screen.data as ShoutPadData} lang={lang} send={send} />;
       if (VOICE_GAMES.includes(screen.game) && screen.data) return <VoicePad data={screen.data as VoicePadData} lang={lang} send={send} />;
       if (['tribunal', 'dico', 'plutot', 'chiffre'].includes(screen.game) && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
       if (screen.game === 'undercover' && screen.data) return <UndercoverPad data={screen.data as UndercoverPadData} lang={lang} send={send} />;
