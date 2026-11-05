@@ -1,7 +1,7 @@
 // Manette de Crie Plus Fort : mesure le volume ; seul ce chiffre part vers la télé, pas le son.
 import { useEffect, useRef, useState } from 'react';
 import type { ShoutPadData } from '../games/shout';
-import { MIC_NEEDS_UPDATE } from '../shared/native';
+import { micBegin, micBlocked, micEnd } from '../shared/native';
 import type { Lang, ToTv } from '../shared/protocol';
 
 export function ShoutPad({ data, lang, send }: { data: ShoutPadData; lang: Lang; send: (m: ToTv) => void }) {
@@ -13,10 +13,12 @@ export function ShoutPad({ data, lang, send }: { data: ShoutPadData; lang: Lang;
 
   const start = async () => {
     // Ancienne appli iPhone : pas de micro possible, on joue en tapant
-    if (MIC_NEEDS_UPDATE) return setState('denied');
+    if (micBlocked()) return setState('denied');
     setState('asking');
     try {
+      micBegin();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      micEnd();
       const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ac = new Ctx();
       await ac.resume();
@@ -51,6 +53,7 @@ export function ShoutPad({ data, lang, send }: { data: ShoutPadData; lang: Lang;
       };
       setState('on');
     } catch {
+      micEnd();
       setState('denied');
     }
   };
@@ -70,7 +73,7 @@ export function ShoutPad({ data, lang, send }: { data: ShoutPadData; lang: Lang;
       ) : state === 'denied' ? (
         <button className="mic-btn on" onPointerDown={() => { send({ t: 'act', a: 'tap' }); navigator.vibrate?.(8); }}>
           <i>👆</i>
-          <small>{MIC_NEEDS_UPDATE ? (fr ? 'Mets à jour l’appli pour le micro. En attendant, tape !' : 'Update the app for the mic. For now, tap!') : fr ? 'Pas de micro : tape vite !' : 'No mic: tap fast!'}</small>
+          <small>{fr ? 'Pas de micro : tape vite !' : 'No mic: tap fast!'}</small>
         </button>
       ) : (
         <div className="shout-meter"><i style={{ height: `${Math.round(level * 100)}%` }} /><b>{Math.round(level * 100)}</b></div>

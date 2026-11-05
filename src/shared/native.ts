@@ -22,6 +22,33 @@ export const IS_NATIVE = !!cap()?.isNativePlatform?.();
 /** Vrai dans la version installée depuis Google Play (pas de galerie ; achats par Google Play). */
 /** iPhone : une ancienne appli n'a pas le droit au micro, et iOS la ferme d'un coup si on le demande. Il faut donc d'abord la mettre à jour. */
 export const MIC_NEEDS_UPDATE = IS_NATIVE && IS_IOS && !/CanapetMic/.test(navigator.userAgent);
+/** Si l'appli meurt pendant la demande du micro, on s'en souvient au redémarrage et on ne redemande plus. */
+const MIC_FLAG = 'canapet.micTry';
+export const micCrashed = () => {
+  try {
+    return IS_NATIVE && localStorage.getItem(MIC_FLAG) === '1';
+  } catch {
+    return false;
+  }
+};
+export const micBegin = () => {
+  try {
+    localStorage.setItem(MIC_FLAG, '1');
+  } catch {
+    /* rien */
+  }
+};
+export const micEnd = () => {
+  try {
+    localStorage.removeItem(MIC_FLAG);
+  } catch {
+    /* rien */
+  }
+};
+/** Le micro ne doit pas être demandé dans cette appli. */
+export const micBlocked = () => MIC_NEEDS_UPDATE || micCrashed();
+/** Pour le diagnostic, dans les Réglages. */
+export const micStatus = () => (!IS_NATIVE ? 'web' : MIC_NEEDS_UPDATE ? 'old' : micCrashed() ? 'crash' : 'ok');
 export const IS_PLAY = /CanapetPlay/.test(navigator.userAgent);
 
 /** Ouvert depuis l'écran d'accueil (appli installée, sans barre d'adresse). */

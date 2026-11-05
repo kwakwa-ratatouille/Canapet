@@ -1,7 +1,7 @@
 // Manette des jeux au micro : le téléphone enregistre seulement quand on appuie.
 import { useEffect, useRef, useState } from 'react';
 import type { VoicePadData } from '../games/voiceShared';
-import { MIC_NEEDS_UPDATE } from '../shared/native';
+import { micBegin, micBlocked, micEnd } from '../shared/native';
 import type { Lang, ToTv } from '../shared/protocol';
 
 const CHUNK = 48000;
@@ -62,8 +62,11 @@ export function VoicePad({ data, lang, send }: { data: VoicePadData; lang: Lang;
     }
     setState('asking');
     try {
+      micBegin();
       if (!stream.current) stream.current = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true } });
+      micEnd();
     } catch {
+      micEnd();
       setState('denied');
       return;
     }
@@ -121,8 +124,8 @@ export function VoicePad({ data, lang, send }: { data: VoicePadData; lang: Lang;
           ▶️ {fr ? 'Écouter' : 'Listen'}
         </button>
       )}
-      {data.act === 'record' && MIC_NEEDS_UPDATE ? (
-        <p className="pad-small uc-note">{fr ? 'Pour le micro, mets à jour l’appli avec SideStore, ou rejoins la partie depuis Safari.' : 'For the mic, update the app with SideStore, or join the game from Safari.'}</p>
+      {data.act === 'record' && micBlocked() ? (
+        <p className="pad-small uc-note">{fr ? 'Le micro ne marche pas dans cette appli. Rejoins la partie depuis Safari ou Chrome pour ce jeu.' : 'The mic doesn’t work in this app. Join the game from Safari or Chrome for this one.'}</p>
       ) : data.act === 'record' && (data.sent || state === 'sent' ? (
         <p className="pad-title pulse">✅ {fr ? 'Envoyé ! Regarde la télé' : 'Sent! Watch the TV'}</p>
       ) : state === 'rec' ? (

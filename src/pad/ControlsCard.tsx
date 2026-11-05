@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DEFAULT_CONTROLS, loadControls, saveControls, type Btn, type Controls } from '../shared/controls';
+import { micStatus } from '../shared/native';
 import type { Lang } from '../shared/protocol';
 
 const LETTER: Record<Btn, string> = { a: 'A', b: 'B', c: 'X', d: 'Y' };
@@ -72,6 +73,17 @@ export function ControlsCard({ lang }: { lang: Lang }) {
             {fr ? 'Remettre les boutons comme au début' : 'Reset the buttons'}
           </button>
         )}
+      </section>
+      <section className="set-card">
+        <h3>🎙️ {fr ? 'Micro' : 'Microphone'}</h3>
+        <p className="set-help">
+          {{
+            web: fr ? '🟢 Navigateur : le micro est demandé au premier jeu vocal.' : '🟢 Browser: the mic is requested at the first voice game.',
+            ok: fr ? '🟢 Appli à jour : le micro peut être demandé.' : '🟢 App up to date: the mic can be requested.',
+            old: fr ? '🔴 Appli ancienne : mets-la à jour avec SideStore, ou joue aux jeux vocaux depuis Safari.' : '🔴 Old app: update it, or play voice games from Safari.',
+            crash: fr ? '🟠 Le micro a fait fermer l’appli. Pour les jeux vocaux, passe par Safari.' : '🟠 The mic closed the app. For voice games, use Safari.',
+          }[micStatus()]}
+        </p>
       </section>
       <section className="set-card">
         <h3>🎁 {fr ? 'Boîtes' : 'Boxes'}</h3>
