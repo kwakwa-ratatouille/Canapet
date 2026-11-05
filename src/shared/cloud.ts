@@ -79,6 +79,8 @@ export function googleReturn(): (Pending & { token: string | null; error: string
 }
 export const signOut = () => impl().then((m) => m.signOut());
 export const deleteAccount = () => impl().then((m) => m.deleteAccount());
+export const verifyPass = (token: string) => impl().then((m) => m.verifyPass(token));
+export const hasPass = (uid: string) => impl().then((m) => m.hasPass(uid));
 export const loadCloud = (uid: string) => impl().then((m) => m.load(uid));
 export const saveCloud = (uid: string, p: Progress) => impl().then((m) => m.save(uid, p));
 

@@ -1,8 +1,8 @@
 // Modèle économique : appli gratuite, et un Pass Soirée acheté une fois par l'hôte, qui débloque tout pour tout le salon.
 // Pas de pub, pas d'abonnement. Les objets se gagnent en jouant ; le Pass offre des bonbons, jamais d'avantage dans les jeux.
 
-/** Interrupteur des ventes : tant qu'il est faux (phase de test), tous les jeux sont ouverts et rien n'est à vendre. */
-export const SALES_ON = false;
+/** Interrupteur des ventes : tant qu'il est faux (phase de test), tous les jeux sont ouverts et rien n'est à vendre. ?ventes=1 montre les verrous pour tester. */
+export const SALES_ON = false || /[?&]ventes=1/.test(location.search + location.hash);
 
 /** Jeux toujours gratuits : de quoi faire une vraie soirée et donner envie du reste. */
 export const FREE_GAMES = ['trappe', 'tribunal', 'dessin', 'sumo', 'bombes', 'chaises', 'patate', 'reflexes'];

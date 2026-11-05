@@ -2,7 +2,7 @@ import { TEAMS } from '../games/teams';
 import { PresidentPad } from './PresidentPad';
 import type { PresidentPadData } from '../games/presidentShared';
 import { VOICES } from '../shared/sound';
-import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
+import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser, hasPass } from '../shared/cloud';
 import { GoogleLogo } from '../shared/GoogleLogo';
 import './editor.css';
 import { TiebreakPad, VotePad, WheelPad } from './PartyPad';
@@ -23,9 +23,10 @@ import { ScribblePad } from './ScribblePad';
 import { TraitorPad } from './TraitorPad';
 import { UndercoverPad } from './UndercoverPad';
 import { QuizPad } from './QuizPad';
+import { PassCard } from './PassCard';
 import type { QuizPadData } from '../games/quizShared';
 import { afterGame, questsNow } from '../shared/quests';
-import { isLocked, gameOfDay, SALES_ON } from '../shared/offer';
+import { isLocked, gameOfDay, PASS_GIFT, SALES_ON } from '../shared/offer';
 import { RoulettePad } from './RoulettePad';
 import { ReflexPad } from './ReflexPad';
 import type { ReflexPadData } from '../games/reflexShared';
@@ -114,10 +115,14 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
       setUser(u);
       synced.current = false;
       if (!u) {
+        setProfile((p) => (p.pass ? { ...p, pass: false } : p));
         setCloud('off');
         return;
       }
       setCloud('busy');
+      hasPass(u.uid)
+        .then((pass) => setProfile((p) => (!!p.pass === pass ? p : { ...p, pass })))
+        .catch(() => {});
       loadCloud(u.uid)
         .then((remote) => {
           setProgress((p) => merge(p, remote));
@@ -146,7 +151,12 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const disconnect = () => {
     void signOut();
   };
-  const account = { user, cloud, connect, disconnect };
+  // Pass obtenu : bonbons offerts seulement pour un nouvel achat, pas quand on le retrouve
+  const gotPass = (bought: boolean) => {
+    setProfile((p) => ({ ...p, pass: true }));
+    if (bought) setProgress((p) => ({ ...p, coins: p.coins + PASS_GIFT }));
+  };
+  const account = { user, cloud, connect, disconnect, gotPass };
   /** Quitter la partie : la télé est prévenue, on revient à l'accueil (on peut revenir avec le même code). */
   const leave = () => {
     if (!confirm(lang === 'fr' ? 'Quitter la partie ?' : 'Leave the game?')) return;
@@ -396,6 +406,7 @@ function PadScreenView({
   edit: () => void;
 }) {
   const [picking, setPicking] = useState(false);
+  const [passOpen, setPassOpen] = useState(false);
   const [touring, setTouring] = useState(false);
   const [noTour, setNoTour] = useState<string[]>(() => store<string[]>('noTour', []));
   const [moodAsked, setMoodAsked] = useState(() => store<boolean>('moodAsked', false));
@@ -405,6 +416,19 @@ function PadScreenView({
   const [opts, setOpts] = useState<Record<string, number>>({});
   switch (screen.s) {
     case 'lobby':
+      if (passOpen)
+        return (
+          <PassCard
+            lang={lang}
+            signedIn={!!account.user}
+            connect={account.connect}
+            onGot={(bought) => {
+              account.gotPass(bought);
+              setPassOpen(false);
+            }}
+            onClose={() => setPassOpen(false)}
+          />
+        );
       if (optFor && screen.host) {
         const def = screen.games.find((g) => g.id === optFor)!;
         return (
@@ -496,14 +520,18 @@ function PadScreenView({
               {screen.games.map((g) => {
                 const def = g;
                 const ids = screen.games.map((x) => x.id);
-                const locked = isLocked(g.id, ids, !!profile.pass);
+                const locked = isLocked(g.id, ids, !!profile.pass || !!screen.anyPass);
                 return (
                   <button
                     key={g.id}
                     className="game-card"
                     style={{ ['--g' as string]: def.color }}
-                    disabled={g.soon || locked}
+                    disabled={g.soon}
                     onClick={() => {
+                      if (locked) {
+                        setPassOpen(true);
+                        return;
+                      }
                       if (def.options?.length) {
                         setOpts({});
                         setOptFor(g.id);
@@ -588,6 +616,11 @@ function PadScreenView({
                 </div>
               )}
               <p className="pad-title">{t(lang, 'hostAsk')}</p>
+              {SALES_ON && !profile.pass && !screen.anyPass && (
+                <button className="btn sun" onClick={() => setPassOpen(true)}>
+                  🎟️ {lang === 'fr' ? 'Pass Soirée : tous les jeux pour le salon' : 'Party Pass: all games for the room'}
+                </button>
+              )}
               <button className="big-card rose" onClick={() => setTouring(true)}>
                 <svg viewBox="0 0 60 60" className="bc-icon" aria-hidden>
                   <path
@@ -869,6 +902,7 @@ interface Account {
   cloud: 'off' | 'busy' | 'ok' | 'error';
   connect: () => void;
   disconnect: () => void;
+  gotPass: (bought: boolean) => void;
 }
 
 function ProgressCard({ progress, lang, onShop, account }: { progress: Progress; lang: Lang; onShop: () => void; account: Account }) {

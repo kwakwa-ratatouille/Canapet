@@ -16,7 +16,7 @@ fs.writeFileSync(f, s);
 
 if (PLAY) {
   const main = 'android/app/src/main/java/com/canapet/app/MainActivity.java';
-  fs.writeFileSync(main, fs.readFileSync(main, 'utf8').replace(/ *registerPlugin\(GalleryPlugin\.class\);\r?\n?/, ''));
+  fs.writeFileSync(main, fs.readFileSync(main, 'utf8').replace(/registerPlugin\(GalleryPlugin\.class\);/, 'registerPlugin(BillingPlugin.class);'));
   // Reconnu par le site : pas de galerie, et plus tard l'achat par Google Play
   const conf = 'android/app/src/main/assets/capacitor.config.json';
   const c = JSON.parse(fs.readFileSync(conf, 'utf8'));
@@ -25,6 +25,7 @@ if (PLAY) {
   const g = 'android/app/build.gradle';
   let b = fs.readFileSync(g, 'utf8');
   const n = process.env.BUILD_NUMBER || '1';
+  b = b.replace(/dependencies \{/, () => 'dependencies {\n    implementation "com.android.billingclient:billing:9.1.0"');
   b = b.replace(/versionCode \d+/, `versionCode ${100 + Number(n)}`).replace(/versionName "[^"]*"/, `versionName "1.0.${n}"`);
   // Sans clé (secrets pas encore ajoutés), on vérifie seulement que la version Play se fabrique
   if (process.env.SIGN === '1') {

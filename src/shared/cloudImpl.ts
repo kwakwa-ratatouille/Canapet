@@ -1,6 +1,7 @@
 // Partie Firebase de cloud.ts (chargée seulement quand on en a besoin).
 import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { deleteUser, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as fbSignOut, type Auth } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { get, getDatabase, goOffline, goOnline, onValue, ref, remove, serverTimestamp, set, type Database, type DataSnapshot } from 'firebase/database';
 import type { CloudUser } from './cloud';
 import type { Progress } from './progress';
@@ -147,6 +148,17 @@ export async function relayTokens(id: string, k: string, idToken: string, here: 
   await set(ref(db, `relaisGoogle/${id}`), { d: b64(all), t: serverTimestamp() });
   // Ce navigateur n'était pas connecté avant (l'appli est ailleurs) : on le laisse comme il était
   if (!here && !before) fbSignOut(auth).catch(() => {});
+}
+
+/** Le serveur vérifie l'achat auprès de Google et inscrit le Pass sur le compte. */
+export async function verifyPass(token: string) {
+  const res = await httpsCallable<{ token: string }, { pass: boolean }>(getFunctions(app, 'europe-west1'), 'verifyPass')({ token });
+  return res.data.pass;
+}
+
+/** Ce compte a-t-il le Pass ? (seul le serveur peut l'écrire) */
+export async function hasPass(uid: string) {
+  return (await get(ref(db, `entitlements/${uid}/pass`))).exists();
 }
 
 export async function load(uid: string): Promise<Partial<Progress> | null> {

@@ -178,3 +178,6 @@
 .report-btn { align-self: flex-end; padding: 6px 12px; border: 3px solid #3a2140; border-radius: 14px; background: #fff; color: #3a2140; font-weight: 700; font-size: 14px; }
 
 .mood-ask { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 4px solid #3a2140; border-radius: 18px; background: #fff; text-align: center; }
+
+.pass-card { gap: 10px; text-align: center; }
+.pass-card ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; text-align: left; }

@@ -81,7 +81,7 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
           SIGN: ${{ secrets.UPLOAD_KEY_BASE64 != '' && '1' || '0' }}
         run: |
-          cp native/MainActivity.java android/app/src/main/java/com/canapet/app/
+          cp native/MainActivity.java native/BillingPlugin.java android/app/src/main/java/com/canapet/app/
           node native/patch.cjs
       - name: Clé d'envoi
         if: env.UPLOAD_KEY_BASE64 != ''

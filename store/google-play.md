@@ -47,4 +47,9 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 ## Quand on activera les ventes
 1. Créer la micro-entreprise et le profil de paiement Google.
 2. Créer le produit `pass_soiree` (achat unique) dans la console.
-3. Brancher Google Play Billing et la vérification de l'achat par un serveur, puis passer `SALES_ON` à vrai dans `src/shared/offer.ts`.
+   Prix : 3,99 €.
+3. Passer le projet Firebase en formule Blaze (carte demandée, gratuit dans les limites, mettre une alerte de budget).
+4. Mettre en ligne le serveur : `npx firebase-tools login` puis `npx firebase-tools deploy --only functions` (dossier du projet), et coller les règles `database.rules.json`.
+5. Donner au compte de service du projet (`canapet-31bb7@appspot.gserviceaccount.com` ou celui indiqué par la console) l'accès « Voir les données financières » et « Gérer les commandes » dans la console Play > Utilisateurs et autorisations, et activer « Google Play Android Developer API » dans Google Cloud.
+6. Tester avec un compte « testeur de licence » (achat fictif), puis passer `SALES_ON` à vrai dans `src/shared/offer.ts`.
+7. Sécurité des données : ajouter « Historique d'achats ».
