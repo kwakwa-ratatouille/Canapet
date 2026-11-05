@@ -41,6 +41,10 @@ export function ControlsCard({ lang }: { lang: Lang }) {
           📳 {fr ? 'Vibrations' : 'Vibration'}
           <b>{c.vibrate ? '✓' : ''}</b>
         </button>
+        <button className={`ctl-toggle ${!c.noBoxAnim ? 'on' : ''}`} onClick={() => update({ ...c, noBoxAnim: !c.noBoxAnim })} aria-pressed={!c.noBoxAnim}>
+          🎰 {fr ? 'Animation des boîtes' : 'Box animation'}
+          <b>{!c.noBoxAnim ? '✓' : ''}</b>
+        </button>
         <div className="ctl-size">
           <span>{fr ? 'Taille des boutons' : 'Button size'}</span>
           {[0.85, 1, 1.15].map((s, i) => (

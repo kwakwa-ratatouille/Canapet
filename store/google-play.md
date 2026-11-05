@@ -37,7 +37,7 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 - Violence : cartoon (bagarres, duel au pistolet dessiné dans le Bar des Bobards).
 - Humour grossier et allusions : oui hors mode famille. Bar fictif : mention d'alcool possible.
 - Contenu créé par les joueurs : oui (pseudos, textes, dessins, photos), avec masquage et exclusion par l'hôte.
-- Argent, jeux d'argent : non.
+- Argent, jeux d'argent : pas de mise ni de gain d'argent. MAIS le Coffre à clé est un « achat d'objets aléatoires » : répondre OUI à cette question (PEGI ajoute la mention « Inclut des achats aléatoires »).
 - Public cible : 13 ans et plus (pas d'enfants).
 
 ## Test fermé
@@ -49,6 +49,13 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 3. Dans Stripe > Développeurs > Webhooks, ajouter `https://europe-west1-canapet-31bb7.cloudfunctions.net/stripeWebhook` avec les événements `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.created` et `charge.dispute.closed`. La clé `whsec_…` donnée par Stripe est le STRIPE_WEBHOOK_SECRET.
 4. Commencer avec les clés de test de Stripe (`sk_test_…`, carte d'essai), passer `SALES_ON` à vrai, tester, puis mettre les vraies clés.
 5. Adhérer à un médiateur de la consommation. Donner à Claude le SIRET, l'adresse, le médiateur (nom + site) et la mention de TVA : à remplir en haut de `src/pages/Legal.tsx`. Faire relire les pages légales (renonciation, et fonction de rétractation en ligne : savoir si elle reste due quand le client a renoncé). Vérifier sur un paiement d'essai que le reçu porte bien la phrase de renonciation. Activer les reçus par e-mail dans Stripe, et vérifier la TVA avec un comptable.
+
+## Boîtes et clés
+- Chances affichées dans l'onglet Boîtes avant d'ouvrir, comme Google l'exige pour les objets aléatoires payants. Liste complète sur le téléphone (« Voir tout ce qu'on peut gagner ») et sur le site.
+- Produits Play à créer en plus (consommables) : `keys_1` 0,99 €, `keys_5` 3,99 €, `keys_12` 7,99 €.
+- Belgique et Pays-Bas : coffre masqué d'après la langue et le fuseau de l'appareil (`KEYS_ALLOWED`). Ce filtre se contourne : exclure aussi ces pays pour ces produits dans la console Play si c'est possible, et refuser les cartes de ces pays dans Stripe (Radar).
+- À faire relire par un juriste AVANT d'activer les clés : boîtes payantes et moins de 18 ans. Sans cet accord, garder les boîtes en bonbons seulement.
+- Déployer aussi la fonction `openChest`, et coller les règles (`keys`).
 
 ## Quand on activera les ventes
 1. Créer la micro-entreprise et le profil de paiement Google.

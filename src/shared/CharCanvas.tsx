@@ -4,16 +4,18 @@ import { LIGHT } from './device';
 import type { Profile } from './protocol';
 
 interface Props {
-  profile: Pick<Profile, 'food' | 'color' | 'hat' | 'acc' | 'selfie' | 'eyes' | 'pose'>;
+  profile: Pick<Profile, 'food' | 'color' | 'hat' | 'acc' | 'selfie' | 'eyes' | 'pose' | 'skin'>;
   size: number;
   ghost?: boolean;
   still?: boolean;
   mood?: Mood;
   arms?: boolean;
+  /** Pose de victoire. */
+  wp?: string;
 }
 
 /** Un personnage dans un petit canvas (salon, résultats, manette). */
-export function CharCanvas({ profile, size, ghost, still, mood, arms }: Props) {
+export function CharCanvas({ profile, size, ghost, still, mood, arms, wp }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const opts = useRef(profile);
   opts.current = profile;
@@ -37,6 +39,8 @@ export function CharCanvas({ profile, size, ghost, still, mood, arms }: Props) {
         acc: p.acc,
         eyes: p.eyes,
         pose: p.pose,
+        skin: p.skin ?? '',
+        wp,
         selfie: selfieImage(p.selfie),
         t: animated ? now / 1000 + size : 0,
         ghost,
@@ -54,7 +58,7 @@ export function CharCanvas({ profile, size, ghost, still, mood, arms }: Props) {
       clearTimeout(late);
       off();
     };
-  }, [size, ghost, still, mood, arms, profile.food, profile.color, profile.hat, profile.acc, profile.selfie]);
+  }, [size, ghost, still, mood, arms, wp, profile.skin, profile.pose, profile.food, profile.color, profile.hat, profile.acc, profile.selfie]);
 
   return <canvas ref={ref} style={{ width: size, height: size * 1.25 }} className="char" />;
 }

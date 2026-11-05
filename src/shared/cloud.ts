@@ -82,6 +82,8 @@ export const deleteAccount = () => impl().then((m) => m.deleteAccount());
 export const verifyPurchase = (product: string, token: string) => impl().then((m) => m.verifyPurchase(product, token));
 export const createCheckout = (product: string, consent: boolean) => impl().then((m) => m.createCheckout(product, consent));
 export const loadItems = (uid: string) => impl().then((m) => m.loadItems(uid));
+export const loadKeys = (uid: string) => impl().then((m) => m.loadKeys(uid));
+export const openChestCloud = (owned: string[]) => impl().then((m) => m.openChest(owned));
 export const loadCloud = (uid: string) => impl().then((m) => m.load(uid));
 export const saveCloud = (uid: string, p: Progress) => impl().then((m) => m.save(uid, p));
 

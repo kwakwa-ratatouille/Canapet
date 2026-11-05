@@ -14,7 +14,9 @@ import { QR } from '../shared/QR';
 import { VOICES, audioLocked, isMuted, setMuted, unlockAudio } from '../shared/sound';
 import { EVENTS, Session, TOURNAMENT_LEN, type Player } from './session';
 import { stickerCloud } from '../games/draw';
-import { ReplayRecorder, drawReactions } from './fx';
+import { ReplayRecorder, cosmeticsBusy, drawReactions } from './fx';
+import { WIN_POSES } from '../shared/lootTable';
+import '../pad/box.css';
 import { Recap } from './Recap';
 import { Tiebreak, Vote, Wheel } from './PartyViews';
 import { CURSES } from './party';
@@ -184,7 +186,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
         <span className="tv-top-right">
           {session.family && <span className="family-pill">👨‍👩‍👧 {t(lang, 'family')}</span>}
           {session.teams && <span className="family-pill teams-pill">🍓 {t(lang, 'teams')} 🌿</span>}
-          <span className="count-pill">{t(lang, 'playersCount', { n: connected })}</span>
+          <span className="count-pill">{t(lang, 'playersCount', { n: connected, max: session.roomLimit() })}</span>
         </span>
       </header>
       <div className="lobby-main">
@@ -488,7 +490,7 @@ function ReactionLayer({ session }: { session: Session }) {
     const loop = () => {
       raf = requestAnimationFrame(loop);
       const now = performance.now();
-      const busy = session.reactions.some((r) => now - r.born < 3300) || (session.combo && now - session.combo.born < 2900);
+      const busy = cosmeticsBusy(session, now) || session.reactions.some((r) => now - r.born < 3300) || (session.combo && now - session.combo.born < 2900);
       if (!busy && !drawn) return;
       g.setTransform(scale, 0, 0, scale, 0, 0);
       g.clearRect(0, 0, W, H);
@@ -1113,9 +1115,14 @@ function Podium({ players, lang, session }: { players: Player[]; lang: 'fr' | 'e
           return p ? (
             <div key={p.pid} className={`step step${place}`}>
               {place === 1 && <span className="podium-star" dangerouslySetInnerHTML={{ __html: STAR }} />}
-              <div className="podium-char">
-                <CharCanvas profile={p} size={[170, 210, 160][i]} mood="win" arms />
-              </div>
+              {(() => {
+                const wp = WIN_POSES.find((x) => x.id === p.winPose);
+                return (
+                  <div className={`podium-char ${wp?.anim ?? ''}`}>
+                    <CharCanvas profile={p} size={[170, 210, 160][i]} mood="win" arms={!wp?.pose} wp={wp?.pose} />
+                  </div>
+                );
+              })()}
               <div className="block">
                 <b>{place}</b>
                 <span>{p.name}</span>

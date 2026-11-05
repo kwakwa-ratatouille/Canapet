@@ -10,6 +10,13 @@ export interface Habits {
   done: string[];
   /** Jeux différents essayés cette semaine. */
   tried: string[];
+  /** Défis du jour. */
+  qDay?: number;
+  dayCounts?: Record<string, number>;
+  dayDone?: string[];
+  /** Jours joués cette semaine et caisse de la semaine déjà reçue. */
+  weekDays?: number[];
+  weekBox?: boolean;
 }
 
 export const NEW_HABITS: Habits = { day: 0, streak: 0, week: 0, counts: {}, done: [], tried: [] };
@@ -33,6 +40,13 @@ const QUESTS: Quest[] = [
   { id: 'crown', n: 1, gift: 100, label: { fr: 'Monte sur un podium de tournoi', en: 'Reach a tournament podium' } },
 ];
 
+const DAILY_QUESTS: Quest[] = [
+  { id: 'dPlay', n: 3, gift: 30, label: { fr: 'Joue 3 parties', en: 'Play 3 games' } },
+  { id: 'dWin', n: 1, gift: 40, label: { fr: 'Gagne une partie', en: 'Win a game' } },
+  { id: 'dTop', n: 2, gift: 30, label: { fr: 'Finis 2 fois dans les 3 premiers', en: 'Finish top 3 twice' } },
+  { id: 'dPlay2', n: 5, gift: 50, label: { fr: 'Joue 5 parties', en: 'Play 5 games' } },
+];
+
 const dayOf = (now: number) => Math.floor((now - new Date(now).getTimezoneOffset() * 60000) / 86400000);
 // Les semaines commencent le lundi (le 1er janvier 1970 était un jeudi)
 const weekOf = (now: number) => Math.floor((dayOf(now) + 3) / 7);
@@ -48,7 +62,36 @@ export function weekQuests(now = Date.now()): Quest[] {
   });
 }
 
-const fresh = (h: Habits, now: number): Habits => (h.week === weekOf(now) ? h : { ...h, week: weekOf(now), counts: {}, done: [], tried: [] });
+const freshWeek = (h: Habits, now: number): Habits => (h.week === weekOf(now) ? h : { ...h, week: weekOf(now), counts: {}, done: [], tried: [], weekDays: [], weekBox: false });
+const fresh = (h: Habits, now: number): Habits => {
+  const w = freshWeek(h, now);
+  return w.qDay === dayOf(now) ? w : { ...w, qDay: dayOf(now), dayCounts: {}, dayDone: [] };
+};
+
+/** Les 2 défis du jour, les mêmes pour tout le monde. */
+export function dayQuests(now = Date.now()): Quest[] {
+  const d = dayOf(now);
+  return [DAILY_QUESTS[d % 2 ? 0 : 3], DAILY_QUESTS[d % 3 === 0 ? 2 : 1]];
+}
+
+export function dailyNow(h: Habits | undefined, now = Date.now()) {
+  const cur = fresh(h ?? NEW_HABITS, now);
+  return dayQuests(now).map((q) => ({ ...q, have: Math.min(q.n, cur.dayCounts?.[q.id] ?? 0), ok: !!cur.dayDone?.includes(q.id) }));
+}
+
+/** Où on en est de la semaine : jours joués et caisse. */
+export function weekNow(h: Habits | undefined, now = Date.now()) {
+  const cur = fresh(h ?? NEW_HABITS, now);
+  const today = dayOf(now);
+  const monday = weekOf(now) * 7 - 3;
+  const days = cur.weekDays ?? [];
+  return {
+    days: days.length,
+    boxGot: !!cur.weekBox,
+    todayDone: days.includes(today),
+    pips: Array.from({ length: 7 }, (_, i) => (days.includes(monday + i) ? 'on' : monday + i === today ? 'today' : monday + i < today ? 'miss' : '')),
+  };
+}
 
 export function questsNow(h: Habits | undefined, now = Date.now()) {
   const cur = fresh(h ?? NEW_HABITS, now);
@@ -65,6 +108,28 @@ export function afterGame(h0: Habits | undefined, e: { rank: number; game?: stri
     daily = DAILY[(streak - 1) % DAILY.length];
     h = { ...h, day: today, streak };
   }
+  const boxes: string[] = [];
+  if (!e.podium) {
+    const days = h.weekDays ?? [];
+    // Première partie du jour : la caisse gratuite. Les 7 jours de la semaine : la grosse.
+    if (!days.includes(today)) {
+      boxes.push('petite');
+      h = { ...h, weekDays: [...days, today] };
+    }
+    if ((h.weekDays ?? []).length >= 7 && !h.weekBox) {
+      boxes.push('grosse');
+      h = { ...h, weekBox: true };
+    }
+  }
+  const dc = { ...h.dayCounts };
+  const dBump = (id: string) => (dc[id] = (dc[id] ?? 0) + 1);
+  if (!e.podium) {
+    dBump('dPlay');
+    dBump('dPlay2');
+    if (e.rank === 1) dBump('dWin');
+    if (e.rank >= 1 && e.rank <= 3) dBump('dTop');
+  }
+  const dayFinished = dayQuests(now).filter((q) => !h.dayDone?.includes(q.id) && (dc[q.id] ?? 0) >= q.n);
   const counts = { ...h.counts };
   const bump = (id: string, by = 1) => (counts[id] = (counts[id] ?? 0) + by);
   const tried = e.game && !h.tried.includes(e.game) ? [...h.tried, e.game] : h.tried;
@@ -77,12 +142,13 @@ export function afterGame(h0: Habits | undefined, e: { rank: number; game?: stri
     if (e.rank >= 1 && e.rank <= 3) bump('top');
     counts.try = tried.length;
   }
-  const finished = weekQuests(now).filter((q) => !h.done.includes(q.id) && (counts[q.id] ?? 0) >= q.n);
+  const finished = [...weekQuests(now).filter((q) => !h.done.includes(q.id) && (counts[q.id] ?? 0) >= q.n)];
   return {
-    habits: { ...h, counts, tried, done: [...h.done, ...finished.map((q) => q.id)] },
+    habits: { ...h, counts, tried, done: [...h.done, ...finished.map((q) => q.id)], dayCounts: dc, dayDone: [...(h.dayDone ?? []), ...dayFinished.map((q) => q.id)] },
+    boxes,
     daily,
     streak: h.streak,
-    quests: finished.map((q) => ({ label: q.label, gift: q.gift })),
-    coins: daily + finished.reduce((s, q) => s + q.gift, 0),
+    quests: [...finished, ...dayFinished].map((q) => ({ label: q.label, gift: q.gift })),
+    coins: daily + [...finished, ...dayFinished].reduce((s, q) => s + q.gift, 0),
   };
 }

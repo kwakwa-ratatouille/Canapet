@@ -36,6 +36,7 @@ export function ProductCard({ id, lang, signedIn, connect, onGot, onClose }: { i
       {id === PASS && (
         <ul>
           <li>🎮 {fr ? `Tous les jeux, en plus des ${FREE_GAMES.length} gratuits` : `All games, on top of the ${FREE_GAMES.length} free ones`}</li>
+          <li>👥 {fr ? 'Jusqu’à 12 joueurs au lieu de 6' : 'Up to 12 players instead of 6'}</li>
           <li>🏆 {fr ? 'Le tournoi avec tout le catalogue' : 'Tournaments with the whole catalogue'}</li>
           <li>🍬 {fr ? `${PASS_GIFT} bonbons offerts` : `${PASS_GIFT} free candies`}</li>
         </ul>

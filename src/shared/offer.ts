@@ -10,6 +10,8 @@ export const SALES_ON = false || /[?&]ventes=1/.test(location.search + location.
 export const FREE_GAMES = ['trappe', 'tribunal', 'dessin', 'sumo', 'bombes', 'chaises', 'patate', 'reflexes'];
 
 export const PASS = 'pass_soiree';
+/** Joueurs dans un salon sans Pass Soirée (12 avec). */
+export const FREE_PLAYERS = 6;
 /** Bonbons offerts à l'achat du Pass. */
 export const PASS_GIFT = 500;
 
@@ -35,17 +37,34 @@ export const COLLECTIONS: Product[] = [
   { id: 'coll_plage', emoji: '🏖️', name: { fr: 'Collection Plage', en: 'Beach collection' }, desc: { fr: 'Ananas, aileron de requin et tuba.', en: 'Pineapple, shark fin and snorkel.' } },
 ];
 
+/** Clés du coffre : achat à usage unique. Le serveur tient le compte et ouvre le coffre. */
+export const KEY_PACKS: Product[] = [
+  { id: 'keys_1', emoji: '🔑', name: { fr: '1 clé', en: '1 key' }, desc: { fr: 'Ouvre un coffre : légendaire 88 %, mythique 12 %.', en: 'Opens a chest: legendary 88%, mythic 12%.' } },
+  { id: 'keys_5', emoji: '🔑', name: { fr: '5 clés', en: '5 keys' }, desc: { fr: 'Ouvre 5 coffres : légendaire 88 %, mythique 12 %.', en: 'Opens 5 chests: legendary 88%, mythic 12%.' } },
+  { id: 'keys_12', emoji: '🔑', name: { fr: '12 clés', en: '12 keys' }, desc: { fr: 'Ouvre 12 coffres : légendaire 88 %, mythique 12 %.', en: 'Opens 12 chests: legendary 88%, mythic 12%.' } },
+];
+
+/** Les boîtes payantes sont interdites en Belgique, et incertaines aux Pays-Bas : pas de coffre là-bas (selon la langue et le fuseau de l'appareil). */
+const tz = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone ?? '';
+  } catch {
+    return '';
+  }
+})();
+export const KEYS_ALLOWED = !/Brussels|Amsterdam/.test(tz) && !/-(BE|NL)$/i.test(navigator.language) && !/^nl\b/i.test(navigator.language);
+
 export const PASS_PRODUCT: Product = {
   id: PASS,
   emoji: '🎟️',
   name: { fr: 'Pass Soirée', en: 'Party Pass' },
-  desc: { fr: 'Un seul achat, une seule personne, et tout le salon joue à tous les jeux, à chaque soirée.', en: 'One purchase, one person, and the whole room plays every game, every party.' },
+  desc: { fr: 'Un seul achat, une seule personne, et tout le salon joue à tous les jeux, à chaque soirée, jusqu’à 12 joueurs au lieu de 6.', en: 'One purchase, one person, and the whole room plays every game, every party, with up to 12 players instead of 6.' },
 };
 
 /** Prix affichés sur le site (ceux facturés sont sur le serveur, functions/index.js). */
-export const WEB_PRICE = (id: string) => (id === PASS ? '3,99 €' : '1,99 €');
+export const WEB_PRICE = (id: string) => (id === PASS ? '3,99 €' : id === 'keys_1' ? '0,99 €' : id === 'keys_5' ? '3,99 €' : id === 'keys_12' ? '7,99 €' : '1,99 €');
 
-export const productById = (id: string) => [PASS_PRODUCT, ...PACKS, ...COLLECTIONS].find((p) => p.id === id);
+export const productById = (id: string) => [PASS_PRODUCT, ...PACKS, ...COLLECTIONS, ...KEY_PACKS].find((p) => p.id === id);
 
 /** Option « Questions » des jeux à packs : 0 = classiques, puis un numéro par pack. */
 export const PACK_OPTION = {

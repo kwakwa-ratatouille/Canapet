@@ -4,6 +4,7 @@
 
 import { characterSvg, faceSlot, PLAYER_COLORS, CHARACTERS } from './art/canapet-art.js';
 import { LIGHT } from './device';
+import { SKINS, type SkinDef } from './lootTable';
 import type { Lang } from './protocol';
 
 type Name = Record<Lang, string>;
@@ -91,6 +92,13 @@ export const HATS: { id: string; name: Name }[] = [
   { id: 'dj', name: { fr: 'Casque de DJ', en: 'DJ headphones' } },
   { id: 'frites', name: { fr: 'Couronne de frites', en: 'Fry crown' } },
   { id: 'pizzahat', name: { fr: 'Part de pizza', en: 'Pizza slice' } },
+  { id: 'astronaute', name: { fr: 'Casque d’astronaute', en: 'Space helmet' } },
+  { id: 'neon', name: { fr: 'Halo néon', en: 'Neon halo' } },
+  { id: 'flammes', name: { fr: 'Crinière de feu', en: 'Fire mane' } },
+  { id: 'samourai', name: { fr: 'Casque samouraï', en: 'Samurai helmet' } },
+  { id: 'pharaon', name: { fr: 'Coiffe de pharaon', en: 'Pharaoh headdress' } },
+  { id: 'dragon', name: { fr: 'Roi dragon', en: 'Dragon king' } },
+  { id: 'cosmique', name: { fr: 'Couronne cosmique', en: 'Cosmic crown' } },
 ];
 
 export const ACCS: { id: string; name: Name }[] = [
@@ -110,6 +118,11 @@ export const ACCS: { id: string; name: Name }[] = [
   { id: 'crocs', name: { fr: 'Crocs de vampire', en: 'Vampire fangs' } },
   { id: 'tuba', name: { fr: 'Masque et tuba', en: 'Snorkel' } },
   { id: 'coeurs', name: { fr: 'Lunettes cœur', en: 'Heart glasses' } },
+  { id: 'vr', name: { fr: 'Casque de réalité virtuelle', en: 'VR headset' } },
+  { id: 'cape', name: { fr: 'Cape de héros', en: 'Hero cape' } },
+  { id: 'cyborg', name: { fr: 'Œil de cyborg', en: 'Cyborg eye' } },
+  { id: 'ailes', name: { fr: 'Ailes d’ange', en: 'Angel wings' } },
+  { id: 'ailesdragon', name: { fr: 'Ailes de dragon', en: 'Dragon wings' } },
 ];
 
 export const EYE_LIST: { id: string; name: Name }[] = [
@@ -136,6 +149,9 @@ export const POSE_LIST: { id: string; name: Name }[] = [
   { id: 'shrug', name: { fr: 'J’sais pas', en: 'Shrug' } },
   { id: 'think', name: { fr: 'Le penseur', en: 'Thinker' } },
   { id: 'salute', name: { fr: 'Salut militaire', en: 'Salute' } },
+  { id: 'point', name: { fr: 'Doigt vers le ciel', en: 'Point up' } },
+  { id: 'double', name: { fr: 'Salut la foule', en: 'Hello crowd' } },
+  { id: 'rock', name: { fr: 'Rock’n’roll', en: 'Rock’n’roll' } },
 ];
 
 export type Mood = 'happy' | 'sad' | 'wow' | 'win' | 'toot';
@@ -158,6 +174,68 @@ export interface DrawOpts {
   arms?: boolean;
   /** Joueur déconnecté ou éliminé : transparent. */
   ghost?: boolean;
+  /** Couleur spéciale du corps (sinon celle du joueur qui a cette couleur de baskets). */
+  skin?: string;
+  /** Pose de victoire. */
+  wp?: string;
+}
+
+// À la télé, les jeux ne connaissent que la couleur du joueur : elle est unique, elle donne donc aussi son skin.
+const roomSkins = new Map<string, string>();
+export function setRoomSkins(list: { color: string; skin?: string }[]) {
+  roomSkins.clear();
+  list.forEach((p) => p.skin && roomSkins.set(p.color, p.skin));
+}
+
+/** Repeint le perso une seule fois, sur son image en cache : aucun coût pendant le jeu. */
+function paintSkin(c: HTMLCanvasElement, s: SkinDef) {
+  const copy = document.createElement('canvas');
+  copy.width = c.width;
+  copy.height = c.height;
+  copy.getContext('2d')!.drawImage(c, 0, 0);
+  const g = c.getContext('2d')!;
+  const grad = g.createLinearGradient(0, 0, c.width * 0.5, c.height);
+  s.colors.forEach((col, i) => grad.addColorStop(s.colors.length > 1 ? i / (s.colors.length - 1) : 0, col));
+  g.globalCompositeOperation = 'color';
+  g.fillStyle = grad;
+  g.fillRect(0, 0, c.width, c.height);
+  if (s.dark) {
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = `rgba(40,30,110,${s.dark})`;
+    g.fillRect(0, 0, c.width, c.height);
+  }
+  if (s.shine) {
+    const band = g.createLinearGradient(0, 0, c.width, c.height);
+    band.addColorStop(0.3, 'rgba(255,255,255,0)');
+    band.addColorStop(0.45, 'rgba(255,255,255,0.75)');
+    band.addColorStop(0.55, 'rgba(255,255,255,0.1)');
+    band.addColorStop(0.68, 'rgba(255,255,255,0.5)');
+    band.addColorStop(0.78, 'rgba(255,255,255,0)');
+    g.globalCompositeOperation = 'overlay';
+    g.fillStyle = band;
+    g.fillRect(0, 0, c.width, c.height);
+  }
+  if (s.stars) {
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = '#fff';
+    // Toujours les mêmes étoiles pour un même perso
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 46; i++) {
+      const r = c.width * (0.004 + rnd() * 0.011);
+      g.beginPath();
+      g.arc(rnd() * c.width, rnd() * c.height, r, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  // On ne garde que la forme du perso
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(copy, 0, 0);
+  if (s.alpha) {
+    g.fillStyle = `rgba(0,0,0,${s.alpha})`;
+    g.fillRect(0, 0, c.width, c.height);
+  }
+  g.globalCompositeOperation = 'source-over';
 }
 
 // Repère du module : viewBox -6 -36 132 180, sol à y = 138, centre à x = 60, tête vers y ≈ 24.
@@ -181,7 +259,8 @@ function sprite(o: DrawOpts): HTMLCanvasElement | null {
   const acc = o.acc && o.acc !== 'aucun' ? o.acc : '';
   const mood = o.mood ?? 'happy';
   const selfie = !!o.selfie;
-  const key = `${o.food}|${o.color}|${hat}|${acc}|${mood}|${selfie}|${!!o.arms}|${o.eyes ?? ''}|${o.pose ?? ''}`;
+  const skin = o.skin ?? roomSkins.get(o.color) ?? '';
+  const key = `${o.food}|${o.color}|${hat}|${acc}|${mood}|${selfie}|${!!o.arms}|${o.eyes ?? ''}|${o.pose ?? ''}|${skin}|${o.wp ?? ''}`;
   if (sprites.has(key)) return sprites.get(key)!;
   sprites.set(key, null);
   const svg = characterSvg(CHARACTERS[o.food] ? o.food : 'coussin', o.color, {
@@ -192,6 +271,7 @@ function sprite(o: DrawOpts): HTMLCanvasElement | null {
     arms: o.arms,
     eyes: o.eyes,
     pose: o.pose,
+    wp: o.wp,
   }).replace('<svg ', `<svg width="${VB.w * RES}" height="${VB.h * RES}" `);
   const img = new Image();
   img.onload = () => {
@@ -199,6 +279,8 @@ function sprite(o: DrawOpts): HTMLCanvasElement | null {
     c.width = Math.ceil(VB.w * RES);
     c.height = Math.ceil(VB.h * RES);
     c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+    const def = SKINS.find((x) => x.id === skin);
+    if (def) paintSkin(c, def);
     sprites.set(key, c);
     listeners.forEach((f) => f());
   };

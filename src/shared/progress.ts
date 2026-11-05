@@ -1,6 +1,7 @@
 // Progression du joueur, gardée sur son téléphone : expérience, niveaux, bonbons 🍬 et objets achetés.
 // (Plus tard : synchronisée avec le compte Google quand le projet Firebase existera.)
 import { save, store } from './device';
+import { LOOT_PRICES, type LootKind, type Rarity } from './lootTable';
 import type { Habits } from './quests';
 
 export interface Progress {
@@ -12,86 +13,18 @@ export interface Progress {
   wins: number;
   /** Série de jours et défis de la semaine. */
   habits?: Habits;
+  /** Boîtes gratuites en attente d'ouverture, compteurs de garantie, clés d'essai. */
+  boxes?: Record<string, number>;
+  pity?: Record<string, number>;
+  testKeys?: number;
   /** Dernière partie déjà comptée (code de la télé + numéro), pour ne jamais compter deux fois. */
   last: string;
 }
 
-export type Kind = 'food' | 'hat' | 'acc';
+export type Kind = LootKind;
 
-/** Prix en bonbons et niveau minimum. Ce qui n'est pas listé est gratuit dès le départ. */
-export const PRICES: Record<string, { price: number; level?: number; /** Collection payante : achetée quand les ventes sont ouvertes. */ coll?: string }> = {
-  'hat:pere': { price: 300, coll: 'coll_noel' },
-  'hat:renne': { price: 300, coll: 'coll_noel' },
-  'acc:echarpe': { price: 300, coll: 'coll_noel' },
-  'hat:citrouille': { price: 300, coll: 'coll_halloween' },
-  'hat:chauve': { price: 300, coll: 'coll_halloween' },
-  'acc:crocs': { price: 300, coll: 'coll_halloween' },
-  'hat:ananas': { price: 300, coll: 'coll_plage' },
-  'hat:requin': { price: 300, coll: 'coll_plage' },
-  'acc:tuba': { price: 300, coll: 'coll_plage' },
-  'food:cupcake': { price: 60 },
-  'food:sushi': { price: 60 },
-  'food:frites': { price: 80 },
-  'food:bonbon': { price: 80 },
-  'food:chaussette': { price: 100, level: 2 },
-  'food:pizza': { price: 120, level: 2 },
-  'food:glace': { price: 120, level: 3 },
-  'food:avocat': { price: 150, level: 3 },
-  'food:macaron': { price: 150, level: 4 },
-  'food:banane': { price: 180, level: 4 },
-  'food:nuage': { price: 250, level: 6 },
-  'food:patate': { price: 70 },
-  'food:tasse': { price: 90, level: 2 },
-  'food:champi': { price: 110, level: 3 },
-  'food:oignon': { price: 130, level: 3 },
-  'food:popcorn': { price: 160, level: 4 },
-  'food:saucisse': { price: 200, level: 5 },
-  'food:cookie': { price: 70 },
-  'food:yaourt': { price: 80 },
-  'food:oeufplat': { price: 90, level: 2 },
-  'food:croque': { price: 110, level: 2 },
-  'food:chewing': { price: 120, level: 3 },
-  'food:ravioli': { price: 130, level: 3 },
-  'food:pasteque': { price: 150, level: 4 },
-  'food:ketchup': { price: 170, level: 4 },
-  'food:gaufre': { price: 190, level: 5 },
-  'food:nouilles': { price: 220, level: 6 },
-  'hat:ninja': { price: 60 },
-  'hat:bandana': { price: 70 },
-  'hat:chat': { price: 90 },
-  'hat:paille': { price: 100, level: 2 },
-  'hat:lapin': { price: 110, level: 3 },
-  'hat:chantier': { price: 130, level: 3 },
-  'hat:sombrero': { price: 170, level: 4 },
-  'acc:clown': { price: 70 },
-  'acc:pansement': { price: 50 },
-  'acc:etoiles': { price: 140, level: 4 },
-  'hat:cowboy': { price: 90, level: 2 },
-  'hat:dj': { price: 110, level: 2 },
-  'hat:frites': { price: 120, level: 3 },
-  'hat:pizzahat': { price: 130, level: 3 },
-  'hat:viking': { price: 160, level: 4 },
-  'hat:afro': { price: 180, level: 5 },
-  'hat:licorne': { price: 250, level: 6 },
-  'hat:antenne': { price: 40 },
-  'hat:fete': { price: 50 },
-  'hat:fleur': { price: 50 },
-  'hat:bonnet': { price: 60 },
-  'hat:cornes': { price: 60, level: 2 },
-  'hat:haut': { price: 80, level: 2 },
-  'hat:toque': { price: 90, level: 3 },
-  'hat:pirate': { price: 120, level: 4 },
-  'hat:sorciere': { price: 150, level: 5 },
-  'hat:couronne': { price: 200, level: 5 },
-  'hat:aureole': { price: 250, level: 8 },
-  'acc:rougir': { price: 40 },
-  'acc:soleil': { price: 50 },
-  'acc:bisou': { price: 60, level: 2 },
-  'acc:monocle': { price: 80, level: 2 },
-  'acc:barbe': { price: 90, level: 3 },
-  'acc:masque': { price: 100, level: 4 },
-  'acc:coeurs': { price: 150, level: 5 },
-};
+/** Prix en bonbons (voir lootTable.ts). Ce qui n'est pas listé est gratuit dès le départ. */
+export const PRICES: Record<string, { price: number; level?: number; rarity?: Rarity; /** Collection payante : achetée quand les ventes sont ouvertes. */ coll?: string }> = LOOT_PRICES;
 
 const START: Progress = { xp: 0, coins: 60, owned: [], games: 0, wins: 0, last: '' };
 

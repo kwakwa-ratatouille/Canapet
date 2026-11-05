@@ -94,6 +94,16 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 - Salon du téléphone en 3 onglets (`tab` dans PadScreenView) : Jouer, Mon perso, Réglages. Manette réglable (`src/shared/controls.ts`, `ControlsCard.tsx`) : échanger les boutons, stick à droite, taille, vibrations ; appliqué dans `Stick.tsx` (classes `slot-*`).
 
+## Boîtes et cosmétiques (nov. 2026)
+
+- Source : `src/shared/lootTable.ts` (raretés commun/rare/épique/légendaire/mythique, `TABLE`, `BASE` = 6 gratuits par catégorie, `BOXES`, `rollBox`, jamais de doublon, garantie `pity`). Prix directs par rareté, le mythique seulement au coffre. Tout ce qui est dans `TABLE` est verrouillé ; `PRICES` en découle.
+- Catégories : perso, chapeau, déco, couleur (`COLOR_ITEMS`), regard, pose, couleur du corps (`SKINS`, `skin`, repeint une fois sur le sprite par `paintSkin` ; `setRoomSkins` : à la télé la couleur du joueur donne son skin, les jeux n'ont rien à passer), pose de victoire (`winPose`, classes `wp-*`), son de victoire (`winSound`, `playWinSound`), effet d'écran (`winFx`, `screenFx`), effet d'élimination (`koFx`, relevé dans le statut chaque seconde pour les jeux qui ont `out`). Dessinés par `drawCosmetics` (fx.ts).
+- Manette : onglet Boîtes (`src/pad/BoxPad.tsx`, `box.css`) : `BoxShop`, `Opening` (tremblement, bandeau façon roulette, révélation selon la rareté ; `noBoxAnim` dans les réglages), `Missions` (barres). Boîtes gardées sur le téléphone (`progress.boxes`, `pity`, non synchronisées : les règles Firebase refusent ces champs ; `owned` l'est).
+- Défis : `quests.ts` : 2 défis du jour, 3 de la semaine, caisse du jour (Petite boîte, première partie du jour), caisse de la semaine (Grosse boîte si 7 jours sur 7).
+- Clés payantes : `KEY_PACKS`, serveur `openChest` (tire le gain côté serveur, `keys/<uid>`, `entitlements/<uid>/cos:<objet>`, `#` écrit `~`) ; `CHEST` dans functions/index.js doit rester égal aux légendaires + mythiques de `TABLE`. Tant que `SALES_ON` est faux : clés d'essai en bonbons. Masqué en Belgique et aux Pays-Bas (`KEYS_ALLOWED`).
+- Salon : 6 joueurs sans Pass, 12 avec (`FREE_PLAYERS`, `roomLimit`, message `full`), seulement si `SALES_ON`.
+- Images Play : `store/images`, refaites par `store/make-images.cjs`.
+
 ## Mode équipes et musique
 
 - **Chrono** : `limit` (+ `timerTop`) dans chaque `GameBase` ; la session (`limitTick`, `timeLeft`) annonce « Plus que 30 secondes ! » et accélère la musique (`setMusicRush`), tic-tac sur les 10 dernières, sirène + « Temps écoulé ! » (2,2 s) puis résultats avec le classement du moment. Pastille dessinée par `drawTimer` (TvApp). Pas de chrono pour Cuisine (le sien) ni Traître.

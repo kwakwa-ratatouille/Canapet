@@ -16,6 +16,12 @@ export interface Profile {
   /** Regard et pose choisis (sinon ceux du perso). */
   eyes?: string;
   pose?: string;
+  /** Cosmétiques : couleur du corps, pose et son de victoire, effets à la télé. */
+  skin?: string;
+  winPose?: string;
+  winSound?: string;
+  koFx?: string;
+  winFx?: string;
   /** Achats du joueur (Pass, packs, collections), vérifiés par le serveur. */
   items?: string[];
 }
@@ -83,7 +89,9 @@ export type ToPad =
   /** Bouton en recharge pendant s secondes (0 = de nouveau prêt). */
   | { t: 'cool'; b: 'a' | 'b' | 'c' | 'd'; s: number }
   /** L'hôte t'a retiré de la partie. */
-  | { t: 'kicked' };
+  | { t: 'kicked' }
+  /** Salon complet : le Pass Soirée l'ouvre à 12. */
+  | { t: 'full'; max: number };
 
 export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief' | 'voice' | 'recap' | 'wheel' | 'vote';
 

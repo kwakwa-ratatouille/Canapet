@@ -172,6 +172,17 @@ export async function loadItems(uid: string) {
   return Object.keys(((await get(ref(db, `entitlements/${uid}`))).val() as Record<string, unknown> | null) ?? {});
 }
 
+/** Clés du coffre sur ce compte (seul le serveur peut les changer). */
+export async function loadKeys(uid: string) {
+  return Number((await get(ref(db, `keys/${uid}/n`))).val()) || 0;
+}
+
+/** Le serveur retire une clé, tire le gain et l'inscrit sur le compte. */
+export async function openChest(owned: string[]) {
+  const res = await httpsCallable<{ owned: string[] }, { key: string | null; rarity: 'legendaire' | 'mythique'; pity: number }>(getFunctions(app, 'europe-west1'), 'openChest')({ owned });
+  return res.data;
+}
+
 export async function load(uid: string): Promise<Partial<Progress> | null> {
   const snap = await get(ref(db, `players/${uid}/progress`));
   return snap.exists() ? (snap.val() as Partial<Progress>) : null;

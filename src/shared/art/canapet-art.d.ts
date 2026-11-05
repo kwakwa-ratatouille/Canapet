@@ -8,6 +8,8 @@ export interface CharacterOpts {
   toot?: boolean;
   eyes?: string;
   pose?: string;
+  /** Pose de victoire : visage content, bras de cette pose. */
+  wp?: string;
 }
 export const EYES: string[];
 export const POSES: string[];

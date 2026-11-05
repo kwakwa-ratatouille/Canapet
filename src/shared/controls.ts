@@ -11,6 +11,8 @@ export interface Controls {
   mirror: boolean;
   size: number;
   vibrate: boolean;
+  /** Ouvrir les boîtes sans animation. */
+  noBoxAnim?: boolean;
 }
 
 export const DEFAULT_CONTROLS: Controls = { slots: { c: 'top', d: 'left', b: 'right', a: 'bottom' }, mirror: false, size: 1, vibrate: true };

@@ -87,7 +87,73 @@ function noise(dur: number, vol: number, freq: number, at = 0, q = 1) {
   s.stop(t0 + dur);
 }
 
+/** Sons de victoire (cosmétiques). */
+export function playWinSound(id?: string) {
+  const seq = (notes: number[], step: number, dur: number, type: OscillatorType, vol: number, at = 0) => notes.forEach((n, i) => tone(midi(n), dur, type, vol, at + i * step));
+  switch (id) {
+    case 'jingle':
+      return seq([72, 76, 79], 0.13, 0.25, 'triangle', 0.25);
+    case 'sifflet':
+      tone(1500, 0.22, 'sine', 0.2, 0, 2400);
+      tone(2400, 0.5, 'sine', 0.2, 0.26, 1400);
+      return;
+    case 'bit8':
+      return seq([60, 64, 67, 72, 76, 79, 84, 88], 0.07, 0.12, 'square', 0.13);
+    case 'cloches':
+      return seq([84, 88, 91, 96], 0.17, 0.9, 'sine', 0.2);
+    case 'cor':
+      [0, 0.28, 0.56].forEach((at) => {
+        tone(233, 0.24, 'sawtooth', 0.2, at);
+        tone(349, 0.24, 'sawtooth', 0.16, at);
+      });
+      return;
+    case 'petroyal':
+      seq([67, 72, 76, 79], 0.14, 0.2, 'square', 0.1);
+      setTimeout(() => sfx.pet(), 650);
+      return;
+    case 'orgue':
+      [[60, 64, 67], [65, 69, 72], [67, 71, 74], [72, 76, 79, 84]].forEach((ch, i) => ch.forEach((n) => { tone(midi(n), 0.6, 'sawtooth', 0.075, i * 0.42); tone(midi(n - 12), 0.6, 'triangle', 0.1, i * 0.42); }));
+      return;
+    case 'fanfare':
+      seq([67, 67, 67, 72], 0.15, 0.17, 'sawtooth', 0.14);
+      seq([76, 79], 0.2, 0.3, 'sawtooth', 0.14, 0.65);
+      tone(midi(84), 0.9, 'sawtooth', 0.15, 1.05);
+      tone(midi(79), 0.9, 'sawtooth', 0.11, 1.05);
+      tone(midi(76), 0.9, 'sawtooth', 0.11, 1.05);
+      return;
+    case 'choeur':
+      [[69, 76, 81], [72, 79, 84], [74, 81, 86], [76, 84, 88]].forEach((ch, i) => ch.forEach((n) => { tone(midi(n), 1.2, 'sine', 0.13, i * 0.55); tone(midi(n) * 1.004, 1.2, 'triangle', 0.07, i * 0.55); }));
+      seq([96, 100, 103], 0.14, 0.7, 'sine', 0.06, 2.1);
+      return;
+    default:
+      sfx.win();
+  }
+}
+
 export const sfx = {
+  /** Boîtes : la boîte tremble, le bandeau cliquette, la révélation dépend de la rareté. */
+  boxShake() {
+    [0, 0.14, 0.27, 0.39, 0.5, 0.6, 0.69, 0.77, 0.84].forEach((at, i) => tone(180 + i * 25, 0.05, 'square', 0.08, at));
+    tone(300, 0.9, 'sine', 0.1, 0, 1100);
+  },
+  boxTick() {
+    tone(1250, 0.025, 'square', 0.07);
+  },
+  boxReveal(r: string) {
+    const up = (n: number[], step: number, type: OscillatorType, vol: number, dur = 0.3) => n.forEach((m, i) => tone(midi(m), dur, type, vol, i * step));
+    if (r === 'commun') return up([72, 76], 0.1, 'triangle', 0.25);
+    if (r === 'rare') return up([72, 76, 79], 0.1, 'triangle', 0.25);
+    if (r === 'epique') return up([72, 76, 79, 84], 0.1, 'square', 0.14, 0.4);
+    noise(0.5, 0.2, 500, 0, 0.6);
+    if (r === 'legendaire') {
+      up([67, 72, 76, 79, 84, 88], 0.09, 'sawtooth', 0.13, 0.5);
+      tone(midi(96), 1, 'sine', 0.15, 0.55);
+      return;
+    }
+    up([60, 67, 72, 76, 79, 84, 88, 91, 96], 0.08, 'sawtooth', 0.13, 0.55);
+    [72, 79, 84, 88].forEach((m) => tone(midi(m), 1.6, 'sine', 0.13, 0.75));
+    noise(1, 0.14, 2500, 0.75, 0.5);
+  },
   pop() {
     tone(520, 0.12, 'sine', 0.3, 0, 1100);
   },

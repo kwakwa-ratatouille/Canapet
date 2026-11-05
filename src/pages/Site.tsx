@@ -3,7 +3,7 @@ import { gameIcon, Wordmark } from '../shared/Logo';
 import { useEffect, useRef, useState } from 'react';
 import { createCheckout, loadItems, signIn, watchUser, type CloudUser } from '../shared/cloud';
 import { IS_NATIVE } from '../shared/native';
-import { COLLECTIONS, PACKS, PASS, PASS_GIFT, SALES_ON, WEB_PRICE } from '../shared/offer';
+import { COLLECTIONS, FREE_PLAYERS, KEY_PACKS, KEYS_ALLOWED, PACKS, PASS, PASS_GIFT, SALES_ON, WEB_PRICE } from '../shared/offer';
 import { store } from '../shared/device';
 import { defaultLang } from '../shared/i18n';
 import type { Lang, Profile } from '../shared/protocol';
@@ -195,12 +195,12 @@ export function Site({ result }: { result?: string | null }) {
           <div className="site-card">
             <i>🎮</i>
             <b>{T('Gratuit', 'Free')}</b>
-            <p>{T('8 jeux, un jeu offert chaque jour, des tenues à gagner en jouant. Sans pub.', '8 games, a free game every day, outfits to earn by playing. No ads.')}</p>
+            <p>{T(`8 jeux, un jeu offert chaque jour, jusqu’à ${FREE_PLAYERS} joueurs, des boîtes à gagner en jouant. Sans pub.`, `8 games, a free game every day, up to ${FREE_PLAYERS} players, boxes to earn by playing. No ads.`)}</p>
           </div>
           <div className="site-card star">
             <i>🎟️</i>
             <b>{T('Pass Soirée · 3,99 €', 'Party Pass · €3.99')}</b>
-            <p>{T(`Une seule personne l’achète, tout le salon joue à tous les jeux. Avec ${PASS_GIFT} bonbons.`, `One person buys it, the whole room plays every game. With ${PASS_GIFT} candies.`)}</p>
+            <p>{T(`Une seule personne l’achète, tout le salon joue à tous les jeux, jusqu’à 12 joueurs. Avec ${PASS_GIFT} bonbons.`, `One person buys it, the whole room plays every game, up to 12 players. With ${PASS_GIFT} candies.`)}</p>
             <Buy id={PASS} lang={lang} user={user} items={items} />
           </div>
         </div>
@@ -226,6 +226,21 @@ export function Site({ result }: { result?: string | null }) {
             </div>
           ))}
         </div>
+        {KEYS_ALLOWED && (
+          <>
+            <h3>{T('Clés du coffre', 'Chest keys')}</h3>
+            <p>{T('Une clé ouvre un Coffre : légendaire 88 %, mythique 12 %, mythique garanti au plus tard au 8e. Jamais de doublon. Style uniquement, aucun avantage en jeu. Les gains ne se revendent pas.', 'A key opens a Chest: legendary 88%, mythic 12%, mythic guaranteed by the 8th at the latest. Never a duplicate. Style only, no in-game advantage. Prizes cannot be resold.')}</p>
+            <div className="site-items">
+              {KEY_PACKS.map((p) => (
+                <div className="site-item" key={p.id}>
+                  <i>{p.emoji}</i>
+                  <b>{p.name[lang]} · {WEB_PRICE(p.id)}</b>
+                  <Buy id={p.id} lang={lang} user={user} items={items} />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
         {!SALES_ON && <p className="site-soon">{T('🚧 Les achats arrivent bientôt. Pour l’instant, tout est ouvert : profitez-en !', '🚧 Purchases are coming soon. For now, everything is open: enjoy!')}</p>}
       </section>
 

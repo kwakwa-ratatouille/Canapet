@@ -1,5 +1,7 @@
 // La soirée côté télé : joueurs, enchaînement des jeux, scores. La télé fait autorité.
-import { isLocked, PACKS, PASS, SALES_ON } from '../shared/offer';
+import { KO_FX, WIN_FX } from '../shared/lootTable';
+import { setRoomSkins } from '../shared/characters';
+import { FREE_PLAYERS, isLocked, PACKS, PASS, SALES_ON } from '../shared/offer';
 import { SKILLS } from '../games/botSkill';
 import { GAMES, gameById, playable, gameInfo } from '../games/registry';
 import { TEAMS } from '../games/teams';
@@ -9,7 +11,7 @@ import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
 import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
-import { VOICES, playMusic, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
+import { VOICES, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
 import { REACTIONS } from '../shared/reactions';
 import { makeSecrets, type Secret } from './secrets';
@@ -331,6 +333,12 @@ export class Session {
           return;
         }
         if (!p && this.players.size >= MAX_PLAYERS && this.phase === 'lobby') this.removeStale(true);
+        // Sans Pass Soirée dans le salon : 6 joueurs au plus (celui qui arrive avec le Pass ouvre la place)
+        if (!p && !m.profile.items?.includes(PASS) && this.list().filter((x) => x.connected && !x.fake).length >= this.roomLimit()) {
+          this.net.send(pid, { t: 'full', max: this.roomLimit() });
+          setTimeout(() => this.net.drop(pid), 300);
+          return;
+        }
         this.addPlayer(pid, m.profile);
         return;
       case 'bye':
@@ -339,6 +347,7 @@ export class Session {
       case 'profile':
         if (!p) return;
         Object.assign(p, m.profile, { name: clean(m.profile.name), color: this.freeColor(m.profile.color, pid) });
+        this.syncSkins();
         if (p.color !== m.profile.color) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code, games: GAMES_INFO() });
         this.changed();
         this.pushScreens();
@@ -412,6 +421,11 @@ export class Session {
   }
 
   /** Achats des joueurs présents : ils profitent à tout le salon. */
+  /** Nombre de joueurs possibles dans ce salon. */
+  roomLimit() {
+    return SALES_ON && !this.roomItems().includes(PASS) ? FREE_PLAYERS : MAX_PLAYERS;
+  }
+
   private roomItems() {
     return [...new Set(this.list().filter((p) => p.connected).flatMap((p) => p.items ?? []))];
   }
@@ -612,9 +626,30 @@ export class Session {
   /** Options du dernier lancement (gardées pour « Rejouer »). */
   private opts: Record<string, number> = {};
 
+  /** Cosmétiques à la télé : effet d'écran du gagnant, effets d'élimination. */
+  screenFx: { icons: string[]; born: number; name: string } | null = null;
+  koFx: { icons: string[]; rise: boolean; born: number; name: string; color: string; x: number }[] = [];
+  private wasOut = new Set<string>();
+
+  /** Le gagnant fait son effet : son choisi et pluie sur toute la télé. */
+  private winnerShow(p?: Pick<Profile, 'name' | 'winSound' | 'winFx'>, fallback = true) {
+    if (p?.winSound) playWinSound(p.winSound);
+    else if (fallback) sfx.win();
+    const fx = WIN_FX.find((x) => x.id === p?.winFx);
+    if (fx && p) this.screenFx = { icons: fx.icons, born: performance.now(), name: p.name };
+  }
+
+  private syncSkins() {
+    setRoomSkins(this.list().map((p) => ({ color: p.color, skin: p.skin })));
+  }
+
   startGame(id: string, opts?: Record<string, number>) {
     const def = gameById(id);
     if (!def?.create) return;
+    this.syncSkins();
+    this.wasOut.clear();
+    this.koFx = [];
+    this.screenFx = null;
     const humans = this.list().filter((p) => p.connected).slice(0, def.max);
     const runners: Runner[] = humans.map((p) => ({ pid: p.pid, profile: p, bot: p.fake, selfie: selfieImage(p.selfie), team: this.teams ? p.team : undefined }));
     // Une équipe vide alors qu'il y a du monde : on répartit un sur deux.
@@ -734,7 +769,7 @@ export class Session {
     if (!this.teamScore && this.quip) speak(this.quip, this.lang());
     this.phase = 'results';
     playMusic('lobby');
-    sfx.win();
+    this.winnerShow(this.runners.find((r) => r.pid === order[0] && !r.bot)?.profile);
     this.changed();
     this.pushScreens();
   }
@@ -762,6 +797,7 @@ export class Session {
     this.phase = 'podium';
     playMusic('podium');
     const top = this.list().sort((a, b) => b.total - a.total)[0];
+    if (top?.winSound || top?.winFx) setTimeout(() => this.phase === 'podium' && this.winnerShow(top, false), 2500);
     if (top) speak(this.lang() === 'fr' ? `Et le grand gagnant est… ${top.name} !` : `And the big winner is… ${top.name}!`, this.lang());
     sfx.pet();
     this.changed();
@@ -1225,6 +1261,12 @@ export class Session {
     for (const r of this.runners)
       if (!r.bot) {
         const out = !!this.game.out?.(r.pid);
+        // Élimination : l'effet choisi par le joueur apparaît à la télé
+        if (out && !this.wasOut.has(r.pid)) {
+          this.wasOut.add(r.pid);
+          const fx = KO_FX.find((x) => x.id === r.profile.koFx);
+          if (fx) this.koFx.push({ icons: fx.icons, rise: !!fx.rise, born: performance.now(), name: r.profile.name, color: r.profile.color, x: 260 + Math.random() * 1400 });
+        }
         const ghost = out
           ? {
               cool: Math.max(0, Math.ceil((this.ghostReady.get(r.pid) ?? 0) - this.clock)),

@@ -1,6 +1,7 @@
 // Calques de la télé : réactions qui s'envolent et ralenti de fin de partie.
 import { REACTIONS } from '../shared/reactions';
 import { INK } from '../shared/palette';
+import { LIGHT } from '../shared/device';
 import { REPLAY, type FlyingReaction, type Session } from './session';
 import { stickerText } from './TvApp';
 
@@ -9,7 +10,53 @@ const H = 1080;
 /** Durée de vol d'une réaction (secondes). */
 const LIFE = 3.2;
 
+/** Pluie d'emojis sur toute la télé (effet d'écran du gagnant). */
+const RAIN = Array.from({ length: LIGHT ? 26 : 60 }, (_, i) => ({ x: Math.random() * W, at: Math.random() * 2.6, v: 340 + Math.random() * 420, s: 56 + Math.random() * 62, w: Math.random() * 6, i }));
+const FX_LIFE = 5.2;
+const KO_LIFE = 2.4;
+
+function drawCosmetics(g: CanvasRenderingContext2D, session: Session, now: number) {
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  const sc = session.screenFx;
+  if (sc) {
+    const a = (now - sc.born) / 1000;
+    if (a < FX_LIFE) {
+      for (const d of RAIN) {
+        const t = a - d.at;
+        if (t < 0) continue;
+        g.save();
+        g.globalAlpha = Math.min(1, (FX_LIFE - a) / 0.6);
+        g.translate(d.x + Math.sin(t * 2 + d.w) * 34, -80 + t * d.v);
+        g.rotate(t * (d.w - 3) * 0.5);
+        g.font = `${d.s | 0}px sans-serif`;
+        g.fillText(sc.icons[d.i % sc.icons.length], 0, 0);
+        g.restore();
+      }
+    }
+  }
+  for (const k of session.koFx) {
+    const a = (now - k.born) / 1000;
+    if (a < 0 || a > KO_LIFE) continue;
+    g.save();
+    g.globalAlpha = Math.min(1, (KO_LIFE - a) / 0.5);
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2 + 0.3;
+      const d = (k.rise ? 40 : 260) * Math.min(1, a * 2.4);
+      const up = k.rise ? -a * 300 - i * 16 : 0;
+      g.font = `${70 + (i % 3) * 22}px sans-serif`;
+      g.fillText(k.icons[i % k.icons.length], k.x + Math.cos(ang) * d, 760 + Math.sin(ang) * d * 0.7 + up);
+    }
+    stickerText(g, k.name, k.x, 760 + (k.rise ? -a * 200 : 0), 46, k.color);
+    g.restore();
+  }
+}
+
+/** Y a-t-il un effet à dessiner ? */
+export const cosmeticsBusy = (session: Session, now: number) => (session.screenFx && now - session.screenFx.born < FX_LIFE * 1000) || session.koFx.some((k) => now - k.born < KO_LIFE * 1000);
+
 export function drawReactions(g: CanvasRenderingContext2D, session: Session, now: number) {
+  drawCosmetics(g, session, now);
   const fr = session.lang() === 'fr';
   for (const r of session.reactions) {
     const a = (now - r.born) / 1000;

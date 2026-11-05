@@ -213,6 +213,19 @@ function arms(m,sx,sy,pose='hip'){
     // Le penseur : une main sous le menton (coude bas), l'autre bras le long du corps
     d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+12} ${sy+24} ${70} ${sy+6}`;
     hands=[[L-8,sy+29],[67,sy+4]];
+  }else if(pose==='rock'){
+    // Les cornes du rock, bras tendu
+    d=`M${L} ${sy}Q${L-8} ${sy+14} ${L-8} ${sy+26}M${R} ${sy}Q${R+18} ${sy-8} ${R+14} ${sy-34}`;
+    const hx=R+14,hy=sy-37;
+    return `<path d="${d}" fill="none" ${sw(5)}/>`+glove(L-8,sy+29)+`<path d="M${hx-5} ${hy}V${hy-13}M${hx+5} ${hy}V${hy-13}" fill="none" stroke="${P}" stroke-width="8" stroke-linecap="round"/><path d="M${hx-5} ${hy}V${hy-13}M${hx+5} ${hy}V${hy-13}" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><circle cx="${hx}" cy="${hy+2}" r="7.5" fill="#fff" ${sw(3.5)}/>`;
+  }else if(pose==='double'){
+    // Les deux mains vers le public
+    d=`M${L} ${sy}Q${L-16} ${sy+12} ${L-22} ${sy+2}M${R} ${sy}Q${R+16} ${sy+12} ${R+22} ${sy+2}`;
+    hands=[[L-24,sy],[R+24,sy]];
+  }else if(pose==='point'){
+    // Le doigt pointé vers le ciel
+    d=`M${L} ${sy}Q${L-6} ${sy+14} ${L-4} ${sy+26}M${R} ${sy}Q${R+12} ${sy-14} ${R+6} ${sy-36}`;
+    hands=[[L-4,sy+29],[R+6,sy-39]];
   }else if(pose==='salute'){
     // Salut militaire
     // Salut militaire : la main à la tempe, au-dessus de l'œil
@@ -274,6 +287,13 @@ const KEYS=Object.keys(K);
 
 function hat(t,x,y,c){
   switch(t){
+  case 'flammes':return `<path d="M${x-22} ${y+3}C${x-32} ${y-14} ${x-16} ${y-22} ${x-18} ${y-40}C${x-8} ${y-32} ${x-6} ${y-26} ${x-4} ${y-22}C${x-4} ${y-34} ${x} ${y-44} ${x+6} ${y-52}C${x+8} ${y-38} ${x+18} ${y-32} ${x+18} ${y-20}C${x+22} ${y-24} ${x+24} ${y-28} ${x+25} ${y-34}C${x+34} ${y-18} ${x+30} ${y-6} ${x+22} ${y+3}Z" fill="#ff5a00" ${sw(3.5)}/><path d="M${x-11} ${y+2}C${x-16} ${y-10} ${x-6} ${y-14} ${x-5} ${y-24}C${x} ${y-18} ${x+3} ${y-22} ${x+5} ${y-30}C${x+9} ${y-20} ${x+15} ${y-10} ${x+11} ${y+2}Z" fill="#ffd60a"/>`;
+  case 'astronaute':return `<path d="M${x-30} ${y+8}C${x-34} ${y-46} ${x+34} ${y-46} ${x+30} ${y+8}Z" fill="#f4f7fb" ${sw(3.5)}/><path d="M${x-20} ${y+4}C${x-22} ${y-26} ${x+22} ${y-26} ${x+20} ${y+4}Z" fill="#1d2b4f"/><path d="M${x-12} ${y-12}Q${x-6} ${y-20} ${x+3} ${y-20}" fill="none" stroke="#9fe8ff" stroke-width="4" stroke-linecap="round"/><path d="M${x+25} ${y-22}V${y-40}" ${sw(3)}/><circle cx="${x+25}" cy="${y-43}" r="4.5" fill="#ff3b3b" ${sw(2.5)}/>`;
+  case 'neon':return `<ellipse cx="${x}" cy="${y-18}" rx="25" ry="8" fill="none" stroke="${P}" stroke-width="10"/><ellipse cx="${x}" cy="${y-18}" rx="25" ry="8" fill="none" stroke="#ff2fd0" stroke-width="5.5"/><ellipse cx="${x}" cy="${y-30}" rx="15" ry="5" fill="none" stroke="${P}" stroke-width="8"/><ellipse cx="${x}" cy="${y-30}" rx="15" ry="5" fill="none" stroke="#17f0ff" stroke-width="4"/>`;
+  case 'samourai':return `<path d="M${x-32} ${y+6}L${x-24} ${y-6}H${x+24}L${x+32} ${y+6}L${x+20} ${y+2}H${x-20}Z" fill="#b3202c" ${sw(3.5)}/><path d="M${x-22} ${y-4}C${x-24} ${y-32} ${x+24} ${y-32} ${x+22} ${y-4}Z" fill="#2b2238" ${sw(3.5)}/><path d="M${x-3} ${y-22}C${x-10} ${y-34} ${x-22} ${y-40} ${x-30} ${y-44}C${x-28} ${y-30} ${x-16} ${y-18} ${x} ${y-14}C${x+16} ${y-18} ${x+28} ${y-30} ${x+30} ${y-44}C${x+22} ${y-40} ${x+10} ${y-34} ${x+3} ${y-22}Z" fill="#ffc400" ${sw(3)}/><circle cx="${x}" cy="${y-15}" r="4.5" fill="#ff3b3b" ${sw(2.5)}/>`;
+  case 'pharaon':return `<path d="M${x-24} ${y+2}C${x-26} ${y-30} ${x+26} ${y-30} ${x+24} ${y+2}L${x+36} ${y+34}H${x+18}L${x+16} ${y+4}H${x-16}L${x-18} ${y+34}H${x-36}Z" fill="#ffc400" ${sw(3.5)}/><path d="M${x-22} ${y-8}H${x+22}M${x-24} ${y-16}H${x+24}M${x-28} ${y+14}H${x-19}M${x+19} ${y+14}H${x+28}M${x-32} ${y+24}H${x-18}M${x+18} ${y+24}H${x+32}" stroke="#1f55c9" stroke-width="4.5"/><path d="M${x} ${y-22}C${x+7} ${y-30} ${x+3} ${y-38} ${x-4} ${y-36}C${x-1} ${y-32} ${x-5} ${y-26} ${x} ${y-22}Z" fill="#1f55c9" ${sw(2.5)}/>`;
+  case 'dragon':return [-1,1].map(k=>`<path d="M${x+k*10} ${y+4}C${x+k*18} ${y-12} ${x+k*34} ${y-18} ${x+k*40} ${y-42}C${x+k*44} ${y-20} ${x+k*40} ${y} ${x+k*24} ${y+6}Z" fill="#ffd9a0" ${sw(3.5)}/><path d="M${x+k*30} ${y+6}L${x+k*46} ${y-2}L${x+k*40} ${y+14}Z" fill="#c4122d" ${sw(3)}/>`).join('')+`<path d="M${x-22} ${y+5}C${x-22} ${y-26} ${x+22} ${y-26} ${x+22} ${y+5}Z" fill="#c4122d" ${sw(3.5)}/><path d="M${x-14} ${y-16}l5 -13l5 10l5 -15l5 15l5 -10l5 13Z" fill="#ff8a1f" ${sw(3)}/><circle cx="${x-8}" cy="${y-5}" r="3" fill="#ffd60a"/><circle cx="${x+8}" cy="${y-5}" r="3" fill="#ffd60a"/>`;
+  case 'cosmique':return `<path d="M${x-22} ${y+3}L${x-27} ${y-24}L${x-12} ${y-12}L${x} ${y-32}L${x+12} ${y-12}L${x+27} ${y-24}L${x+22} ${y+3}Z" fill="#6a3dff" ${sw(3.5)}/>${star(x,y-44,9,'#fff27a',3)}${star(x-31,y-34,6,'#7df0ff',2.5)}${star(x+31,y-34,6,'#ff9ce0',2.5)}<circle cx="${x}" cy="${y-8}" r="5" fill="#17f0ff" ${sw(2.5)}/><circle cx="${x-13}" cy="${y-4}" r="3" fill="#ff4fd8" ${sw(2)}/><circle cx="${x+13}" cy="${y-4}" r="3" fill="#ff4fd8" ${sw(2)}/>`;
   case 'couronne':return `<path d="M${x-18} ${y+2}L${x-21} ${y-20}L${x-9} ${y-10}L${x} ${y-24}L${x+9} ${y-10}L${x+21} ${y-20}L${x+18} ${y+2}Z" fill="${SOL}" ${sw(3.5)}/><circle cx="${x}" cy="${y-6}" r="3.5" fill="${ROSE}"/>`;
   case 'casquette':return `<path d="M${x-4} ${y}H${x+34}Q${x+30} ${y+8} ${x+8} ${y+6}Z" fill="${c}" ${sw(3.5)}/><path d="M${x-22} ${y+2}C${x-22} ${y-26} ${x+22} ${y-26} ${x+22} ${y+2}Z" fill="${c}" ${sw(3.5)}/><circle cx="${x}" cy="${y-19}" r="3" fill="${P}"/>`;
   case 'haut':return `<rect x="${x-15}" y="${y-36}" width="30" height="36" rx="4" fill="${P}"/><rect x="${x-15}" y="${y-13}" width="30" height="7" fill="${ROSE}"/><ellipse cx="${x}" cy="${y}" rx="26" ry="6" fill="${P}"/>`;
@@ -311,9 +331,19 @@ function hat(t,x,y,c){
   }
   return '';
 }
+/** Déco dans le dos : dessinée derrière le perso. */
+function backAcc(t){
+  const wing=(k,c,d)=>`<path d="M${60+k*14} 60C${60+k*34} 34 ${60+k*56} 26 ${60+k*62} 18C${60+k*66} 44 ${60+k*56} 66 ${60+k*46} 76C${60+k*50} 80 ${60+k*42} 88 ${60+k*36} 86C${60+k*36} 92 ${60+k*24} 94 ${60+k*14} 84Z" fill="${c}" ${sw(3.5)}/><path d="M${60+k*22} 62C${60+k*34} 52 ${60+k*44} 46 ${60+k*52} 38M${60+k*22} 72C${60+k*32} 68 ${60+k*40} 64 ${60+k*46} 58" fill="none" stroke="${d}" stroke-width="3" stroke-linecap="round"/>`;
+  if(t==='ailes') return wing(-1,'#ffffff','#b9d7ff')+wing(1,'#ffffff','#b9d7ff');
+  if(t==='ailesdragon') return [-1,1].map(k=>`<path d="M${60+k*14} 62L${60+k*36} 18L${60+k*62} 8L${60+k*58} 36L${60+k*64} 52L${60+k*48} 54L${60+k*48} 74L${60+k*32} 66L${60+k*22} 84Z" fill="#7a1230" ${sw(3.5)}/><path d="M${60+k*36} 18L${60+k*30} 62M${60+k*62} 8L${60+k*38} 52" stroke="#ff4f6e" stroke-width="3"/>`).join('');
+  if(t==='cape') return `<path d="M36 62C20 90 18 118 14 132Q34 124 44 132Q60 122 76 132Q86 124 106 132C102 118 100 90 84 62Z" fill="#c4122d" ${sw(3.5)}/><path d="M36 62C30 80 28 96 28 110" fill="none" stroke="#ff7a8a" stroke-width="3" stroke-linecap="round"/>`;
+  return '';
+}
 function acc(t,cx,cy,s){
   const e=12*s;
   switch(t){
+  case 'vr':return `<rect x="${cx-30*s}" y="${cy-13*s}" width="${60*s}" height="${27*s}" rx="${9*s}" fill="#2b2238" ${sw(3*s)}/><rect x="${cx-24*s}" y="${cy-8*s}" width="${48*s}" height="${16*s}" rx="${6*s}" fill="#17f0ff"/><path d="M${cx-18*s} ${cy-3*s}H${cx-4*s}" stroke="#fff" stroke-width="${3*s}" stroke-linecap="round"/>`;
+  case 'cyborg':return `<path d="M${cx+2*s} ${cy-15*s}H${cx+27*s}V${cy+13*s}H${cx+6*s}Z" fill="#8c98a8" ${sw(3*s)}/><circle cx="${cx+e+2*s}" cy="${cy}" r="${8*s}" fill="#ff1f3d" ${sw(2.5*s)}/><circle cx="${cx+e+2*s}" cy="${cy}" r="${3*s}" fill="#fff"/><path d="M${cx+22*s} ${cy+8*s}V${cy+13*s}M${cx+16*s} ${cy-15*s}V${cy-11*s}" ${sw(2*s)}/>`;
   case 'lunettes':return [cx-e,cx+e].map(x=>`<circle cx="${x}" cy="${cy}" r="${10.5*s}" fill="#fff" fill-opacity=".25" ${sw(3*s)}/>`).join('')+`<path d="M${cx-e+10.5*s} ${cy-1*s}Q${cx} ${cy-4*s} ${cx+e-10.5*s} ${cy-1*s}" fill="none" ${sw(3*s)}/>`;
   case 'soleil':return [cx-e,cx+e].map(x=>`<rect x="${x-10*s}" y="${cy-7*s}" width="${20*s}" height="${14*s}" rx="${6*s}" fill="${P}"/><path d="M${x-5*s} ${cy-3*s}L${x-1*s} ${cy-3*s}" stroke="#fff" stroke-width="${2.5*s}" stroke-linecap="round"/>`).join('')+`<path d="M${cx-3*s} ${cy-3*s}H${cx+3*s}" ${sw(3*s)}/>`;
   case 'moustache':{const y=cy+12*s;return `<path d="M${cx} ${y}C${cx-6*s} ${y-5*s} ${cx-18*s} ${y-4*s} ${cx-20*s} ${y+5*s}C${cx-12*s} ${y+2*s} ${cx-6*s} ${y+3*s} ${cx} ${y+1*s}C${cx+6*s} ${y+3*s} ${cx+12*s} ${y+2*s} ${cx+20*s} ${y+5*s}C${cx+18*s} ${y-4*s} ${cx+6*s} ${y-5*s} ${cx} ${y}Z" fill="${P}" ${sw(2*s)}/>`;}
@@ -340,6 +370,7 @@ const BY=y=>y*SC-DY;
 function perso(kind,c=ROSE,o={}){
   const k=K[kind],s=k.fs||1;let g='';
   if(o.toot) g+=cloud(14,116,20,'#fff',3.5)+cloud(-2,96,11,'#fff',3)+star(30,92,6,SOL,2.5)+star(-2,124,4,SOL,2);
+  if(o.acc) g+=backAcc(o.acc);
   const mood=o.arms?'win':o.mood||'happy';
   g+=legs()+relief(feet(c));
   const raw=k.b(c);
@@ -360,7 +391,8 @@ function perso(kind,c=ROSE,o={}){
     body+=`<g transform="translate(${hx} ${hy2}) scale(${hs}) translate(${-hx} ${-hy2})">${relief(hat(o.hat,hx,hy2,c))}</g>`;
   }
   g+=`<g transform="translate(${X0} ${-DY}) scale(${SC})">${body}</g>`;
-  g+=arms(mood==='toot'?'happy':mood,(k.aw||36)*SC,BY(k.fy+20),look[1]);
+  // Pose de victoire : le visage content de « win », mais les bras de la pose choisie
+  g+=arms(o.wp?'happy':mood==='toot'?'happy':mood,(k.aw||36)*SC,BY(k.fy+20),o.wp||look[1]);
   return g;
 }
 const VB='-6 -36 132 180';
@@ -622,12 +654,12 @@ export const COLORS = { P, ROSE, VIO, VIO2, SOL, MEN, CIEL, NUIT };
 export const PLAYER_COLORS = COL;
 export const PLAYER_COLOR_NAMES = COLN;
 export const CHARACTERS = Object.fromEntries(KEYS.map(k => [k, K[k].n]));
-export const HATS = ['couronne','casquette','haut','bob','cornes','antenne','noeud','toque','fete','pirate','aureole','fleur','bonnet','sorciere','viking','cowboy','afro','licorne','ninja','dj','frites','pizzahat','sombrero','paille','chat','lapin','chantier','bandana','pere','renne','citrouille','chauve','ananas','requin'];
+export const HATS = ['couronne','casquette','haut','bob','cornes','antenne','noeud','toque','fete','pirate','aureole','fleur','bonnet','sorciere','viking','cowboy','afro','licorne','ninja','dj','frites','pizzahat','sombrero','paille','chat','lapin','chantier','bandana','pere','renne','citrouille','chauve','ananas','requin','flammes','astronaute','neon','samourai','pharaon','dragon','cosmique'];
 /** Regards et poses au choix. */
 export const EYES = ['cool','round','sleepy','angry','wink','star'];
-export const POSES = ['hip','cross','flex','wave','thumbs','shy','dab','disco','peace','hero','shrug','think','salute'];
+export const POSES = ['hip','cross','flex','wave','thumbs','shy','dab','disco','peace','hero','shrug','think','salute','rock','double','point'];
 export const LOOKS = LOOK;
-export const ACCESSORIES = ['lunettes','soleil','moustache','monocle','bisou','coeurs','masque','barbe','rougir','clown','pansement','etoiles','echarpe','crocs','tuba'];
+export const ACCESSORIES = ['lunettes','soleil','moustache','monocle','bisou','coeurs','masque','barbe','rougir','clown','pansement','etoiles','echarpe','crocs','tuba','vr','cyborg','ailes','ailesdragon','cape'];
 export const MOODS = ['happy','wow','sad','win','toot'];
 /** Personnage complet. kind: clé de CHARACTERS ; color: couleur des baskets ;
  *  opts: { mood, hat, acc, selfie, arms, toot }. Renvoie un <svg> (viewBox ${VB}). */
