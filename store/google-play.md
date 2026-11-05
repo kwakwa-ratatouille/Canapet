@@ -7,7 +7,6 @@ Sur GitHub : dépôt > Settings > Secrets and variables > Actions > New reposito
 Puis Actions > Appli Android > Run workflow. Le fichier `.aab` apparaît sur la release `android-play`.
 
 ## Avant d'envoyer
-- Dans `src/pages/Legal.tsx`, remplir `EDITOR` (nom) et `CONTACT` (e-mail public, pas forcément ton e-mail perso).
 - Vérifier que le nom Cana'pet est libre (INPI, EUIPO, Play Store).
 
 ## Fiche
@@ -49,7 +48,7 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 2. Formule Blaze sur Firebase (voir plus bas), puis : `npx firebase-tools functions:secrets:set STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET`.
 3. Dans Stripe > Développeurs > Webhooks, ajouter `https://europe-west1-canapet-31bb7.cloudfunctions.net/stripeWebhook` avec les événements `checkout.session.completed`, `checkout.session.async_payment_succeeded` et `charge.refunded`. La clé `whsec_…` donnée par Stripe est le STRIPE_WEBHOOK_SECRET.
 4. Commencer avec les clés de test de Stripe (`sk_test_…`, carte d'essai), passer `SALES_ON` à vrai, tester, puis mettre les vraies clés.
-5. Remplir EDITOR et CONTACT dans `src/pages/Legal.tsx`, activer les reçus par e-mail dans Stripe, et vérifier la TVA avec un comptable.
+5. Ajouter le SIRET et l'adresse dans `src/pages/Legal.tsx`, activer les reçus par e-mail dans Stripe, et vérifier la TVA avec un comptable.
 
 ## Quand on activera les ventes
 1. Créer la micro-entreprise et le profil de paiement Google.

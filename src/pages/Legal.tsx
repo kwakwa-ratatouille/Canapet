@@ -3,9 +3,9 @@ import { defaultLang } from '../shared/i18n';
 import type { Lang } from '../shared/protocol';
 
 // Pages légales, aussi demandées par Google Play (adresses à donner dans la console) :
-// #/confidentialite, #/conditions, #/supprimer-compte. À compléter avant publication : EDITOR et CONTACT.
-const EDITOR = '';
-const CONTACT = '';
+// #/confidentialite, #/conditions, #/supprimer-compte. À ajouter avant de vendre : SIRET et adresse.
+const EDITOR = 'Matis Rodrigues';
+const CONTACT = 'matis.rodrigues1@gmail.com';
 const UPDATED = '5 novembre 2026';
 
 type Doc = { title: string; blocks: [string, string[]][] };
