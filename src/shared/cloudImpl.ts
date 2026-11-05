@@ -156,6 +156,12 @@ export async function verifyPurchase(product: string, token: string) {
   return res.data.ok;
 }
 
+/** Prépare le paiement sur le site et rend l'adresse de la page de paiement Stripe. */
+export async function createCheckout(product: string, consent: boolean) {
+  const res = await httpsCallable<{ product: string; consent: boolean }, { url: string }>(getFunctions(app, 'europe-west1'), 'createCheckout')({ product, consent });
+  return res.data.url;
+}
+
 /** Achats de ce compte (seul le serveur peut les écrire). */
 export async function loadItems(uid: string) {
   return Object.keys(((await get(ref(db, `entitlements/${uid}`))).val() as Record<string, unknown> | null) ?? {});

@@ -42,6 +42,9 @@ export const PASS_PRODUCT: Product = {
   desc: { fr: 'Un seul achat, une seule personne, et tout le salon joue à tous les jeux, à chaque soirée.', en: 'One purchase, one person, and the whole room plays every game, every party.' },
 };
 
+/** Prix affichés sur le site (ceux facturés sont sur le serveur, functions/index.js). */
+export const WEB_PRICE = (id: string) => (id === PASS ? '3,99 €' : '1,99 €');
+
 export const productById = (id: string) => [PASS_PRODUCT, ...PACKS, ...COLLECTIONS].find((p) => p.id === id);
 
 /** Option « Questions » des jeux à packs : 0 = classiques, puis un numéro par pack. */

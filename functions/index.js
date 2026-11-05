@@ -1,6 +1,8 @@
 // Serveur des achats : vérifie auprès de Google qu'un achat est réel, puis l'inscrit sur le compte du joueur.
 // Le compte du serveur doit avoir accès à l'appli dans la console Google Play (voir store/google-play.md).
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
+const Stripe = require('stripe');
 const { initializeApp } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
 const { GoogleAuth } = require('google-auth-library');
@@ -46,4 +48,63 @@ exports.verifyPurchase = onCall({ region: 'europe-west1', maxInstances: 5 }, asy
 
   await db.ref(`entitlements/${uid}/${product}`).set({ at: Number(purchase.purchaseTimeMillis) || Date.now(), order: purchase.orderId ?? '' });
   return { ok: true };
+});
+
+// ——— Vente sur le site (Stripe) ———
+// Le prix et le nom viennent d'ici, jamais du navigateur. Le joueur doit être connecté : l'achat va sur son compte.
+const STRIPE_KEY = defineSecret('STRIPE_SECRET_KEY');
+const STRIPE_HOOK = defineSecret('STRIPE_WEBHOOK_SECRET');
+const SITE = 'https://kwakwa-ratatouille.github.io/Canapet/';
+const SHOP = {
+  pass_soiree: { name: "Cana'pet : Pass Soirée", cents: 399 },
+  pack_couples: { name: "Cana'pet : pack En couple", cents: 199 },
+  pack_famille: { name: "Cana'pet : pack Repas de famille", cents: 199 },
+  pack_boulot: { name: "Cana'pet : pack Au boulot", cents: 199 },
+  pack_minuit: { name: "Cana'pet : pack Après minuit", cents: 199 },
+  coll_noel: { name: "Cana'pet : collection Noël", cents: 199 },
+  coll_halloween: { name: "Cana'pet : collection Halloween", cents: 199 },
+  coll_plage: { name: "Cana'pet : collection Plage", cents: 199 },
+};
+
+exports.createCheckout = onCall({ region: 'europe-west1', maxInstances: 5, secrets: [STRIPE_KEY] }, async (req) => {
+  const uid = req.auth?.uid;
+  const { product, consent } = req.data ?? {};
+  if (!uid) throw new HttpsError('unauthenticated', 'connexion requise');
+  const item = Object.prototype.hasOwnProperty.call(SHOP, product) ? SHOP[product] : null;
+  if (!item) throw new HttpsError('invalid-argument', 'produit inconnu');
+  // Accès immédiat au contenu numérique : il faut l'accord explicite du joueur avant de payer
+  if (consent !== true) throw new HttpsError('failed-precondition', 'accord requis');
+  if ((await getDatabase().ref(`entitlements/${uid}/${product}`).get()).exists()) throw new HttpsError('already-exists', 'déjà acheté');
+  const meta = { uid, product, consent: new Date().toISOString() };
+  const session = await new Stripe(STRIPE_KEY.value()).checkout.sessions.create({
+    mode: 'payment',
+    line_items: [{ quantity: 1, price_data: { currency: 'eur', unit_amount: item.cents, product_data: { name: item.name } } }],
+    client_reference_id: uid,
+    metadata: meta,
+    payment_intent_data: { metadata: meta },
+    success_url: `${SITE}#/site?achat=ok`,
+    cancel_url: `${SITE}#/site?achat=annule`,
+  });
+  return { url: session.url };
+});
+
+// Stripe prévient ici : c'est le seul endroit qui donne un achat fait sur le site, ou le retire après un remboursement.
+exports.stripeWebhook = onRequest({ region: 'europe-west1', maxInstances: 5, secrets: [STRIPE_KEY, STRIPE_HOOK] }, async (req, res) => {
+  let event;
+  try {
+    event = new Stripe(STRIPE_KEY.value()).webhooks.constructEvent(req.rawBody, req.headers['stripe-signature'], STRIPE_HOOK.value());
+  } catch (e) {
+    res.status(400).send('signature invalide');
+    return;
+  }
+  const db = getDatabase();
+  const o = event.data.object;
+  const { uid, product, consent } = o.metadata ?? {};
+  if (uid && PRODUCTS.has(product)) {
+    if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && o.payment_status === 'paid') {
+      await db.ref(`entitlements/${uid}/${product}`).set({ at: Date.now(), order: o.id, via: 'stripe', consent: consent ?? '' });
+    }
+    if (event.type === 'charge.refunded' && o.refunded) await db.ref(`entitlements/${uid}/${product}`).remove();
+  }
+  res.json({ received: true });
 });

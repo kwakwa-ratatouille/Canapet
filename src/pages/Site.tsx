@@ -1,6 +1,9 @@
 import { CharCanvas } from '../shared/CharCanvas';
 import { gameIcon, Wordmark } from '../shared/Logo';
-import { COLLECTIONS, PACKS, PASS_GIFT } from '../shared/offer';
+import { useEffect, useState } from 'react';
+import { createCheckout, loadItems, signIn, watchUser, type CloudUser } from '../shared/cloud';
+import { IS_NATIVE } from '../shared/native';
+import { COLLECTIONS, PACKS, PASS, PASS_GIFT, SALES_ON, WEB_PRICE } from '../shared/offer';
 import { store } from '../shared/device';
 import { defaultLang } from '../shared/i18n';
 import type { Lang, Profile } from '../shared/protocol';
@@ -30,13 +33,80 @@ const CAST: Partial<Profile>[] = [
   { food: 'banane', color: '#9b5cff', hat: 'pere', acc: 'echarpe' },
 ];
 
+/** Vente sur le site : compte Google, accord pour l'accès immédiat, puis paiement sur la page Stripe. */
+function Buy({ id, lang, user, items }: { id: string; lang: Lang; user: CloudUser | null; items: string[] }) {
+  const fr = lang === 'fr';
+  const [open, setOpen] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  if (!SALES_ON || IS_NATIVE) return null;
+  if (items.includes(id)) return <p className="site-owned">✅ {fr ? 'Déjà à toi' : 'Yours already'}</p>;
+  if (!open)
+    return (
+      <button className="btn" onClick={() => setOpen(true)}>
+        🛒 {fr ? 'Acheter' : 'Buy'} {WEB_PRICE(id)}
+      </button>
+    );
+  const pay = () => {
+    setBusy(true);
+    setMsg('');
+    createCheckout(id, consent)
+      .then((url) => location.assign(url))
+      .catch(() => {
+        setMsg(fr ? 'Le paiement n’a pas pu s’ouvrir, réessaie.' : 'Payment could not open, try again.');
+        setBusy(false);
+      });
+  };
+  return (
+    <div className="site-buy">
+      {!user ? (
+        <>
+          <p>{fr ? 'Connecte-toi : l’achat ira sur ton compte Google, sur tous tes appareils.' : 'Sign in: the purchase goes on your Google account, on all your devices.'}</p>
+          <button className="btn mint" onClick={() => signIn().catch(() => setMsg(fr ? 'Connexion impossible, réessaie.' : 'Could not sign in, try again.'))}>
+            {fr ? 'Se connecter avec Google' : 'Sign in with Google'}
+          </button>
+        </>
+      ) : (
+        <>
+          <label>
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+            <span>{fr ? 'Je veux l’accès tout de suite et je renonce à mon droit de rétractation de 14 jours pour ce contenu numérique.' : 'I want access right away and I give up my 14-day right of withdrawal for this digital content.'}</span>
+          </label>
+          <button className="btn mint" disabled={!consent || busy} onClick={pay}>
+            {busy ? '…' : `${fr ? 'Payer' : 'Pay'} ${WEB_PRICE(id)}`}
+          </button>
+          <p className="pad-small">{fr ? 'Paiement sécurisé par Stripe : nous ne voyons jamais ta carte.' : 'Secure payment by Stripe: we never see your card.'}</p>
+        </>
+      )}
+      {msg && <p className="pad-small uc-note">{msg}</p>}
+    </div>
+  );
+}
+
 /** Vitrine du jeu : mignonne, simple, et les prix bien visibles. */
-export function Site() {
+export function Site({ result }: { result?: string | null }) {
   const lang: Lang = store('profile', { lang: defaultLang() }).lang ?? defaultLang();
   const fr = lang === 'fr';
   const T = (a: string, b: string) => (fr ? a : b);
+  const [user, setUser] = useState<CloudUser | null>(null);
+  const [items, setItems] = useState<string[]>([]);
+  useEffect(() => {
+    if (!SALES_ON) return;
+    return watchUser((u) => {
+      setUser(u);
+      setItems([]);
+      if (!u) return;
+      const read = () => loadItems(u.uid).then(setItems).catch(() => {});
+      void read();
+      // Retour du paiement : Stripe prévient le serveur quelques secondes après
+      if (result === 'ok') [3000, 8000, 15000].forEach((ms) => setTimeout(read, ms));
+    });
+  }, [result]);
   return (
     <div className="site">
+      {result === 'ok' && <p className="site-note">🎉 {T('Merci ! Ton achat arrive sur ton compte dans quelques secondes. Reconnecte ta manette si besoin.', 'Thank you! Your purchase reaches your account in a few seconds. Reconnect your controller if needed.')}</p>}
+      {result === 'annule' && <p className="site-note">{T('Paiement annulé : tu n’as rien payé.', 'Payment cancelled: you paid nothing.')}</p>}
       <header className="site-hero">
         <Wordmark className="home-wordmark" />
         <h1>{T('Ton salon devient une soirée de jeux.', 'Your living room becomes a game night.')}</h1>
@@ -99,6 +169,7 @@ export function Site() {
             <i>🎟️</i>
             <b>{T('Pass Soirée · 3,99 €', 'Party Pass · €3.99')}</b>
             <p>{T(`Une seule personne l’achète, tout le salon joue à tous les jeux. Avec ${PASS_GIFT} bonbons.`, `One person buys it, the whole room plays every game. With ${PASS_GIFT} candies.`)}</p>
+            <Buy id={PASS} lang={lang} user={user} items={items} />
           </div>
         </div>
         <h3>{T('Packs de questions · 1,99 €', 'Question packs · €1.99')}</h3>
@@ -108,6 +179,7 @@ export function Site() {
               <i>{p.emoji}</i>
               <b>{p.name[lang]}</b>
               <p>{p.desc[lang]}</p>
+              <Buy id={p.id} lang={lang} user={user} items={items} />
             </div>
           ))}
         </div>
@@ -118,10 +190,11 @@ export function Site() {
               <i>{p.emoji}</i>
               <b>{p.name[lang]}</b>
               <p>{p.desc[lang]}</p>
+              <Buy id={p.id} lang={lang} user={user} items={items} />
             </div>
           ))}
         </div>
-        <p className="site-soon">{T('🚧 Les achats arrivent bientôt dans l’appli Android. Pour l’instant, tout est ouvert : profitez-en !', '🚧 Purchases are coming soon in the Android app. For now, everything is open: enjoy!')}</p>
+        {!SALES_ON && <p className="site-soon">{T('🚧 Les achats arrivent bientôt. Pour l’instant, tout est ouvert : profitez-en !', '🚧 Purchases are coming soon. For now, everything is open: enjoy!')}</p>}
       </section>
 
       <footer className="site-foot">

@@ -44,6 +44,13 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 ## Test fermé
 12 testeurs Android minimum, inscrits 14 jours d'affilée. Prendre 15 à 20 personnes. Demander ensuite la production.
 
+## Vente sur le site (Stripe)
+1. Créer la micro-entreprise, puis un compte sur stripe.com et l'activer.
+2. Formule Blaze sur Firebase (voir plus bas), puis : `npx firebase-tools functions:secrets:set STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET`.
+3. Dans Stripe > Développeurs > Webhooks, ajouter `https://europe-west1-canapet-31bb7.cloudfunctions.net/stripeWebhook` avec les événements `checkout.session.completed`, `checkout.session.async_payment_succeeded` et `charge.refunded`. La clé `whsec_…` donnée par Stripe est le STRIPE_WEBHOOK_SECRET.
+4. Commencer avec les clés de test de Stripe (`sk_test_…`, carte d'essai), passer `SALES_ON` à vrai, tester, puis mettre les vraies clés.
+5. Remplir EDITOR et CONTACT dans `src/pages/Legal.tsx`, activer les reçus par e-mail dans Stripe, et vérifier la TVA avec un comptable.
+
 ## Quand on activera les ventes
 1. Créer la micro-entreprise et le profil de paiement Google.
 2. Créer les produits (achats uniques) dans la console : `pass_soiree` 3,99 € ; à 1,99 € : `pack_couples`, `pack_famille`, `pack_boulot`, `pack_minuit`, `coll_noel`, `coll_halloween`, `coll_plage`.

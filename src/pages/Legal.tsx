@@ -25,7 +25,7 @@ const DOCS: Record<string, (fr: boolean) => Doc> = {
               [
                 'Sans compte : ton pseudo, ton perso et ta progression restent sur ton téléphone. Ton pseudo et ton perso sont envoyés à la télé de la partie.',
                 'Avec un compte Google (facultatif) : ton identifiant, ton nom et ta photo Google, et ta progression (niveau, bonbons, objets), pour la retrouver sur un autre téléphone.',
-                'Achats (Pass, packs, collections) : Google Play encaisse le paiement, nous ne voyons jamais ta carte. Nous gardons le numéro de commande et la date, liés à ton compte, comme preuve d’achat.',
+                'Achats (Pass, packs, collections) : Google Play ou Stripe (sur le site) encaisse le paiement, nous ne voyons jamais ta carte. Stripe reçoit les informations nécessaires au paiement. Nous gardons le numéro de commande et la date, liés à ton compte, comme preuve d’achat.',
                 'Selfie et Photo Mystère (facultatifs) : seules les images que tu choisis sont envoyées à la télé de la partie, pour les afficher. Elles ne sont pas gardées quand la partie se termine.',
                 'Textes et dessins : ce que tu tapes ou dessines dans un jeu s’affiche à la télé de la partie et n’est pas gardé.',
               ],
@@ -53,7 +53,7 @@ const DOCS: Record<string, (fr: boolean) => Doc> = {
               [
                 'Without an account: your nickname, character and progress stay on your phone. Your nickname and character are sent to the TV of the game.',
                 'With a Google account (optional): your Google ID, name and photo, and your progress (level, candies, items), so you can get it back on another phone.',
-                'Purchases (Pass, packs, collections): Google Play takes the payment, we never see your card. We keep the order number and date, linked to your account, as proof of purchase.',
+                'Purchases (Pass, packs, collections): Google Play or Stripe (on the site) takes the payment, we never see your card. Stripe receives what it needs for the payment. We keep the order number and date, linked to your account, as proof of purchase.',
                 'Selfie and Mystery Photo (optional): only the pictures you choose are sent to the TV of the game, to display them. They are not kept when the game ends.',
                 'Text and drawings: what you type or draw in a game appears on the TV of the game and is not kept.',
               ],
@@ -89,7 +89,7 @@ const DOCS: Record<string, (fr: boolean) => Doc> = {
               'Signaler et bloquer',
               ['Pendant Photo Mystère, n’importe quel joueur peut masquer tout de suite une photo avec le bouton 🚩. L’hôte peut retirer un joueur de la partie. Pour signaler un abus : écris au contact ci-dessous.'],
             ],
-            ['Achats', ['Le Pass Soirée, les packs et les collections sont des achats uniques, sans abonnement : le prix est affiché avant de payer et Google Play encaisse. Ils s’activent tout de suite, et les remboursements suivent les règles de Google Play. Les bonbons 🍬 du jeu n’ont pas de valeur en argent.']],
+            ['Achats', ['Le Pass Soirée, les packs et les collections sont des achats uniques, sans abonnement : le prix est affiché avant de payer, et Google Play (dans l’appli) ou Stripe (sur le site) encaisse. Ils s’activent tout de suite. Sur le site, tu demandes cet accès immédiat et renonces à ton droit de rétractation de 14 jours avant de payer. Dans l’appli, les remboursements suivent les règles de Google Play. Pour un problème d’achat sur le site, écris au contact ci-dessous. Les bonbons 🍬 du jeu n’ont pas de valeur en argent.']],
             ['Contact', [who(true)]],
           ],
         }
@@ -100,7 +100,7 @@ const DOCS: Record<string, (fr: boolean) => Doc> = {
             ['Age and content', ['For ages 13 and up. Some games have edgy humour and a cartoon duel: family mode, on the host’s phone, softens the text.']],
             ['What you send', ['You are responsible for your nicknames, text, drawings, photos and videos. Only send pictures you have the right to show, and never anything sexual, violent, hateful or illegal, nor a picture of someone without their consent. Nothing involving a minor inappropriately.']],
             ['Report and block', ['During Mystery Photo, any player can hide a picture at once with the 🚩 button. The host can remove a player from the game. To report abuse, write to the contact below.']],
-            ['Purchases', ['The Party Pass, packs and collections are one-time purchases, no subscription: the price is shown before paying and Google Play takes the payment. They activate at once, and refunds follow Google Play’s rules. In-game candies 🍬 have no money value.']],
+            ['Purchases', ['The Party Pass, packs and collections are one-time purchases, no subscription: the price is shown before paying, and Google Play (in the app) or Stripe (on the site) takes the payment. They activate at once. On the site, you ask for this immediate access and give up your 14-day right of withdrawal before paying. In the app, refunds follow Google Play’s rules. For a problem with a site purchase, write to the contact below. In-game candies 🍬 have no money value.']],
             ['Contact', [who(false)]],
           ],
         },

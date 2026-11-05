@@ -24,3 +24,9 @@
 .site-item p { font-size: 15px; }
 .site-soon { margin-top: 18px !important; font-weight: 800; }
 .site-foot a { color: inherit; }
+.site-buy { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+.site-buy label { display: flex; gap: 8px; text-align: left; font-size: 14px; }
+.site-buy input { width: 22px; height: 22px; flex: none; }
+.site-card .btn, .site-item .btn { margin-top: 10px; }
+.site-owned { font-weight: 800; margin-top: 10px !important; }
+.site-note { max-width: 960px; margin: 0 auto 16px !important; padding: 12px; background: #d6f7ea; border: 4px solid #3a2140; border-radius: 18px; font-weight: 800; }

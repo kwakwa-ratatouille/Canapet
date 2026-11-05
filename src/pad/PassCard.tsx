@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IS_PLAY } from '../shared/native';
+import { IS_NATIVE, IS_PLAY } from '../shared/native';
 import { buyProduct, productPrice, restoreProduct } from '../shared/billing';
 import { FREE_GAMES, PASS, PASS_GIFT, productById } from '../shared/offer';
 import type { Lang } from '../shared/protocol';
@@ -43,7 +43,13 @@ export function ProductCard({ id, lang, signedIn, connect, onGot, onClose }: { i
       {id.startsWith('pack_') && <p className="pad-small">{fr ? 'Un seul achat : tout le salon en profite quand tu joues.' : 'One purchase: the whole room enjoys it when you play.'}</p>}
       {id.startsWith('coll_') && <p className="pad-small">{fr ? 'Pour le style seulement : aucun avantage dans les jeux.' : 'Just for style: no advantage in games.'}</p>}
       {!IS_PLAY ? (
-        <p className="pad-small">{fr ? 'À acheter dans l’appli Android installée depuis Google Play.' : 'Buy it in the Android app from Google Play.'}</p>
+        IS_NATIVE ? (
+          <p className="pad-small">{fr ? 'À acheter depuis un navigateur, sur le site de Cana’pet, avec ton compte Google.' : 'Buy it from a browser, on the Cana’pet site, with your Google account.'}</p>
+        ) : (
+          <a className="btn big mint" href="#/site" target="_blank" rel="noreferrer">
+            🛒 {fr ? 'Acheter sur le site' : 'Buy on the site'}
+          </a>
+        )
       ) : !signedIn ? (
         <>
           <p className="pad-small">{fr ? 'Connecte-toi d’abord pour retrouver ton achat sur tes téléphones.' : 'Sign in first to keep your purchase across phones.'}</p>

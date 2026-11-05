@@ -51,7 +51,7 @@ function App() {
     );
   }
   if (page === 'aide') return <Help />;
-  if (page === 'site') return <Site />;
+  if (page === 'site') return <Site result={route.query.get('achat')} />;
   if (page && isLegal(page)) return <Legal page={page} />;
   if (fromGoogle && !route.parts.length) return <Relay id={fromGoogle.id} k={fromGoogle.k} back={fromGoogle} />;
   if (page === 'relais-google') return <Relay id={route.query.get('id') ?? ''} k={route.query.get('k') ?? ''} here={route.query.has('ici')} />;

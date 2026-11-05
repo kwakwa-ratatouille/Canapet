@@ -123,7 +123,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
       }
       setCloud('busy');
       loadItems(u.uid)
-        .then((items) => setProfile((p) => ({ ...p, items })))
+        .then((items) => applyItems(u.uid, items))
         .catch(() => {});
       loadCloud(u.uid)
         .then((remote) => {
@@ -134,6 +134,15 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         .catch(() => setCloud('error'));
     });
   }, [useCloud, demo]);
+  // Retour sur la manette : un achat a pu être fait sur le site entre-temps
+  useEffect(() => {
+    if (!user) return;
+    const again = () => {
+      if (document.visibilityState === 'visible') loadItems(user.uid).then((items) => applyItems(user.uid, items)).catch(() => {});
+    };
+    document.addEventListener('visibilitychange', again);
+    return () => document.removeEventListener('visibilitychange', again);
+  }, [user]);
   // Sauvegarde sur le compte (regroupée) à chaque changement.
   useEffect(() => {
     if (!user || !synced.current) return;
@@ -153,10 +162,20 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const disconnect = () => {
     void signOut();
   };
-  // Achat obtenu : bonbons offerts seulement pour un nouvel achat, pas quand on le retrouve
+  // Bonbons du Pass, une seule fois par compte sur ce téléphone (achat dans l'appli ou sur le site)
+  const passGift = (uid: string) => {
+    if (store(`passGift:${uid}`, false)) return;
+    save(`passGift:${uid}`, true);
+    setProgress((p) => ({ ...p, coins: p.coins + PASS_GIFT }));
+  };
+  const applyItems = (uid: string, items: string[]) => {
+    setProfile((p) => ({ ...p, items }));
+    if (items.includes(PASS) && SALES_ON) passGift(uid);
+  };
+  // Achat obtenu dans l'appli
   const gotItem = (id: string, bought: boolean) => {
     setProfile((p) => ({ ...p, items: [...new Set([...(p.items ?? []), id])] }));
-    if (bought && id === PASS) setProgress((p) => ({ ...p, coins: p.coins + PASS_GIFT }));
+    if (bought && id === PASS) passGift(user?.uid ?? '');
   };
   const account = { user, cloud, connect, disconnect, gotItem };
   /** Quitter la partie : la télé est prévenue, on revient à l'accueil (on peut revenir avec le même code). */
