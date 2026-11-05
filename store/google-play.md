@@ -15,7 +15,7 @@ Puis Actions > Appli Android > Run workflow. Le fichier `.aab` apparaît sur la 
 - Résumé (80 signes) : Le téléphone devient la manette, la télé devient le plateau. Jusqu'à 12 joueurs !
 - Description :
   Transformez votre salon en soirée de jeux ! Ouvrez Cana'pet sur une télé ou un ordinateur, scannez le QR code, et chaque téléphone devient une manette. Vos amis n'ont rien à installer.
-  26 jeux, de 2 à 12 joueurs : courses, bagarres molles, bluff, dessin, votes entre amis, définitions bidon et tournois avec podium.
+  28 jeux, de 2 à 12 joueurs : courses, bagarres molles, bluff, dessin, votes entre amis, définitions bidon, questions de culture et tournois avec podium.
   Crée ton perso rigolo, ajoute ton selfie, gagne des bonbons, relève les défis de la semaine et débloque des tenues.
   Il faut un écran (télé connectée avec navigateur, ordinateur en HDMI) et internet.
 - Catégorie : Jeux > Soirée. Tags : Multijoueur local.

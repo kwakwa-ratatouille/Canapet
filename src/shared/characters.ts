@@ -65,6 +65,12 @@ export const HATS: { id: string; name: Name }[] = [
   { id: 'antenne', name: { fr: 'Antenne', en: 'Antenna' } },
   { id: 'noeud', name: { fr: 'Nœud', en: 'Bow' } },
   { id: 'bonnet', name: { fr: 'Bonnet', en: 'Beanie' } },
+  { id: 'sombrero', name: { fr: 'Sombrero', en: 'Sombrero' } },
+  { id: 'paille', name: { fr: 'Chapeau de paille', en: 'Straw hat' } },
+  { id: 'chat', name: { fr: 'Oreilles de chat', en: 'Cat ears' } },
+  { id: 'lapin', name: { fr: 'Oreilles de lapin', en: 'Bunny ears' } },
+  { id: 'chantier', name: { fr: 'Casque de chantier', en: 'Hard hat' } },
+  { id: 'bandana', name: { fr: 'Bandana', en: 'Bandana' } },
   { id: 'fete', name: { fr: 'Chapeau de fête', en: 'Party hat' } },
   { id: 'fleur', name: { fr: 'Fleur', en: 'Flower' } },
   { id: 'toque', name: { fr: 'Toque de chef', en: 'Chef hat' } },
@@ -91,6 +97,9 @@ export const ACCS: { id: string; name: Name }[] = [
   { id: 'rougir', name: { fr: 'Joues roses', en: 'Blush' } },
   { id: 'barbe', name: { fr: 'Barbe', en: 'Beard' } },
   { id: 'masque', name: { fr: 'Masque', en: 'Mask' } },
+  { id: 'clown', name: { fr: 'Nez de clown', en: 'Clown nose' } },
+  { id: 'pansement', name: { fr: 'Pansement', en: 'Band-aid' } },
+  { id: 'etoiles', name: { fr: 'Lunettes étoiles', en: 'Star glasses' } },
   { id: 'coeurs', name: { fr: 'Lunettes cœur', en: 'Heart glasses' } },
 ];
 

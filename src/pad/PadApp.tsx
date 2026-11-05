@@ -398,6 +398,7 @@ function PadScreenView({
   const [picking, setPicking] = useState(false);
   const [touring, setTouring] = useState(false);
   const [noTour, setNoTour] = useState<string[]>(() => store<string[]>('noTour', []));
+  const [moodAsked, setMoodAsked] = useState(() => store<boolean>('moodAsked', false));
   const [optFor, setOptFor] = useState<string | null>(null);
   /** Menu de réglage ouvert (bots, niveau des bots, voix). */
   const [menu, setMenu] = useState<null | 'bots' | 'botlevel' | 'voice'>(null);
@@ -566,6 +567,26 @@ function PadScreenView({
           )}
           {screen.host ? (
             <>
+              {!moodAsked && (
+                <div className="mood-ask">
+                  <b>{lang === 'fr' ? 'Ce soir, c’est plutôt…' : 'Tonight is more…'}</b>
+                  <div className="row">
+                    {[false, true].map((fam) => (
+                      <button
+                        key={String(fam)}
+                        className={fam ? 'btn mint' : 'btn'}
+                        onClick={() => {
+                          if (screen.family !== fam) host('family');
+                          save('moodAsked', true);
+                          setMoodAsked(true);
+                        }}
+                      >
+                        {fam ? (lang === 'fr' ? '👨‍👩‍👧 En famille' : '👨‍👩‍👧 Family') : lang === 'fr' ? '🍕 Entre potes' : '🍕 With friends'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <p className="pad-title">{t(lang, 'hostAsk')}</p>
               <button className="big-card rose" onClick={() => setTouring(true)}>
                 <svg viewBox="0 0 60 60" className="bc-icon" aria-hidden>
@@ -634,7 +655,7 @@ function PadScreenView({
               )}
               <p className="opt-title">{t(lang, 'options')}</p>
               <div className="opt-row">
-                <button className={`opt mint ${screen.family ? 'on' : ''}`} onClick={() => host('family')} aria-pressed={screen.family}>
+                <button className={`opt mint ${screen.family ? 'on' : ''}`} onClick={() => { save('moodAsked', true); host('family'); }} aria-pressed={screen.family}>
                   <span className="opt-ico">👨‍👩‍👧</span>
                   <b>{t(lang, 'family')}</b>
                   <small>{t(lang, screen.family ? 'familyShortOn' : 'familyShortOff')}</small>
@@ -731,7 +752,7 @@ function PadScreenView({
         );
       if (screen.game === 'reflexes' && screen.data) return <ReflexPad data={screen.data as ReflexPadData} lang={lang} send={send} />;
       if (screen.game === 'roulette' && screen.data) return <RoulettePad data={screen.data as RoulettePadData} lang={lang} send={send} />;
-      if ((screen.game === 'tribunal' || screen.game === 'dico') && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
+      if (['tribunal', 'dico', 'plutot', 'chiffre'].includes(screen.game) && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
       if (screen.game === 'undercover' && screen.data) return <UndercoverPad data={screen.data as UndercoverPadData} lang={lang} send={send} />;
       if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
       if (screen.game === 'president' && screen.data) return <PresidentPad data={screen.data as PresidentPadData} lang={lang} send={send} />;

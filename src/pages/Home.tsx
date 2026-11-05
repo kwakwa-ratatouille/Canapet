@@ -21,6 +21,8 @@ const MASCOTS = [
   { food: 'tartine', color: '#9b5cff', hat: 'haut', acc: 'monocle' },
 ];
 
+const SITE_NAME = 'kwakwa-ratatouille.github.io/Canapet';
+
 /** Compte Google sur l'accueil : connexion, et la progression du téléphone fusionnée avec celle du compte. */
 function AccountCard({ lang }: { lang: Lang }) {
   const fr = lang === 'fr';
@@ -196,6 +198,13 @@ export function Home() {
     <div className="home-card tv-card">
       <h2>📺 {t(lang, 'tvBtn')}</h2>
       <p>{t(lang, 'tvBtnSub')}</p>
+      {IS_PHONE && (
+        <ul className="tv-ways">
+          <li>📱 {fr ? <><b>Téléphone + télé :</b> touche le bouton ci-dessous sur un téléphone en plus, puis envoie son écran sur la télé (Cast ou Smart View sur Android, Recopie de l’écran sur iPhone). Il reste branché et les joueurs prennent les autres téléphones.</> : <><b>Phone + TV:</b> tap the button below on a spare phone, then send its screen to the TV (Cast or Smart View on Android, Screen Mirroring on iPhone). Keep it plugged in; players use the other phones.</>}</li>
+          <li>💻 {fr ? <><b>PC + télé :</b> branche le PC en HDMI et ouvre {SITE_NAME} dans son navigateur.</> : <><b>PC + TV:</b> plug the PC in by HDMI and open {SITE_NAME} in its browser.</>}</li>
+          <li>🌐 {fr ? <><b>Télé connectée :</b> ouvre {SITE_NAME} dans le navigateur de la télé, si elle en a un.</> : <><b>Smart TV:</b> open {SITE_NAME} in the TV’s browser, if it has one.</>}</li>
+        </ul>
+      )}
       <div className="row">
         <a className="btn" href="#/tv">
           {t(lang, 'tvBtn')}

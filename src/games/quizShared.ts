@@ -14,4 +14,8 @@ export interface QuizPadData {
   left: number;
   /** Message court (réponse refusée, etc.). */
   note: string;
+  /** Réponse attendue : un nombre. */
+  numeric?: boolean;
+  /** Texte d’aide dans le champ. */
+  hint?: string;
 }

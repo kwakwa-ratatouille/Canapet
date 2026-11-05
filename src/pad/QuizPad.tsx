@@ -30,7 +30,7 @@ export function QuizPad({ data, lang, send }: { data: QuizPadData; lang: Lang; s
             submit();
           }}
         >
-          <input value={text} maxLength={90} autoComplete="off" placeholder={fr ? 'Invente une définition crédible…' : 'Make up a believable meaning…'} onChange={(e) => setText(e.target.value)} />
+          <input value={text} maxLength={90} autoComplete="off" inputMode={data.numeric ? 'decimal' : 'text'} placeholder={data.hint ?? (fr ? 'Invente une définition crédible…' : 'Make up a believable meaning…')} onChange={(e) => setText(e.target.value)} />
           <button className="btn big mint" disabled={!text.trim()}>
             {fr ? 'Envoyer' : 'Send'}
           </button>

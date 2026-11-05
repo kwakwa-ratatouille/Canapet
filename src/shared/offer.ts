@@ -7,6 +7,8 @@ export const SALES_ON = false;
 /** Jeux toujours gratuits : de quoi faire une vraie soirée et donner envie du reste. */
 export const FREE_GAMES = ['trappe', 'tribunal', 'dessin', 'sumo', 'bombes', 'chaises', 'patate', 'reflexes'];
 
+/** Prix décidé au lancement : 3,99 € (réglé dans la console Google Play, jamais écrit en dur à l'écran). */
+
 /** Bonbons offerts à l'achat du Pass. */
 export const PASS_GIFT = 500;
 

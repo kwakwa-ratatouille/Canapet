@@ -7,6 +7,42 @@ export interface Tuto {
 }
 
 export const TUTOS: Record<string, Record<Lang, Tuto>> = {
+  plutot: {
+    fr: {
+      goal: 'Deux choix absurdes : devine ce que le groupe va préférer !',
+      steps: [
+        ['📱', 'Touche ton choix sur ton téléphone'],
+        ['🗳️', 'Les votes s’affichent sur la télé'],
+        ['⭐', 'Avec la majorité = 2 points. Égalité = 1 point'],
+      ],
+    },
+    en: {
+      goal: 'Two absurd choices: guess what the group will prefer!',
+      steps: [
+        ['📱', 'Tap your choice on your phone'],
+        ['🗳️', 'The votes appear on the TV'],
+        ['⭐', 'With the majority = 2 points. Tie = 1 point'],
+      ],
+    },
+  },
+  chiffre: {
+    fr: {
+      goal: 'Une question, un nombre : le plus proche gagne !',
+      steps: [
+        ['🔢', 'Tape ton nombre sur ton téléphone'],
+        ['📏', 'Le plus proche marque 3 points, le suivant 1 point'],
+        ['🎯', 'Pile-poil = 5 points'],
+      ],
+    },
+    en: {
+      goal: 'One question, one number: closest wins!',
+      steps: [
+        ['🔢', 'Type your number on your phone'],
+        ['📏', 'Closest scores 3 points, the next 1 point'],
+        ['🎯', 'Bullseye = 5 points'],
+      ],
+    },
+  },
   tribunal: {
     fr: {
       goal: 'Qui de vous serait le premier à… ? Condamnez vos amis !',
