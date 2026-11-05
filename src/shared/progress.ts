@@ -19,7 +19,16 @@ export interface Progress {
 export type Kind = 'food' | 'hat' | 'acc';
 
 /** Prix en bonbons et niveau minimum. Ce qui n'est pas listé est gratuit dès le départ. */
-export const PRICES: Record<string, { price: number; level?: number }> = {
+export const PRICES: Record<string, { price: number; level?: number; /** Collection payante : achetée quand les ventes sont ouvertes. */ coll?: string }> = {
+  'hat:pere': { price: 300, coll: 'coll_noel' },
+  'hat:renne': { price: 300, coll: 'coll_noel' },
+  'acc:echarpe': { price: 300, coll: 'coll_noel' },
+  'hat:citrouille': { price: 300, coll: 'coll_halloween' },
+  'hat:chauve': { price: 300, coll: 'coll_halloween' },
+  'acc:crocs': { price: 300, coll: 'coll_halloween' },
+  'hat:ananas': { price: 300, coll: 'coll_plage' },
+  'hat:requin': { price: 300, coll: 'coll_plage' },
+  'acc:tuba': { price: 300, coll: 'coll_plage' },
   'food:cupcake': { price: 60 },
   'food:sushi': { price: 60 },
   'food:frites': { price: 80 },

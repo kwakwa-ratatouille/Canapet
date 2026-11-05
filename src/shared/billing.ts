@@ -1,23 +1,22 @@
-// Achat du Pass Soirée : Google Play encaisse (plugin Billing de l'appli), le serveur vérifie et inscrit le Pass sur le compte.
-import { verifyPass } from './cloud';
+// Achats : Google Play encaisse (plugin Billing de l'appli), le serveur vérifie et inscrit l'achat sur le compte.
+import { verifyPurchase } from './cloud';
 
-const PRODUCT = 'pass_soiree';
 type Bridge = { nativePromise?: (p: string, m: string, o: unknown) => Promise<unknown> };
-const call = <T,>(method: string): Promise<T> => {
+const call = <T,>(method: string, id: string): Promise<T> => {
   const c = (window as unknown as { Capacitor?: Bridge }).Capacitor;
   if (!c?.nativePromise) return Promise.reject(new Error('indisponible'));
-  return c.nativePromise('Billing', method, { id: PRODUCT }) as Promise<T>;
+  return c.nativePromise('Billing', method, { id }) as Promise<T>;
 };
 
-export const passPrice = () => call<{ price: string }>('product').then((r) => r.price);
+export const productPrice = (id: string) => call<{ price: string }>('product', id).then((r) => r.price);
 
-export async function buyPass(): Promise<boolean> {
-  const { token } = await call<{ token: string }>('buy');
-  return verifyPass(token);
+export async function buyProduct(id: string): Promise<boolean> {
+  const { token } = await call<{ token: string }>('buy', id);
+  return verifyPurchase(id, token);
 }
 
 /** Retrouve un achat déjà fait sur ce compte Google Play. */
-export async function restorePass(): Promise<boolean> {
-  const { token } = await call<{ token?: string }>('owned');
-  return token ? verifyPass(token) : false;
+export async function restoreProduct(id: string): Promise<boolean> {
+  const { token } = await call<{ token?: string }>('owned', id);
+  return token ? verifyPurchase(id, token) : false;
 }

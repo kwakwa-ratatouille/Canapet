@@ -16,8 +16,8 @@ export interface Profile {
   /** Regard et pose choisis (sinon ceux du perso). */
   eyes?: string;
   pose?: string;
-  /** A le Pass Soirée : débloque tous les jeux pour le salon. */
-  pass?: boolean;
+  /** Achats du joueur (Pass, packs, collections), vérifiés par le serveur. */
+  items?: string[];
 }
 
 export type PadLayout = 'tap' | 'stick' | 'bluff' | 'buttons';
@@ -29,7 +29,7 @@ export interface GameInfo {
   name: Record<Lang, string>;
   slug: string;
   color: string;
-  options?: { id: string; label: Record<Lang, string>; choices: { v: number; label: Record<Lang, string> }[] }[];
+  options?: { id: string; label: Record<Lang, string>; choices: { v: number; label: Record<Lang, string>; pack?: string }[] }[];
 }
 
 /** Défi secret du tournoi (texte dans la langue du joueur ; done = null tant que rien n'est décidé). */
@@ -46,7 +46,7 @@ export interface GhostInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; /** Un joueur du salon a le Pass. */ anyPass?: boolean; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; recap?: boolean; players: { pid: string; name: string; color: string }[] }
+  | { s: 'lobby'; /** Achats des joueurs présents : profitent à tout le salon. */ roomItems?: string[]; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; recap?: boolean; players: { pid: string; name: string; color: string }[] }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean; secret?: SecretInfo }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }

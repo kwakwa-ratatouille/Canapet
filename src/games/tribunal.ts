@@ -4,6 +4,8 @@ import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
 import { candy, roundRectText } from './draw';
+import { PACKS, PACK_OPTION } from '../shared/offer';
+import { PACK_CASES } from './packsData';
 import type { QuizPadData } from './quizShared';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
@@ -84,7 +86,9 @@ interface Pl extends Runner {
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const pls: Pl[] = runners.slice(0, 12).map((r) => ({ ...r, score: 0, pick: -1, gain: 0 }));
-  const deck = CASES.filter((c) => !(ctx.family && c[0].startsWith('!')))
+  const pack = ctx.opts.pack ? PACKS[ctx.opts.pack - 1] : null;
+  const deck = (pack ? PACK_CASES[pack.id] : CASES.filter((c) => !(ctx.family && c[0].startsWith('!'))))
+    .slice()
     .sort(() => Math.random() - 0.5)
     .slice(0, ROUNDS)
     .map((c) => c[fr ? 0 : 1].replace(/^!/, ''));
@@ -303,5 +307,6 @@ export const tribunal: GameBase = {
   max: 12,
   botFill: 3,
   music: 'party',
+  options: [PACK_OPTION],
   create,
 };

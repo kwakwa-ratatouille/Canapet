@@ -285,6 +285,12 @@ function hat(t,x,y,c){
   case 'pirate':return `<path d="M${x-30} ${y+2}Q${x} ${y-8} ${x+30} ${y+2}C${x+24} ${y-14} ${x+14} ${y-30} ${x} ${y-30}C${x-14} ${y-30} ${x-24} ${y-14} ${x-30} ${y+2}Z" fill="${P}"/><circle cx="${x}" cy="${y-16}" r="5.5" fill="#fff"/><path d="M${x-7} ${y-7}L${x+7} ${y-3}M${x-7} ${y-3}L${x+7} ${y-7}" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`;
   case 'aureole':return `<ellipse cx="${x}" cy="${y-18}" rx="21" ry="6.5" fill="none" stroke="${P}" stroke-width="10"/><ellipse cx="${x}" cy="${y-18}" rx="21" ry="6.5" fill="none" stroke="${SOL}" stroke-width="5"/>`;
   case 'fleur':return [0,1,2,3,4].map(k=>{const a=k*1.2566;return `<circle cx="${x+14+Math.cos(a)*8}" cy="${y-8+Math.sin(a)*8}" r="6.5" fill="${ROSE}" ${sw(3)}/>`;}).join('')+`<circle cx="${x+14}" cy="${y-8}" r="5" fill="${SOL}" ${sw(3)}/>`;
+  case 'pere':return `<path d="M${x-22} ${y}C${x-20} ${y-30} ${x+10} ${y-38} ${x+26} ${y-18}L${x+22} ${y}Z" fill="#e8323c" ${sw(3.5)}/><circle cx="${x+28}" cy="${y-15}" r="7" fill="#fff" ${sw(3)}/><rect x="${x-26}" y="${y-6}" width="52" height="12" rx="6" fill="#fff" ${sw(3)}/>`;
+  case 'renne':return `<path d="M${x-15} ${y+2}L${x-19} ${y-26}M${x-18} ${y-14}L${x-30} ${y-20}M${x-19} ${y-22}L${x-28} ${y-34}M${x+15} ${y+2}L${x+19} ${y-26}M${x+18} ${y-14}L${x+30} ${y-20}M${x+19} ${y-22}L${x+28} ${y-34}" fill="none" stroke="#8a5a32" stroke-width="6" stroke-linecap="round"/>`;
+  case 'citrouille':return `<ellipse cx="${x}" cy="${y-12}" rx="27" ry="19" fill="#ff8a1f" ${sw(3.5)}/><path d="M${x-9} ${y-30}C${x-16} ${y-16} ${x-16} ${y-6} ${x-9} ${y+6}M${x+9} ${y-30}C${x+16} ${y-16} ${x+16} ${y-6} ${x+9} ${y+6}" fill="none" stroke="#c95f00" stroke-width="3"/><path d="M${x} ${y-30}q2 -8 9 -9" fill="none" stroke="#4f8f2f" stroke-width="6" stroke-linecap="round"/>`;
+  case 'chauve':return `<path d="M${x} ${y-12}C${x-10} ${y-26} ${x-26} ${y-24} ${x-36} ${y-14}C${x-28} ${y-12} ${x-24} ${y-6} ${x-22} ${y}C${x-16} ${y-6} ${x-8} ${y-6} ${x} ${y}C${x+8} ${y-6} ${x+16} ${y-6} ${x+22} ${y}C${x+24} ${y-6} ${x+28} ${y-12} ${x+36} ${y-14}C${x+26} ${y-24} ${x+10} ${y-26} ${x} ${y-12}Z" fill="#3a2140"/><circle cx="${x-5}" cy="${y-9}" r="2.5" fill="#ffd60a"/><circle cx="${x+5}" cy="${y-9}" r="2.5" fill="#ffd60a"/>`;
+  case 'ananas':return `<path d="M${x} ${y-16}C${x-6} ${y-28} ${x-14} ${y-32} ${x-20} ${y-32}C${x-14} ${y-26} ${x-12} ${y-20} ${x-10} ${y-14}ZM${x} ${y-16}C${x} ${y-28} ${x} ${y-32} ${x} ${y-37}C${x+8} ${y-30} ${x+8} ${y-24} ${x+6} ${y-14}ZM${x+2} ${y-16}C${x+8} ${y-28} ${x+14} ${y-32} ${x+20} ${y-32}C${x+16} ${y-24} ${x+14} ${y-18} ${x+10} ${y-12}Z" fill="#4f9f35" ${sw(3)}/><ellipse cx="${x}" cy="${y-6}" rx="21" ry="13" fill="#ffc928" ${sw(3.5)}/>`;
+  case 'requin':return `<path d="M${x-20} ${y+2}C${x-14} ${y-20} ${x+6} ${y-32} ${x+22} ${y-36}C${x+16} ${y-22} ${x+18} ${y-10} ${x+24} ${y+2}Z" fill="#7f97a8" ${sw(3.5)}/>`;
   case 'sombrero':return `<ellipse cx="${x}" cy="${y}" rx="40" ry="10" fill="${c}" ${sw(3.5)}/><path d="M${x-17} ${y-3}C${x-16} ${y-34} ${x+16} ${y-34} ${x+17} ${y-3}Z" fill="${c}" ${sw(3.5)}/><path d="M${x-16} ${y-10}H${x+16}" stroke="#fff" stroke-width="4"/>`;
   case 'paille':return `<ellipse cx="${x}" cy="${y}" rx="36" ry="9" fill="#f4d675" ${sw(3.5)}/><path d="M${x-19} ${y-2}C${x-18} ${y-26} ${x+18} ${y-26} ${x+19} ${y-2}Z" fill="#f4d675" ${sw(3.5)}/><path d="M${x-19} ${y-7}H${x+19}" stroke="${c}" stroke-width="6"/>`;
   case 'chat':return `<path d="M${x-26} ${y+4}L${x-22} ${y-26}L${x-4} ${y-4}Z" fill="${c}" ${sw(3.5)}/><path d="M${x+26} ${y+4}L${x+22} ${y-26}L${x+4} ${y-4}Z" fill="${c}" ${sw(3.5)}/><path d="M${x-21} ${y-3}L${x-20} ${y-16}L${x-11} ${y-5}Z M${x+21} ${y-3}L${x+20} ${y-16}L${x+11} ${y-5}Z" fill="#ffb3d4"/>`;
@@ -313,6 +319,9 @@ function acc(t,cx,cy,s){
   case 'moustache':{const y=cy+12*s;return `<path d="M${cx} ${y}C${cx-6*s} ${y-5*s} ${cx-18*s} ${y-4*s} ${cx-20*s} ${y+5*s}C${cx-12*s} ${y+2*s} ${cx-6*s} ${y+3*s} ${cx} ${y+1*s}C${cx+6*s} ${y+3*s} ${cx+12*s} ${y+2*s} ${cx+20*s} ${y+5*s}C${cx+18*s} ${y-4*s} ${cx+6*s} ${y-5*s} ${cx} ${y}Z" fill="${P}" ${sw(2*s)}/>`;}
   case 'monocle':return `<circle cx="${cx+e}" cy="${cy}" r="${11*s}" fill="#fff" fill-opacity=".25" ${sw(3*s)}/><path d="M${cx+e+8*s} ${cy+8*s}Q${cx+e+18*s} ${cy+20*s} ${cx+e+10*s} ${cy+32*s}" fill="none" stroke="${SOL}" stroke-width="${2.5*s}" stroke-linecap="round"/>`;
   case 'coeurs':return heart(cx-e,cy+1*s,11*s,ROSE)+heart(cx+e,cy+1*s,11*s,ROSE)+`<path d="M${cx-3*s} ${cy-3*s}H${cx+3*s}" ${sw(3*s)}/>`;
+  case 'echarpe':return `<path d="M${cx-24*s} ${cy+24*s}Q${cx} ${cy+32*s} ${cx+24*s} ${cy+24*s}L${cx+24*s} ${cy+33*s}Q${cx} ${cy+41*s} ${cx-24*s} ${cy+33*s}Z" fill="#e8323c" ${sw(3*s)}/><rect x="${cx+8*s}" y="${cy+32*s}" width="${10*s}" height="${22*s}" rx="${3*s}" fill="#e8323c" ${sw(3*s)}/>`;
+  case 'crocs':return `<path d="M${cx-9*s} ${cy+11*s}l${3*s} ${11*s}l${4*s} ${-11*s}ZM${cx+2*s} ${cy+11*s}l${4*s} ${11*s}l${3*s} ${-11*s}Z" fill="#fff" ${sw(2.5*s)}/>`;
+  case 'tuba':return `<rect x="${cx-e-13*s}" y="${cy-11*s}" width="${2*e+26*s}" height="${22*s}" rx="${10*s}" fill="rgba(150,225,255,0.55)" ${sw(3*s)}/><path d="M${cx+e+14*s} ${cy+14*s}V${cy-36*s}" fill="none" stroke="#ff8a1f" stroke-width="${7*s}" stroke-linecap="round"/>`;
   case 'clown':return `<circle cx="${cx}" cy="${cy+7*s}" r="${8*s}" fill="#ff3b3b" ${sw(3*s)}/>`;
   case 'pansement':return `<rect x="${cx+8*s}" y="${cy+7*s}" width="${20*s}" height="${9*s}" rx="${4*s}" fill="#ffd9a8" transform="rotate(-25 ${cx+18*s} ${cy+11*s})" ${sw(2.5*s)}/>`;
   case 'etoiles':return [cx-e,cx+e].map(x=>`<path d="M${x} ${cy-11*s}l${3*s} ${7*s}l${8*s} ${1*s}l${-6*s} ${5*s}l${2*s} ${8*s}l${-7*s} ${-4*s}l${-7*s} ${4*s}l${2*s} ${-8*s}l${-6*s} ${-5*s}l${8*s} ${-1*s}Z" fill="#ffd60a" ${sw(2.5*s)}/>`).join('');
@@ -613,12 +622,12 @@ export const COLORS = { P, ROSE, VIO, VIO2, SOL, MEN, CIEL, NUIT };
 export const PLAYER_COLORS = COL;
 export const PLAYER_COLOR_NAMES = COLN;
 export const CHARACTERS = Object.fromEntries(KEYS.map(k => [k, K[k].n]));
-export const HATS = ['couronne','casquette','haut','bob','cornes','antenne','noeud','toque','fete','pirate','aureole','fleur','bonnet','sorciere','viking','cowboy','afro','licorne','ninja','dj','frites','pizzahat','sombrero','paille','chat','lapin','chantier','bandana'];
+export const HATS = ['couronne','casquette','haut','bob','cornes','antenne','noeud','toque','fete','pirate','aureole','fleur','bonnet','sorciere','viking','cowboy','afro','licorne','ninja','dj','frites','pizzahat','sombrero','paille','chat','lapin','chantier','bandana','pere','renne','citrouille','chauve','ananas','requin'];
 /** Regards et poses au choix. */
 export const EYES = ['cool','round','sleepy','angry','wink','star'];
 export const POSES = ['hip','cross','flex','wave','thumbs','shy','dab','disco','peace','hero','shrug','think','salute'];
 export const LOOKS = LOOK;
-export const ACCESSORIES = ['lunettes','soleil','moustache','monocle','bisou','coeurs','masque','barbe','rougir','clown','pansement','etoiles'];
+export const ACCESSORIES = ['lunettes','soleil','moustache','monocle','bisou','coeurs','masque','barbe','rougir','clown','pansement','etoiles','echarpe','crocs','tuba'];
 export const MOODS = ['happy','wow','sad','win','toot'];
 /** Personnage complet. kind: clé de CHARACTERS ; color: couleur des baskets ;
  *  opts: { mood, hat, acc, selfie, arms, toot }. Renvoie un <svg> (viewBox ${VB}). */

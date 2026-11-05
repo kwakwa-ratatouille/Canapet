@@ -268,6 +268,9 @@ export function Home() {
       <a className="home-help" href="#/aide">
         {t(lang, 'howTv')}
       </a>
+      <a className="home-help" href="#/site">
+        ✨ {lang === 'fr' ? 'Découvrir Cana’pet' : 'Discover Cana’pet'}
+      </a>
       <LegalLinks lang={lang} />
     </div>
   );

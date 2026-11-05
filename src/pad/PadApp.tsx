@@ -2,7 +2,7 @@ import { TEAMS } from '../games/teams';
 import { PresidentPad } from './PresidentPad';
 import type { PresidentPadData } from '../games/presidentShared';
 import { VOICES } from '../shared/sound';
-import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser, hasPass } from '../shared/cloud';
+import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser, loadItems } from '../shared/cloud';
 import { GoogleLogo } from '../shared/GoogleLogo';
 import './editor.css';
 import { TiebreakPad, VotePad, WheelPad } from './PartyPad';
@@ -23,12 +23,12 @@ import { ScribblePad } from './ScribblePad';
 import { TraitorPad } from './TraitorPad';
 import { UndercoverPad } from './UndercoverPad';
 import { QuizPad } from './QuizPad';
-import { PassCard } from './PassCard';
+import { ProductCard } from './PassCard';
 import { ControlsCard } from './ControlsCard';
 import { LegalLinks } from '../pages/Legal';
 import type { QuizPadData } from '../games/quizShared';
 import { afterGame, questsNow } from '../shared/quests';
-import { isLocked, gameOfDay, PASS_GIFT, SALES_ON } from '../shared/offer';
+import { isLocked, gameOfDay, PACKS, PASS, PASS_GIFT, SALES_ON } from '../shared/offer';
 import { RoulettePad } from './RoulettePad';
 import { ReflexPad } from './ReflexPad';
 import type { ReflexPadData } from '../games/reflexShared';
@@ -117,13 +117,13 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
       setUser(u);
       synced.current = false;
       if (!u) {
-        setProfile((p) => (p.pass ? { ...p, pass: false } : p));
+        setProfile((p) => (p.items?.length ? { ...p, items: [] } : p));
         setCloud('off');
         return;
       }
       setCloud('busy');
-      hasPass(u.uid)
-        .then((pass) => setProfile((p) => (!!p.pass === pass ? p : { ...p, pass })))
+      loadItems(u.uid)
+        .then((items) => setProfile((p) => ({ ...p, items })))
         .catch(() => {});
       loadCloud(u.uid)
         .then((remote) => {
@@ -153,12 +153,12 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const disconnect = () => {
     void signOut();
   };
-  // Pass obtenu : bonbons offerts seulement pour un nouvel achat, pas quand on le retrouve
-  const gotPass = (bought: boolean) => {
-    setProfile((p) => ({ ...p, pass: true }));
-    if (bought) setProgress((p) => ({ ...p, coins: p.coins + PASS_GIFT }));
+  // Achat obtenu : bonbons offerts seulement pour un nouvel achat, pas quand on le retrouve
+  const gotItem = (id: string, bought: boolean) => {
+    setProfile((p) => ({ ...p, items: [...new Set([...(p.items ?? []), id])] }));
+    if (bought && id === PASS) setProgress((p) => ({ ...p, coins: p.coins + PASS_GIFT }));
   };
-  const account = { user, cloud, connect, disconnect, gotPass };
+  const account = { user, cloud, connect, disconnect, gotItem };
   /** Quitter la partie : la télé est prévenue, on revient à l'accueil (on peut revenir avec le même code). */
   const leave = () => {
     if (!confirm(lang === 'fr' ? 'Quitter la partie ?' : 'Leave the game?')) return;
@@ -294,7 +294,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   if (editing) {
     const taken = screen?.s === 'lobby' ? screen.taken : [];
     const takenFoods = screen?.s === 'lobby' ? screen.foods ?? {} : {};
-    return <Editor profile={profile} setProfile={setProfile} taken={taken} takenFoods={takenFoods} onDone={() => setEditing(false)} progress={progress} setProgress={setProgress} />;
+    return <Editor profile={profile} setProfile={setProfile} taken={taken} takenFoods={takenFoods} onDone={() => setEditing(false)} progress={progress} setProgress={setProgress} account={account} />;
   }
 
   const playing = screen?.s === 'play' && status === 'ok';
@@ -408,7 +408,8 @@ function PadScreenView({
   edit: () => void;
 }) {
   const [picking, setPicking] = useState(false);
-  const [passOpen, setPassOpen] = useState(false);
+  /** Achat présenté (Pass, pack). */
+  const [selling, setSelling] = useState<string | null>(null);
   /** Onglet du salon : jouer, mon perso, réglages. */
   const [tab, setTab] = useState<'play' | 'perso' | 'settings'>('play');
   const [touring, setTouring] = useState(false);
@@ -420,17 +421,18 @@ function PadScreenView({
   const [opts, setOpts] = useState<Record<string, number>>({});
   switch (screen.s) {
     case 'lobby':
-      if (passOpen)
+      if (selling)
         return (
-          <PassCard
+          <ProductCard
+            id={selling}
             lang={lang}
             signedIn={!!account.user}
             connect={account.connect}
             onGot={(bought) => {
-              account.gotPass(bought);
-              setPassOpen(false);
+              account.gotItem(selling, bought);
+              setSelling(null);
             }}
-            onClose={() => setPassOpen(false)}
+            onClose={() => setSelling(null)}
           />
         );
       if (optFor && screen.host) {
@@ -443,8 +445,15 @@ function PadScreenView({
               <div key={op.id} className="team-box">
                 <p className="opt-title">{op.label[lang]}</p>
                 <div className="team-pick">
-                  {op.choices.map((c) => {
+                  {op.choices.filter((c) => !(screen.family && c.pack && PACKS.find((x) => x.id === c.pack)?.adult)).map((c) => {
                     const on = (opts[op.id] ?? op.choices[0].v) === c.v;
+                    const closed = SALES_ON && !!c.pack && !screen.roomItems?.includes(c.pack);
+                    if (closed)
+                      return (
+                        <button key={c.v} onClick={() => setSelling(c.pack!)} style={{ ['--tc' as string]: def.color }}>
+                          <span>🔒 {c.label[lang]}</span>
+                        </button>
+                      );
                     return (
                       <button key={c.v} className={on ? 'on' : ''} style={{ ['--tc' as string]: def.color }} onClick={() => setOpts((o) => ({ ...o, [op.id]: c.v }))}>
                         <span>{c.label[lang]}</span>
@@ -524,7 +533,7 @@ function PadScreenView({
               {screen.games.map((g) => {
                 const def = g;
                 const ids = screen.games.map((x) => x.id);
-                const locked = isLocked(g.id, ids, !!profile.pass || !!screen.anyPass);
+                const locked = isLocked(g.id, ids, !!screen.roomItems?.includes(PASS));
                 return (
                   <button
                     key={g.id}
@@ -533,7 +542,7 @@ function PadScreenView({
                     disabled={g.soon}
                     onClick={() => {
                       if (locked) {
-                        setPassOpen(true);
+                        setSelling(PASS);
                         return;
                       }
                       if (def.options?.length) {
@@ -628,8 +637,8 @@ function PadScreenView({
                 </div>
               )}
               <p className="pad-title">{t(lang, 'hostAsk')}</p>
-              {SALES_ON && !profile.pass && !screen.anyPass && (
-                <button className="btn sun" onClick={() => setPassOpen(true)}>
+              {SALES_ON && !screen.roomItems?.includes(PASS) && (
+                <button className="btn sun" onClick={() => setSelling(PASS)}>
                   🎟️ {lang === 'fr' ? 'Pass Soirée : tous les jeux pour le salon' : 'Party Pass: all games for the room'}
                 </button>
               )}
@@ -935,7 +944,7 @@ interface Account {
   cloud: 'off' | 'busy' | 'ok' | 'error';
   connect: () => void;
   disconnect: () => void;
-  gotPass: (bought: boolean) => void;
+  gotItem: (id: string, bought: boolean) => void;
 }
 
 function ProgressCard({ progress, lang, onShop, account }: { progress: Progress; lang: Lang; onShop: () => void; account: Account }) {
@@ -1051,7 +1060,9 @@ function Editor({
   onDone,
   progress,
   setProgress,
+  account,
 }: {
+  account: Account;
   profile: Profile;
   setProfile: (f: (p: Profile) => Profile) => void;
   taken: string[];
@@ -1064,7 +1075,8 @@ function Editor({
   const lang = profile.lang;
   const level = levelInfo(progress.xp).level;
   const [buying, setBuying] = useState<{ kind: Kind; id: string; name: string } | null>(null);
-  const owned = (kind: Kind, id: string) => isOwned(progress, kind, id);
+  const collOf = (kind: Kind, id: string) => PRICES[itemKey(kind, id)]?.coll;
+  const owned = (kind: Kind, id: string) => isOwned(progress, kind, id) || (!!collOf(kind, id) && !!profile.items?.includes(collOf(kind, id)!));
   /** Touche un objet : on le met s'il est à nous, sinon on propose de l'acheter. */
   const choose = (kind: Kind, id: string, name: string) => {
     if (owned(kind, id)) set(kind === 'food' ? { food: id } : kind === 'hat' ? { hat: id } : { acc: id });
@@ -1076,7 +1088,7 @@ function Editor({
   const buy = () => {
     if (!buying) return;
     const it = PRICES[itemKey(buying.kind, buying.id)];
-    if (!it || progress.coins < it.price || level < (it.level ?? 1)) return;
+    if (!it || (SALES_ON && it.coll) || progress.coins < it.price || level < (it.level ?? 1)) return;
     setProgress((p) => ({ ...p, coins: p.coins - it.price, owned: [...p.owned, itemKey(buying.kind, buying.id)] }));
     set(buying.kind === 'food' ? { food: buying.id } : buying.kind === 'hat' ? { hat: buying.id } : { acc: buying.id });
     sfx.win();
@@ -1085,6 +1097,7 @@ function Editor({
   const lock = (kind: Kind, id: string) => {
     if (owned(kind, id)) return null;
     const it = PRICES[itemKey(kind, id)];
+    if (SALES_ON && it.coll) return <span className="lock">🎁</span>;
     return (
       <span className={`lock ${level < (it.level ?? 1) ? 'lvl' : progress.coins >= it.price ? 'ok' : ''}`}>
         {level < (it.level ?? 1) ? `🔒 ${lang === 'fr' ? 'Niv.' : 'Lv.'} ${it.level}` : `🍬 ${it.price}`}
@@ -1308,6 +1321,21 @@ function Editor({
             <b>{buying.name}</b>
             {(() => {
               const it = PRICES[itemKey(buying.kind, buying.id)];
+              // Collection payante : ventes ouvertes, elle s'achète ; sinon on la teste avec des bonbons
+              if (SALES_ON && it.coll)
+                return (
+                  <ProductCard
+                    id={it.coll}
+                    lang={lang}
+                    signedIn={!!account.user}
+                    connect={account.connect}
+                    onGot={(bought) => {
+                      account.gotItem(it.coll!, bought);
+                      setBuying(null);
+                    }}
+                    onClose={() => setBuying(null)}
+                  />
+                );
               if (level < (it.level ?? 1)) return <p className="pad-small">{t(lang, 'needLevel', { n: it.level ?? 1 })}</p>;
               if (progress.coins < it.price) return <p className="pad-small">{t(lang, 'needCoins', { n: it.price - progress.coins })}</p>;
               return (

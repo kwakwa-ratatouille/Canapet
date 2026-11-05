@@ -4,6 +4,7 @@ import { Help } from './pages/Help';
 import { Home } from './pages/Home';
 import { Legal, isLegal } from './pages/Legal';
 import { Relay } from './pages/Relay';
+import { Site } from './pages/Site';
 import { googleReturn } from './shared/cloud';
 import '@fontsource/fredoka/600.css';
 import '@fontsource/fredoka/700.css';
@@ -50,6 +51,7 @@ function App() {
     );
   }
   if (page === 'aide') return <Help />;
+  if (page === 'site') return <Site />;
   if (page && isLegal(page)) return <Legal page={page} />;
   if (fromGoogle && !route.parts.length) return <Relay id={fromGoogle.id} k={fromGoogle.k} back={fromGoogle} />;
   if (page === 'relais-google') return <Relay id={route.query.get('id') ?? ''} k={route.query.get('k') ?? ''} here={route.query.has('ici')} />;

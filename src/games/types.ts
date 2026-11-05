@@ -63,7 +63,7 @@ export interface GameBase {
   timerTop?: boolean;
   soon?: boolean;
   /** Réglages proposés à l'hôte avant de lancer ce jeu. */
-  options?: { id: string; label: Record<Lang, string>; choices: { v: number; label: Record<Lang, string> }[] }[];
+  options?: { id: string; label: Record<Lang, string>; choices: { v: number; label: Record<Lang, string>; pack?: string }[] }[];
   create?(runners: Runner[], ctx: GameCtx): GameInstance;
 }
 

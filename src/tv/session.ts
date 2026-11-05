@@ -1,5 +1,5 @@
 // La soirée côté télé : joueurs, enchaînement des jeux, scores. La télé fait autorité.
-import { isLocked } from '../shared/offer';
+import { isLocked, PACKS, PASS, SALES_ON } from '../shared/offer';
 import { SKILLS } from '../games/botSkill';
 import { GAMES, gameById, playable, gameInfo } from '../games/registry';
 import { TEAMS } from '../games/teams';
@@ -411,10 +411,14 @@ export class Session {
     }
   }
 
+  /** Achats des joueurs présents : ils profitent à tout le salon. */
+  private roomItems() {
+    return [...new Set(this.list().filter((p) => p.connected).flatMap((p) => p.items ?? []))];
+  }
+
   /** Jeu réservé au Pass, et personne dans le salon ne l'a. */
   private locked(id: string) {
-    const pass = this.list().some((p) => p.connected && p.pass);
-    return isLocked(id, playable().map((g) => g.id), pass);
+    return isLocked(id, playable().map((g) => g.id), this.roomItems().includes(PASS));
   }
 
   /** Commandes de l'hôte (téléphone) ou du clavier de la télé. */
@@ -450,6 +454,9 @@ export class Session {
       case 'pick':
         if (game && gameById(game) && !gameById(game)!.soon && !this.locked(game)) {
           this.mode = 'host';
+          // Pack pas acheté, ou trop osé pour le mode famille : questions classiques
+          const pack = opts?.pack ? PACKS[opts.pack - 1] : null;
+          if (opts?.pack && (!pack || (this.family && pack.adult) || (SALES_ON && !this.roomItems().includes(pack.id)))) opts = { ...opts, pack: 0 };
           this.startGame(game, opts);
         }
         break;
@@ -1367,7 +1374,7 @@ export class Session {
           taken: this.list().filter((x) => x.pid !== p.pid).map((x) => x.color),
           foods: Object.fromEntries(this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => [x.food, x.name])),
           games: GAMES_INFO(),
-          anyPass: this.list().some((x) => x.connected && x.pass),
+          roomItems: this.roomItems(),
           count: this.list().filter((x) => x.connected).length,
           family: this.family,
           teams: this.teams,

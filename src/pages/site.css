@@ -1,0 +1,26 @@
+/* Vitrine : bonbons, contours prune, ombres plates (mêmes règles que le reste du jeu) */
+.site { height: 100vh; height: 100dvh; overflow-y: auto; touch-action: pan-y; background: var(--cp-fond); color: #3a2140; font-family: var(--cp-font-texte, Nunito, sans-serif); padding: 16px; box-sizing: border-box; text-align: center; }
+.site section, .site-hero, .site-foot { max-width: 960px; margin: 0 auto 36px; }
+.site h1 { font-family: var(--cp-font-titre); font-size: clamp(30px, 6vw, 54px); line-height: 1.1; margin: 12px 0; }
+.site h2 { font-family: var(--cp-font-titre); font-size: clamp(26px, 4vw, 38px); margin: 0 0 16px; }
+.site h3 { font-family: var(--cp-font-titre); font-size: 24px; margin: 24px 0 12px; }
+.site p { font-size: 17px; margin: 0; }
+.site-cast { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; margin: 18px 0; }
+.site-cast span { animation: site-hop 2.2s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes site-hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@media (prefers-reduced-motion: reduce) { .site-cast span { animation: none; } }
+.site-cta { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.site-cta a { text-decoration: none; flex: 0 1 auto; width: auto; min-width: 260px; }
+.site-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.site-card, .site-item, .site-games > div { background: #fff; border: 5px solid #3a2140; border-radius: 26px; box-shadow: 0 6px 0 #3a2140; padding: 16px; }
+.site-card i, .site-item i { display: block; font-style: normal; font-size: 40px; }
+.site-card b, .site-item b, .site-games b { display: block; font-family: var(--cp-font-titre); font-size: 20px; margin: 6px 0; }
+.site-card.star { background: #ffe56b; }
+.site-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.site-games > div { padding: 10px; }
+.site-games img { width: 100%; max-width: 110px; aspect-ratio: 1; }
+.site-games b { font-size: 16px; }
+.site-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.site-item p { font-size: 15px; }
+.site-soon { margin-top: 18px !important; font-weight: 800; }
+.site-foot a { color: inherit; }

@@ -46,8 +46,7 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 
 ## Quand on activera les ventes
 1. Créer la micro-entreprise et le profil de paiement Google.
-2. Créer le produit `pass_soiree` (achat unique) dans la console.
-   Prix : 3,99 €.
+2. Créer les produits (achats uniques) dans la console : `pass_soiree` 3,99 € ; à 1,99 € : `pack_couples`, `pack_famille`, `pack_boulot`, `pack_minuit`, `coll_noel`, `coll_halloween`, `coll_plage`.
 3. Passer le projet Firebase en formule Blaze (carte demandée, gratuit dans les limites, mettre une alerte de budget).
 4. Mettre en ligne le serveur : `npx firebase-tools login` puis `npx firebase-tools deploy --only functions` (dossier du projet), et coller les règles `database.rules.json`.
 5. Donner au compte de service du projet (`canapet-31bb7@appspot.gserviceaccount.com` ou celui indiqué par la console) l'accès « Voir les données financières » et « Gérer les commandes » dans la console Play > Utilisateurs et autorisations, et activer « Google Play Android Developer API » dans Google Cloud.

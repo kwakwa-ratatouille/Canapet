@@ -150,15 +150,15 @@ export async function relayTokens(id: string, k: string, idToken: string, here: 
   if (!here && !before) fbSignOut(auth).catch(() => {});
 }
 
-/** Le serveur vérifie l'achat auprès de Google et inscrit le Pass sur le compte. */
-export async function verifyPass(token: string) {
-  const res = await httpsCallable<{ token: string }, { pass: boolean }>(getFunctions(app, 'europe-west1'), 'verifyPass')({ token });
-  return res.data.pass;
+/** Le serveur vérifie l'achat auprès de Google et l'inscrit sur le compte. */
+export async function verifyPurchase(product: string, token: string) {
+  const res = await httpsCallable<{ product: string; token: string }, { ok: boolean }>(getFunctions(app, 'europe-west1'), 'verifyPurchase')({ product, token });
+  return res.data.ok;
 }
 
-/** Ce compte a-t-il le Pass ? (seul le serveur peut l'écrire) */
-export async function hasPass(uid: string) {
-  return (await get(ref(db, `entitlements/${uid}/pass`))).exists();
+/** Achats de ce compte (seul le serveur peut les écrire). */
+export async function loadItems(uid: string) {
+  return Object.keys(((await get(ref(db, `entitlements/${uid}`))).val() as Record<string, unknown> | null) ?? {});
 }
 
 export async function load(uid: string): Promise<Partial<Progress> | null> {

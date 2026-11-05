@@ -71,6 +71,12 @@ export const HATS: { id: string; name: Name }[] = [
   { id: 'lapin', name: { fr: 'Oreilles de lapin', en: 'Bunny ears' } },
   { id: 'chantier', name: { fr: 'Casque de chantier', en: 'Hard hat' } },
   { id: 'bandana', name: { fr: 'Bandana', en: 'Bandana' } },
+  { id: 'pere', name: { fr: 'Bonnet de Noël', en: 'Santa hat' } },
+  { id: 'renne', name: { fr: 'Bois de renne', en: 'Reindeer antlers' } },
+  { id: 'citrouille', name: { fr: 'Citrouille', en: 'Pumpkin' } },
+  { id: 'chauve', name: { fr: 'Chauve-souris', en: 'Bat' } },
+  { id: 'ananas', name: { fr: 'Ananas', en: 'Pineapple' } },
+  { id: 'requin', name: { fr: 'Aileron de requin', en: 'Shark fin' } },
   { id: 'fete', name: { fr: 'Chapeau de fête', en: 'Party hat' } },
   { id: 'fleur', name: { fr: 'Fleur', en: 'Flower' } },
   { id: 'toque', name: { fr: 'Toque de chef', en: 'Chef hat' } },
@@ -100,6 +106,9 @@ export const ACCS: { id: string; name: Name }[] = [
   { id: 'clown', name: { fr: 'Nez de clown', en: 'Clown nose' } },
   { id: 'pansement', name: { fr: 'Pansement', en: 'Band-aid' } },
   { id: 'etoiles', name: { fr: 'Lunettes étoiles', en: 'Star glasses' } },
+  { id: 'echarpe', name: { fr: 'Écharpe', en: 'Scarf' } },
+  { id: 'crocs', name: { fr: 'Crocs de vampire', en: 'Vampire fangs' } },
+  { id: 'tuba', name: { fr: 'Masque et tuba', en: 'Snorkel' } },
   { id: 'coeurs', name: { fr: 'Lunettes cœur', en: 'Heart glasses' } },
 ];
 

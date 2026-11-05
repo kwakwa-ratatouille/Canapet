@@ -5,6 +5,8 @@ import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, MENTHE, ROSE } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
 import { candy } from './draw';
+import { PACKS, PACK_OPTION } from '../shared/offer';
+import { PACK_PAIRS } from './packsData';
 import type { QuizPadData } from './quizShared';
 import { wrap } from './tribunal';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
@@ -133,7 +135,9 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
   const pls = newPlayers(runners);
   const VOTE = 15;
   const SHOW = 5;
-  const deck = PAIRS.filter((q) => !(ctx.family && q[0].startsWith('!')))
+  const pack = ctx.opts.pack ? PACKS[ctx.opts.pack - 1] : null;
+  const deck = (pack ? PACK_PAIRS[pack.id] : PAIRS.filter((q) => !(ctx.family && q[0].startsWith('!'))))
+    .slice()
     .sort(() => Math.random() - 0.5)
     .slice(0, 10)
     .map((q) => (fr ? [q[0], q[1]] : [q[2], q[3]]).map((s) => s.replace(/^!/, '')));
@@ -390,6 +394,7 @@ export const plutot: GameBase = {
   max: 12,
   botFill: 3,
   music: 'party',
+  options: [PACK_OPTION],
   create: createPlutot,
 };
 

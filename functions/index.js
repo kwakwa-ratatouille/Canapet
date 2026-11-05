@@ -1,4 +1,4 @@
-// Serveur du Pass Soirée : vérifie auprès de Google qu'un achat est réel, puis l'inscrit sur le compte du joueur.
+// Serveur des achats : vérifie auprès de Google qu'un achat est réel, puis l'inscrit sur le compte du joueur.
 // Le compte du serveur doit avoir accès à l'appli dans la console Google Play (voir store/google-play.md).
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { initializeApp } = require('firebase-admin/app');
@@ -9,24 +9,26 @@ const { createHash } = require('crypto');
 initializeApp();
 
 const PACKAGE = 'com.canapet.app';
-const PRODUCT = 'pass_soiree';
+// Mêmes identifiants que dans src/shared/offer.ts et la console Google Play
+const PRODUCTS = new Set(['pass_soiree', 'pack_couples', 'pack_famille', 'pack_boulot', 'pack_minuit', 'coll_noel', 'coll_halloween', 'coll_plage']);
 const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/androidpublisher'] });
 
-async function google(path, method = 'GET') {
+async function google(product, token, method = 'GET') {
   const client = await auth.getClient();
-  const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PACKAGE}/purchases/products/${PRODUCT}/tokens/${encodeURIComponent(path)}`;
+  const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PACKAGE}/purchases/products/${product}/tokens/${encodeURIComponent(token)}`;
   return client.request({ url: method === 'POST' ? `${url}:acknowledge` : url, method, data: method === 'POST' ? {} : undefined });
 }
 
-exports.verifyPass = onCall({ region: 'europe-west1', maxInstances: 5 }, async (req) => {
+exports.verifyPurchase = onCall({ region: 'europe-west1', maxInstances: 5 }, async (req) => {
   const uid = req.auth?.uid;
-  const token = req.data?.token;
+  const { product, token } = req.data ?? {};
   if (!uid) throw new HttpsError('unauthenticated', 'connexion requise');
+  if (!PRODUCTS.has(product)) throw new HttpsError('invalid-argument', 'produit inconnu');
   if (typeof token !== 'string' || !token || token.length > 2048) throw new HttpsError('invalid-argument', 'jeton invalide');
 
   let purchase;
   try {
-    purchase = (await google(token)).data;
+    purchase = (await google(product, token)).data;
   } catch (e) {
     throw new HttpsError('permission-denied', 'achat inconnu de Google');
   }
@@ -40,8 +42,8 @@ exports.verifyPass = onCall({ region: 'europe-west1', maxInstances: 5 }, async (
   if (claim.snapshot.val() !== uid) throw new HttpsError('already-exists', 'achat déjà utilisé par un autre compte');
 
   // Sans accusé de réception sous 3 jours, Google rembourse tout seul
-  if (purchase.acknowledgementState === 0) await google(token, 'POST');
+  if (purchase.acknowledgementState === 0) await google(product, token, 'POST');
 
-  await db.ref(`entitlements/${uid}/pass`).set({ at: Number(purchase.purchaseTimeMillis) || Date.now(), order: purchase.orderId ?? '' });
-  return { pass: true };
+  await db.ref(`entitlements/${uid}/${product}`).set({ at: Number(purchase.purchaseTimeMillis) || Date.now(), order: purchase.orderId ?? '' });
+  return { ok: true };
 });
