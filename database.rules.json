@@ -12,7 +12,7 @@
             ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10000000"
           },
           "coins": {
-            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10000000"
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 1000000000"
           },
           "games": {
             ".validate": "newData.isNumber()"
