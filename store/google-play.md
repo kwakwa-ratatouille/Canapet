@@ -32,6 +32,7 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 - Photos et vidéos : envoyées à la télé de la partie, seulement si le joueur les choisit, non gardées.
 - Données chiffrées en transit : oui. Suppression possible : oui (adresse ci-dessus).
 - Publicité : non.
+- Amis (avec compte) : pseudo, perso et présence visibles par les amis ajoutés avec un code. Pas de messages écrits entre joueurs.
 
 ## Questionnaire d'âge (IARC) : répondre honnêtement
 - Violence : cartoon (bagarres, duel au pistolet dessiné dans le Bar des Bobards).

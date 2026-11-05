@@ -335,7 +335,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 export const scribble: GameBase = {
   id: 'dessin',
   emoji: '✏️',
-  name: { fr: 'Gribouillis', en: 'Scribbles' },
+  name: { fr: 'Dessine-moi un Truc', en: 'Draw Me a Thing' },
   how: {
     fr: 'Dessine le mot secret sur ton téléphone, les autres devinent !',
     en: 'Draw the secret word on your phone, the others guess!',

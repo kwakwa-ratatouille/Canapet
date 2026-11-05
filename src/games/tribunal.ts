@@ -11,7 +11,7 @@ import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const ROUNDS = 8;
 const VOTE_TIME = 20;
-const SHOW_TIME = 7;
+const SHOW_TIME = 8;
 
 /** [français, anglais] ; `!` au début = caché en mode famille. */
 const CASES: [string, string][] = [
@@ -97,6 +97,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let timer = 0;
   let botT = 0;
   let guilty: number[] = [];
+  let sentence = '';
+  let verdictT = 0;
+  // La peine change à chaque affaire : c'est le moment où tout le monde rit
+  const SENTENCES = fr
+    ? ['condamné à faire la vaisselle jusqu’à Noël', 'condamné à dire « merci chef » à tout le monde ce soir', 'condamné à porter le plateau de l’apéro', 'condamné à imiter un pigeon au prochain tour', 'condamné à perdre la télécommande pour un mois', 'condamné à raconter sa pire honte', 'condamné à applaudir le gagnant de la soirée', 'condamné à parler en chuchotant pendant une partie', 'condamné à chanter le générique de son choix', 'condamné à servir à boire à tout le salon', 'condamné à faire un compliment à chacun', 'condamné à rester debout au prochain jeu', 'condamné à trois jours de Wi-Fi lent', 'condamné à garder la place sur le coussin qui pète']
+    : ['sentenced to do the dishes until Christmas', 'sentenced to say “yes boss” to everyone tonight', 'sentenced to carry the snack tray', 'sentenced to impersonate a pigeon next round', 'sentenced to lose the remote for a month', 'sentenced to tell their worst embarrassment', 'sentenced to applaud tonight’s winner', 'sentenced to whisper for a whole game', 'sentenced to sing a theme song', 'sentenced to serve drinks to the whole room', 'sentenced to compliment everyone', 'sentenced to stand during the next game', 'sentenced to three days of slow Wi-Fi', 'sentenced to sit on the whoopee cushion'];
 
   function next() {
     round++;
@@ -134,8 +140,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     pls.forEach((p) => (p.score += p.gain));
     phase = 'reveal';
     timer = SHOW_TIME;
+    verdictT = 0;
+    sentence = SENTENCES[Math.floor(Math.random() * SENTENCES.length)];
     sfx.boom();
-    if (guilty.length === 1) speak(fr ? `Coupable : ${pls[guilty[0]].profile.name} !` : `Guilty: ${pls[guilty[0]].profile.name}!`, ctx.lang);
+    setTimeout(() => sfx.boom(), 240);
+    setTimeout(() => sfx.boom(), 480);
+    if (guilty.length === 1) speak(fr ? `Coupable : ${pls[guilty[0]].profile.name}, ${sentence} !` : `Guilty: ${pls[guilty[0]].profile.name}, ${sentence}!`, ctx.lang);
     else if (guilty.length > 1) speak(fr ? 'Coupables ex æquo !' : 'Tied verdict!', ctx.lang);
     ctx.refresh();
   }
@@ -155,6 +165,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       timer -= dt;
+      verdictT += dt;
       if (phase === 'choose') {
         if ((botT -= dt) <= 0) {
           botT = 99;
@@ -169,8 +180,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     render(g, t) {
       const bg = g.createLinearGradient(0, 0, 0, 1080);
-      bg.addColorStop(0, '#5b2d6e');
-      bg.addColorStop(1, '#2d1538');
+      bg.addColorStop(0, '#c9a6e8');
+      bg.addColorStop(1, '#8a5cb0');
       g.fillStyle = bg;
       g.fillRect(0, 0, 1920, 1080);
       // Colonnes du tribunal
@@ -253,6 +264,47 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.restore();
         }
       });
+      if (phase === 'reveal' && guilty.length) {
+        // Le marteau tape trois fois, puis la peine s'affiche
+        const hit = verdictT < 0.72 ? Math.abs(Math.sin((verdictT * Math.PI) / 0.24)) : 0;
+        g.save();
+        g.translate(1760, 330);
+        g.rotate(-0.9 + (1 - hit) * 0.9);
+        g.fillStyle = '#ff9a1f';
+        g.strokeStyle = INK;
+        g.lineWidth = 7;
+        g.beginPath();
+        g.roundRect(-14, -8, 28, 170, 12);
+        g.fill();
+        g.stroke();
+        g.fillStyle = SOLEIL;
+        g.beginPath();
+        g.roundRect(-82, -62, 164, 76, 18);
+        g.fill();
+        g.stroke();
+        g.restore();
+        if (verdictT > 0.7) {
+          const pop = Math.min(1, (verdictT - 0.7) * 6);
+          g.save();
+          g.translate(960, 985);
+          g.scale(pop, pop);
+          g.rotate(-0.012);
+          const ls = wrap(g, sentence.charAt(0).toUpperCase() + sentence.slice(1), 1320, '700 44px Fredoka, sans-serif');
+          const hh = 40 + ls.length * 54;
+          g.fillStyle = '#fff7c9';
+          g.strokeStyle = INK;
+          g.lineWidth = 6;
+          g.beginPath();
+          g.roundRect(-720, -hh / 2, 1440, hh, 26);
+          g.fill();
+          g.stroke();
+          g.fillStyle = INK;
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          ls.forEach((l, i) => g.fillText(l, 0, (i - (ls.length - 1) / 2) * 54));
+          g.restore();
+        }
+      }
     },
     ranking() {
       return [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid);
@@ -297,7 +349,7 @@ export function wrap(g: CanvasRenderingContext2D, text: string, width: number, f
 export const tribunal: GameBase = {
   id: 'tribunal',
   emoji: '⚖️',
-  name: { fr: 'Le Tribunal', en: 'The Tribunal' },
+  name: { fr: 'Le Tribunal du Canapé', en: 'Couch Court' },
   how: {
     fr: 'Qui de vous serait le premier à… ? Votez, condamnez vos amis, marquez avec la majorité !',
     en: 'Which of you would be first to…? Vote, convict your friends, score with the majority!',

@@ -2,7 +2,7 @@
 // en image puis gardés en cache (un dessin par perso, couleur, chapeau, accessoire et humeur).
 // Repère d'appel inchangé : pieds en (x, y), hauteur ~ s.
 
-import { characterSvg, faceSlot, PLAYER_COLORS, CHARACTERS } from './art/canapet-art.js';
+import { characterSvg, faceSlot, PLAYER_COLORS, CHARACTERS, selfieDecoSvg } from './art/canapet-art.js';
 import { LIGHT } from './device';
 import { SKINS, type SkinDef } from './lootTable';
 import { TRAILS, type TrailDef, type TrailMode } from './cosmetics2';
@@ -366,7 +366,8 @@ function sprite(o: DrawOpts): HTMLCanvasElement | null {
   if (sprites.has(key)) return sprites.get(key)!;
   sprites.set(key, null);
   const svg = characterSvg(CHARACTERS[o.food] ? o.food : 'coussin', o.color, {
-    hat: hat || undefined,
+    // Avec un selfie, le chapeau est posé sur la photo (voir decoSprite)
+    hat: selfie ? undefined : hat || undefined,
     acc: acc || undefined,
     mood,
     selfie,
@@ -383,6 +384,30 @@ function sprite(o: DrawOpts): HTMLCanvasElement | null {
     c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
     const def = SKINS.find((x) => x.id === skin);
     if (def) paintSkin(c, def);
+    sprites.set(key, c);
+    listeners.forEach((f) => f());
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  return null;
+}
+
+/** Ce qui se pose sur la photo : chapeau, déco, expression. */
+function decoSprite(o: DrawOpts): HTMLCanvasElement | null {
+  const hat = o.hat && o.hat !== 'aucun' ? o.hat : '';
+  const acc = o.acc && o.acc !== 'aucun' ? o.acc : '';
+  const mood = o.mood && o.mood !== 'toot' && o.mood !== 'happy' ? o.mood : '';
+  if (!hat && !acc && !mood) return null;
+  const food = CHARACTERS[o.food] ? o.food : 'coussin';
+  const key = `deco|${food}|${o.color}|${hat}|${acc}|${mood}`;
+  if (sprites.has(key)) return sprites.get(key)!;
+  sprites.set(key, null);
+  const svg = selfieDecoSvg(food, o.color, { hat: hat || undefined, acc: acc || undefined, mood }).replace('<svg ', `<svg width="${VB.w * RES}" height="${VB.h * RES}" `);
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(VB.w * RES);
+    c.height = Math.ceil(VB.h * RES);
+    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
     sprites.set(key, c);
     listeners.forEach((f) => f());
   };
@@ -444,8 +469,25 @@ export function drawCharacter(g: CanvasRenderingContext2D, x: number, y: number,
     g.beginPath();
     g.arc(fx, cy, r, 0, Math.PI * 2);
     g.clip();
+    // La photo réagit : penchée et plus sombre quand on est triste, étirée de surprise, qui se dandine de joie
+    g.translate(fx, cy);
+    if (o.mood === 'sad') {
+      g.rotate(-0.1);
+      g.translate(0, r * 0.08);
+    } else if (o.mood === 'wow') g.scale(0.94, 1.12);
+    else if (o.mood === 'win') {
+      g.rotate(Math.sin(o.t * 7) * 0.09);
+      g.scale(1.06, 1.06);
+    }
+    g.translate(-fx, -cy);
     g.drawImage(o.selfie, fx - r, cy - r, r * 2, r * 2);
+    if (o.mood === 'sad') {
+      g.fillStyle = 'rgba(60,90,200,0.25)';
+      g.fillRect(fx - r * 1.3, cy - r * 1.3, r * 2.6, r * 2.6);
+    }
     g.restore();
+    const deco = decoSprite(o);
+    if (deco) g.drawImage(deco, (VB.x - CENTER_X) * k, (VB.y - FEET_Y) * k, VB.w * k, VB.h * k);
   }
   g.restore();
 }

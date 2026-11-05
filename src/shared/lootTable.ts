@@ -8,12 +8,12 @@ type Name = Record<Lang, string>;
 export type Rarity = 'commun' | 'rare' | 'epique' | 'legendaire' | 'mythique';
 export const RARITY_ORDER: Rarity[] = ['commun', 'rare', 'epique', 'legendaire', 'mythique'];
 
-/** `price` = achat direct en bonbons (0 : seulement dans le coffre). */
+/** `price` = achat direct en bonbons. Règle simple : de commun à épique on peut acheter, légendaire et mythique seulement dans les boîtes. */
 export const RARITIES: Record<Rarity, { name: Name; color: string; price: number }> = {
   commun: { name: { fr: 'Commun', en: 'Common' }, color: '#8fa3b5', price: 150 },
   rare: { name: { fr: 'Rare', en: 'Rare' }, color: '#2e9bff', price: 450 },
   epique: { name: { fr: 'Épique', en: 'Epic' }, color: '#9b5cff', price: 1200 },
-  legendaire: { name: { fr: 'Légendaire', en: 'Legendary' }, color: '#ff9d0a', price: 3000 },
+  legendaire: { name: { fr: 'Légendaire', en: 'Legendary' }, color: '#ff9d0a', price: 0 },
   mythique: { name: { fr: 'Mythique', en: 'Mythic' }, color: '#ff2f7e', price: 0 },
 };
 
@@ -207,7 +207,9 @@ export const TABLE: Record<Rarity, string[]> = {
 
 // Deuxième vague : chaque objet porte sa rareté
 const WAVE2: [LootKind, { id: string; r: Rarity }[]][] = [['trail', TRAILS], ['frame', FRAMES], ['plate', PLATES], ['title', TITLES], ['react', REACT_ITEMS], ['entry', ENTRIES], ['padtheme', PAD_THEMES]];
-for (const [kind, items] of WAVE2) for (const it of items) TABLE[it.r].push(`${kind}:${it.id}`);
+for (const [kind, items] of WAVE2) for (const it of items as { id: string; r: Rarity; level?: number }[]) if (!it.level) TABLE[it.r].push(`${kind}:${it.id}`);
+/** Objets qui se débloquent en montant de niveau : ni boîte ni achat. */
+export const LEVEL_UNLOCKS: { level: number; key: string; rarity: Rarity }[] = WAVE2.flatMap(([kind, items]) => (items as { id: string; r: Rarity; level?: number }[]).filter((it) => it.level).map((it) => ({ level: it.level!, key: `${kind}:${it.id}`, rarity: it.r }))).sort((a, b) => a.level - b.level);
 const SEASON_FX_RARITY: Rarity = 'epique';
 for (const fx of SEASON_WIN_FX) TABLE[SEASON_FX_RARITY].push(`winfx:${fx.id}`);
 
@@ -217,7 +219,8 @@ for (const [kind, items] of WAVE2) for (const it of items as { id: string; seaso
 for (const fx of SEASON_WIN_FX) SEASON_OF[`winfx:${fx.id}`] = fx.season;
 export const seasonOf = (key: string) => SEASONS.find((s) => s.id === SEASON_OF[key]) ?? null;
 
-export const rarityOf = (key: string): Rarity | null => RARITY_ORDER.find((r) => TABLE[r].includes(key)) ?? null;
+export const rarityOf = (key: string): Rarity | null => RARITY_ORDER.find((r) => TABLE[r].includes(key)) ?? LEVEL_UNLOCKS.find((l) => l.key === key)?.rarity ?? null;
+export const levelOf = (key: string) => LEVEL_UNLOCKS.find((l) => l.key === key)?.level ?? 0;
 
 /** Objets déjà vendus en collection (Pass Soirée à part) : on peut aussi les gagner dans les boîtes. */
 const COLL: Record<string, string> = {
@@ -233,9 +236,10 @@ const COLL: Record<string, string> = {
 };
 
 /** Prix d'achat direct (ce qui n'est pas listé est gratuit). */
-export const LOOT_PRICES: Record<string, { price: number; rarity: Rarity; coll?: string }> = Object.fromEntries(
-  RARITY_ORDER.flatMap((r) => TABLE[r].map((key) => [key, { price: RARITIES[r].price, rarity: r, coll: COLL[key] }])),
-);
+export const LOOT_PRICES: Record<string, { price: number; rarity: Rarity; coll?: string; level?: number }> = Object.fromEntries([
+  ...RARITY_ORDER.flatMap((r) => TABLE[r].map((key) => [key, { price: RARITIES[r].price, rarity: r, coll: COLL[key] }])),
+  ...LEVEL_UNLOCKS.map((l) => [l.key, { price: 0, rarity: l.rarity, level: l.level }]),
+]);
 
 // ——— Boîtes ———
 
@@ -272,7 +276,7 @@ export function boxesNow(now = Date.now()): BoxDef[] {
   return [{ id: 'saison', name: { fr: `Boîte ${s.name.fr}`, en: `${s.name.en} box` }, emoji: s.emoji, color: s.color, price: 400, odds: { rare: 62, epique: 30, legendaire: 8 }, pity: 12, top: 'legendaire', scale: 0.95, season: s.id }, ...BOXES];
 }
 /** Ce qu'une boîte peut donner dans cette rareté. */
-const poolOf = (box: BoxDef, r: Rarity) => TABLE[r].filter((k) => (box.season ? SEASON_OF[k] === box.season : !SEASON_OF[k]));
+export const poolOf = (box: BoxDef, r: Rarity) => TABLE[r].filter((k) => (box.season ? SEASON_OF[k] === box.season : !SEASON_OF[k]));
 
 /** Clé d'essai tant que les ventes sont coupées (en bonbons). */
 export const TEST_KEY_PRICE = 500;

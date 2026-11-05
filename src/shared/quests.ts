@@ -17,6 +17,9 @@ export interface Habits {
   /** Jours joués cette semaine et caisse de la semaine déjà reçue. */
   weekDays?: number[];
   weekBox?: boolean;
+  /** Récompenses déjà récupérées. */
+  claimed?: string[];
+  dayClaimed?: string[];
 }
 
 export const NEW_HABITS: Habits = { day: 0, streak: 0, week: 0, counts: {}, done: [], tried: [] };
@@ -28,23 +31,26 @@ interface Quest {
   id: string;
   n: number;
   gift: number;
+  /** 0 facile, 1 moyen, 2 dur. */
+  diff: number;
+  icon: string;
   label: Record<Lang, string>;
 }
 
 const QUESTS: Quest[] = [
-  { id: 'play', n: 5, gift: 60, label: { fr: 'Joue 5 parties', en: 'Play 5 games' } },
-  { id: 'play2', n: 10, gift: 120, label: { fr: 'Joue 10 parties', en: 'Play 10 games' } },
-  { id: 'win', n: 2, gift: 80, label: { fr: 'Gagne 2 parties', en: 'Win 2 games' } },
-  { id: 'top', n: 4, gift: 70, label: { fr: 'Finis 4 fois dans les 3 premiers', en: 'Finish top 3 four times' } },
-  { id: 'try', n: 4, gift: 80, label: { fr: 'Essaie 4 jeux différents', en: 'Try 4 different games' } },
-  { id: 'crown', n: 1, gift: 100, label: { fr: 'Monte sur un podium de tournoi', en: 'Reach a tournament podium' } },
+  { id: 'play', diff: 0, icon: '🎮', n: 5, gift: 60, label: { fr: 'Joue 5 parties', en: 'Play 5 games' } },
+  { id: 'play2', diff: 1, icon: '🎮', n: 10, gift: 120, label: { fr: 'Joue 10 parties', en: 'Play 10 games' } },
+  { id: 'win', diff: 1, icon: '🏆', n: 2, gift: 80, label: { fr: 'Gagne 2 parties', en: 'Win 2 games' } },
+  { id: 'top', diff: 0, icon: '🥉', n: 4, gift: 70, label: { fr: 'Finis 4 fois dans les 3 premiers', en: 'Finish top 3 four times' } },
+  { id: 'try', diff: 1, icon: '🧭', n: 4, gift: 80, label: { fr: 'Essaie 4 jeux différents', en: 'Try 4 different games' } },
+  { id: 'crown', diff: 2, icon: '👑', n: 1, gift: 100, label: { fr: 'Monte sur un podium de tournoi', en: 'Reach a tournament podium' } },
 ];
 
 const DAILY_QUESTS: Quest[] = [
-  { id: 'dPlay', n: 3, gift: 30, label: { fr: 'Joue 3 parties', en: 'Play 3 games' } },
-  { id: 'dWin', n: 1, gift: 40, label: { fr: 'Gagne une partie', en: 'Win a game' } },
-  { id: 'dTop', n: 2, gift: 30, label: { fr: 'Finis 2 fois dans les 3 premiers', en: 'Finish top 3 twice' } },
-  { id: 'dPlay2', n: 5, gift: 50, label: { fr: 'Joue 5 parties', en: 'Play 5 games' } },
+  { id: 'dPlay', diff: 0, icon: '🎮', n: 3, gift: 30, label: { fr: 'Joue 3 parties', en: 'Play 3 games' } },
+  { id: 'dWin', diff: 1, icon: '🏆', n: 1, gift: 40, label: { fr: 'Gagne une partie', en: 'Win a game' } },
+  { id: 'dTop', diff: 1, icon: '🥉', n: 2, gift: 30, label: { fr: 'Finis 2 fois dans les 3 premiers', en: 'Finish top 3 twice' } },
+  { id: 'dPlay2', diff: 2, icon: '🎮', n: 5, gift: 50, label: { fr: 'Joue 5 parties', en: 'Play 5 games' } },
 ];
 
 const dayOf = (now: number) => Math.floor((now - new Date(now).getTimezoneOffset() * 60000) / 86400000);
@@ -62,10 +68,10 @@ export function weekQuests(now = Date.now()): Quest[] {
   });
 }
 
-const freshWeek = (h: Habits, now: number): Habits => (h.week === weekOf(now) ? h : { ...h, week: weekOf(now), counts: {}, done: [], tried: [], weekDays: [], weekBox: false });
+const freshWeek = (h: Habits, now: number): Habits => (h.week === weekOf(now) ? h : { ...h, week: weekOf(now), counts: {}, done: [], tried: [], weekDays: [], weekBox: false, claimed: [] });
 const fresh = (h: Habits, now: number): Habits => {
   const w = freshWeek(h, now);
-  return w.qDay === dayOf(now) ? w : { ...w, qDay: dayOf(now), dayCounts: {}, dayDone: [] };
+  return w.qDay === dayOf(now) ? w : { ...w, qDay: dayOf(now), dayCounts: {}, dayDone: [], dayClaimed: [] };
 };
 
 /** Les 2 défis du jour, les mêmes pour tout le monde. */
@@ -76,7 +82,11 @@ export function dayQuests(now = Date.now()): Quest[] {
 
 export function dailyNow(h: Habits | undefined, now = Date.now()) {
   const cur = fresh(h ?? NEW_HABITS, now);
-  return dayQuests(now).map((q) => ({ ...q, have: Math.min(q.n, cur.dayCounts?.[q.id] ?? 0), ok: !!cur.dayDone?.includes(q.id) }));
+  return dayQuests(now).map((q) => {
+    const ok = !!cur.dayDone?.includes(q.id);
+    const claimed = !!cur.dayClaimed?.includes(q.id);
+    return { ...q, have: Math.min(q.n, cur.dayCounts?.[q.id] ?? 0), ok, claimed, claimable: ok && !claimed };
+  });
 }
 
 /** Où on en est de la semaine : jours joués et caisse. */
@@ -95,8 +105,24 @@ export function weekNow(h: Habits | undefined, now = Date.now()) {
 
 export function questsNow(h: Habits | undefined, now = Date.now()) {
   const cur = fresh(h ?? NEW_HABITS, now);
-  return weekQuests(now).map((q) => ({ ...q, have: Math.min(q.n, cur.counts[q.id] ?? 0), ok: cur.done.includes(q.id) }));
+  return weekQuests(now).map((q) => {
+    const ok = cur.done.includes(q.id);
+    const claimed = !!cur.claimed?.includes(q.id);
+    return { ...q, have: Math.min(q.n, cur.counts[q.id] ?? 0), ok, claimed, claimable: ok && !claimed };
+  });
 }
+
+/** Récupère la récompense d'un défi réussi. */
+export function claimQuest(h0: Habits | undefined, id: string, now = Date.now()) {
+  const h = fresh(h0 ?? NEW_HABITS, now);
+  const day = dailyNow(h, now).find((q) => q.id === id);
+  if (day?.claimable) return { habits: { ...h, dayClaimed: [...(h.dayClaimed ?? []), id] }, gift: day.gift };
+  const week = questsNow(h, now).find((q) => q.id === id);
+  if (week?.claimable) return { habits: { ...h, claimed: [...(h.claimed ?? []), id] }, gift: week.gift };
+  return null;
+}
+/** Combien de récompenses attendent. */
+export const claimableCount = (h: Habits | undefined, now = Date.now()) => [...dailyNow(h, now), ...questsNow(h, now)].filter((q) => q.claimable).length;
 
 /** Une partie terminée : met à jour la série et les défis, et dit combien de bonbons ça rapporte. */
 export function afterGame(h0: Habits | undefined, e: { rank: number; game?: string; podium?: boolean }, now = Date.now()) {
@@ -149,6 +175,7 @@ export function afterGame(h0: Habits | undefined, e: { rank: number; game?: stri
     daily,
     streak: h.streak,
     quests: [...finished, ...dayFinished].map((q) => ({ label: q.label, gift: q.gift })),
-    coins: daily + [...finished, ...dayFinished].reduce((s, q) => s + q.gift, 0),
+    // Les défis réussis se récupèrent à la main (voir claimQuest)
+    coins: daily,
   };
 }

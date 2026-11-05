@@ -279,7 +279,7 @@ const K={
  pasteque:{n:'Pastèque',fy:76,fs:.82,top:24,aw:30,b:()=>`<path d="M14 30H106L64 128Q60 134 56 128Z" fill="#3fa34a" ${sw()}/><path d="M22 36H98L62 116Q60 120 58 116Z" fill="#fff6e0"/><path d="M28 40H92L61 108Q60 110 59 108Z" fill="#ff4a5a"/>`+[[46,54],[60,64],[74,54],[54,82],[66,82],[60,98]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="2.5" ry="4" fill="#3a2140"/>`).join('')},
  cookie:{n:'Cookie',fy:80,fs:.88,top:36,aw:40,b:()=>`<path d="M104 70A46 46 0 1 1 82 38C78 46 84 54 92 52C90 60 98 68 104 70Z" fill="#d9a066" ${sw()}/>`+[[40,58],[66,50],[34,92],[58,104],[86,96],[48,78],[80,74]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="6" fill="#6b3a1a"/>`).join('')},
  ketchup:{n:'Ketchup',fy:84,fs:.82,top:12,aw:26,b:()=>`<path d="M50 26H70V40Q90 50 90 76V118Q90 128 80 128H40Q30 128 30 118V76Q30 50 50 40Z" fill="#ff3b3b" ${sw()}/><rect x="48" y="12" width="24" height="18" rx="5" fill="#fff" ${sw(3.5)}/><rect x="38" y="88" width="44" height="26" rx="6" fill="#fff" ${sw(3)}/><path d="M48 101H72" stroke="#3fa34a" stroke-width="5" stroke-linecap="round"/><path d="M40 56Q42 66 40 76" fill="none" stroke="#ff8a8a" stroke-width="5" stroke-linecap="round"/>`},
- nouilles:{n:'Bol de nouilles',fy:96,fs:.8,top:20,aw:40,b:()=>`<path d="M44 52Q40 30 52 18M60 50Q58 26 70 14" fill="none" stroke="#a0643a" stroke-width="5" stroke-linecap="round"/><path d="M18 70C18 50 102 50 102 70Z" fill="#ffe680" ${sw(3.5)}/><path d="M26 64Q36 54 46 64T66 64T86 64" fill="none" stroke="#e8c240" stroke-width="4"/><path d="M12 68H108Q106 116 60 122Q14 116 12 68Z" fill="#2ec5ff" ${sw()}/><path d="M22 84Q60 92 98 84" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".7"/>`},
+ nouilles:{n:'Bol de nouilles',fy:96,fs:.8,top:54,aw:40,b:()=>`<path d="M44 52Q40 30 52 18M60 50Q58 26 70 14" fill="none" stroke="#a0643a" stroke-width="5" stroke-linecap="round"/><path d="M18 70C18 50 102 50 102 70Z" fill="#ffe680" ${sw(3.5)}/><path d="M26 64Q36 54 46 64T66 64T86 64" fill="none" stroke="#e8c240" stroke-width="4"/><path d="M12 68H108Q106 116 60 122Q14 116 12 68Z" fill="#2ec5ff" ${sw()}/><path d="M22 84Q60 92 98 84" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".7"/>`},
  gaufre:{n:'Gaufre',fy:80,fs:.86,top:22,b:()=>`<rect x="18" y="26" width="84" height="100" rx="16" fill="#e8a35a" ${sw()}/>`+[0,1,2,3].map(i=>[0,1,2,3,4].map(j=>`<rect x="${26+i*19}" y="${34+j*18}" width="13" height="12" rx="3" fill="#c97a35"/>`).join('')).join('')+`<path d="M30 30C40 40 58 26 70 36C80 30 92 36 94 42" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>`},
  nuage:{n:'Nuage',fy:84,fs:.85,top:44,b:()=>`<path d="${cloudD(60,92,54)}" fill="#ffffff" ${sw()}/><ellipse cx="38" cy="72" rx="10" ry="5" fill="#e3f2ff" transform="rotate(-20 38 72)"/><path d="M20 112Q60 124 100 112" fill="none" stroke="#cfe7ff" stroke-width="5" stroke-linecap="round"/>`},
 };
@@ -363,7 +363,7 @@ function acc(t,cx,cy,s){
   return '';
 }
 /** Chapeaux adaptés à chaque perso : [taille, décalage vertical, décalage horizontal] (repère du corps). */
-const HATFIT={chewing:[1.35,4,0],croque:[1.45,8,0],yaourt:[1.35,8,0],ravioli:[1.45,8,0],oeufplat:[1.3,8,0],pasteque:[1.5,6,0],cookie:[1.4,6,0],ketchup:[1.0,4,0],nouilles:[1.2,-6,0],gaufre:[1.5,6,0],coussin:[1.15,3,0],tartine:[1.55,6,0],cornichon:[1.15,3,0],beignet:[1.45,5,0],oeuf:[1.1,4,0],fromage:[1.2,3,0],tomate:[1.4,5,0],brocoli:[1.35,4,0],cupcake:[1.2,-4,2],sushi:[1.55,4,0],frites:[1.35,-4,0],bonbon:[1.3,3,0],chaussette:[1.3,3,0],pizza:[1.4,4,0],glace:[1.3,2,0],avocat:[1.1,4,0],macaron:[1.55,6,0],banane:[1.0,4,0],saucisse:[1.2,4,0],champi:[1.5,4,0],tasse:[1.5,-6,0],oignon:[1.05,6,0],patate:[1.45,5,0],popcorn:[1.4,-8,0],nuage:[1.45,6,0]};
+const HATFIT={chewing:[1.35,4,0],croque:[1.45,8,0],yaourt:[1.35,8,0],ravioli:[1.45,8,0],oeufplat:[1.3,8,0],pasteque:[1.5,6,0],cookie:[1.4,6,0],ketchup:[1.0,4,0],nouilles:[1.25,2,0],gaufre:[1.5,6,0],coussin:[1.15,3,0],tartine:[1.55,6,0],cornichon:[1.15,3,0],beignet:[1.45,5,0],oeuf:[1.1,4,0],fromage:[1.2,3,0],tomate:[1.4,5,0],brocoli:[1.35,4,0],cupcake:[1.2,-4,2],sushi:[1.55,4,0],frites:[1.35,-4,0],bonbon:[1.3,3,0],chaussette:[1.3,3,0],pizza:[1.4,4,0],glace:[1.3,2,0],avocat:[1.1,4,0],macaron:[1.55,6,0],banane:[1.0,4,0],saucisse:[1.2,4,0],champi:[1.5,4,0],tasse:[1.5,-6,0],oignon:[1.05,6,0],patate:[1.45,5,0],popcorn:[1.4,-8,0],nuage:[1.45,6,0]};
 const SC=.84,DY=10,X0=60*(1-SC);
 /** Position d'un point du corps (repère d'origine) dans le dessin final. */
 const BY=y=>y*SC-DY;
@@ -373,7 +373,8 @@ function perso(kind,c=ROSE,o={}){
   if(o.acc) g+=backAcc(o.acc);
   const mood=o.arms?'win':o.mood||'happy';
   g+=legs()+relief(feet(c));
-  const raw=k.b(c);
+  // Sous un chapeau, le bol range ses baguettes
+  const raw=o.hat&&kind==='nouilles'?k.b(c).replace(/^<path[^>]*\/>/,''):k.b(c);
   // Ombrage façon BD qui épouse la silhouette : ombre en bas à droite, lumière en haut à gauche
   const id='s'+kind;
   const black=raw.replace(/fill="[^"]*"/g,'fill="#000"').replace(/stroke="[^"]*"/g,'stroke="none"');
@@ -664,6 +665,30 @@ export const MOODS = ['happy','wow','sad','win','toot'];
 /** Personnage complet. kind: clé de CHARACTERS ; color: couleur des baskets ;
  *  opts: { mood, hat, acc, selfie, arms, toot }. Renvoie un <svg> (viewBox ${VB}). */
 export function characterSvg(kind, color = ROSE, opts = {}) { return persoSvg(kind, color, opts); }
+/** Par-dessus un selfie : chapeau et déco posés sur la photo, et l'expression dessinée dessus. */
+export function selfieDecoSvg(kind, color = ROSE, o = {}) {
+  const f = faceSlot(kind), r = f.r * 2.15, cx = 60, cy = f.cy - r * 0.05, s = r / 30;
+  let g = '';
+  const brow = (x, y, a) => `<path d="M${x - 9 * s} ${y}L${x + 9 * s} ${y}" transform="rotate(${a} ${x} ${y})" stroke="${P}" stroke-width="${5 * s}" stroke-linecap="round"/>`;
+  const ey = cy - r * 0.42, ex = r * 0.42;
+  if (o.mood === 'sad') {
+    g += brow(cx - ex, ey, -22) + brow(cx + ex, ey, 22);
+    g += `<path d="M${cx + ex} ${cy}C${cx + ex - 7 * s} ${cy + 11 * s} ${cx + ex - 4 * s} ${cy + 17 * s} ${cx + ex} ${cy + 17 * s}C${cx + ex + 4 * s} ${cy + 17 * s} ${cx + ex + 7 * s} ${cy + 11 * s} ${cx + ex} ${cy}Z" fill="#6fd0ff" ${sw(2.5 * s)}/>`;
+    g += `<path d="M${cx - 11 * s} ${cy + r * 0.68}Q${cx} ${cy + r * 0.48} ${cx + 11 * s} ${cy + r * 0.68}" fill="none" stroke="${P}" stroke-width="${4.5 * s}" stroke-linecap="round"/>`;
+  } else if (o.mood === 'wow') {
+    g += brow(cx - ex, ey - 6 * s, 12) + brow(cx + ex, ey - 6 * s, -12);
+    g += `<ellipse cx="${cx}" cy="${cy + r * 0.6}" rx="${8 * s}" ry="${10 * s}" fill="${P}"/><ellipse cx="${cx}" cy="${cy + r * 0.64}" rx="${4.5 * s}" ry="${5 * s}" fill="#ff6b8a"/>`;
+  } else if (o.mood === 'win') {
+    g += `<path d="M${cx - 15 * s} ${cy + r * 0.45}Q${cx} ${cy + r * 0.85} ${cx + 15 * s} ${cy + r * 0.45}Z" fill="#fff" ${sw(3.5 * s)}/>`;
+    g += star(cx - r * 0.95, cy - r * 0.6, 7 * s, SOL, 2.5 * s) + star(cx + r * 0.95, cy - r * 0.45, 9 * s, SOL, 2.5 * s);
+  }
+  if (o.acc) g += acc(o.acc, cx, cy - r * 0.12, s);
+  if (o.hat) {
+    const top = cy - r * 0.8, hs = (r * 1.65) / 42;
+    g += `<g transform="translate(${cx} ${top}) scale(${hs}) translate(${-cx} ${-top})">${relief(hat(o.hat, cx, top, color))}</g>`;
+  }
+  return svg(VB, g);
+}
 /** Même chose sans balise <svg>, à placer dans un <g> d'un SVG plus grand (repère 120×150, sol à y=138). */
 export function characterGroup(kind, color = ROSE, opts = {}) { return perso(kind, color, opts); }
 /** Pour un selfie : remplace le visage par un cercle. Coordonnées et rayon du visage de chaque perso. */

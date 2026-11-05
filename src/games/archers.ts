@@ -816,7 +816,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 export const archers: GameBase = {
   id: 'archers',
   emoji: '🏹',
-  name: { fr: 'Flèches à Ventouse', en: 'Sucker Arrows' },
+  name: { fr: 'Robin des Ventouses', en: 'Robin Plunger' },
   how: {
     fr: 'Stick pour courir et viser · A saute · B tire. Premier à 3 manches !',
     en: 'Stick to run and aim · A jumps · B shoots. First to 3 rounds!',

@@ -27,9 +27,12 @@ import { ProductCard } from './PassCard';
 import { ControlsCard } from './ControlsCard';
 import { LegalLinks } from '../pages/Legal';
 import type { QuizPadData } from '../games/quizShared';
-import { afterGame } from '../shared/quests';
-import { BoxShop, FIELD, ItemThumb, Missions } from './BoxPad';
-import { COLOR_ITEMS, KO_FX, RARITIES, seasonOf, SKINS, WIN_FX, WIN_POSES, WIN_SOUNDS, rarityOf, type Rarity } from '../shared/lootTable';
+import { afterGame, claimableCount } from '../shared/quests';
+import { BoxShop, FIELD, itemName, ItemThumb } from './BoxPad';
+import { FriendsCard, InviteBanner, usePresence } from './Friends';
+import { ItemPreview, playItem } from './ItemPreview';
+import { Missions } from './Missions';
+import { boxesNow, COLOR_ITEMS, KO_FX, LEVEL_UNLOCKS, levelOf, RARITIES, RARITY_ORDER, seasonOf, SKINS, WIN_FX, WIN_POSES, WIN_SOUNDS, rarityOf, type Rarity } from '../shared/lootTable';
 import { currentSeason, ENTRIES, FRAMES, PAD_THEMES, PLATES, REACT_ITEMS, seasonStart, TITLES, TRAILS } from '../shared/cosmetics2';
 import { PlayerFrame, PlateName, PlayerTitle } from '../shared/PlayerDeco';
 import { KEY_PACKS, KEYS_ALLOWED } from '../shared/offer';
@@ -267,7 +270,10 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   useEffect(() => saveProgress(progress), [progress]);
   useEffect(() => {
     if (profile.level !== level) setProfile((p) => ({ ...p, level }));
+    const got = LEVEL_UNLOCKS.filter((u) => u.level <= level && !progress.owned.includes(u.key)).map((u) => u.key);
+    if (got.length) setProgress((p) => ({ ...p, owned: [...new Set([...p.owned, ...got])] }));
   }, [level, profile.level]);
+  usePresence(user, profile, code);
 
   // Dernier jeu joué (pour les défis de la semaine)
   const lastGameId = useRef<string | undefined>(undefined);
@@ -293,7 +299,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
       games: p.games + (screen.s === 'results' ? 1 : 0),
       wins: p.wins + (screen.rank === 1 ? 1 : 0),
     }));
-    setReward({ xp: gain.xp, coins: gain.coins + habit.coins, level: up ? after : null, daily: habit.daily, boxes: habit.boxes, streak: habit.streak, quests: habit.quests.map((q) => q.label[lang]) });
+    setReward({ unlocked: up ? LEVEL_UNLOCKS.filter((u) => u.level > before && u.level <= after).map((u) => itemName(u.key, lang)) : [], xp: gain.xp, coins: gain.coins + habit.coins, level: up ? after : null, daily: habit.daily, boxes: habit.boxes, streak: habit.streak, quests: habit.quests.map((q) => q.label[lang]) });
     if (up) sfx.win();
     else sfx.join();
   }, [screen, code]);
@@ -456,6 +462,7 @@ function PadScreenView({
   /** Onglet du salon : jouer, mon perso, réglages. */
   const [tab, setTab] = useState<'play' | 'perso' | 'boxes' | 'settings'>('play');
   const [keysOpen, setKeysOpen] = useState(false);
+  const [missionsOpen, setMissionsOpen] = useState(false);
   const [touring, setTouring] = useState(false);
   const [noTour, setNoTour] = useState<string[]>(() => store<string[]>('noTour', []));
   const [moodAsked, setMoodAsked] = useState(() => store<boolean>('moodAsked', false));
@@ -636,8 +643,21 @@ function PadScreenView({
                 <span className="btn big mint">✏️ {lang === 'fr' ? 'Modifier mon perso' : 'Edit my character'}</span>
               </button>
               <ProgressCard progress={progress} lang={lang} onShop={edit} account={account} />
+              <FriendsCard user={account.user} lang={lang} room={code} connect={account.connect} />
             </>
           )}
+          {tab === 'play' && (
+            <div className="mission-entry">
+              <button className={`mission-open ${claimableCount(progress.habits) ? 'hot' : ''}`} onClick={() => setMissionsOpen((v) => !v)} aria-expanded={missionsOpen}>
+                <span>🎯</span>
+                <b>{lang === 'fr' ? 'Mes défis' : 'My challenges'}</b>
+                {claimableCount(progress.habits) > 0 && <em>{claimableCount(progress.habits)} {lang === 'fr' ? 'à récupérer' : 'to claim'}</em>}
+                <i>{missionsOpen ? '▲' : '▼'}</i>
+              </button>
+              {missionsOpen && <Missions progress={progress} setProgress={account.setProgress} lang={lang} />}
+            </div>
+          )}
+          {tab === 'play' && <InviteBanner user={account.user} lang={lang} room={code} />}
           {tab === 'play' && screen.teams && (
             <div className="team-box">
               <p className="opt-title">{t(lang, 'yourTeam')}</p>
@@ -739,16 +759,16 @@ function PadScreenView({
           )}
           {tab === 'settings' && <ControlsCard lang={lang} />}
           {tab === 'settings' && (
-            <div className="controls-card">
-              <p className="opt-title">🌍 {lang === 'fr' ? 'Langue' : 'Language'}</p>
-              <div className="lang-row">
+            <section className="set-card">
+              <h3>🌍 {lang === 'fr' ? 'Langue' : 'Language'}</h3>
+              <div className="lang-row set-lang">
                 {(['fr', 'en'] as Lang[]).map((l) => (
                   <button key={l} className={`tab ${lang === l ? 'on' : ''}`} onClick={() => account.setProfile((p) => ({ ...p, lang: l }))}>
                     {l === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'}
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
           )}
           {tab === 'settings' && screen.host && (
             <>
@@ -871,7 +891,7 @@ function PadScreenView({
             {(
               [
                 ['play', '🎮', lang === 'fr' ? 'Jouer' : 'Play'],
-                ['perso', '🧑', lang === 'fr' ? 'Mon perso' : 'My character'],
+                ['perso', '🧑', lang === 'fr' ? 'Profil' : 'Profile'],
                 ['boxes', '🎁', lang === 'fr' ? 'Boîtes' : 'Boxes'],
                 ['settings', '⚙️', lang === 'fr' ? 'Réglages' : 'Settings'],
               ] as const
@@ -1022,6 +1042,23 @@ interface Account {
   setProfile: (f: (p: Profile) => Profile) => void;
 }
 
+/** Prochaine récompense de niveau. */
+function NextLevelGift({ progress, lang }: { progress: Progress; lang: Lang }) {
+  const { level } = levelInfo(progress.xp);
+  const next = LEVEL_UNLOCKS.find((u) => u.level > level);
+  if (!next) return null;
+  return (
+    <div className="next-gift" style={{ ['--rar' as string]: RARITIES[next.rarity].color }}>
+      <span>🔓</span>
+      <p>
+        <b>{lang === 'fr' ? `Niveau ${next.level}` : `Level ${next.level}`}</b>
+        <small>{itemName(next.key, lang)}</small>
+      </p>
+      <em>{RARITIES[next.rarity].name[lang]}</em>
+    </div>
+  );
+}
+
 function ProgressCard({ progress, lang, onShop, account }: { progress: Progress; lang: Lang; onShop: () => void; account: Account }) {
   const { level, into, need } = levelInfo(progress.xp);
   const { user, cloud } = account;
@@ -1047,7 +1084,7 @@ function ProgressCard({ progress, lang, onShop, account }: { progress: Progress;
         🛍️ <span>{t(lang, 'shop')}</span>
       </button>
     </div>
-      <Missions progress={progress} lang={lang} />
+      <NextLevelGift progress={progress} lang={lang} />
       {user ? (
         <div className="cloud-row">
           {user.photo ? <img src={user.photo} alt="" referrerPolicy="no-referrer" /> : <span className="cloud-ini">{user.name.slice(0, 1)}</span>}
@@ -1066,7 +1103,7 @@ function ProgressCard({ progress, lang, onShop, account }: { progress: Progress;
   );
 }
 
-type Reward = { xp: number; coins: number; level: number | null; daily?: number; boxes?: string[]; streak?: number; quests?: string[] };
+type Reward = { unlocked?: string[]; xp: number; coins: number; level: number | null; daily?: number; boxes?: string[]; streak?: number; quests?: string[] };
 
 /** Ce que la partie vient de rapporter (et le niveau gagné). */
 function RewardCard({ reward, progress, lang }: { reward: Reward; progress: Progress; lang: Lang }) {
@@ -1077,6 +1114,7 @@ function RewardCard({ reward, progress, lang }: { reward: Reward; progress: Prog
       {reward.boxes?.map((b, i) => <p key={i} className="reward-up">🎉 {lang === 'fr' ? (b === 'grosse' ? 'Caisse de la semaine : une Grosse boîte à ouvrir !' : 'Caisse du jour : une Petite boîte à ouvrir !') : b === 'grosse' ? 'Weekly crate: a Big box to open!' : 'Daily crate: a Small box to open!'}</p>)}
       {reward.quests?.map((q) => <p key={q} className="reward-up">🎯 {lang === 'fr' ? 'Défi réussi' : 'Challenge done'} : {q}</p>)}
       {reward.level && <p className="reward-up">🎉 {t(lang, 'levelUp', { n: reward.level })} +{LEVEL_GIFT} 🍬</p>}
+      {reward.unlocked?.map((u) => <p key={u} className="reward-up">🔓 {lang === 'fr' ? 'Débloqué' : 'Unlocked'} : {u}</p>)}
       <div className="reward-row">
         {reward.xp > 0 && <span className="reward-pill xp">+{reward.xp} XP</span>}
         <span className="reward-pill coin">+{reward.coins} 🍬</span>
@@ -1175,18 +1213,29 @@ function Editor({
   };
   const lock = (kind: Kind, id: string) => {
     const r = rarityOf(itemKey(kind, id));
-    const dot = r ? <i className="rar-dot" style={{ background: RARITIES[r].color }} title={RARITIES[r].name[lang]} /> : null;
+    const dot = r ? <i className={`rar-tag rt-${r}`} style={{ background: RARITIES[r].color }}>{RARITIES[r].name[lang]}</i> : null;
     if (owned(kind, id)) return dot;
     const it = PRICES[itemKey(kind, id)];
-    if (SALES_ON && it.coll) return <>{dot}<span className="lock">🎁</span></>;
-    if (outOfSeason(itemKey(kind, id))) return <>{dot}<span className="lock">{seasonOf(itemKey(kind, id))!.emoji}</span></>;
+    if (it.level) return <>{dot}<span className="lock how lvl">🔒 {fr ? 'Niv.' : 'Lv.'} {it.level}</span></>;
+    if (SALES_ON && it.coll) return <>{dot}<span className="lock how box">🎁 {fr ? 'Collection' : 'Collection'}</span></>;
+    if (outOfSeason(itemKey(kind, id))) return <>{dot}<span className="lock how box">{seasonOf(itemKey(kind, id))!.emoji} {fr ? 'Saison' : 'Season'}</span></>;
+    if (seasonOf(itemKey(kind, id))) return <>{dot}<span className={`lock how ${progress.coins >= it.price ? 'ok' : ''}`}>🍬 {it.price}</span></>;
     return (
       <>
         {dot}
-        <span className={`lock ${it.price && progress.coins >= it.price ? 'ok' : ''}`}>{it.price ? `🍬 ${it.price}` : '🔑'}</span>
+        <span className={`lock how ${it.price ? (progress.coins >= it.price ? 'ok' : '') : 'box'}`}>{it.price ? `🍬 ${it.price}` : `🎁 ${fr ? 'Boîte' : 'Box'}`}</span>
       </>
     );
   };
+  /** Du plus courant au plus rare, ce qui est gratuit d'abord. */
+  const byRarity = <T extends { id: string }>(kind: Kind, list: T[]) =>
+    [...list].sort((a, b) => {
+      const rank = (x: T) => {
+        const r = rarityOf(itemKey(kind, x.id));
+        return r ? RARITY_ORDER.indexOf(r) + 1 : 0;
+      };
+      return rank(a) - rank(b);
+    });
   /** Grille des nouvelles catégories : aucun, puis tous les objets. */
   const extraGrid = (kind: Kind, items: { id: string; name: Record<Lang, string> }[], none: string) => (
     <div className="pick-grid">
@@ -1194,7 +1243,7 @@ function Editor({
         <span className="thumb-ico" style={{ fontSize: 40 }}>🚫</span>
         <small>{none}</small>
       </button>
-      {items.map((x) => (
+      {byRarity(kind, items).map((x) => (
         <button key={x.id} className={`pick ${profile[FIELD[kind]] === x.id ? 'on' : ''} ${owned(kind, x.id) ? '' : 'locked'}`} onClick={() => choose(kind, x.id, x.name[lang])}>
           <ItemThumb item={itemKey(kind, x.id)} profile={profile} size={64} />
           <small>{x.name[lang]}</small>
@@ -1359,7 +1408,7 @@ function Editor({
         <>
           <p className="pad-small center">{fr ? 'Celles que tu as gagnées rejoignent ta liste 😂 sur la manette.' : 'The ones you win join your 😂 list on the controller.'}</p>
           <div className="pick-grid">
-            {REACT_ITEMS.map((x) => (
+            {byRarity('react', REACT_ITEMS).map((x) => (
               <button key={x.id} className={`pick ${owned('react', x.id) ? '' : 'locked'}`} onClick={() => !owned('react', x.id) && choose('react', x.id, x.name[lang])}>
                 <ItemThumb item={itemKey('react', x.id)} profile={profile} size={64} />
                 <small>{x.name[lang]}</small>
@@ -1375,7 +1424,7 @@ function Editor({
       {tab === 'ko' && extraGrid('ko', KO_FX, fr ? 'Aucun' : 'None')}
       {tab === 'pose' && (
         <div className="pick-grid">
-          {POSE_LIST.map((e) => (
+          {byRarity('pose', POSE_LIST).map((e) => (
             <button key={e.id} className={`pick ${(profile.pose ?? '') === e.id ? 'on' : ''} ${!e.id || owned('pose', e.id) ? '' : 'locked'}`} onClick={() => (e.id ? choose('pose', e.id, e.name[lang]) : set({ pose: undefined }))}>
               <CharCanvas profile={{ ...profile, selfie: undefined, pose: e.id || undefined }} size={64} still />
               <small>{e.name[lang]}</small>
@@ -1387,7 +1436,7 @@ function Editor({
 
       {tab === 'perso' && (
         <div className="pick-grid">
-          {FOODS.map((f) => (
+          {byRarity('food', FOODS).map((f) => (
             <button
               key={f.id}
               className={`pick ${profile.food === f.id ? 'on' : ''} ${owned('food', f.id) ? '' : 'locked'} ${takenFoods[f.id] && profile.food !== f.id ? 'taken' : ''}`}
@@ -1403,7 +1452,7 @@ function Editor({
       )}
       {tab === 'hat' && (
         <div className="pick-grid">
-          {HATS.map((h) => (
+          {byRarity('hat', HATS).map((h) => (
             <button key={h.id} className={`pick ${profile.hat === h.id ? 'on' : ''} ${owned('hat', h.id) ? '' : 'locked'}`} onClick={() => choose('hat', h.id, h.name[lang])}>
               <CharCanvas profile={{ ...profile, selfie: undefined, acc: 'aucun', hat: h.id }} size={64} still />
               <small>{h.name[lang]}</small>
@@ -1415,7 +1464,7 @@ function Editor({
       {tab === 'deco' && (
         <>
           <div className="pick-grid">
-            {ACCS.map((a) => (
+            {byRarity('acc', ACCS).map((a) => (
               <button key={a.id} className={`pick ${profile.acc === a.id ? 'on' : ''} ${owned('acc', a.id) ? '' : 'locked'}`} onClick={() => choose('acc', a.id, a.name[lang])}>
                 <CharCanvas profile={{ ...profile, selfie: undefined, hat: 'aucun', acc: a.id }} size={64} still />
                 <small>{a.name[lang]}</small>
@@ -1470,14 +1519,21 @@ function Editor({
       {buying && (
         <div className="buy-veil" onClick={() => setBuying(null)}>
           <div className="buy-card" onClick={(e) => e.stopPropagation()}>
-            <ItemThumb item={itemKey(buying.kind, buying.id)} profile={profile} size={120} />
+            <ItemPreview item={itemKey(buying.kind, buying.id)} profile={profile} size={120} />
             <b>{buying.name}</b>
             {(() => {
               const r = rarityOf(itemKey(buying.kind, buying.id));
-              return r ? <em className="rar-name" style={{ color: RARITIES[r].color }}>{RARITIES[r].name[lang]} · {fr ? 'ou à gagner dans une boîte 🎁' : 'or win it in a box 🎁'}</em> : null;
+              if (!r) return null;
+              const where = levelOf(itemKey(buying.kind, buying.id)) || seasonOf(itemKey(buying.kind, buying.id)) ? [] : boxesNow().filter((b) => !b.season && b.odds[r]).map((b) => b.name[lang]);
+              return (
+                <>
+                  <em className="rar-pill" style={{ background: RARITIES[r].color }}>{RARITIES[r].name[lang]}</em>
+                  {where.length > 0 && <p className="buy-where">🎁 {fr ? 'À gagner dans' : 'Win it in'} : {where.join(', ')}</p>}
+                </>
+              );
             })()}
-            {buying.kind === 'winsound' && (
-              <button className="btn alt" onClick={() => playWinSound(buying.id)}>
+            {(buying.kind === 'winsound' || buying.kind === 'entry') && (
+              <button className="btn alt" onClick={() => playItem(itemKey(buying.kind, buying.id), profile)}>
                 🔊 {fr ? 'Écouter' : 'Listen'}
               </button>
             )}
@@ -1498,13 +1554,14 @@ function Editor({
                     onClose={() => setBuying(null)}
                   />
                 );
-              if (!it.price) return <p className="pad-small">{fr ? 'Seulement dans le Coffre à clé 🔑' : 'Only in the Key chest 🔑'}</p>;
+              if (it.level) return <p className="buy-info">🔒 {fr ? `Se débloque tout seul au niveau ${it.level}` : `Unlocks by itself at level ${it.level}`}</p>;
+              if (!it.price) return <p className="buy-info">{fr ? 'Trop rare pour être vendu : seulement dans les boîtes.' : 'Too rare to be sold: boxes only.'}</p>;
               const sea = seasonOf(itemKey(buying.kind, buying.id));
               if (sea && currentSeason()?.id !== sea.id) return <p className="pad-small">{sea.emoji} {fr ? `Collection ${sea.name.fr} : revient le ${seasonStart(sea, 'fr')}.` : `${sea.name.en} collection: back on ${seasonStart(sea, 'en')}.`}</p>;
               if (progress.coins < it.price) return <p className="pad-small">{t(lang, 'needCoins', { n: it.price - progress.coins })}</p>;
               return (
-                <button className="btn big sun" onClick={buy}>
-                  {t(lang, 'buyFor', { n: it.price })}
+                <button className="buy-now" onClick={buy}>
+                  {fr ? 'Acheter' : 'Buy'} <b>{it.price} 🍬</b>
                 </button>
               );
             })()}

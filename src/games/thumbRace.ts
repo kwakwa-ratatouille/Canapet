@@ -390,7 +390,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 export const thumbRace: GameBase = {
   id: 'pouces',
   emoji: '👍',
-  name: { fr: 'Course de pouces', en: 'Thumb Dash' },
+  name: { fr: 'Le Tour de Pouce', en: 'Thumb de France' },
   how: {
     fr: 'Ça court tout seul : ⬆ SAUTE les haies roses, ⬇ GLISSE sous les barres jaunes, pile au bon moment !',
     en: 'You run by yourself: ⬆ JUMP the pink hurdles, ⬇ SLIDE under the yellow bars, right on time!',

@@ -65,6 +65,35 @@
         }
       }
     },
+    "social": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "friendCodes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid"
+      }
+    },
+    "friends": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$other": {
+          ".write": "auth != null && (auth.uid === $uid || auth.uid === $other)",
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+    "invites": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$from": {
+          ".write": "auth != null && (auth.uid === $uid || (auth.uid === $from && root.child('friends/' + $uid + '/' + $from).exists()))"
+        }
+      }
+    },
     "keys": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",

@@ -82,6 +82,28 @@ export const deleteAccount = () => impl().then((m) => m.deleteAccount());
 export const verifyPurchase = (product: string, token: string) => impl().then((m) => m.verifyPurchase(product, token));
 export const createCheckout = (product: string, consent: boolean) => impl().then((m) => m.createCheckout(product, consent));
 export const loadItems = (uid: string) => impl().then((m) => m.loadItems(uid));
+/** S'abonne après le chargement de Firebase ; rend de quoi se désabonner. */
+function live<T>(start: (m: Awaited<ReturnType<typeof impl>>, cb: (v: T) => void) => () => void, cb: (v: T) => void) {
+  let off = () => {};
+  let dead = false;
+  impl().then((m) => {
+    if (!dead) off = start(m, cb);
+  }).catch(() => {});
+  return () => {
+    dead = true;
+    off();
+  };
+}
+export interface FriendInfo { uid: string; name: string; food: string; color: string; hat?: string; seen: number; room?: string }
+export interface InviteInfo { from: string; name: string; code: string; at: number }
+export const myFriendCode = () => impl().then((m) => m.myFriendCode());
+export const addFriend = (code: string) => impl().then((m) => m.addFriend(code));
+export const removeFriend = (uid: string) => impl().then((m) => m.removeFriend(uid));
+export const inviteFriend = (uid: string, room: string) => impl().then((m) => m.inviteFriend(uid, room));
+export const dropInvite = (from: string) => impl().then((m) => m.dropInvite(from));
+export const publishPresence = (p: { name: string; food: string; color: string; hat?: string; room: string }) => impl().then((m) => m.publishPresence(p));
+export const friendsWatch = (cb: (l: FriendInfo[]) => void) => live<FriendInfo[]>((m, f) => m.friendsWatch(f), cb);
+export const invitesWatch = (cb: (l: InviteInfo[]) => void) => live<InviteInfo[]>((m, f) => m.invitesWatch(f), cb);
 export const loadKeys = (uid: string) => impl().then((m) => m.loadKeys(uid));
 export const openChestCloud = (owned: string[]) => impl().then((m) => m.openChest(owned));
 export const loadCloud = (uid: string) => impl().then((m) => m.load(uid));

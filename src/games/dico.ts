@@ -192,6 +192,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     phase = 'reveal';
     timer = SHOW_TIME;
     sfx.boom();
+    // Le meilleur menteur du tour se fait féliciter
+    const bySpot = pls.map((p, i) => ({ p, n: pls.filter((x) => opts[x.pick]?.by === i && x !== p).length })).sort((a, b) => b.n - a.n)[0];
+    if (bySpot?.n) setTimeout(() => speak(fr ? `${bySpot.n > 1 ? `${bySpot.n} personnes ont gobé` : 'Une personne a gobé'} le bobard de ${bySpot.p.profile.name} !` : `${bySpot.n} fell for ${bySpot.p.profile.name}'s fib!`, ctx.lang), 4200);
     speak(fr ? `La vraie définition : ${deck[round][1]}` : `The real meaning: ${deck[round][1]}`, ctx.lang);
     ctx.refresh();
   }
@@ -367,7 +370,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 export const dico: GameBase = {
   id: 'dico',
   emoji: '📖',
-  name: { fr: 'Le Dico Bidon', en: 'The Bogus Dictionary' },
+  name: { fr: 'Le Petit Bobard Illustré', en: 'The Oxford Fibber' },
   how: {
     fr: 'Un mot rare : invente une fausse définition, piège les autres et trouve la vraie !',
     en: 'A rare word: make up a fake meaning, fool the others and find the real one!',

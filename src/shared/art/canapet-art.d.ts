@@ -22,6 +22,7 @@ export const HATS: string[];
 export const ACCESSORIES: string[];
 export const MOODS: string[];
 export function characterSvg(kind: string, color?: string, opts?: CharacterOpts): string;
+export function selfieDecoSvg(kind: string, color?: string, opts?: { hat?: string; acc?: string; mood?: string }): string;
 export function characterGroup(kind: string, color?: string, opts?: CharacterOpts): string;
 export function faceSlot(kind: string): { cx: number; cy: number; r: number };
 export const CHARACTER_VIEWBOX: string;

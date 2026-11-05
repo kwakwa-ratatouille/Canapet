@@ -13,12 +13,12 @@ import './site.css';
 const BUY_AFTER = 'buy-after';
 
 const GAMES: [string, string, string][] = [
-  ['tribunal', 'Le Tribunal', 'The Tribunal'],
-  ['dico', 'Le Dico Bidon', 'The Bogus Dictionary'],
-  ['plutot', 'Plutôt Ça', 'Rather This'],
-  ['chiffre', 'Le Bon Chiffre', 'The Right Number'],
-  ['trappe', 'La Trappe', 'The Trapdoor'],
-  ['gribouillis', 'Gribouillis', 'Scribbles'],
+  ['tribunal', 'Le Tribunal du Canapé', 'Couch Court'],
+  ['dico', 'Le Petit Bobard Illustré', 'The Oxford Fibber'],
+  ['plutot', 'Le Pire des Deux', 'Worst of Two'],
+  ['chiffre', 'Le Juste Pif', 'Nose for Numbers'],
+  ['trappe', 'Questions pour un Trou', 'Who Wants to Fall?'],
+  ['gribouillis', 'Dessine-moi un Truc', 'Draw Me a Thing'],
   ['mini-bolides', 'Mini Bolides', 'Mini Racers'],
   ['coussin-clash', 'Coussin Clash', 'Cushion Clash'],
   ['sumo-tamponneur', 'Sumo Tamponneur', 'Bumper Sumo'],

@@ -35,6 +35,13 @@ export function currentSeason(now = Date.now()): Season | null {
   if (forced) return SEASONS.find((s) => s.id === forced) ?? null;
   return SEASONS.find((s) => inRange(s, new Date(now))) ?? null;
 }
+/** Jours restants de la saison (au moins 1). */
+export function seasonDaysLeft(s: Season, now = Date.now()) {
+  const d = new Date(now);
+  let y = d.getFullYear();
+  if (s.to[0] < s.from[0] && d.getMonth() + 1 >= s.from[0]) y++;
+  return Math.max(1, Math.ceil((new Date(y, s.to[0] - 1, s.to[1], 23, 59).getTime() - now) / 86400000));
+}
 export const seasonEnd = (s: Season, lang: Lang) => new Date(2000, s.to[0] - 1, s.to[1]).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'long' });
 export const seasonStart = (s: Season, lang: Lang) => new Date(2000, s.from[0] - 1, s.from[1]).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'long' });
 
@@ -49,6 +56,8 @@ export interface TrailDef {
   /** …ou des ronds colorés. */
   colors?: string[];
   season?: string;
+  /** Se débloque à ce niveau (pas dans les boîtes). */
+  level?: number;
 }
 export const TRAILS: TrailDef[] = [
   { id: 'poussiere', name: n('Poussière', 'Dust'), emoji: '💨', r: 'commun', colors: ['#d8c9b5', '#b8a68f'] },
@@ -64,6 +73,7 @@ export const TRAILS: TrailDef[] = [
   { id: 'billets', name: n('Pluie de billets', 'Money trail'), emoji: '💸', r: 'legendaire', icons: ['💸', '🪙'] },
   { id: 'comete', name: n('Comète', 'Comet'), emoji: '☄️', r: 'mythique', icons: ['☄️', '✨', '⭐'] },
   { id: 'galaxie', name: n('Poussière d’étoiles', 'Stardust'), emoji: '🪐', r: 'mythique', icons: ['🪐', '✨', '🌟'] },
+  { id: 'confettis', name: n('Confettis du fidèle', 'Loyal confetti'), emoji: '🎊', r: 'rare', level: 7, colors: ['#ff4f9a', '#ffd60a', '#2ec5ff', '#22c99a'] },
   { id: 'flocons', name: n('Flocons', 'Snowflakes'), emoji: '❄️', r: 'rare', icons: ['❄️'], season: 'noel' },
   { id: 'cupidon', name: n('Cœurs de Cupidon', 'Cupid hearts'), emoji: '💘', r: 'rare', icons: ['💘', '💖'], season: 'amour' },
   { id: 'petales', name: n('Pétales', 'Petals'), emoji: '🌸', r: 'rare', icons: ['🌸', '🌼'], season: 'printemps' },
@@ -108,6 +118,7 @@ export interface FrameDef {
   /** Emoji qui rebondit au-dessus. */
   top?: string;
   season?: string;
+  level?: number;
 }
 export const FRAMES: FrameDef[] = [
   { id: 'menthe', name: n('Anneau menthe', 'Mint ring'), emoji: '🟢', r: 'commun', ring: ['#22c99a', '#bff5e3'], spin: 5 },
@@ -122,6 +133,9 @@ export const FRAMES: FrameDef[] = [
   { id: 'arcenciel', name: n('Anneau arc-en-ciel', 'Rainbow ring'), emoji: '🌈', r: 'legendaire', ring: ['#ff3b5c', '#ff9d0a', '#ffe600', '#27d96b', '#2e9bff', '#9b5cff', '#ff3b5c'], spin: 1.6 },
   { id: 'couronne', name: n('Sacre royal', 'Royal crowning'), emoji: '👑', r: 'mythique', ring: ['#fff3a6', '#9b5cff', '#ffc400', '#9b5cff', '#fff3a6'], spin: 2, top: '👑', orbit: ['💎', '💎', '💎'] },
   { id: 'cosmos', name: n('Système solaire', 'Solar system'), emoji: '🌌', r: 'mythique', ring: ['#14c8ff', '#6a3dff', '#ff4fd8', '#14c8ff'], spin: 1.4, orbit: ['🪐', '🌍', '☄️', '🌟'] },
+  { id: 'bronze', name: n('Médaille de bronze', 'Bronze medal'), emoji: '🥉', r: 'rare', level: 5, ring: ['#c97b3a', '#f2c08a', '#c97b3a'], spin: 4 },
+  { id: 'argent', name: n('Médaille d’argent', 'Silver medal'), emoji: '🥈', r: 'epique', level: 15, ring: ['#aab4c0', '#ffffff', '#aab4c0'], spin: 3, orbit: ['✨', '✨'] },
+  { id: 'laurier', name: n('Couronne de laurier', 'Laurel wreath'), emoji: '🏅', r: 'legendaire', level: 25, ring: ['#ffc400', '#fff3a6', '#7bd13b', '#ffc400'], spin: 2.2, orbit: ['🌿', '⭐', '🌿', '⭐'] },
   { id: 'gui', name: n('Couronne de houx', 'Holly wreath'), emoji: '🎄', r: 'epique', ring: ['#0f8f4f', '#d9213c', '#0f8f4f', '#d9213c', '#0f8f4f'], spin: 4, orbit: ['❄️', '🎁'], season: 'noel' },
   { id: 'cupidon', name: n('Flèche de Cupidon', 'Cupid’s arrow'), emoji: '💘', r: 'epique', ring: ['#ff4f9a', '#fff', '#ff4f9a'], spin: 3, orbit: ['💘', '💌'], season: 'amour' },
   { id: 'jardin', name: n('Couronne de fleurs', 'Flower crown'), emoji: '🌼', r: 'epique', ring: ['#9ee66b', '#fff27a', '#9ee66b'], spin: 5, orbit: ['🌸', '🌼', '🦋'], season: 'printemps' },
@@ -139,6 +153,7 @@ export interface PlateDef {
   /** Vitesse de défilement en secondes (0 : immobile). */
   speed?: number;
   season?: string;
+  level?: number;
 }
 export const PLATES: PlateDef[] = [
   { id: 'bonbon', name: n('Nom bonbon', 'Candy name'), emoji: '🍬', r: 'commun', colors: ['#ff4f9a', '#ff8ac0'] },
@@ -150,6 +165,7 @@ export const PLATES: PlateDef[] = [
   { id: 'or', name: n('Lettres d’or', 'Golden letters'), emoji: '🏆', r: 'legendaire', colors: ['#c98a00', '#ffe680', '#c98a00', '#ffe680', '#c98a00'], speed: 2.2 },
   { id: 'arcenciel', name: n('Nom arc-en-ciel', 'Rainbow name'), emoji: '🌈', r: 'legendaire', colors: ['#ff3b5c', '#ff9d0a', '#e6c800', '#27d96b', '#2e9bff', '#9b5cff', '#ff3b5c'], speed: 1.8 },
   { id: 'cosmos', name: n('Nom cosmique', 'Cosmic name'), emoji: '🌌', r: 'mythique', colors: ['#14c8ff', '#6a3dff', '#ff4fd8', '#14c8ff', '#6a3dff'], speed: 1.2 },
+  { id: 'veteran', name: n('Nom de vétéran', 'Veteran name'), emoji: '🎖️', r: 'epique', level: 18, colors: ['#7a4fd0', '#ff4f9a', '#7a4fd0'], speed: 2.6 },
   { id: 'noel', name: n('Sucre de Noël', 'Christmas sugar'), emoji: '🎅', r: 'legendaire', colors: ['#d9213c', '#0f8f4f', '#d9213c'], speed: 2.5, season: 'noel' },
   { id: 'amour', name: n('Lettres d’amour', 'Love letters'), emoji: '💌', r: 'legendaire', colors: ['#ff4f9a', '#c4125f', '#ff4f9a'], speed: 2.5, season: 'amour' },
   { id: 'printemps', name: n('Nom bourgeon', 'Budding name'), emoji: '🌱', r: 'legendaire', colors: ['#6fcf5a', '#ff8ac0', '#6fcf5a'], speed: 2.5, season: 'printemps' },
@@ -163,6 +179,7 @@ export interface TitleDef {
   name: Name;
   r: R;
   season?: string;
+  level?: number;
 }
 export const TITLES: TitleDef[] = [
   { id: 'patate', name: n('La Patate du Canapé', 'The Couch Potato'), r: 'commun' },
@@ -180,6 +197,8 @@ export const TITLES: TitleDef[] = [
   { id: 'empereur', name: n('Majesté du Canapé', 'Couch Majesty'), r: 'legendaire' },
   { id: 'createur', name: n('Au-delà du Salon', 'Beyond the Living Room'), r: 'mythique' },
   { id: 'dieu', name: n('Divinité du Goûter', 'Snack Deity'), r: 'mythique' },
+  { id: 'habitue', name: n('Habitué du Canapé', 'Couch Regular'), r: 'commun', level: 3 },
+  { id: 'pilier', name: n('Pilier de Salon', 'Living Room Pillar'), r: 'rare', level: 12 },
   { id: 'lutin', name: n('Lutin en chef', 'Head Elf'), r: 'rare', season: 'noel' },
   { id: 'cupidon', name: n('Cupidon du salon', 'Living Room Cupid'), r: 'rare', season: 'amour' },
   { id: 'chocolat', name: n('Chasseur de chocolat', 'Chocolate Hunter'), r: 'rare', season: 'printemps' },
@@ -223,6 +242,7 @@ export interface PadThemeDef {
   grip: string;
   ink: string;
   anim?: boolean;
+  level?: number;
 }
 export const PAD_THEMES: PadThemeDef[] = [
   { id: 'menthe', name: n('Menthe à l’eau', 'Mint water'), emoji: '🧊', r: 'commun', bg: '#e3fbf2', grip: '#8fe8ca', ink: '#3a2140' },
@@ -231,6 +251,7 @@ export const PAD_THEMES: PadThemeDef[] = [
   { id: 'bois', name: n('Vieux bois', 'Old wood'), emoji: '🪵', r: 'rare', bg: 'repeating-linear-gradient(95deg,#c98f4f 0 26px,#b57c3f 26px 34px,#d19a5c 34px 70px)', grip: '#7a4d22', ink: '#3a2140' },
   { id: 'retro', name: n('Console rétro', 'Retro console'), emoji: '🕹️', r: 'rare', bg: '#d9d4c7', grip: '#8d8778', ink: '#3a2140' },
   { id: 'jean', name: n('Jean délavé', 'Washed denim'), emoji: '👖', r: 'rare', bg: 'repeating-linear-gradient(45deg,#4b76b5 0 4px,#3f689f 4px 8px)', grip: '#27456f', ink: '#ffffff' },
+  { id: 'champion', name: n('Manette du champion', 'Champion’s controller'), emoji: '🏆', r: 'epique', level: 10, bg: 'linear-gradient(135deg,#ffe680,#ff9d0a)', grip: '#c96a00', ink: '#3a2140' },
   { id: 'nuit', name: n('Minuit', 'Midnight'), emoji: '🌙', r: 'epique', bg: 'linear-gradient(160deg,#241a66,#100b33)', grip: '#3d2fa8', ink: '#ffffff' },
   { id: 'neon', name: n('Salle d’arcade', 'Arcade room'), emoji: '👾', r: 'epique', bg: 'linear-gradient(120deg,#1a0f2e,#34105c 50%,#1a0f2e)', grip: '#ff17c4', ink: '#ffffff' },
   { id: 'or', name: n('Manette en or', 'Golden controller'), emoji: '🥇', r: 'legendaire', bg: 'linear-gradient(115deg,#c98a00,#ffe680 30%,#ffc400 50%,#fff3a6 70%,#c98a00)', grip: '#8f6300', ink: '#3a2140', anim: true },

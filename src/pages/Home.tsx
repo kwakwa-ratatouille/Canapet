@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { castAndGetCode, loadCast } from '../shared/cast';
 import { CharCanvas } from '../shared/CharCanvas';
 import { Wordmark } from '../shared/Logo';
-import { CODE_LETTERS, type Lang } from '../shared/protocol';
+import { CODE_LETTERS, type Lang, type Profile } from '../shared/protocol';
+import { InviteBanner, usePresence } from '../pad/Friends';
+import '../pad/box.css';
 import { save, store, IS_PHONE } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import { ANDROID_APK_URL, IOS_IPA_URL, IOS_SOURCE_URL, IS_INSTALLED, PLATFORM } from '../shared/native';
@@ -24,6 +26,18 @@ const MASCOTS = [
 const SITE_NAME = 'kwakwa-ratatouille.github.io/Canapet';
 
 /** Compte Google sur l'accueil : connexion, et la progression du téléphone fusionnée avec celle du compte. */
+/** Invitations d'amis et présence, aussi depuis l'accueil. */
+function HomeSocial({ lang }: { lang: Lang }) {
+  const [user, setUser] = useState<CloudUser | null>(null);
+  useEffect(() => {
+    if (!store('cloud', false)) return;
+    return watchUser(setUser);
+  }, []);
+  const profile = store<Profile>('profile', { name: '', food: 'coussin', color: '#ff4f9a', hat: 'aucun', acc: 'aucun', lang });
+  usePresence(user, profile, '');
+  return <InviteBanner user={user} lang={lang} />;
+}
+
 function AccountCard({ lang }: { lang: Lang }) {
   const fr = lang === 'fr';
   const [user, setUser] = useState<CloudUser | null>(null);
@@ -265,6 +279,7 @@ export function Home() {
           </>
         )}
       </div>
+      <HomeSocial lang={lang} />
       <a className="home-help" href="#/aide">
         {t(lang, 'howTv')}
       </a>

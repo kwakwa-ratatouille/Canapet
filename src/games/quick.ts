@@ -130,6 +130,8 @@ function centerText(g: CanvasRenderingContext2D, text: string, cx: number, cy: n
   lines.forEach((l, i) => g.fillText(l, cx, cy + (i - (lines.length - 1) / 2) * size * 1.2));
 }
 
+const SOLEIL_FX = '#ffd60a';
+
 function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const pls = newPlayers(runners);
@@ -146,6 +148,7 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
   let timer = 0;
   let botT = 0;
   const count = (k: number) => pls.filter((p) => p.pick === k).length;
+  let roast = '';
 
   function next() {
     round++;
@@ -180,6 +183,15 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
     phase = 'reveal';
     timer = SHOW;
     sfx.boom();
+    // Un seul dans son camp : tout le monde se moque
+    const lonely = [0, 1].map((k) => pls.filter((p) => p.pick === k)).find((l) => l.length === 1 && pls.length >= 3);
+    const line = lonely
+      ? (fr ? `${lonely[0].profile.name}, tout seul de son côté. On va devoir en parler.` : `${lonely[0].profile.name}, all alone on that side. We need to talk.`)
+      : best < 0
+        ? (fr ? 'Égalité parfaite. Ce groupe est coupé en deux.' : 'A perfect tie. This group is split in two.')
+        : (fr ? `Le salon a tranché. Pauvres de nous.` : `The room has spoken. Poor us.`);
+    speak(line, ctx.lang);
+    roast = line;
     ctx.refresh();
   }
   next();
@@ -221,7 +233,7 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
         return;
       }
       g.font = '700 40px Fredoka, sans-serif';
-      g.fillText(`🤔 ${fr ? 'Plutôt ça' : 'Rather this'} · ${round + 1}/${deck.length}`, 960, 60);
+      g.fillText(`😱 ${fr ? 'Le Pire des Deux' : 'Worst of Two'} · ${round + 1}/${deck.length}`, 960, 60);
       [0, 1].forEach((k) => {
         const x = k ? 990 : 90;
         card(g, x, 120, 840, 520, k ? CIEL : ROSE);
@@ -235,7 +247,22 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
       g.fillStyle = INK;
       g.font = '700 54px Fredoka, sans-serif';
       if (phase === 'choose') g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 700);
-      drawRow(g, pls, t, (p) => (phase === 'reveal' && p.gain ? `+${p.gain} · ${p.profile.name}` : p.pick >= 0 && phase === 'choose' ? `✅ ${p.profile.name}` : p.profile.name));
+      if (phase === 'reveal') {
+        // Chacun rejoint le camp qu'il a choisi
+        [0, 1].forEach((k) => {
+          const side = pls.filter((p) => p.pick === k);
+          side.forEach((p, i) => {
+            const x = (k ? 1410 : 510) + (i - (side.length - 1) / 2) * Math.min(150, 780 / Math.max(1, side.length));
+            drawCharacter(g, x, 880 + Math.abs(Math.sin(t * 5 + i)) * -14, 130, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc, eyes: p.profile.eyes, pose: p.profile.pose, selfie: p.selfie, t: t + i, mood: p.gain ? 'win' : 'sad' });
+            g.fillStyle = INK;
+            g.font = '700 30px Fredoka, sans-serif';
+            g.fillText(`${p.profile.name}${p.gain ? ` +${p.gain}` : ''}`, x, 920);
+          });
+        });
+        card(g, 260, 950, 1400, 96, '#fff7c9');
+        g.fillStyle = INK;
+        centerText(g, roast, 960, 998, 1320, 38);
+      } else drawRow(g, pls, t, (p) => (phase === 'reveal' && p.gain ? `+${p.gain} · ${p.profile.name}` : p.pick >= 0 && phase === 'choose' ? `✅ ${p.profile.name}` : p.profile.name));
     },
     ranking: () => [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid),
     leader: () => null,
@@ -261,7 +288,11 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const pls = newPlayers(runners);
   const ASK = 25;
-  const SHOW = 7;
+  const SHOW = 9;
+  let bestPid = '';
+  let worstPid = '';
+  let shownAt = 0;
+  let clock = 0;
   const deck = [...FACTS].sort(() => Math.random() - 0.5).slice(0, 8);
   let round = -1;
   let phase: QuizPadData['phase'] = 'write';
@@ -303,8 +334,20 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
     }
     phase = 'reveal';
     timer = SHOW;
-    sfx.boom();
-    speak(fr ? `La réponse : ${a}` : `The answer: ${a}`, ctx.lang);
+    shownAt = clock;
+    bestPid = order[0]?.pid ?? '';
+    worstPid = order.length >= 2 ? order[order.length - 1].pid : '';
+    sfx.whoosh();
+    // Suspense : le nombre défile, puis la vérité et les pifs
+    const bestP = order[0];
+    const worstP = order.length >= 2 ? order[order.length - 1] : null;
+    setTimeout(() => {
+      sfx.boom();
+      const lines = [fr ? `La réponse : ${a}.` : `The answer: ${a}.`];
+      if (bestP) lines.push(fr ? `Pif d’or pour ${bestP.profile.name} !` : `Golden nose for ${bestP.profile.name}!`);
+      if (worstP) lines.push(fr ? `Et ${worstP.profile.name}, pif en carton.` : `And ${worstP.profile.name}, cardboard nose.`);
+      speak(lines.join(' '), ctx.lang);
+    }, 1800);
     ctx.refresh();
   }
   next();
@@ -321,6 +364,7 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       timer -= dt;
+      clock += dt;
       if (phase === 'write') {
         if ((botT -= dt) <= 0) {
           botT = 99;
@@ -355,10 +399,21 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillStyle = timer < 8 ? ROSE : INK;
         g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 520);
       } else {
-        card(g, 660, 410, 600, 150, MENTHE);
+        const since = clock - shownAt;
+        const rolling = since < 1.8;
+        const shake = rolling ? Math.sin(since * 40) * 6 : 0;
+        card(g, 660 + shake, 410, 600, 150, rolling ? SOLEIL_FX : MENTHE);
         g.fillStyle = INK;
         g.font = '700 90px Fredoka, sans-serif';
-        g.fillText(String(truth()), 960, 488);
+        // Le nombre défile de plus en plus lentement avant de tomber juste
+        const fake = Math.round(truth() * (0.4 + Math.abs(Math.sin(Math.floor(since * (14 - since * 5)) * 12.9)) * 1.2));
+        g.fillText(String(rolling ? fake : truth()), 960 + shake, 488);
+        if (!rolling) {
+          g.font = '700 44px Fredoka, sans-serif';
+          const who = (id: string) => pls.find((p) => p.pid === id)?.profile.name ?? '';
+          if (bestPid) g.fillText(`👃✨ ${fr ? 'Pif d’or' : 'Golden nose'} : ${who(bestPid)}`, 520, 610);
+          if (worstPid) g.fillText(`👃📦 ${fr ? 'Pif en carton' : 'Cardboard nose'} : ${who(worstPid)}`, 1400, 610);
+        }
       }
       drawRow(g, pls, t, (p) => (phase === 'reveal' ? `${p.profile.name} : ${p.guess ?? '—'}${p.gain ? ` (+${p.gain})` : ''}` : p.guess !== null ? `✅ ${p.profile.name}` : p.profile.name), 860, 130);
     },
@@ -387,7 +442,7 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
 export const plutot: GameBase = {
   id: 'plutot',
   emoji: '🤔',
-  name: { fr: 'Plutôt Ça', en: 'Rather This' },
+  name: { fr: 'Le Pire des Deux', en: 'Worst of Two' },
   how: { fr: 'Deux choix absurdes : vote comme la majorité pour marquer !', en: 'Two absurd choices: vote with the majority to score!' },
   layout: 'buttons',
   min: 3,
@@ -401,7 +456,7 @@ export const plutot: GameBase = {
 export const chiffre: GameBase = {
   id: 'chiffre',
   emoji: '🔢',
-  name: { fr: 'Le Bon Chiffre', en: 'The Right Number' },
+  name: { fr: 'Le Juste Pif', en: 'Nose for Numbers' },
   how: { fr: 'Une question, un nombre : le plus proche gagne, le pile-poil rapporte gros !', en: 'One question, one number: closest wins, a bullseye pays big!' },
   layout: 'buttons',
   min: 2,

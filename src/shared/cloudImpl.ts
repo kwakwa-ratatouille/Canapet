@@ -2,7 +2,7 @@
 import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { deleteUser, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as fbSignOut, type Auth } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { get, getDatabase, goOffline, goOnline, onValue, ref, remove, serverTimestamp, set, type Database, type DataSnapshot } from 'firebase/database';
+import { get, getDatabase, goOffline, goOnline, onValue, ref, remove, serverTimestamp, set, type Database, type DataSnapshot, update, runTransaction } from 'firebase/database';
 import type { CloudUser } from './cloud';
 import type { Progress } from './progress';
 
@@ -43,6 +43,8 @@ export async function deleteAccount() {
   const u = auth.currentUser;
   if (!u) return;
   await remove(ref(db, `players/${u.uid}`));
+  await remove(ref(db, `social/${u.uid}`)).catch(() => {});
+  await remove(ref(db, `friends/${u.uid}`)).catch(() => {});
   await deleteUser(u);
 }
 
@@ -181,6 +183,80 @@ export async function loadKeys(uid: string) {
 export async function openChest(owned: string[]) {
   const res = await httpsCallable<{ owned: string[] }, { key: string | null; rarity: 'legendaire' | 'mythique'; pity: number }>(getFunctions(app, 'europe-west1'), 'openChest')({ owned });
   return res.data;
+}
+
+// ——— Amis ———
+const me = () => {
+  const u = auth.currentUser;
+  if (!u) throw new Error('connexion');
+  return u.uid;
+};
+const FRIEND_LETTERS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+/** Mon code ami : créé la première fois, gardé ensuite. */
+export async function myFriendCode() {
+  const uid = me();
+  const cur = (await get(ref(db, `social/${uid}/code`))).val() as string | null;
+  if (cur) return cur;
+  for (let i = 0; i < 8; i++) {
+    const code = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => FRIEND_LETTERS[b % FRIEND_LETTERS.length]).join('');
+    const tx = await runTransaction(ref(db, `friendCodes/${code}`), (v) => (v ? undefined : uid));
+    if (tx.committed) {
+      await set(ref(db, `social/${uid}/code`), code);
+      return code;
+    }
+  }
+  throw new Error('code');
+}
+
+export async function publishPresence(p: { name: string; food: string; color: string; hat?: string; room: string }) {
+  await update(ref(db, `social/${me()}`), { name: p.name.slice(0, 20), food: p.food, color: p.color, hat: p.hat ?? 'aucun', room: p.room, seen: serverTimestamp() });
+}
+
+export async function addFriend(code: string) {
+  const uid = me();
+  const other = (await get(ref(db, `friendCodes/${code}`))).val() as string | null;
+  if (!other) throw new Error('inconnu');
+  if (other === uid) throw new Error('moi');
+  await update(ref(db), { [`friends/${uid}/${other}`]: true, [`friends/${other}/${uid}`]: true });
+  return ((await get(ref(db, `social/${other}/name`))).val() as string | null) ?? '?';
+}
+
+export async function removeFriend(other: string) {
+  const uid = me();
+  await update(ref(db), { [`friends/${uid}/${other}`]: null, [`friends/${other}/${uid}`]: null });
+}
+
+export async function inviteFriend(other: string, room: string) {
+  const uid = me();
+  const name = ((await get(ref(db, `social/${uid}/name`))).val() as string | null) ?? '?';
+  await set(ref(db, `invites/${other}/${uid}`), { name, code: room, at: Date.now() });
+}
+export const dropInvite = (from: string) => remove(ref(db, `invites/${me()}/${from}`));
+
+/** Liste d'amis, relue toutes les 30 s pour savoir qui est en ligne. */
+export function friendsWatch(cb: (l: { uid: string; name: string; food: string; color: string; hat?: string; seen: number; room?: string }[]) => void) {
+  let ids: string[] = [];
+  const read = async () => {
+    const all = await Promise.all(ids.map(async (uid) => ({ uid, v: (await get(ref(db, `social/${uid}`))).val() as { name?: string; food?: string; color?: string; hat?: string; seen?: number; room?: string } | null })));
+    cb(all.map(({ uid, v }) => ({ uid, name: v?.name ?? '?', food: v?.food ?? 'coussin', color: v?.color ?? '#ff4f9a', hat: v?.hat, seen: v?.seen ?? 0, room: v?.room })));
+  };
+  const off = onValue(ref(db, `friends/${me()}`), (s) => {
+    ids = Object.keys((s.val() as Record<string, boolean> | null) ?? {});
+    void read();
+  }, () => {});
+  const id = setInterval(() => void read().catch(() => {}), 30000);
+  return () => {
+    off();
+    clearInterval(id);
+  };
+}
+
+export function invitesWatch(cb: (l: { from: string; name: string; code: string; at: number }[]) => void) {
+  return onValue(ref(db, `invites/${me()}`), (s) => {
+    const v = (s.val() as Record<string, { name: string; code: string; at: number }> | null) ?? {};
+    cb(Object.entries(v).map(([from, i]) => ({ from, ...i })));
+  }, () => {});
 }
 
 export async function load(uid: string): Promise<Partial<Progress> | null> {

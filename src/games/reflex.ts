@@ -701,7 +701,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 export const reflex: GameBase = {
   id: 'reflexes',
   emoji: '⚡',
-  name: { fr: 'Réflexes Éclair', en: 'Lightning Reflexes' },
+  name: { fr: 'Trop Lent, Mamie !', en: 'Too Slow, Grandma!' },
   how: {
     fr: '9 épreuves éclair parmi 12 : attends le vert, intrus, mémoire, vrai ou faux, flèche inversée, chrono à l’aveugle…',
     en: '9 lightning rounds out of 12: wait for green, odd one out, memory, true or false, reverse arrow, blind clock…',

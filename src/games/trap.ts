@@ -561,7 +561,7 @@ function trap(runners: Runner[], ctx: GameCtx): GameInstance {
 export const trapGame: GameBase = {
   id: 'trappe',
   emoji: '🕳️',
-  name: { fr: 'La Trappe', en: 'The Trapdoor' },
+  name: { fr: 'Questions pour un Trou', en: 'Who Wants to Fall?' },
   how: {
     fr: 'Une question, deux réponses : va du bon côté avant le STOP, la trappe s’ouvre sous l’autre ! · B = pousser',
     en: 'One question, two answers: stand on the right side before STOP, the other side’s trapdoor opens! · B = shove',
