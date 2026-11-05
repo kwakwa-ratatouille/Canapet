@@ -9,6 +9,18 @@ import type { Lang } from '../shared/protocol';
 // le jeton est chiffré puis renvoyé à l'appli, qui se connecte toute seule. Il suffit ensuite d'y revenir.
 // Aller : bouton → Google. Retour : Google revient sur le site avec le jeton (`back`), on le transmet.
 // `here` : page ouverte dans le même onglet (fenêtre bloquée) → on connecte ce navigateur et on revient à l'accueil.
+/** Connexion faite dans le même onglet : retour à la boutique si on en venait, sinon à l'accueil. */
+function returnTo() {
+  try {
+    const h = localStorage.getItem('gauth-back') ?? '';
+    localStorage.removeItem('gauth-back');
+    if (h === '#/site' || h.startsWith('#/site?')) return h;
+  } catch {
+    /* rien */
+  }
+  return '#/';
+}
+
 export function Relay({ id, k, here = false, back }: { id: string; k: string; here?: boolean; back?: ReturnType<typeof googleReturn> }) {
   const lang = store<{ lang?: Lang }>('profile', {}).lang ?? defaultLang();
   const fr = lang === 'fr';
@@ -21,7 +33,7 @@ export function Relay({ id, k, here = false, back }: { id: string; k: string; he
     relayTokens(id, k, back.token, back.here)
       .then(() => {
         setState('done');
-        if (back.here) setTimeout(() => location.replace(location.pathname + '#/'), 800);
+        if (back.here) setTimeout(() => location.replace(location.pathname + returnTo()), 800);
         else setTimeout(() => window.close(), 1500);
       })
       .catch(() => {

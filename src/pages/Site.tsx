@@ -1,6 +1,6 @@
 import { CharCanvas } from '../shared/CharCanvas';
 import { gameIcon, Wordmark } from '../shared/Logo';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createCheckout, loadItems, signIn, watchUser, type CloudUser } from '../shared/cloud';
 import { IS_NATIVE } from '../shared/native';
 import { COLLECTIONS, PACKS, PASS, PASS_GIFT, SALES_ON, WEB_PRICE } from '../shared/offer';
@@ -9,6 +9,8 @@ import { defaultLang } from '../shared/i18n';
 import type { Lang, Profile } from '../shared/protocol';
 import { LegalLinks } from './Legal';
 import './site.css';
+
+const BUY_AFTER = 'buy-after';
 
 const GAMES: [string, string, string][] = [
   ['tribunal', 'Le Tribunal', 'The Tribunal'],
@@ -36,7 +38,33 @@ const CAST: Partial<Profile>[] = [
 /** Vente sur le site : compte Google, accord pour l'accès immédiat, puis paiement sur la page Stripe. */
 function Buy({ id, lang, user, items }: { id: string; lang: Lang; user: CloudUser | null; items: string[] }) {
   const fr = lang === 'fr';
-  const [open, setOpen] = useState(false);
+  // Revenu de la connexion Google dans le même onglet : on rouvre l'achat commencé
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(BUY_AFTER) === id;
+    } catch {
+      return false;
+    }
+  });
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    try {
+      if (localStorage.getItem(BUY_AFTER) !== id) return;
+      localStorage.removeItem(BUY_AFTER);
+    } catch {
+      return;
+    }
+    box.current?.scrollIntoView({ block: 'center' });
+  }, [open, id]);
+  const connect = () => {
+    try {
+      localStorage.setItem(BUY_AFTER, id);
+    } catch {
+      /* rien */
+    }
+    signIn().catch(() => setMsg(fr ? 'Connexion impossible, réessaie.' : 'Could not sign in, try again.'));
+  };
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -59,11 +87,11 @@ function Buy({ id, lang, user, items }: { id: string; lang: Lang; user: CloudUse
       });
   };
   return (
-    <div className="site-buy">
+    <div className="site-buy" ref={box}>
       {!user ? (
         <>
           <p>{fr ? 'Connecte-toi : l’achat ira sur ton compte Google, sur tous tes appareils.' : 'Sign in: the purchase goes on your Google account, on all your devices.'}</p>
-          <button className="btn mint" onClick={() => signIn().catch(() => setMsg(fr ? 'Connexion impossible, réessaie.' : 'Could not sign in, try again.'))}>
+          <button className="btn mint" onClick={connect}>
             {fr ? 'Se connecter avec Google' : 'Sign in with Google'}
           </button>
         </>
@@ -74,9 +102,13 @@ function Buy({ id, lang, user, items }: { id: string; lang: Lang; user: CloudUse
             <span>{fr ? 'Je veux l’accès tout de suite et je renonce à mon droit de rétractation de 14 jours pour ce contenu numérique.' : 'I want access right away and I give up my 14-day right of withdrawal for this digital content.'}</span>
           </label>
           <button className="btn mint" disabled={!consent || busy} onClick={pay}>
-            {busy ? '…' : `${fr ? 'Payer' : 'Pay'} ${WEB_PRICE(id)}`}
+            {busy ? '…' : `${fr ? 'Commander et payer' : 'Order and pay'} ${WEB_PRICE(id)}`}
           </button>
-          <p className="pad-small">{fr ? 'Paiement sécurisé par Stripe : nous ne voyons jamais ta carte.' : 'Secure payment by Stripe: we never see your card.'}</p>
+          <p className="pad-small">
+            <a href="#/conditions" target="_blank" rel="noreferrer">{fr ? 'Lire les conditions de vente' : 'Read the terms of sale'}</a>
+            <br />
+            {fr ? 'Paiement sécurisé par Stripe : nous ne voyons jamais ta carte. Le reçu arrive par e-mail.' : 'Secure payment by Stripe: we never see your card. The receipt comes by e-mail.'}
+          </p>
         </>
       )}
       {msg && <p className="pad-small uc-note">{msg}</p>}
@@ -105,7 +137,7 @@ export function Site({ result }: { result?: string | null }) {
   }, [result]);
   return (
     <div className="site">
-      {result === 'ok' && <p className="site-note">🎉 {T('Merci ! Ton achat arrive sur ton compte dans quelques secondes. Reconnecte ta manette si besoin.', 'Thank you! Your purchase reaches your account in a few seconds. Reconnect your controller if needed.')}</p>}
+      {result === 'ok' && <p className="site-note">🎉 {T('Merci ! Ton achat arrive sur ton compte dans quelques secondes, et ton reçu par e-mail. Reconnecte ta manette si besoin.', 'Thank you! Your purchase reaches your account in a few seconds, and your receipt by e-mail. Reconnect your controller if needed.')}</p>}
       {result === 'annule' && <p className="site-note">{T('Paiement annulé : tu n’as rien payé.', 'Payment cancelled: you paid nothing.')}</p>}
       <header className="site-hero">
         <Wordmark className="home-wordmark" />

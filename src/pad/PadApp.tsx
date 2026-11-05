@@ -588,7 +588,7 @@ function PadScreenView({
           </div>
         );
       return (
-        <div className="pad-body host lobby">
+        <div className="pad-body host pad-lobby">
           <div className="code-card">
             <div>
               <small>{t(lang, 'codeLabel')}</small>

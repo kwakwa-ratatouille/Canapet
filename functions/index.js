@@ -76,12 +76,17 @@ exports.createCheckout = onCall({ region: 'europe-west1', maxInstances: 5, secre
   if (consent !== true) throw new HttpsError('failed-precondition', 'accord requis');
   if ((await getDatabase().ref(`entitlements/${uid}/${product}`).get()).exists()) throw new HttpsError('already-exists', 'déjà acheté');
   const meta = { uid, product, consent: new Date().toISOString() };
+  const email = req.auth.token?.email;
+  // Trace écrite de l'accord : elle figure sur le reçu envoyé par Stripe, en plus de la page de paiement
+  const waiver = "Accès immédiat demandé, droit de rétractation de 14 jours perdu à la commande. Conditions : " + SITE + '#/conditions';
   const session = await new Stripe(STRIPE_KEY.value()).checkout.sessions.create({
     mode: 'payment',
+    ...(email ? { customer_email: email } : {}),
+    custom_text: { submit: { message: waiver } },
     line_items: [{ quantity: 1, price_data: { currency: 'eur', unit_amount: item.cents, product_data: { name: item.name } } }],
     client_reference_id: uid,
     metadata: meta,
-    payment_intent_data: { metadata: meta },
+    payment_intent_data: { metadata: meta, description: `${item.name}. ${waiver}`, ...(email ? { receipt_email: email } : {}) },
     success_url: `${SITE}#/site?achat=ok`,
     cancel_url: `${SITE}#/site?achat=annule`,
   });
@@ -99,6 +104,18 @@ exports.stripeWebhook = onRequest({ region: 'europe-west1', maxInstances: 5, sec
   }
   const db = getDatabase();
   const o = event.data.object;
+  // Contestation bancaire : l'achat est retiré pendant le litige, et rendu si le vendeur gagne
+  if (event.type === 'charge.dispute.created' || event.type === 'charge.dispute.closed') {
+    const pay = o.payment_intent ? await new Stripe(STRIPE_KEY.value()).paymentIntents.retrieve(o.payment_intent) : null;
+    const m = pay?.metadata ?? {};
+    if (m.uid && PRODUCTS.has(m.product)) {
+      const node = db.ref(`entitlements/${m.uid}/${m.product}`);
+      if (event.type === 'charge.dispute.created') await node.remove();
+      else if (o.status === 'won') await node.set({ at: Date.now(), order: pay.id, via: 'stripe', consent: m.consent ?? '' });
+    }
+    res.json({ received: true });
+    return;
+  }
   const { uid, product, consent } = o.metadata ?? {};
   if (uid && PRODUCTS.has(product)) {
     if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && o.payment_status === 'paid') {

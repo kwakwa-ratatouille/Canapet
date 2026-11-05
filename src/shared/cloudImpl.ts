@@ -76,6 +76,11 @@ export async function signInViaBrowser(site: string, inApp: boolean): Promise<vo
   // Dans les applis, l'ouverture du navigateur ne renvoie rien même quand elle a marché : on attend quand même
   if (!window.open(url, '_blank') && !inApp) {
     // Page bloquée (navigateur du téléphone) : on y va dans cet onglet, elle connectera ce navigateur puis reviendra à l'accueil
+    try {
+      localStorage.setItem('gauth-back', location.hash);
+    } catch {
+      /* rien */
+    }
     location.assign(url + '&ici=1');
     return new Promise(() => {});
   }

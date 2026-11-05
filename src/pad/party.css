@@ -183,8 +183,8 @@
 .pass-card ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; text-align: left; }
 
 /* Salon en onglets : les actions d'abord, jamais tout en bas */
-.pad-body.lobby { padding-bottom: 0; }
-.lobby-tabs { position: sticky; bottom: 0; margin-top: auto; align-self: stretch; display: flex; gap: 6px; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--cp-fond, #ffe9f3); }
+.pad-body.pad-lobby { padding-bottom: 0; }
+.lobby-tabs { position: sticky; bottom: 0; flex: none; margin: auto -16px 0; align-self: stretch; display: flex; gap: 6px; padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); background: #ffeaf5; border-top: 4px solid #3a2140; }
 .lobby-tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border: 4px solid #3a2140; border-radius: 16px; background: #fff; color: #3a2140; font-family: var(--cp-font-titre); font-weight: 700; font-size: 14px; box-shadow: 0 4px 0 #3a2140; }
 .lobby-tabs button i { font-style: normal; font-size: 20px; }
 .lobby-tabs button.on { background: #ff4f9a; color: #fff; }

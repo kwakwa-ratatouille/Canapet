@@ -46,9 +46,9 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 ## Vente sur le site (Stripe)
 1. Créer la micro-entreprise, puis un compte sur stripe.com et l'activer.
 2. Formule Blaze sur Firebase (voir plus bas), puis : `npx firebase-tools functions:secrets:set STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET`.
-3. Dans Stripe > Développeurs > Webhooks, ajouter `https://europe-west1-canapet-31bb7.cloudfunctions.net/stripeWebhook` avec les événements `checkout.session.completed`, `checkout.session.async_payment_succeeded` et `charge.refunded`. La clé `whsec_…` donnée par Stripe est le STRIPE_WEBHOOK_SECRET.
+3. Dans Stripe > Développeurs > Webhooks, ajouter `https://europe-west1-canapet-31bb7.cloudfunctions.net/stripeWebhook` avec les événements `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.created` et `charge.dispute.closed`. La clé `whsec_…` donnée par Stripe est le STRIPE_WEBHOOK_SECRET.
 4. Commencer avec les clés de test de Stripe (`sk_test_…`, carte d'essai), passer `SALES_ON` à vrai, tester, puis mettre les vraies clés.
-5. Ajouter le SIRET et l'adresse dans `src/pages/Legal.tsx`, activer les reçus par e-mail dans Stripe, et vérifier la TVA avec un comptable.
+5. Adhérer à un médiateur de la consommation. Donner à Claude le SIRET, l'adresse, le médiateur (nom + site) et la mention de TVA : à remplir en haut de `src/pages/Legal.tsx`. Faire relire les pages légales (renonciation, et fonction de rétractation en ligne : savoir si elle reste due quand le client a renoncé). Vérifier sur un paiement d'essai que le reçu porte bien la phrase de renonciation. Activer les reçus par e-mail dans Stripe, et vérifier la TVA avec un comptable.
 
 ## Quand on activera les ventes
 1. Créer la micro-entreprise et le profil de paiement Google.

@@ -3847,6 +3847,7 @@ body,
 
 .legal-links { text-align: center; font-size: 14px; margin: 10px 0 18px; }
 .legal-links a { color: inherit; }
+.legal-avis { display: inline-block; margin-bottom: 8px; font-weight: 800; font-size: 16px; }
 .legal .home-card p { text-align: left; }
 .account-del { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .account-del p { width: 100%; margin: 0; }
