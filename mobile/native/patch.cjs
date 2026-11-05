@@ -5,8 +5,8 @@ const f = 'android/app/src/main/AndroidManifest.xml';
 let s = fs.readFileSync(f, 'utf8');
 // Google Play réserve l'accès à toute la galerie aux applis de galerie : la version Play passe par le sélecteur du système.
 const perms = (PLAY
-  ? ['android.permission.CAMERA', 'android.permission.VIBRATE']
-  : ['android.permission.READ_MEDIA_IMAGES', 'android.permission.READ_MEDIA_VIDEO', 'android.permission.CAMERA', 'android.permission.VIBRATE', 'android.permission.WAKE_LOCK']
+  ? ['android.permission.CAMERA', 'android.permission.VIBRATE', 'android.permission.RECORD_AUDIO', 'android.permission.MODIFY_AUDIO_SETTINGS']
+  : ['android.permission.READ_MEDIA_IMAGES', 'android.permission.READ_MEDIA_VIDEO', 'android.permission.CAMERA', 'android.permission.VIBRATE', 'android.permission.WAKE_LOCK', 'android.permission.RECORD_AUDIO', 'android.permission.MODIFY_AUDIO_SETTINGS']
 )
   .map((p) => `    <uses-permission android:name="${p}" />`)
   .join('\n');

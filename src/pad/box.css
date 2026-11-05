@@ -323,3 +323,17 @@
 .odds-legend b { font-size: inherit; font-family: inherit; display: inline; font-weight: 800; }
 .box-buy { white-space: nowrap; }
 .box-buy.free { flex-direction: row; }
+
+/* Micro */
+.voice-pad { align-items: center; }
+.voice-prompt { font-size: 24px; line-height: 1.15; }
+.mic-btn { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 190px; height: 190px; margin: 8px auto; color: #fff; background: radial-gradient(circle at 35% 28%, #ff8ac0, #ff4f9a 60%); border: 6px solid #3a2140; border-radius: 50%; box-shadow: 0 8px 0 #3a2140; touch-action: manipulation; }
+.mic-btn i { font-style: normal; font-size: 72px; line-height: 1; }
+.mic-btn small { font-family: var(--cp-font-titre); font-size: 16px; font-weight: 700; }
+.mic-btn b { font-family: var(--cp-font-titre); font-size: 74px; line-height: 1; }
+.mic-btn:disabled { opacity: .6; }
+.mic-btn.on { background: radial-gradient(circle at 35% 28%, #ff7b7b, #e8323c 60%); transform: translateY(5px); box-shadow: 0 3px 0 #3a2140; }
+.mic-rings { position: absolute; inset: -6px; border: 6px solid #e8323c; border-radius: 50%; animation: mic-ring 1s ease-out infinite; }
+@keyframes mic-ring { to { transform: scale(1.35); opacity: 0; } }
+.mic-after { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; max-width: 360px; }
+.mic-after .btn.alt { flex: 1; min-width: 130px; font-size: 16px; padding: 10px 8px; }

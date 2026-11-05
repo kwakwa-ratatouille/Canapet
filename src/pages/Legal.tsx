@@ -80,13 +80,14 @@ const DOCS: Record<string, (fr: boolean) => Doc> = {
                 'Si tu nous écris : ton adresse et ton message, le temps de te répondre.',
                 'Selfie et Photo Mystère (facultatifs) : seules les images que tu choisis sont envoyées à la télé de la partie, pour les afficher. Elles ne sont pas gardées quand la partie se termine.',
                 'Textes et dessins : ce que tu tapes ou dessines dans un jeu s’affiche à la télé de la partie et n’est pas gardé.',
+                'Micro (facultatif) : ton téléphone n’enregistre que quand tu appuies sur le bouton, dans les jeux au micro. Le son est envoyé à la télé de la partie pour que le salon l’écoute, et n’est pas gardé quand la partie se termine.',
               ],
             ],
             [
               'Où ça passe',
               [
                 'La télé et les téléphones se parlent en direct quand c’est possible. Un service de mise en relation (PeerJS) et des relais techniques peuvent voir passer les adresses IP et les données de la liaison.',
-                'Si la liaison directe ne marche pas, les messages de la partie, photos comprises, passent par Google Firebase et sont effacés dès leur lecture. Ils restent lisibles par une personne qui connaîtrait le code de la partie à ce moment-là : n’envoie rien de sensible.',
+                'Si la liaison directe ne marche pas, les messages de la partie, photos et sons compris, passent par Google Firebase et sont effacés dès leur lecture. Ils restent lisibles par une personne qui connaîtrait le code de la partie à ce moment-là : n’envoie rien de sensible.',
                 'Le compte et la progression sont gardés par Google Firebase (base de données en Belgique). La voix du présentateur est celle de ton appareil, qui peut utiliser un service en ligne selon le navigateur.',
               ],
             ],
@@ -110,13 +111,14 @@ const DOCS: Record<string, (fr: boolean) => Doc> = {
                 'If you write to us: your address and message, long enough to answer you.',
                 'Selfie and Mystery Photo (optional): only the pictures you choose are sent to the TV of the game, to display them. They are not kept when the game ends.',
                 'Text and drawings: what you type or draw in a game appears on the TV of the game and is not kept.',
+                'Microphone (optional): your phone only records when you press the button, in microphone games. The sound is sent to the TV of the game so the room can hear it, and is not kept when the game ends.',
               ],
             ],
             [
               'Where it goes',
               [
                 'The TV and the phones talk directly when possible. A pairing service (PeerJS) and technical relays can see IP addresses and connection data.',
-                'If the direct link fails, game messages, photos included, go through Google Firebase and are erased as soon as they are read. Someone who knows the game code at that moment could read them: do not send anything sensitive.',
+                'If the direct link fails, game messages, photos and sounds included, go through Google Firebase and are erased as soon as they are read. Someone who knows the game code at that moment could read them: do not send anything sensitive.',
                 'Your account and progress are stored by Google Firebase (database in Belgium). The host’s voice comes from your device, which may use an online service depending on the browser.',
               ],
             ],

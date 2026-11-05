@@ -43,6 +43,30 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  imite: {
+    fr: { goal: 'Un défi absurde : ton téléphone est le micro !', steps: [['🎙️', 'Touche Enregistrer et imite ce qui est demandé'], ['📺', 'La télé fait écouter tout le monde'], ['🗳️', 'Votez pour le meilleur : 2 points par voix']] },
+    en: { goal: 'An absurd challenge: your phone is the mic!', steps: [['🎙️', 'Tap Record and imitate what’s asked'], ['📺', 'The TV plays everyone back'], ['🗳️', 'Vote for the best: 2 points per vote']] },
+  },
+  devine: {
+    fr: { goal: 'Fais deviner un bruit, sans dire son nom !', steps: [['🤫', 'Chacun son tour reçoit un bruit secret'], ['🔊', 'La télé le fait écouter deux fois'], ['⭐', 'Bien deviné = 3 points, et 2 pour le bruiteur']] },
+    en: { goal: 'Make people guess a sound, without naming it!', steps: [['🤫', 'In turn, each player gets a secret sound'], ['🔊', 'The TV plays it twice'], ['⭐', 'Right guess = 3 points, and 2 for the noisemaker']] },
+  },
+  perroquet: {
+    fr: { goal: 'La télé fait un drôle de bruit : imite-le !', steps: [['👂', 'Écoute bien le bruit de la télé'], ['🎙️', 'Enregistre ta meilleure imitation'], ['🗳️', 'Votez pour le plus ressemblant']] },
+    en: { goal: 'The TV makes a funny sound: imitate it!', steps: [['👂', 'Listen closely to the TV'], ['🎙️', 'Record your best imitation'], ['🗳️', 'Vote for the closest']] },
+  },
+  envers: {
+    fr: { goal: 'Une phrase secrète, jouée à l’envers !', steps: [['🎙️', 'Un joueur enregistre une phrase secrète'], ['⏪', 'La télé la passe à l’envers'], ['⭐', 'Trouve la bonne phrase, puis écoute-la à l’endroit']] },
+    en: { goal: 'A secret sentence, played backwards!', steps: [['🎙️', 'One player records a secret sentence'], ['⏪', 'The TV plays it backwards'], ['⭐', 'Find the right one, then hear it forwards']] },
+  },
+  voix: {
+    fr: { goal: 'Ta voix est déformée : qui parle ?', steps: [['🎙️', 'Tout le monde dit la même phrase'], ['🐿️', 'La télé en passe une, en écureuil ou en ogre'], ['🕵️', 'Trouve qui parle, et trompe les autres avec ta voix']] },
+    en: { goal: 'Your voice is distorted: who is it?', steps: [['🎙️', 'Everyone says the same sentence'], ['🐿️', 'The TV plays one, as a squirrel or an ogre'], ['🕵️', 'Find the speaker, and fool the others']] },
+  },
+  casse: {
+    fr: { goal: 'Une phrase passe de téléphone en téléphone !', steps: [['📞', 'Écoute le joueur d’avant sur ton téléphone, en secret'], ['🎙️', 'Répète ce que tu as entendu'], ['😂', 'La télé révèle ce qu’il en reste à l’arrivée']] },
+    en: { goal: 'A sentence passes from phone to phone!', steps: [['📞', 'Hear the previous player on your phone, in secret'], ['🎙️', 'Repeat what you heard'], ['😂', 'The TV reveals what’s left at the end']] },
+  },
   tribunal: {
     fr: {
       goal: 'Qui de vous serait le premier à… ? Condamnez vos amis !',

@@ -14,7 +14,7 @@ Puis Actions > Appli Android > Run workflow. Le fichier `.aab` apparaît sur la 
 - Résumé (80 signes) : Le téléphone devient la manette, la télé devient le plateau. Jusqu'à 12 joueurs !
 - Description :
   Transformez votre salon en soirée de jeux ! Ouvrez Cana'pet sur une télé ou un ordinateur, scannez le QR code, et chaque téléphone devient une manette. Vos amis n'ont rien à installer.
-  28 jeux, de 2 à 12 joueurs : courses, bagarres molles, bluff, dessin, votes entre amis, définitions bidon, questions de culture et tournois avec podium.
+  34 jeux, de 2 à 12 joueurs : courses, bagarres molles, bluff, dessin, jeux au micro, votes entre amis, définitions bidon, questions de culture et tournois avec podium.
   Crée ton perso rigolo, ajoute ton selfie, gagne des bonbons, relève les défis de la semaine et débloque des tenues.
   Il faut un écran (télé connectée avec navigateur, ordinateur en HDMI) et internet.
 - Catégorie : Jeux > Soirée. Tags : Multijoueur local.
@@ -30,6 +30,7 @@ Pas de connexion obligatoire. Instructions : ouvrir https://kwakwa-ratatouille.g
 ## Sécurité des données (Data safety)
 - Collectées, seulement avec compte Google : nom, e-mail (connexion Google), identifiant, photo de profil, progression. Facultatif. Pas partagées, pas de pub.
 - Photos et vidéos : envoyées à la télé de la partie, seulement si le joueur les choisit, non gardées.
+- Audio (voix) : enregistré seulement quand le joueur appuie, envoyé à la télé de la partie, non gardé. À déclarer dans « Enregistrements vocaux ou audio ». Autorisation micro à justifier : jeux d'imitation.
 - Données chiffrées en transit : oui. Suppression possible : oui (adresse ci-dessus).
 - Publicité : non.
 - Amis (avec compte) : pseudo, perso et présence visibles par les amis ajoutés avec un code. Pas de messages écrits entre joueurs.

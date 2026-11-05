@@ -1,0 +1,671 @@
+// Jeux au micro : chaque téléphone enregistre, la télé fait écouter à tout le salon.
+// Rien n'est gardé : les sons restent en mémoire pendant la partie, puis disparaissent.
+import { drawCharacter } from '../shared/characters';
+import { CIEL, INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
+import { decodeClip, fakeVoice, playClip, playMusic, referenceSound, REF_SOUNDS, sfx, speak, type ClipPlayer, type MusicId } from '../shared/sound';
+import { candy } from './draw';
+import { wrap } from './tribunal';
+import type { GameBase, GameCtx, GameInstance, Runner } from './types';
+import type { VoicePadData } from './voiceShared';
+
+type Mode = 'imite' | 'devine' | 'perroquet' | 'envers' | 'voix' | 'casse';
+type Phase = VoicePadData['phase'];
+
+/** [français, anglais] ; `!` au début = caché en mode famille. */
+const IMITATE: [string, string][] = [
+  ['Une poule qui a perdu ses clés', 'A chicken that lost its keys'],
+  ['Une vache qui fait un burn-out', 'A cow having a burnout'],
+  ['Ton réveil un lundi matin', 'Your alarm on a Monday morning'],
+  ['Un dauphin qui commande une pizza', 'A dolphin ordering a pizza'],
+  ['Un chat qui juge tes choix de vie', 'A cat judging your life choices'],
+  ['Une machine à café qui rend l’âme', 'A coffee machine breathing its last'],
+  ['Un mouton qui chante à l’opéra', 'A sheep singing opera'],
+  ['Un robot amoureux', 'A robot in love'],
+  ['Un fantôme enrhumé', 'A ghost with a cold'],
+  ['Un pigeon qui drague', 'A pigeon flirting'],
+  ['Une sirène de pompiers très fatiguée', 'A very tired fire siren'],
+  ['Un bébé dinosaure qui a faim', 'A hungry baby dinosaur'],
+  ['Une porte qui grince et qui râle', 'A creaky door complaining'],
+  ['Un présentateur de météo paniqué', 'A panicked weather presenter'],
+  ['Ta mère qui t’appelle pour manger', 'Your mum calling you for dinner'],
+  ['Un cowboy qui a le hoquet', 'A cowboy with hiccups'],
+  ['Un extraterrestre qui demande son chemin', 'An alien asking for directions'],
+  ['Une mouette qui vole une frite', 'A seagull stealing a chip'],
+  ['Un coq qui ne s’est pas réveillé à l’heure', 'A rooster who overslept'],
+  ['Un chanteur d’opéra qui se brûle la langue', 'An opera singer burning their tongue'],
+  ['Un lion qui a peur d’une souris', 'A lion scared of a mouse'],
+  ['Un moteur de vieille voiture qui ne démarre pas', 'An old car that won’t start'],
+  ['Un commentateur de foot devant une partie de pétanque', 'A football commentator at a game of bowls'],
+  ['Une grand-mère qui découvre internet', 'A grandma discovering the internet'],
+  ['Un loup qui hurle mais qui a mal à la gorge', 'A wolf howling with a sore throat'],
+  ['!Quelqu’un qui essaie de péter en silence', 'Someone trying to fart silently'],
+  ['!Un lendemain de soirée très difficile', 'A very hard morning after'],
+  ['!Ton voisin à travers le mur à 3 h du matin', 'Your neighbour through the wall at 3 a.m.'],
+];
+
+/** Mots et bruits à faire deviner, sans parler. */
+const GUESS: [string, string][] = [
+  ['Une vache', 'A cow'], ['Un chat', 'A cat'], ['Un chien', 'A dog'], ['Un coq', 'A rooster'], ['Un cochon', 'A pig'], ['Un mouton', 'A sheep'], ['Un âne', 'A donkey'], ['Un serpent', 'A snake'],
+  ['Un train', 'A train'], ['Une moto', 'A motorbike'], ['Un avion', 'A plane'], ['Une ambulance', 'An ambulance'], ['Un klaxon', 'A car horn'], ['Une tondeuse', 'A lawn mower'], ['Un aspirateur', 'A vacuum cleaner'],
+  ['Une cocotte-minute', 'A pressure cooker'], ['Un micro-ondes', 'A microwave'], ['Une sonnette', 'A doorbell'], ['Un téléphone qui vibre', 'A vibrating phone'], ['Une chasse d’eau', 'A toilet flush'], ['Un robinet qui goutte', 'A dripping tap'],
+  ['Un éternuement', 'A sneeze'], ['Quelqu’un qui ronfle', 'Someone snoring'], ['Un bébé qui pleure', 'A crying baby'], ['Le vent', 'The wind'], ['La pluie', 'The rain'], ['Un feu d’artifice', 'Fireworks'], ['Un pop-corn qui éclate', 'Popping popcorn'], ['Un marteau-piqueur', 'A jackhammer'], ['Une horloge', 'A clock'],
+];
+
+/** Phrases à dire à l'envers ou à déformer. */
+const PHRASES: [string, string][] = [
+  ['Mon chat adore les raviolis', 'My cat loves ravioli'],
+  ['Je n’ai pas volé le fromage', 'I did not steal the cheese'],
+  ['Le canapé est mon meilleur ami', 'The couch is my best friend'],
+  ['Il y a un pigeon dans ma cuisine', 'There is a pigeon in my kitchen'],
+  ['Ma grand-mère conduit trop vite', 'My grandma drives too fast'],
+  ['Qui a mangé le dernier cookie ?', 'Who ate the last cookie?'],
+  ['Les patates ne savent pas nager', 'Potatoes can’t swim'],
+  ['Je suis le roi de la télécommande', 'I am the king of the remote'],
+  ['Mes chaussettes sont pleines de frites', 'My socks are full of chips'],
+  ['Attention, le poulet est armé', 'Careful, the chicken is armed'],
+  ['Le lundi, je parle aux plantes', 'On Mondays, I talk to plants'],
+  ['Ton cousin a un drôle de nez', 'Your cousin has a funny nose'],
+  ['J’ai caché la baguette sous le lit', 'I hid the baguette under the bed'],
+  ['La pizza a appelé, elle veut te revoir', 'The pizza called, it wants to see you again'],
+  ['Un escargot m’a doublé sur l’autoroute', 'A snail overtook me on the motorway'],
+  ['Il faut sauver le soldat Cornichon', 'We must save Private Pickle'],
+];
+
+const WHO_LINES: [string, string][] = [
+  ['Bonjour, je suis le plus beau du salon', 'Hello, I am the best-looking in the room'],
+  ['Passe-moi le sel, s’il te plaît', 'Pass me the salt, please'],
+  ['Je n’ai jamais triché de ma vie', 'I have never cheated in my life'],
+  ['C’est pas moi, c’est le chien', 'It wasn’t me, it was the dog'],
+  ['Alors, on perd encore ?', 'So, losing again?'],
+  ['Qui veut un petit gâteau ?', 'Who wants a little cake?'],
+  ['Je vais tous vous écraser', 'I will crush you all'],
+  ['J’adore les lundis', 'I love Mondays'],
+];
+
+const TUNE: Record<Mode, { rounds: number; rec: number; max: number }> = {
+  imite: { rounds: 4, rec: 30, max: 6 },
+  perroquet: { rounds: 4, rec: 25, max: 5 },
+  devine: { rounds: 6, rec: 25, max: 6 },
+  envers: { rounds: 6, rec: 20, max: 5 },
+  voix: { rounds: 4, rec: 20, max: 5 },
+  casse: { rounds: 2, rec: 25, max: 7 },
+};
+
+interface Pl {
+  pid: string;
+  profile: Runner['profile'];
+  bot: boolean;
+  selfie: Runner['selfie'];
+  score: number;
+  gain: number;
+  pick: number;
+  sent: boolean;
+  text: string;
+}
+interface Clip {
+  pid: string;
+  buf: AudioBuffer;
+  url: string;
+}
+
+const shuffle = <T,>(a: T[]) => a.map((x) => [Math.random(), x] as const).sort((p, q) => p[0] - q[0]).map((x) => x[1]);
+const COLORS = ['#ff4f9a', '#2ec5ff', '#ffd60a', '#22c99a', '#9b5cff', '#ff9a1f', '#7bd13b', '#e08bff', '#3a6bff', '#ff3b3b', '#1fc9a0', '#a0643a'];
+
+function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance {
+  const fr = ctx.lang === 'fr';
+  const L = (x: [string, string]) => x[fr ? 0 : 1].replace(/^!/, '');
+  const clean = (l: [string, string][]) => l.filter((x) => !(ctx.family && x[0].startsWith('!')));
+  const pls: Pl[] = runners.map((r) => ({ pid: r.pid, profile: r.profile, bot: r.bot, selfie: r.selfie, score: 0, gain: 0, pick: -1, sent: false, text: '' }));
+  const humans = pls.filter((p) => !p.bot);
+  const tune = TUNE[mode];
+  const rounds = mode === 'devine' || mode === 'envers' ? Math.min(tune.rounds, Math.max(3, humans.length * 2)) : tune.rounds;
+  const deck = shuffle(clean(mode === 'imite' ? IMITATE : mode === 'devine' ? GUESS : mode === 'voix' ? WHO_LINES : PHRASES));
+  const refs = shuffle(REF_SOUNDS);
+  const rate = () => (Math.random() < 0.5 ? 1.55 : 0.68);
+
+  let round = -1;
+  let phase: Phase = 'record';
+  let timer = 0;
+  let clipNo = 0;
+  let prompt = '';
+  let actor: Pl | null = null;
+  let options: { i: number; label: string; color: string }[] = [];
+  let answer = -1;
+  let clips: Clip[] = [];
+  let queue: { clip: Clip | null; ref?: AudioBuffer; reverse?: boolean; rate?: number; label?: string; who?: Pl | null }[] = [];
+  let playing: ClipPlayer | null = null;
+  let speaking: Pl | null = null;
+  let listenLabel = '';
+  let refBuf: AudioBuffer | null = null;
+  let refAgain = 0;
+  let botsDue: { p: Pl; at: number }[] = [];
+  let clock = 0;
+  let botVoteAt = 0;
+  let chain: Pl[] = [];
+  let chainAt = 0;
+  let original = '';
+  let finalText = '';
+  let note = '';
+  const uploads = new Map<string, string[]>();
+
+  const stopPlay = () => {
+    playing?.stop();
+    playing = null;
+    speaking = null;
+  };
+
+  /** Lance la manche suivante. */
+  function next() {
+    stopPlay();
+    round++;
+    if (round >= rounds || !deck.length) {
+      phase = 'end';
+      timer = 6;
+      sfx.win();
+      const top = [...pls].sort((a, b) => b.score - a.score)[0];
+      speak(fr ? `Et la plus belle voix du canapé : ${top.profile.name} !` : `And the finest voice on the couch: ${top.profile.name}!`, ctx.lang);
+      ctx.refresh();
+      return;
+    }
+    clips = [];
+    queue = [];
+    note = '';
+    pls.forEach((p) => {
+      p.gain = 0;
+      p.pick = -1;
+      p.sent = false;
+      p.text = '';
+    });
+    clipNo++;
+    phase = 'record';
+    timer = tune.rec;
+    actor = null;
+    refBuf = null;
+    botsDue = [];
+    options = [];
+    if (mode === 'imite' || mode === 'voix') {
+      prompt = L(deck[round % deck.length]);
+      speak(mode === 'imite' ? (fr ? `À vous : ${prompt}` : `Your turn: ${prompt}`) : fr ? `Tout le monde dit : ${prompt}` : `Everyone says: ${prompt}`, ctx.lang);
+      pls.filter((p) => p.bot).forEach((p) => botsDue.push({ p, at: clock + 4 + Math.random() * 8 }));
+    } else if (mode === 'perroquet') {
+      const ref = refs[round % refs.length];
+      refBuf = referenceSound(ref.id);
+      prompt = fr ? ref.fr : ref.en;
+      speak(fr ? 'Écoutez bien, et imitez ce bruit !' : 'Listen closely, and imitate this sound!', ctx.lang);
+      refAgain = clock + 2.2;
+      timer = tune.rec + 8;
+      pls.filter((p) => p.bot).forEach((p) => botsDue.push({ p, at: clock + 9 + Math.random() * 8 }));
+    } else if (mode === 'devine' || mode === 'envers') {
+      const list = humans.length ? humans : pls;
+      actor = list[round % list.length];
+      const secret = deck[round % deck.length];
+      prompt = L(secret);
+      const decoys = shuffle(deck.filter((d) => d !== secret)).slice(0, 3);
+      const all = shuffle([secret, ...decoys]);
+      options = all.map((d, i) => ({ i, label: L(d), color: COLORS[i] }));
+      answer = all.indexOf(secret);
+      speak(fr ? `${actor.profile.name}, à toi. Regarde ton téléphone !` : `${actor.profile.name}, your turn. Check your phone!`, ctx.lang);
+      if (actor.bot) botsDue.push({ p: actor, at: clock + 3 });
+    } else if (mode === 'casse') {
+      chain = shuffle(humans);
+      chainAt = 0;
+      original = L(deck[round % deck.length]);
+      finalText = '';
+      prompt = original;
+      actor = chain[0] ?? null;
+      speak(fr ? `Ne répétez rien à voix haute. ${actor?.profile.name ?? ''}, à toi !` : `Don’t repeat anything out loud. ${actor?.profile.name ?? ''}, your turn!`, ctx.lang);
+    }
+    sfx.whoosh();
+    ctx.refresh();
+  }
+
+  /** Reçoit un son complet d'un téléphone. */
+  async function receive(p: Pl, url: string, no: number) {
+    if (no !== clipNo || phase !== 'record') return;
+    const bin = Uint8Array.from(atob(url.split(',')[1] ?? ''), (c) => c.charCodeAt(0));
+    let buf: AudioBuffer;
+    try {
+      buf = await decodeClip(bin.buffer as ArrayBuffer);
+    } catch {
+      return;
+    }
+    if (no !== clipNo || phase !== 'record') return;
+    clips = clips.filter((c) => c.pid !== p.pid);
+    clips.push({ pid: p.pid, buf, url });
+    p.sent = true;
+    sfx.join();
+    if (mode === 'casse') chainStep();
+    else if (allIn()) toListen();
+    ctx.refresh();
+  }
+  const recorders = () => (mode === 'devine' || mode === 'envers' ? (actor ? [actor] : []) : pls);
+  const allIn = () => recorders().every((p) => p.sent);
+
+  /** Le Téléphone Cassé : au suivant. */
+  function chainStep() {
+    chainAt++;
+    if (chainAt >= chain.length - 1 && chain.length >= 2) {
+      // Le dernier écoute et écrit ce qu'il a compris
+      chainAt = chain.length - 1;
+      actor = chain[chainAt];
+      phase = 'write';
+      timer = 30;
+    } else {
+      actor = chain[chainAt] ?? null;
+      timer = tune.rec;
+    }
+    sfx.pop();
+    ctx.refresh();
+  }
+
+  /** Passe à l'écoute collective. */
+  function toListen() {
+    stopPlay();
+    phase = 'listen';
+    timer = 999;
+    const order = shuffle(clips);
+    if (mode === 'imite') queue = order.map((c) => ({ clip: c }));
+    else if (mode === 'perroquet') queue = [{ clip: null, ref: refBuf ?? undefined, label: fr ? 'Le vrai bruit' : 'The real sound' }, ...order.map((c) => ({ clip: c }))];
+    else if (mode === 'devine') {
+      const c = clips[0];
+      queue = c ? [{ clip: c }, { clip: c }] : [];
+    } else if (mode === 'envers') {
+      const c = clips[0];
+      queue = c ? [{ clip: c, reverse: true, label: fr ? 'À l’envers…' : 'Backwards…' }, { clip: c, reverse: true, label: fr ? 'Encore une fois…' : 'Once more…' }] : [];
+    } else if (mode === 'voix') {
+      const speakers = clips.filter((c) => !pls.find((p) => p.pid === c.pid)?.bot);
+      const c = shuffle(speakers.length ? speakers : clips)[0];
+      answer = pls.findIndex((p) => p.pid === c?.pid);
+      const r = rate();
+      queue = c ? [{ clip: c, rate: r, who: null, label: fr ? 'Qui parle ?' : 'Who is it?' }, { clip: c, rate: r, who: null, label: fr ? 'Encore une fois…' : 'Once more…' }] : [];
+      options = pls.map((p, i) => ({ i, label: p.profile.name, color: p.profile.color }));
+    } else {
+      queue = chain.map((p) => clips.find((c) => c.pid === p.pid)).filter(Boolean).map((c) => ({ clip: c as Clip }));
+    }
+    if (!queue.length) {
+      note = fr ? 'Personne n’a enregistré. On passe !' : 'Nobody recorded. Moving on!';
+      reveal();
+      return;
+    }
+    playNext();
+    ctx.refresh();
+  }
+
+  function playNext() {
+    stopPlay();
+    const item = queue.shift();
+    if (!item) {
+      afterListen();
+      return;
+    }
+    const buf = item.ref ?? item.clip?.buf;
+    if (!buf) return playNext();
+    const owner = item.clip ? pls.find((p) => p.pid === item.clip!.pid) ?? null : null;
+    speaking = item.who === null ? null : owner;
+    listenLabel = item.label ?? (speaking ? speaking.profile.name : '');
+    playing = playClip(buf, { rate: item.rate, reverse: item.reverse });
+    timer = playing.dur + 0.8;
+  }
+
+  /** Après l'écoute : voter, deviner ou révéler. */
+  function afterListen() {
+    if (mode === 'casse') {
+      reveal();
+      return;
+    }
+    phase = 'choose';
+    timer = 15;
+    botVoteAt = clock + 2 + Math.random() * 5;
+    if (mode === 'imite' || mode === 'perroquet') {
+      options = clips.map((c, i) => {
+        const p = pls.find((x) => x.pid === c.pid)!;
+        return { i, label: p.profile.name, color: p.profile.color };
+      });
+    }
+    speak(mode === 'imite' ? (fr ? 'Votez pour le meilleur !' : 'Vote for the best!') : mode === 'perroquet' ? (fr ? 'Qui était le plus ressemblant ?' : 'Who sounded closest?') : fr ? 'À vous de deviner !' : 'Take your guess!', ctx.lang);
+    sfx.pop();
+    ctx.refresh();
+  }
+
+  /** Les points de la manche. */
+  function reveal() {
+    stopPlay();
+    phase = 'reveal';
+    timer = 6;
+    if (mode === 'imite' || mode === 'perroquet') {
+      const votes = options.map((o) => pls.filter((p) => p.pick === o.i).length);
+      clips.forEach((c, i) => {
+        const p = pls.find((x) => x.pid === c.pid)!;
+        p.gain += votes[i] * 2;
+      });
+      const best = Math.max(0, ...votes);
+      const winners = clips.filter((_, i) => votes[i] === best && best > 0).map((c) => pls.find((x) => x.pid === c.pid)!);
+      if (winners[0]) {
+        note = fr ? `Le public a choisi : ${winners.map((w) => w.profile.name).join(' et ')} !` : `The crowd chose: ${winners.map((w) => w.profile.name).join(' and ')}!`;
+        const c = clips.find((x) => x.pid === winners[0].pid);
+        if (c) playing = playClip(c.buf, {});
+        speaking = winners[0];
+      }
+    } else if (mode === 'devine' || mode === 'envers') {
+      const good = pls.filter((p) => p !== actor && p.pick === answer);
+      good.forEach((p) => (p.gain += 3));
+      if (actor) actor.gain += good.length * 2;
+      note = `${fr ? 'C’était' : 'It was'} : ${options[answer]?.label ?? ''}`;
+      speak(note, ctx.lang);
+      const c = clips[0];
+      if (mode === 'envers' && c) {
+        // La phrase à l'endroit : c'est la chute du gag
+        timer = Math.max(6, c.buf.duration + 3);
+        setTimeout(() => {
+          if (phase === 'reveal') playing = playClip(c.buf, {});
+        }, 1800);
+      }
+    } else if (mode === 'voix') {
+      const good = pls.filter((p, i) => p.pick === answer && i !== answer);
+      good.forEach((p) => (p.gain += 3));
+      const who = pls[answer];
+      if (who) who.gain += pls.filter((p) => p !== who && p.pick >= 0 && p.pick !== answer).length * 2;
+      note = who ? (fr ? `C’était ${who.profile.name} !` : `It was ${who.profile.name}!`) : '';
+      if (who) {
+        speaking = who;
+        const c = clips.find((x) => x.pid === who.pid);
+        if (c) playing = playClip(c.buf, {});
+      }
+    } else {
+      // Le Téléphone Cassé : plus la phrase survit, plus tout le monde marque
+      const words = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 2);
+      const a = words(original);
+      const b = new Set(words(finalText));
+      const kept = a.filter((w) => b.has(w)).length;
+      chain.forEach((p) => (p.gain += kept));
+      timer = 9;
+      note = finalText ? (fr ? `Au départ : « ${original} ». À l’arrivée : « ${finalText} »` : `Start: “${original}”. End: “${finalText}”`) : fr ? `Au départ : « ${original} »` : `Start: “${original}”`;
+      speak(note, ctx.lang);
+    }
+    pls.forEach((p) => (p.score += p.gain));
+    sfx.boom();
+    ctx.refresh();
+  }
+
+  playMusic('');
+
+  const game: GameInstance = {
+    over: false,
+    input(pid, m) {
+      if (m.t !== 'act') return;
+      const p = pls.find((x) => x.pid === pid);
+      if (!p) return;
+      if (m.a === 'up' && m.n && m.s !== undefined) {
+        const [no, part, total] = m.n;
+        if (no !== clipNo || total > 12 || part >= total) return;
+        const key = `${pid}:${no}`;
+        const arr = uploads.get(key) ?? [];
+        arr[part] = m.s;
+        uploads.set(key, arr);
+        if (arr.filter((x) => x !== undefined).length === total) {
+          uploads.delete(key);
+          if (mode === 'casse' ? p === actor : recorders().includes(p)) void receive(p, arr.join(''), no);
+        }
+        return;
+      }
+      if (m.a === 'pick' && phase === 'choose') {
+        const k = m.n?.[0] ?? -1;
+        if (!options[k]) return;
+        const c = mode === 'imite' || mode === 'perroquet' ? clips[k] : null;
+        if (c && c.pid === pid) return; // Pas de vote pour soi
+        if ((mode === 'devine' || mode === 'envers') && p === actor) return;
+        p.pick = k;
+        sfx.click();
+        ctx.refresh();
+        return;
+      }
+      if (m.a === 'text' && phase === 'write' && p === actor && m.s) {
+        finalText = m.s.trim().slice(0, 90);
+        toListen();
+      }
+    },
+    update(dt) {
+      // La première manche démarre après le tuto, sinon on parlerait par-dessus
+      if (round < 0) return next();
+      clock += dt;
+      timer -= dt;
+      if (phase === 'record') {
+        if (refBuf && refAgain && clock >= refAgain) {
+          stopPlay();
+          playing = playClip(refBuf, {});
+          refAgain = clock < 8 ? clock + playing.dur + 1 : 0;
+        }
+        for (const d of botsDue) {
+          if (clock >= d.at && !d.p.sent) {
+            clips.push({ pid: d.p.pid, buf: fakeVoice(2 + Math.random() * 2.5), url: '' });
+            d.p.sent = true;
+            ctx.refresh();
+          }
+        }
+        if (allIn() && mode !== 'casse') toListen();
+        else if (timer <= 0) {
+          if (mode === 'casse') {
+            // Le joueur n'a rien envoyé : on passe au suivant
+            if (chain.length) chainStep();
+            else next();
+          } else toListen();
+        }
+      } else if (phase === 'write') {
+        if (timer <= 0) toListen();
+      } else if (phase === 'listen') {
+        if (timer <= 0) playNext();
+      } else if (phase === 'choose') {
+        if (clock >= botVoteAt) {
+          botVoteAt = Infinity;
+          pls.forEach((p, i) => {
+            if (!p.bot || p.pick >= 0 || p === actor) return;
+            const can = options.map((o) => o.i).filter((k) => !((mode === 'imite' || mode === 'perroquet') && clips[k]?.pid === p.pid) && !(mode === 'voix' && k === i));
+            p.pick = can[Math.floor(Math.random() * can.length)] ?? -1;
+          });
+        }
+        const voters = pls.filter((p) => !((mode === 'devine' || mode === 'envers') && p === actor));
+        if (timer <= 0 || voters.every((p) => p.pick >= 0)) reveal();
+      } else if (phase === 'reveal') {
+        if (timer <= 0) next();
+      } else if (timer <= 0) {
+        stopPlay();
+        game.over = true;
+      }
+    },
+    render(g, t) {
+      // Scène de cabaret
+      const bg = g.createLinearGradient(0, 0, 0, 1080);
+      bg.addColorStop(0, '#6a3dff');
+      bg.addColorStop(1, '#2e1a6e');
+      g.fillStyle = bg;
+      g.fillRect(0, 0, 1920, 1080);
+      g.fillStyle = '#c4125f';
+      [0, 1].forEach((k) => {
+        g.beginPath();
+        const x = k ? 1920 : 0;
+        const d = k ? -1 : 1;
+        g.moveTo(x, 0);
+        g.lineTo(x + d * 190, 0);
+        g.quadraticCurveTo(x + d * 90, 520, x + d * 130, 1080);
+        g.lineTo(x, 1080);
+        g.fill();
+      });
+      g.fillStyle = '#ffc48a';
+      g.fillRect(0, 900, 1920, 180);
+      g.fillStyle = 'rgba(58,33,64,.18)';
+      g.fillRect(0, 900, 1920, 10);
+      // Panneau du haut
+      const title = phase === 'end' ? (fr ? 'Les plus belles voix' : 'The finest voices') : phase === 'record' || phase === 'write' ? recordTitle() : phase === 'listen' ? (fr ? '🔊 Écoutez !' : '🔊 Listen!') : phase === 'choose' ? (fr ? '🗳️ Sur vos téléphones !' : '🗳️ On your phones!') : note;
+      g.fillStyle = '#fff';
+      g.strokeStyle = INK;
+      g.lineWidth = 6;
+      g.beginPath();
+      g.roundRect(220, 40, 1480, 210, 36);
+      g.fill();
+      g.stroke();
+      candy(g, 220, 40, 1480, 210, 36);
+      g.fillStyle = INK;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.font = '700 30px Fredoka, sans-serif';
+      if (phase !== 'end' && round >= 0) g.fillText(`🎙️ ${fr ? 'Manche' : 'Round'} ${round + 1}/${rounds}`, 960, 76);
+      const ls = wrap(g, title, 1380, '700 50px Fredoka, sans-serif');
+      ls.slice(0, 2).forEach((l, i) => g.fillText(l, 960, 160 + (i - (Math.min(2, ls.length) - 1) / 2) * 58));
+      // Chrono
+      if ((phase === 'record' || phase === 'choose' || phase === 'write') && timer < 900) {
+        g.font = phase === 'choose' && (mode === 'devine' || mode === 'envers') ? '700 40px Fredoka, sans-serif' : '700 54px Fredoka, sans-serif';
+        g.fillStyle = timer < 6 ? '#ff5a7a' : '#fff';
+        g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 310);
+      }
+      if (phase === 'listen' && listenLabel) {
+        g.font = '700 54px Fredoka, sans-serif';
+        g.fillStyle = '#fff';
+        g.fillText(listenLabel, 960, 310);
+      }
+      // Égaliseur de la voix en cours
+      const lvl = playing?.level() ?? 0;
+      if (playing && phase !== 'record') {
+        const n = 24;
+        for (let i = 0; i < n; i++) {
+          const h = 16 + lvl * (120 + 90 * Math.sin(i * 1.3 + t * 9));
+          g.fillStyle = [SOLEIL, ROSE, CIEL, MENTHE][i % 4];
+          g.beginPath();
+          g.roundRect(960 + (i - n / 2) * 30, 460 - h / 2, 20, h, 10);
+          g.fill();
+        }
+      }
+      // Les réponses possibles, aussi sur la télé
+      if (phase === 'choose' && (mode === 'devine' || mode === 'envers')) {
+        options.forEach((o, i) => {
+          const x = 300 + (i % 2) * 680;
+          const y = 350 + Math.floor(i / 2) * 104;
+          g.fillStyle = o.color;
+          g.strokeStyle = INK;
+          g.lineWidth = 5;
+          g.beginPath();
+          g.roundRect(x, y, 640, 90, 24);
+          g.fill();
+          g.stroke();
+          g.fillStyle = INK;
+          g.textAlign = 'center';
+          const line = wrap(g, o.label, 600, '700 32px Fredoka, sans-serif')[0] ?? '';
+          g.fillText(line, x + 320, y + 47);
+        });
+      }
+      // Les joueurs
+      const n = pls.length;
+      const size = n > 8 ? 110 : n > 5 ? 140 : 180;
+      pls.forEach((p, i) => {
+        const x = 960 + (i - (n - 1) / 2) * Math.min(250, 1420 / n);
+        const talk = speaking === p && !!playing;
+        const y = 860 - (talk ? Math.abs(Math.sin(t * 14)) * lvl * 60 : 0);
+        const voted = phase === 'choose' && p.pick >= 0;
+        const ready = phase === 'record' && p.sent;
+        const mine = actor === p && (phase === 'record' || phase === 'write');
+        if (talk || mine) {
+          g.fillStyle = 'rgba(255,255,220,.3)';
+          g.beginPath();
+          g.moveTo(x - 60, 340);
+          g.lineTo(x + 60, 340);
+          g.lineTo(x + 150, 900);
+          g.lineTo(x - 150, 900);
+          g.fill();
+        }
+        drawCharacter(g, x, y, talk ? size * 1.2 : size, {
+          food: p.profile.food,
+          color: p.profile.color,
+          hat: p.profile.hat,
+          acc: p.profile.acc,
+          eyes: p.profile.eyes,
+          pose: p.profile.pose,
+          selfie: p.selfie,
+          t: t + i,
+          mood: phase === 'end' ? 'win' : talk ? 'wow' : phase === 'reveal' && p.gain > 0 ? 'win' : 'happy',
+        });
+        g.font = '700 30px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.fillStyle = INK;
+        const label = phase === 'end' ? `${p.profile.name} : ${p.score}` : phase === 'reveal' && p.gain ? `${p.profile.name} +${p.gain}` : p.profile.name;
+        g.fillText(label, x, 942);
+        if (ready || voted) {
+          g.font = '44px sans-serif';
+          g.fillText('✅', x, y - size - 16);
+        }
+      });
+    },
+    ranking: () => [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid),
+    leader: () => null,
+    padData(pid): VoicePadData {
+      const p = pls.find((x) => x.pid === pid)!;
+      if (round < 0) return { phase: 'listen', prompt: '', step: '', act: null, clip: 0, maxSec: tune.max, sent: false, options: [], picked: -1, score: 0, left: 0, note: '' };
+      const left = phase === 'record' || phase === 'choose' || phase === 'write' ? Math.ceil(Math.max(0, timer)) : 0;
+      let myPrompt = prompt;
+      let act: VoicePadData['act'] = null;
+      let heard: string | undefined;
+      if (phase === 'record') {
+        if (mode === 'devine' || mode === 'envers') {
+          if (p === actor) {
+            act = 'record';
+            myPrompt = mode === 'devine' ? (fr ? `Fais ce bruit, sans le nom : ${prompt}` : `Make this sound, don’t say its name: ${prompt}`) : fr ? `Dis cette phrase : ${prompt}` : `Say this sentence: ${prompt}`;
+          } else myPrompt = `${actor?.profile.name ?? ''} ${fr ? 'prépare quelque chose…' : 'is preparing something…'}`;
+        } else if (mode === 'casse') {
+          if (p === actor) {
+            act = 'record';
+            if (chainAt === 0) myPrompt = fr ? `Répète cette phrase au micro : ${prompt}` : `Say this sentence into the mic: ${prompt}`;
+            else {
+              myPrompt = fr ? 'Écoute, puis répète exactement ce que tu as entendu.' : 'Listen, then repeat exactly what you heard.';
+              heard = clips.find((c) => c.pid === chain[chainAt - 1]?.pid)?.url;
+            }
+          } else myPrompt = `${actor?.profile.name ?? ''} ${fr ? 'a le téléphone cassé…' : 'has the broken phone…'}`;
+        } else {
+          act = 'record';
+          myPrompt = mode === 'imite' ? (fr ? `Imite : ${prompt}` : `Imitate: ${prompt}`) : mode === 'voix' ? (fr ? `Dis : ${prompt}` : `Say: ${prompt}`) : fr ? 'Imite le bruit que tu viens d’entendre !' : 'Imitate the sound you just heard!';
+        }
+      } else if (phase === 'write') {
+        if (p === actor) {
+          act = 'write';
+          myPrompt = fr ? 'Écoute, puis écris ce que tu as compris.' : 'Listen, then write what you understood.';
+          heard = clips.find((c) => c.pid === chain[chainAt - 1]?.pid)?.url;
+        } else myPrompt = `${actor?.profile.name ?? ''} ${fr ? 'écrit ce qu’il reste de la phrase…' : 'is writing what is left…'}`;
+      } else if (phase === 'choose') {
+        const excluded = (mode === 'devine' || mode === 'envers') && p === actor;
+        if (!excluded) act = 'choose';
+        myPrompt = excluded ? (fr ? 'Les autres cherchent…' : 'The others are guessing…') : mode === 'imite' ? (fr ? 'Le meilleur ?' : 'The best?') : mode === 'perroquet' ? (fr ? 'Le plus ressemblant ?' : 'The closest?') : mode === 'voix' ? (fr ? 'Qui parlait ?' : 'Who was speaking?') : fr ? 'C’était quoi ?' : 'What was it?';
+      } else myPrompt = phase === 'reveal' ? note : '';
+      const opts = phase === 'choose' ? options.filter((o) => !((mode === 'imite' || mode === 'perroquet') && clips[o.i]?.pid === pid)) : [];
+      return { phase, prompt: myPrompt, step: `${Math.min(round + 1, rounds)}/${rounds}`, act, clip: clipNo, maxSec: tune.max, sent: p.sent, options: opts, picked: p.pick, score: p.score, left, note: '', heard };
+    },
+  };
+
+  function recordTitle() {
+    if (mode === 'imite') return fr ? `Imitez : ${prompt}` : `Imitate: ${prompt}`;
+    if (mode === 'voix') return fr ? `Tout le monde dit : « ${prompt} »` : `Everyone says: “${prompt}”`;
+    if (mode === 'perroquet') return fr ? 'Écoutez le bruit, puis imitez-le !' : 'Listen, then imitate the sound!';
+    if (mode === 'devine') return fr ? `${actor?.profile.name ?? ''} fait un bruit mystère…` : `${actor?.profile.name ?? ''} is making a mystery sound…`;
+    if (mode === 'envers') return fr ? `${actor?.profile.name ?? ''} enregistre une phrase secrète…` : `${actor?.profile.name ?? ''} is recording a secret sentence…`;
+    return phase === 'write' ? (fr ? `${actor?.profile.name ?? ''} écrit ce qu’il a compris…` : `${actor?.profile.name ?? ''} writes what they understood…`) : fr ? `Le téléphone passe à ${actor?.profile.name ?? ''}…` : `The phone goes to ${actor?.profile.name ?? ''}…`;
+  }
+
+  return game;
+}
+
+const base = (id: Mode, emoji: string, name: [string, string], how: [string, string], min: number, botFill: number): GameBase => ({
+  id,
+  emoji,
+  name: { fr: name[0], en: name[1] },
+  how: { fr: how[0], en: how[1] },
+  layout: 'buttons',
+  min,
+  max: 12,
+  botFill,
+  // Pas de musique : on doit bien entendre les voix
+  music: '' as MusicId,
+  create: (r: Runner[], c: GameCtx) => createVoice(id, r, c),
+});
+
+export const imite = base('imite', '🎙️', ['Le Grand Bruiteur', 'The Great Noisemaker'], ['Un défi absurde, ton téléphone est le micro. La télé fait écouter, tout le monde vote !', 'An absurd challenge, your phone is the mic. The TV plays it back, everyone votes!'], 2, 3);
+export const devine = base('devine', '🔊', ['C’est Quoi Ce Bruit ?', 'What’s That Noise?'], ['Un joueur fait un bruit mystère au micro, les autres devinent.', 'One player makes a mystery sound, the others guess.'], 2, 3);
+export const perroquet = base('perroquet', '🦜', ['Le Perroquet Enrhumé', 'The Sniffly Parrot'], ['La télé fait un drôle de bruit. Imite-le le mieux possible !', 'The TV makes a funny sound. Imitate it as well as you can!'], 2, 3);
+export const envers = base('envers', '⏪', ['Le Disque à l’Envers', 'The Backwards Record'], ['Une phrase secrète est jouée à l’envers. Devine ce qu’elle dit !', 'A secret sentence is played backwards. Guess what it says!'], 2, 3);
+export const voix = base('voix', '🕵️', ['La Voix Mystère', 'Mystery Voice'], ['Ta voix est déformée à la télé. Qui parle ? Trompe les autres !', 'Your voice is distorted on TV. Who is speaking? Fool the others!'], 2, 3);
+export const casse = base('casse', '📞', ['Le Téléphone Cassé', 'Broken Telephone'], ['Une phrase passe de téléphone en téléphone, à l’oreille. La télé révèle le massacre !', 'A sentence passes from phone to phone, by ear. The TV reveals the carnage!'], 3, 0);

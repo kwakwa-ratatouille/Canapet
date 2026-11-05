@@ -289,8 +289,8 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
   const pls = newPlayers(runners);
   const ASK = 25;
   const SHOW = 9;
-  let bestPid = '';
-  let worstPid = '';
+  let bestNames = '';
+  let worstName = '';
   let shownAt = 0;
   let clock = 0;
   const deck = [...FACTS].sort(() => Math.random() - 0.5).slice(0, 8);
@@ -335,17 +335,20 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
     phase = 'reveal';
     timer = SHOW;
     shownAt = clock;
-    bestPid = order[0]?.pid ?? '';
-    worstPid = order.length >= 2 ? order[order.length - 1].pid : '';
+    // Toute égalité compte : ceux qui sont à la même distance partagent le Pif d'or
+    const gap = (p: Pl) => Math.abs(p.guess! - a);
+    const tops = order.filter((p) => gap(p) === gap(order[0]));
+    const last = order[order.length - 1];
+    const lastBad = order.length > tops.length ? last : null;
+    bestNames = tops.map((p) => p.profile.name).join(' & ');
+    worstName = lastBad?.profile.name ?? '';
     sfx.whoosh();
     // Suspense : le nombre défile, puis la vérité et les pifs
-    const bestP = order[0];
-    const worstP = order.length >= 2 ? order[order.length - 1] : null;
     setTimeout(() => {
       sfx.boom();
       const lines = [fr ? `La réponse : ${a}.` : `The answer: ${a}.`];
-      if (bestP) lines.push(fr ? `Pif d’or pour ${bestP.profile.name} !` : `Golden nose for ${bestP.profile.name}!`);
-      if (worstP) lines.push(fr ? `Et ${worstP.profile.name}, pif en carton.` : `And ${worstP.profile.name}, cardboard nose.`);
+      if (bestNames) lines.push(fr ? `Pif d’or pour ${bestNames} !` : `Golden nose for ${bestNames}!`);
+      if (worstName) lines.push(fr ? `Et ${worstName}, pif en carton.` : `And ${worstName}, cardboard nose.`);
       speak(lines.join(' '), ctx.lang);
     }, 1800);
     ctx.refresh();
@@ -410,9 +413,8 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(String(rolling ? fake : truth()), 960 + shake, 488);
         if (!rolling) {
           g.font = '700 44px Fredoka, sans-serif';
-          const who = (id: string) => pls.find((p) => p.pid === id)?.profile.name ?? '';
-          if (bestPid) g.fillText(`👃✨ ${fr ? 'Pif d’or' : 'Golden nose'} : ${who(bestPid)}`, 520, 610);
-          if (worstPid) g.fillText(`👃📦 ${fr ? 'Pif en carton' : 'Cardboard nose'} : ${who(worstPid)}`, 1400, 610);
+          if (bestNames) g.fillText(`👃✨ ${fr ? 'Pif d’or' : 'Golden nose'} : ${bestNames}`, worstName ? 520 : 960, 610);
+          if (worstName) g.fillText(`👃📦 ${fr ? 'Pif en carton' : 'Cardboard nose'} : ${worstName}`, 1400, 610);
         }
       }
       drawRow(g, pls, t, (p) => (phase === 'reveal' ? `${p.profile.name} : ${p.guess ?? '—'}${p.gain ? ` (+${p.gain})` : ''}` : p.guess !== null ? `✅ ${p.profile.name}` : p.profile.name), 860, 130);

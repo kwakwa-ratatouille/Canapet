@@ -30,6 +30,7 @@ jobs:
           P=ios/App/App/Info.plist
           plutil -insert NSPhotoLibraryUsageDescription -string "Photo Roulette pioche des photos au hasard dans ta galerie." $P
           plutil -insert NSCameraUsageDescription -string "Pour prendre un selfie comme visage de ton perso." $P
+          plutil -insert NSMicrophoneUsageDescription -string "Pour enregistrer ta voix dans les jeux au micro. Le son part vers la télé et n’est pas gardé." $P
           plutil -insert UIStatusBarHidden -bool YES $P
           plutil -replace CFBundleShortVersionString -string "1.0.${{ github.run_number }}" $P
           plutil -replace CFBundleVersion -string "${{ github.run_number }}" $P
@@ -75,7 +76,8 @@ jobs:
               }],
               "appPermissions": { "entitlements": [], "privacy": {
                 "NSPhotoLibraryUsageDescription": "Photo Roulette pioche des photos au hasard dans ta galerie.",
-                "NSCameraUsageDescription": "Pour prendre un selfie comme visage de ton perso."
+                "NSCameraUsageDescription": "Pour prendre un selfie comme visage de ton perso.",
+                "NSMicrophoneUsageDescription": "Pour enregistrer ta voix dans les jeux au micro. Le son part vers la télé et n’est pas gardé."
               } }
             }],
             "news": []

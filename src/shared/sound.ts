@@ -87,6 +87,144 @@ function noise(dur: number, vol: number, freq: number, at = 0, q = 1) {
   s.stop(t0 + dur);
 }
 
+export interface ClipPlayer {
+  dur: number;
+  stop(): void;
+  /** Volume actuel, de 0 à 1 (pour faire bouger l'égaliseur). */
+  level(): number;
+}
+
+/** Transforme un enregistrement reçu en son jouable. */
+export function decodeClip(data: ArrayBuffer): Promise<AudioBuffer> {
+  const c = ctx();
+  if (!c) return Promise.reject(new Error('audio'));
+  return c.decodeAudioData(data);
+}
+
+/** Joue un enregistrement : `rate` déforme la voix, `reverse` la joue à l'envers. */
+export function playClip(buf: AudioBuffer, o: { rate?: number; reverse?: boolean }): ClipPlayer {
+  const c = ctx()!;
+  let use = buf;
+  if (o.reverse) {
+    use = c.createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
+    for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+      const from = buf.getChannelData(ch);
+      const to = use.getChannelData(ch);
+      for (let i = 0; i < from.length; i++) to[i] = from[from.length - 1 - i];
+    }
+  }
+  const s = c.createBufferSource();
+  s.buffer = use;
+  s.playbackRate.value = o.rate ?? 1;
+  const boost = c.createGain();
+  boost.gain.value = 1.6;
+  const an = c.createAnalyser();
+  an.fftSize = 256;
+  const data = new Uint8Array(an.frequencyBinCount);
+  s.connect(boost).connect(an);
+  an.connect(master ?? c.destination);
+  s.start();
+  return {
+    dur: use.duration / (o.rate ?? 1),
+    stop() {
+      try {
+        s.stop();
+      } catch {
+        /* déjà fini */
+      }
+      s.disconnect();
+      an.disconnect();
+    },
+    level() {
+      an.getByteTimeDomainData(data);
+      let max = 0;
+      for (const v of data) max = Math.max(max, Math.abs(v - 128));
+      return Math.min(1, max / 80);
+    },
+  };
+}
+
+function synth(dur: number, f: (t: number, i: number) => number): AudioBuffer {
+  const c = ctx()!;
+  const b = c.createBuffer(1, Math.floor(dur * c.sampleRate), c.sampleRate);
+  const d = b.getChannelData(0);
+  const fade = 0.04;
+  for (let i = 0; i < d.length; i++) {
+    const t = i / c.sampleRate;
+    d[i] = f(t, i) * Math.min(1, t / fade, (dur - t) / fade);
+  }
+  return b;
+}
+
+/** Le « blabla » d'un bot : une petite voix qui baragouine. */
+export function fakeVoice(dur: number): AudioBuffer {
+  const base = 110 + Math.random() * 180;
+  const a = Math.random() * 6 + 2;
+  const b = Math.random() * 3 + 3;
+  let ph = 0;
+  const sr = ctx()!.sampleRate;
+  return synth(dur, (t) => {
+    const f = base * (1 + 0.35 * Math.sin(t * a) + 0.2 * Math.sin(t * a * 2.7));
+    ph += f / sr;
+    const syll = Math.max(0, Math.sin(t * b * 3.14));
+    const saw = (ph % 1) * 2 - 1;
+    return (saw * 0.5 + Math.sin(ph * 6.28 * 3) * 0.3) * syll * 0.45;
+  });
+}
+
+/** Bruits à imiter, joués par la télé. */
+export const REF_SOUNDS: { id: string; fr: string; en: string }[] = [
+  { id: 'sirene', fr: 'la sirène', en: 'the siren' },
+  { id: 'robot', fr: 'le robot', en: 'the robot' },
+  { id: 'alien', fr: 'l’extraterrestre', en: 'the alien' },
+  { id: 'coucou', fr: 'le coucou', en: 'the cuckoo' },
+  { id: 'moto', fr: 'la moto', en: 'the motorbike' },
+  { id: 'goutte', fr: 'les gouttes', en: 'the drops' },
+  { id: 'klaxon', fr: 'le klaxon', en: 'the horn' },
+  { id: 'laser', fr: 'le laser', en: 'the laser' },
+];
+export function referenceSound(id: string): AudioBuffer {
+  const sr = ctx()!.sampleRate;
+  let ph = 0;
+  const osc = (f: number) => {
+    ph += f / sr;
+    return ph % 1;
+  };
+  const sine = (f: number) => Math.sin(osc(f) * 6.283);
+  const square = (f: number) => (osc(f) < 0.5 ? 1 : -1);
+  const saw = (f: number) => osc(f) * 2 - 1;
+  switch (id) {
+    case 'sirene':
+      return synth(3, (t) => sine(650 + 280 * Math.sin(t * 6)) * 0.5);
+    case 'robot':
+      return synth(2.6, (t) => square([180, 240, 150, 300][Math.floor(t * 5) % 4]) * 0.28 * (Math.sin(t * 90) > 0 ? 1 : 0.35));
+    case 'alien':
+      return synth(2.8, (t) => sine(500 + 380 * Math.sin(t * 28) * Math.sin(t * 1.6)) * 0.5);
+    case 'coucou':
+      return synth(2.4, (t) => {
+        const p = t % 0.8;
+        return sine(p < 0.22 ? 780 : p < 0.5 ? 620 : 1) * (p < 0.5 ? 0.5 : 0);
+      });
+    case 'moto':
+      return synth(3, (t) => saw(60 + Math.min(100, t * 55) + 6 * Math.sin(t * 40)) * 0.45);
+    case 'goutte':
+      return synth(2.6, (t) => {
+        const p = t % 0.45;
+        return sine(500 + p * 2600) * Math.exp(-p * 14) * 0.7;
+      });
+    case 'klaxon':
+      return synth(2.2, (t) => {
+        const on = t % 0.7 < 0.42;
+        return on ? (square(370) * 0.2 + square(466) * 0.2) * 0.8 : 0;
+      });
+    default:
+      return synth(2.2, (t) => {
+        const p = t % 0.55;
+        return square(1900 - p * 3000) * Math.exp(-p * 4) * 0.28;
+      });
+  }
+}
+
 /** Sons de victoire (cosmétiques). */
 export function playWinSound(id?: string) {
   const seq = (notes: number[], step: number, dur: number, type: OscillatorType, vol: number, at = 0) => notes.forEach((n, i) => tone(midi(n), dur, type, vol, at + i * step));
