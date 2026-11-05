@@ -584,7 +584,6 @@ export const traitor: GameBase = {
     fr: 'Rôle secret sur ton téléphone. Démasquez les Pique-assiettes !',
     en: 'Secret role on your phone. Unmask the Moochers!',
   },
-  inspired: 'Loup-garou',
   layout: 'buttons',
   min: 4,
   max: 12,

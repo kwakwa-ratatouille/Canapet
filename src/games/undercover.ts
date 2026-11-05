@@ -171,8 +171,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let turnPos = 0;
   let headline = fr ? 'Regarde ton mot en secret…' : 'Check your word in secret…';
   const cast = fr
-    ? `${nUnder} Undercover${nWhite ? ` et ${nWhite} Mr White` : ''} cachés parmi vous`
-    : `${nUnder} Undercover${nWhite ? ` and ${nWhite} Mr White` : ''} among you`;
+    ? `${nUnder} Intrus${nWhite ? ` et ${nWhite} Sans-Mot` : ''} cachés parmi vous`
+    : `${nUnder} Odd One${nWhite ? ` and ${nWhite} Blank` : ''} among you`;
   let sub = (fr ? 'Ne le montre à personne ! ' : 'Don’t show anyone! ') + cast;
   let winner: 'civil' | 'impo' | 'white' | null = null;
   let deaths = 0;
@@ -181,7 +181,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let botT = rnd(2, 4);
 
   const alive = () => pls.map((p, i) => ({ p, i })).filter((x) => x.p.alive);
-  const roleName = (r: Role) => (fr ? { civil: 'Civil', under: 'Undercover', white: 'Mr White' }[r] : { civil: 'Civilian', under: 'Undercover', white: 'Mr White' }[r]);
+  const roleName = (r: Role) => (fr ? { civil: 'Civil', under: 'Intrus', white: 'Sans-Mot' }[r] : { civil: 'Civilian', under: 'Odd One', white: 'Mr White' }[r]);
 
   function go(p: Phase, t: number) {
     phase = p;
@@ -261,7 +261,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     sfx.pop();
     turnPos++;
     if (turnPos >= turnOrder.length) {
-      headline = fr ? 'Débat : qui est l’Undercover ?' : 'Debate: who’s the Undercover?';
+      headline = fr ? 'Débat : qui est l’Intrus ?' : 'Debate: who’s the Odd One?';
       sub = fr ? 'Parlez entre vous, puis votez.' : 'Talk it out, then vote.';
       speak(headline, ctx.lang);
       go('debate', T_DEBATE);
@@ -288,9 +288,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       winner === 'civil'
         ? fr ? 'Les Civils gagnent !' : 'The Civilians win!'
         : winner === 'white'
-          ? fr ? 'Mr White a deviné : il gagne !' : 'Mr White guessed it: he wins!'
+          ? fr ? 'Le Sans-Mot a deviné : il gagne !' : 'The Blank guessed it and wins!'
           : fr ? 'Les imposteurs gagnent !' : 'The impostors win!';
-    sub = fr ? `Mot des civils : ${civilWord} · Undercover : ${underWord}` : `Civilians: ${civilWord} · Undercover: ${underWord}`;
+    sub = fr ? `Mot des civils : ${civilWord} · Intrus : ${underWord}` : `Civilians: ${civilWord} · Odd One: ${underWord}`;
     speak(headline, ctx.lang);
     sfx.win();
     go('end', 8);
@@ -429,7 +429,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         case 'reveal':
           if (lastOut >= 0 && pls[lastOut].role === 'white' && !pls[lastOut].note.startsWith('#')) {
             pls[lastOut].note = '#';
-            headline = fr ? `Mr White, devine le mot des civils !` : 'Mr White, guess the civilians’ word!';
+            headline = fr ? `Sans-Mot, devine le mot des civils !` : 'Blank, guess the civilians’ word!';
             sub = fr ? 'S’il trouve, il gagne tout seul.' : 'If right, he wins alone.';
             speak(headline, ctx.lang);
             go('guess', T_GUESS);
@@ -696,12 +696,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 export const undercover: GameBase = {
   id: 'undercover',
   emoji: '🕵️',
-  name: { fr: 'Undercover', en: 'Undercover' },
+  name: { fr: 'Le Mot Intrus', en: 'Odd Word Out' },
   how: {
-    fr: 'Un mot secret chacun. Donne un indice, démasque l’Undercover et Mr White !',
-    en: 'A secret word each. Give a clue, unmask the Undercover and Mr White!',
+    fr: 'Un mot secret chacun. Donne un indice, démasque l’Intrus et le Sans-Mot !',
+    en: 'A secret word each. Give a clue, unmask the Odd One and the Blank!',
   },
-  inspired: 'Undercover',
   layout: 'buttons',
   min: 3,
   max: 12,

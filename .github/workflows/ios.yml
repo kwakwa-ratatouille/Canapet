@@ -20,8 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
-      - run: npm install @capacitor/ios@6.1.2
+      # Android est passé à Capacitor 8 (exigé par Google Play) ; l iPhone reste en 6 tant qu on ne vise pas l App Store
+      - run: npm install --legacy-peer-deps --no-save @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/ios@6.1.2
       - run: npx cap add ios
       - name: Code maison (galerie, plein écran, autorisations)
         run: |

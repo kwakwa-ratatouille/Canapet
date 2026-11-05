@@ -821,7 +821,6 @@ export const archers: GameBase = {
     fr: 'Stick pour courir et viser · A saute · B tire. Premier à 3 manches !',
     en: 'Stick to run and aim · A jumps · B shoots. First to 3 rounds!',
   },
-  inspired: 'TowerFall',
   layout: 'stick',
   min: 2,
   max: 8,

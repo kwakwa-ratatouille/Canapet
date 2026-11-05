@@ -458,7 +458,6 @@ export const mareeGame: GameBase = {
     fr: 'La mer monte ! Grimpe de plateforme en plateforme sans te faire rattraper · A = sauter · B = pousser',
     en: 'The sea is rising! Climb from platform to platform before it catches you · A = jump · B = shove',
   },
-  inspired: 'Jeux d’escalade à la Roblox',
   layout: 'stick',
   min: 2,
   max: 12,

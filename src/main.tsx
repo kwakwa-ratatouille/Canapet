@@ -4,6 +4,12 @@ import { Help } from './pages/Help';
 import { Home } from './pages/Home';
 import { Relay } from './pages/Relay';
 import { googleReturn } from './shared/cloud';
+import '@fontsource/fredoka/600.css';
+import '@fontsource/fredoka/700.css';
+import '@fontsource/nunito/400.css';
+import '@fontsource/nunito/600.css';
+import '@fontsource/nunito/700.css';
+import '@fontsource/nunito/800.css';
 import './tokens.css';
 import './styles.css';
 

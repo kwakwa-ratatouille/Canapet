@@ -51,7 +51,6 @@ export interface GameBase {
   emoji: string;
   name: Record<Lang, string>;
   how: Record<Lang, string>;
-  inspired: string;
   layout: PadLayout;
   min: number;
   max: number;

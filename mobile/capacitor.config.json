@@ -4,7 +4,8 @@
   "webDir": "www",
   "server": {
     "url": "https://kwakwa-ratatouille.github.io/Canapet/",
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "errorPath": "index.html"
   },
   "android": {
     "backgroundColor": "#ffe9f3"

@@ -737,7 +737,6 @@ export const foot: GameBase = {
     fr: 'Stick : courir · A : tirer · B : sprint (vole le ballon, l’envoie loin) · X : attraper une passe',
     en: 'Stick: run · A: shoot · B: sprint (steals the ball, sends it far) · X: catch a pass',
   },
-  inspired: 'Foot en salle',
   layout: 'stick',
   min: 2,
   max: 12,

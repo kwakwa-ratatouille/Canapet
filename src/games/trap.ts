@@ -566,7 +566,6 @@ export const trapGame: GameBase = {
     fr: 'Une question, deux réponses : va du bon côté avant le STOP, la trappe s’ouvre sous l’autre ! · B = pousser',
     en: 'One question, two answers: stand on the right side before STOP, the other side’s trapdoor opens! · B = shove',
   },
-  inspired: 'Jeux télé de quiz',
   layout: 'stick',
   min: 2,
   max: 12,

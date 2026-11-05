@@ -985,7 +985,6 @@ export const sumo: GameBase = {
     fr: 'Stick pour rouler · A turbo (maintiens pour charger) · B ancre. Pousse-les dans la limonade !',
     en: 'Stick to roll · A boost (hold to charge) · B anchor. Push them into the lemonade!',
   },
-  inspired: 'auto-tamponneuses',
   layout: 'stick',
   min: 2,
   max: 12,

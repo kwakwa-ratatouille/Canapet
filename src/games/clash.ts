@@ -1484,7 +1484,6 @@ export const clash: GameBase = {
     fr: 'A saute · B coup normal (stick = direction) · X attaque lourde à charger (en l’air : remontée) · Y super coup',
     en: 'A jumps · B normal attack (stick = direction) · X charged heavy attack (in the air: recovery) · Y super',
   },
-  inspired: 'Smash Bros',
   layout: 'stick',
   min: 2,
   max: 8,

@@ -92,7 +92,7 @@ export type ToTv =
   | { t: 'bye' }
   | { t: 'profile'; profile: Profile }
   | { t: 'tap'; side: 0 | 1 }
-  /** Stick + boutons ; c = bouton X, d = bouton Y (manette façon Switch). */
+  /** Stick + boutons ; c = bouton X, d = bouton Y (manette à croix). */
   | { t: 'in'; x: number; y: number; a: boolean; b: boolean; c?: boolean; d?: boolean }
   /** Action propre à un jeu (poser des cartes, voter…). */
   | { t: 'act'; a: string; n?: number[]; s?: string }

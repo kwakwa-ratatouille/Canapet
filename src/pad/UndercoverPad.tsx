@@ -5,7 +5,7 @@ import type { Lang, ToTv } from '../shared/protocol';
 const TXT = {
   fr: {
     yourWord: 'Ton mot secret',
-    white: 'Tu es Mr White 🤫',
+    white: 'Tu es le Sans-Mot 🤫',
     whiteGoal: 'Tu n’as pas de mot. Écoute les indices et fais semblant !',
     goal: 'Donne des indices sans trop en dire. Attention : quelqu’un a un mot un peu différent…',
     hide: 'Toucher pour cacher',
@@ -23,7 +23,7 @@ const TXT = {
   },
   en: {
     yourWord: 'Your secret word',
-    white: 'You are Mr White 🤫',
+    white: 'You are the Blank 🤫',
     whiteGoal: 'You have no word. Listen to the clues and bluff!',
     goal: 'Give clues without saying too much. Careful: someone has a slightly different word…',
     hide: 'Tap to hide',

@@ -1917,7 +1917,7 @@ function pixelArt(runners: Runner[], ctx: GameCtx): GameInstance {
 
 // ————————————————————————————————————————— Fiches des jeux —————————————————————————————————————————
 
-const base = { inspired: 'Jeux de fête classiques', layout: 'stick' as const, min: 2, max: 8, botFill: 4 };
+const base = { layout: 'stick' as const, min: 2, max: 8, botFill: 4 };
 
 export const chairsGame: GameBase = {
   ...base,

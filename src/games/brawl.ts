@@ -1041,7 +1041,6 @@ export const brawl: GameBase = {
     fr: 'B = baffe (3 d’affilée = mandale) · Y = charge · en l’air bas + B = plongeon · X = attraper puis jeter',
     en: 'B = slap (3 in a row = mega slap) · Y = charge · in the air down + B = butt slam · X = grab then throw',
   },
-  inspired: 'Gang Beasts',
   layout: 'stick',
   min: 2,
   max: 8,

@@ -765,7 +765,6 @@ export const president: GameBase = {
     fr: 'Débarrasse-toi de tes cartes en premier · pose autant de cartes que le joueur d’avant, plus fortes ou égales · le 2 ferme le pli',
     en: 'Get rid of your cards first · play as many cards as the previous player, equal or higher · a 2 closes the trick',
   },
-  inspired: 'Président (jeu de cartes traditionnel)',
   layout: 'buttons',
   min: 3,
   max: 8,

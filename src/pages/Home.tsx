@@ -108,8 +108,8 @@ export function Home() {
       {PLATFORM === 'android' && (
         <p className="pad-small">
           {fr
-            ? 'L’appli Android pioche elle-même les photos de Photo Roulette. Android demandera d’autoriser l’installation : accepte.'
-            : 'The Android app picks Photo Roulette pictures by itself. Android will ask to allow the install: accept.'}
+            ? 'L’appli Android pioche elle-même les photos de Photo Mystère. Android demandera d’autoriser l’installation : accepte.'
+            : 'The Android app picks Mystery Photo pictures by itself. Android will ask to allow the install: accept.'}
         </p>
       )}
       {PLATFORM === 'ios' && (

@@ -398,12 +398,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 export const roulette: GameBase = {
   id: 'roulette',
   emoji: '📸',
-  name: { fr: 'Photo Roulette', en: 'Photo Roulette' },
+  name: { fr: 'Photo Mystère', en: 'Mystery Photo' },
   how: {
     fr: 'Envoie des photos et vidéos de ton téléphone. Devine à qui sont celles des autres !',
     en: 'Send photos and videos from your phone. Guess whose the others are!',
   },
-  inspired: 'Photo Roulette',
   layout: 'buttons',
   min: 3,
   max: 12,
@@ -413,8 +412,8 @@ export const roulette: GameBase = {
       id: 'kind',
       label: { fr: 'Version', en: 'Version' },
       choices: [
-        { v: 0, label: { fr: '📸 Photo Roulette', en: '📸 Photo Roulette' } },
-        { v: 1, label: { fr: '🎬 Vidéo Roulette', en: '🎬 Video Roulette' } },
+        { v: 0, label: { fr: '📸 Photos', en: '📸 Photos' } },
+        { v: 1, label: { fr: '🎬 Vidéos', en: '🎬 Videos' } },
       ],
     },
   ],

@@ -1001,7 +1001,6 @@ export const bluff: GameBase = {
     fr: 'Pose tes cartes face cachée… ou crie MENTEUR !',
     en: 'Play cards face down… or shout LIAR!',
   },
-  inspired: "Liar's Bar",
   layout: 'bluff',
   min: 2,
   max: 6,

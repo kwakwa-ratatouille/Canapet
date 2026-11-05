@@ -600,7 +600,6 @@ export const bombsGame: GameBase = {
     fr: 'Stick pour bouger · A pose un pétard · B shoote dedans',
     en: 'Stick to move · A drops a banger · B kicks it',
   },
-  inspired: 'Bomberman',
   layout: 'stick',
   min: 2,
   max: 8,

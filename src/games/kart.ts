@@ -1230,7 +1230,6 @@ export const kart: GameBase = {
     fr: 'Pointe le stick où tu veux aller · suis les flèches · A objet · B frein · 5 tours',
     en: 'Point the stick where to go · follow the arrows · A item · B brake · 5 laps',
   },
-  inspired: 'Micro Machines',
   layout: 'stick',
   min: 1,
   max: 8,

@@ -395,7 +395,6 @@ export const thumbRace: GameBase = {
     fr: 'Ça court tout seul : ⬆ SAUTE les haies roses, ⬇ GLISSE sous les barres jaunes, pile au bon moment !',
     en: 'You run by yourself: ⬆ JUMP the pink hurdles, ⬇ SLIDE under the yellow bars, right on time!',
   },
-  inspired: '',
   layout: 'tap',
   min: 1,
   max: 12,

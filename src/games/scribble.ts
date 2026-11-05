@@ -340,7 +340,6 @@ export const scribble: GameBase = {
     fr: 'Dessine le mot secret sur ton téléphone, les autres devinent !',
     en: 'Draw the secret word on your phone, the others guess!',
   },
-  inspired: 'Jackbox',
   layout: 'buttons',
   min: 3,
   max: 12,

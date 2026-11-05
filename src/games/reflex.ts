@@ -706,7 +706,6 @@ export const reflex: GameBase = {
     fr: '9 épreuves éclair parmi 12 : attends le vert, intrus, mémoire, vrai ou faux, flèche inversée, chrono à l’aveugle…',
     en: '9 lightning rounds out of 12: wait for green, odd one out, memory, true or false, reverse arrow, blind clock…',
   },
-  inspired: 'WarioWare',
   layout: 'buttons',
   min: 1,
   max: 12,

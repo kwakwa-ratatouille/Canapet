@@ -1554,7 +1554,6 @@ export const tumble: GameBase = {
     fr: 'Stick pour courir · A pour sauter · B pour plonger · 3 vies',
     en: 'Stick to run · A to jump · B to dive',
   },
-  inspired: 'Fall Guys',
   layout: 'stick',
   min: 1,
   max: 12,

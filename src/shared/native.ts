@@ -19,6 +19,9 @@ const cap = () => (window as unknown as { Capacitor?: Cap }).Capacitor;
 /** Vrai dans l'appli Android installée. */
 export const IS_NATIVE = !!cap()?.isNativePlatform?.();
 
+/** Vrai dans la version installée depuis Google Play (pas de galerie ; achats par Google Play). */
+export const IS_PLAY = /CanapetPlay/.test(navigator.userAgent);
+
 /** Ouvert depuis l'écran d'accueil (appli installée, sans barre d'adresse). */
 export const IS_INSTALLED = IS_NATIVE || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || (navigator as { standalone?: boolean }).standalone === true;
 
@@ -27,7 +30,7 @@ export const IOS_SOURCE_URL = 'https://github.com/kwakwa-ratatouille/Canapet/rel
 export const ANDROID_APK_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/android-latest/Canapet.apk';
 
 // Dans l'appli, le site est chargé depuis internet : le plugin s'appelle directement par le pont natif.
-export const hasGallery = () => !!cap()?.isNativePlatform?.() && (!!cap()?.nativePromise || !!cap()?.Plugins?.Gallery);
+export const hasGallery = () => !IS_PLAY && !!cap()?.isNativePlatform?.() && (!!cap()?.nativePromise || !!cap()?.Plugins?.Gallery);
 
 /** Pioche `count` photos (ou vidéos) au hasard dans toute la galerie du téléphone. */
 export async function randomFromGallery(count: number, video: boolean): Promise<File[]> {
