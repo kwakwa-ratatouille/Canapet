@@ -1344,9 +1344,11 @@ function Editor({
                 </button>
               );
             })()}
-            <button className="btn ghost" onClick={() => setBuying(null)}>
-              {t(lang, 'back')}
-            </button>
+            {!(SALES_ON && PRICES[itemKey(buying.kind, buying.id)]?.coll) && (
+              <button className="btn ghost" onClick={() => setBuying(null)}>
+                {t(lang, 'back')}
+              </button>
+            )}
           </div>
         </div>
       )}
