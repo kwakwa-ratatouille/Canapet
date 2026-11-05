@@ -485,6 +485,9 @@ function PadScreenView({
   const [optFor, setOptFor] = useState<string | null>(null);
   /** Menu de réglage ouvert (bots, niveau des bots, voix). */
   const [menu, setMenu] = useState<null | 'bots' | 'botlevel' | 'voice'>(null);
+  /** Voix pas encore débloquée qu'on vient d'écouter. */
+  const [voiceTry, setVoiceTry] = useState(-1);
+  const voiceOwned = (i: number) => !VOICES[i]?.price || progress.owned.includes(`voice:${VOICES[i].id}`);
   const [opts, setOpts] = useState<Record<string, number>>({});
   switch (screen.s) {
     case 'lobby':
@@ -881,12 +884,19 @@ function PadScreenView({
                     ? [-1, 0, 1, 2, 3, 4, 5, 6, 7].map((v) => ({ v, label: v < 0 ? (lang === 'fr' ? 'Auto (selon le jeu)' : 'Auto (per game)') : v === 0 ? (lang === 'fr' ? 'Aucun bot' : 'No bots') : `+ ${v} bot${v > 1 ? 's' : ''}`, on: screen.bots === v }))
                     : menu === 'botlevel'
                       ? [0, 1, 2].map((v) => ({ v, label: `${['🐣', '😎', '🔥'][v]} ${(lang === 'fr' ? ['Facile', 'Normal', 'Fort'] : ['Easy', 'Normal', 'Hard'])[v]}`, on: screen.botLevel === v }))
-                      : VOICES.map((x, v) => ({ v, label: x[lang], on: screen.voice === v }))
+                      : VOICES.map((x, v) => ({ v, label: voiceOwned(v) ? x[lang] : `🔒 ${x[lang]} · ${x.price} 🍬`, on: screen.voice === v })).filter((o) => !screen.voicesOk || screen.voicesOk.includes(o.v))
                   ).map((o) => (
                     <button
                       key={o.v}
                       className={`chip txt ${o.on ? 'on' : ''}`}
                       onClick={() => {
+                        // Voix à débloquer : la télé la fait écouter, sans la garder
+                        if (menu === 'voice' && !voiceOwned(o.v)) {
+                          host('voice', undefined, { v: o.v, try: 1 });
+                          setVoiceTry(o.v);
+                          return;
+                        }
+                        setVoiceTry(-1);
                         host(menu, undefined, { v: o.v });
                         // La voix : on reste dans le menu pour en écouter d'autres
                         if (menu !== 'voice') setMenu(null);
@@ -897,6 +907,22 @@ function PadScreenView({
                   ))}
                 </div>
                 {menu === 'voice' && <p className="pad-small">{lang === 'fr' ? 'La télé fait écouter chaque voix.' : 'The TV plays each voice.'}</p>}
+                {menu === 'voice' && voiceTry >= 0 && !voiceOwned(voiceTry) && (
+                  <button
+                    className="btn mint"
+                    disabled={progress.coins < (VOICES[voiceTry].price ?? 0)}
+                    onClick={() => {
+                      const it = VOICES[voiceTry];
+                      account.setProgress((p) => ({ ...p, coins: p.coins - (it.price ?? 0), owned: [...p.owned, `voice:${it.id}`] }));
+                      host('voice', undefined, { v: voiceTry });
+                      setVoiceTry(-1);
+                    }}
+                  >
+                    {progress.coins < (VOICES[voiceTry].price ?? 0)
+                      ? lang === 'fr' ? `Il te manque ${(VOICES[voiceTry].price ?? 0) - progress.coins} 🍬` : `${(VOICES[voiceTry].price ?? 0) - progress.coins} 🍬 short`
+                      : lang === 'fr' ? `Débloquer ${VOICES[voiceTry].fr} · ${VOICES[voiceTry].price} 🍬` : `Unlock ${VOICES[voiceTry].en} · ${VOICES[voiceTry].price} 🍬`}
+                  </button>
+                )}
                 <button className="btn" onClick={() => setMenu(null)}>
                   OK
                 </button>

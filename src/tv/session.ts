@@ -12,7 +12,7 @@ import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
 import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
-import { VOICES, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
+import { VOICES, voiceWorks, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
 import { REACTIONS } from '../shared/reactions';
 import { makeSecrets, type Secret } from './secrets';
@@ -147,7 +147,7 @@ export class Session {
   /** Niveau des bots : 0 facile, 1 normal, 2 fort. */
   botLevel = store('botLevel', 1);
   /** Voix du présentateur (numéro dans VOICES). */
-  voice = store('voice', 0);
+  voice = Math.max(0, VOICES.findIndex((x) => x.id === store('voiceId', 'classique')));
   /** Mode équipes (Fraise contre Menthe) ; sinon mêlée générale. */
   teams = store('teams', false);
   /** Score des équipes à la dernière partie (moyenne des points de chaque camp). */
@@ -578,11 +578,25 @@ export class Session {
         this.pushScreens();
         break;
       case 'voice': {
-        this.voice = opts && typeof opts.v === 'number' ? Math.max(0, Math.min(VOICES.length - 1, opts.v)) : (this.voice + 1) % VOICES.length;
-        setVoice(this.voice);
-        save('voice', this.voice);
         const fr = this.lang() === 'fr';
-        speak(fr ? `Salut ! Je suis la voix ${VOICES[this.voice].fr}. Que la fête commence !` : `Hi! I'm the ${VOICES[this.voice].en} voice. Let's party!`, this.lang());
+        const hello = (i: number) => speak(fr ? `Salut ! Je suis la voix ${VOICES[i].fr}. Que la fête commence !` : `Hi! I'm the ${VOICES[i].en} voice. Let's party!`, this.lang());
+        const v = opts && typeof opts.v === 'number' ? Math.max(0, Math.min(VOICES.length - 1, opts.v)) : -1;
+        // Écouter une voix pas encore débloquée, sans la garder
+        if (v >= 0 && opts?.try) {
+          setVoice(v);
+          hello(v);
+          setVoice(this.voice);
+          break;
+        }
+        if (v >= 0) this.voice = v;
+        else {
+          // Le bouton de la télé fait tourner les voix gratuites
+          const free = VOICES.map((_, i) => i).filter((i) => !VOICES[i].price && voiceWorks(i, this.lang()));
+          this.voice = free[(free.indexOf(this.voice) + 1) % free.length] ?? 0;
+        }
+        setVoice(this.voice);
+        save('voiceId', VOICES[this.voice].id);
+        hello(this.voice);
         this.changed();
         this.pushScreens();
         break;
@@ -1437,6 +1451,7 @@ export class Session {
           bots: this.bots,
           botLevel: this.botLevel,
           voice: this.voice,
+          voicesOk: VOICES.map((_, i) => i).filter((i) => voiceWorks(i, this.lang())),
           recap: [...this.stats.values()].some((x) => x.games > 0),
           players: host ? this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color })) : [],
           team: p.team,

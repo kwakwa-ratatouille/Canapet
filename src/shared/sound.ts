@@ -774,28 +774,25 @@ export function playMusic(track: MusicId | '') {
 
 // ——— Présentateur (voix de synthèse du navigateur) ———
 
-/** Voix du présentateur, au choix de l'hôte. `accent` = langue de la voix qui lit le texte (fr, puis en). */
-export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; rate: number; pitch: number }[] = [
+/**
+ * Voix du présentateur, au choix de l'hôte. `accent` = langue de la voix qui lit le texte (fr, puis en).
+ * `price` : à débloquer en bonbons par l'hôte. Les voix qui ne changeaient que la hauteur (écureuil, ogre, speedé…) sont retirées.
+ */
+export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; rate: number; pitch: number; price?: number }[] = [
   { id: 'classique', fr: 'Classique', en: 'Classic', rate: 1.05, pitch: 1.15 },
-  { id: 'naturelle', fr: 'Naturelle (IA)', en: 'Natural (AI)', nice: true, rate: 1.02, pitch: 1 },
-  { id: 'quebec', fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05 },
-  { id: 'anglais', fr: 'Accent anglais', en: 'French accent', accent: ['en-gb', 'fr-fr'], rate: 0.95, pitch: 1.05 },
-  { id: 'italien', fr: 'Accent italien', en: 'Italian accent', accent: ['it', 'it'], rate: 1.05, pitch: 1.1 },
-  { id: 'espagnol', fr: 'Accent espagnol', en: 'Spanish accent', accent: ['es', 'es'], rate: 1.05, pitch: 1.05 },
-  { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', local: true, male: true, rate: 0.82, pitch: 0.3 },
-  { id: 'ecureuil', fr: 'Écureuil', en: 'Chipmunk', local: true, rate: 1.35, pitch: 2 },
-  { id: 'robot', fr: 'Robot', en: 'Robot', local: true, male: true, rate: 0.8, pitch: 0.1 },
+  { id: 'naturelle', fr: 'Naturelle', en: 'Natural', nice: true, rate: 1.02, pitch: 1 },
+  { id: 'homme', fr: 'Voix d’homme', en: 'Male voice', nice: true, male: true, rate: 1.02, pitch: 1 },
+  { id: 'quebec', fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05, price: 150 },
+  { id: 'anglais', fr: 'Accent anglais', en: 'French accent', accent: ['en-gb', 'fr-fr'], rate: 0.95, pitch: 1.05, price: 150 },
+  { id: 'italien', fr: 'Accent italien', en: 'Italian accent', accent: ['it', 'it'], rate: 1.05, pitch: 1.1, price: 150 },
+  { id: 'espagnol', fr: 'Accent espagnol', en: 'Spanish accent', accent: ['es', 'es'], rate: 1.05, pitch: 1.05, price: 150 },
+  { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', local: true, male: true, rate: 0.82, pitch: 0.3, price: 300 },
+  { id: 'robot', fr: 'Robot', en: 'Robot', local: true, male: true, rate: 0.8, pitch: 0.1, price: 300 },
   // Accents du monde : une voix de cette langue lit le texte (si le PC l'a ; « a|b » = la première trouvée)
-  { id: 'japonais', fr: 'Accent japonais', en: 'Japanese accent', accent: ['ja', 'ja'], male: true, rate: 1.05, pitch: 1.1 },
-  { id: 'chinois', fr: 'Accent chinois', en: 'Chinese accent', accent: ['zh', 'zh'], male: true, rate: 1, pitch: 1.05 },
-  { id: 'indien', fr: 'Accent indien', en: 'Indian accent', accent: ['en-in|hi', 'en-in|hi'], male: true, rate: 1.05, pitch: 1.05 },
-  { id: 'africain', fr: 'Accent africain', en: 'African accent', accent: ['fr-sn|fr-ci|fr-cm|en-ng|en-za|sw', 'en-ng|en-za|en-ke|sw'], male: true, rate: 1, pitch: 1 },
-  // Voix drôles (hauteur et vitesse poussées à fond)
-  { id: 'mamie', fr: 'Mamie', en: 'Granny', local: true, rate: 0.75, pitch: 1.6 },
-  { id: 'ogre', fr: 'Ogre', en: 'Ogre', local: true, male: true, rate: 0.7, pitch: 0.15 },
-  { id: 'speede', fr: 'Speedé', en: 'Hyper', local: true, male: true, rate: 1.9, pitch: 1.3 },
-  { id: 'fantome', fr: 'Fantôme', en: 'Ghost', local: true, male: true, rate: 0.6, pitch: 1.9 },
-  { id: 'escargot', fr: 'Escargot', en: 'Snail', local: true, male: true, rate: 0.45, pitch: 0.8 },
+  { id: 'japonais', fr: 'Accent japonais', en: 'Japanese accent', accent: ['ja', 'ja'], male: true, rate: 1.05, pitch: 1.1, price: 300 },
+  { id: 'chinois', fr: 'Accent chinois', en: 'Chinese accent', accent: ['zh', 'zh'], male: true, rate: 1, pitch: 1.05, price: 300 },
+  { id: 'indien', fr: 'Accent indien', en: 'Indian accent', accent: ['en-in|hi', 'en-in|hi'], male: true, rate: 1.05, pitch: 1.05, price: 300 },
+  { id: 'africain', fr: 'Accent africain', en: 'African accent', accent: ['fr-sn|fr-ci|fr-cm|en-ng|en-za|sw', 'en-ng|en-za|en-ke|sw'], male: true, rate: 1, pitch: 1, price: 300 },
 ];
 let voiceIdx = 0;
 export function setVoice(i: number) {
@@ -825,6 +822,23 @@ function findVoice(prefix: string, nice: boolean, local = false, male = false): 
   if (male && all.some((v) => MALE.test(v.name))) all = all.filter((v) => MALE.test(v.name));
   if (local) return all.find((v) => v.localService && !NICE.test(v.name)) ?? all.find((v) => v.localService) ?? all[0];
   return (nice ? all.find((v) => NICE.test(v.name)) : undefined) ?? all.find((v) => !NICE.test(v.name)) ?? all[0];
+}
+
+/**
+ * La voix existe-t-elle vraiment sur cet appareil ? Sinon elle lirait avec la voix normale :
+ * on ne la propose pas (et on ne la fait surtout pas payer).
+ */
+export function voiceWorks(i: number, lang: Lang) {
+  const pre = VOICES[i];
+  if (!pre || !('speechSynthesis' in window)) return false;
+  const all = speechSynthesis.getVoices();
+  if (!all.length) return !pre.price; // Liste pas encore chargée : seulement les voix de base
+  const k = lang === 'fr' ? 0 : 1;
+  const base = lang === 'fr' ? 'fr' : 'en';
+  if (pre.accent) return !!findVoice(pre.accent[k], false);
+  if (pre.male) return all.some((v) => v.lang.toLowerCase().replace('_', '-').startsWith(base) && MALE.test(v.name));
+  if (pre.nice) return all.some((v) => v.lang.toLowerCase().replace('_', '-').startsWith(base) && NICE.test(v.name));
+  return true;
 }
 
 /** `voice` : voix propre à une annonce (vitesse et hauteur). */
