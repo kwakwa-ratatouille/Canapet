@@ -112,6 +112,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Salon : 6 joueurs sans Pass, 12 avec (`FREE_PLAYERS`, `roomLimit`, message `full`), seulement si `SALES_ON`.
 - Persos rares : légendaires burger, telecommande, manette, ananas ; mythiques canape, ovni, bouledisco. Micro iPhone : `MIC_NEEDS_UPDATE` (native.ts) : sans `CanapetMic` dans l’identifiant du navigateur (`appendUserAgent`), l’appli est ancienne et iOS la tuerait : on ne demande pas le micro.
 - Contenu : grande réserve dans `src/games/moreContent.ts`. Tirage sans redite : `freshDeck` (`decks.ts`) retient sur la télé ce qui est sorti (`canapet.seen.*`), et ne repart de zéro qu’une fois tout passé. Pour Le Juste Pif, seulement des faits sûrs dont la réponse est la même en français et en anglais.
+- Cadres (nov. 2026) : simple anneau autour du portrait (`PlayerFrame`), ou autour de la photo si le joueur a un selfie, y compris en jeu (`ringPaint`, `roomFrames`) ; plus d’emojis autour. Traînées petites (`MODES`). Firebase : la télé regarde le relais par une simple requête toutes les 4 s et n’ouvre sa connexion que si un téléphone y attend ; messages du relais regroupés toutes les 100 ms (`batcher`) ; sauvegarde du compte sur 3 s et rien si inchangé ; appli cachée 30 s = base coupée ; présence toutes les 3 min. Mini Bolides : piste dessinée une fois (`backdrop`).
 - Images Play : `store/images`, refaites par `store/make-images.cjs`.
 
 ## Mode équipes et musique

@@ -9,9 +9,14 @@ import { playWinSound, speak } from '../shared/sound';
 
 const FIELD_OF: Partial<Record<LootKind, keyof Profile>> = { hat: 'hat', acc: 'acc', color: 'color', eyes: 'eyes', skin: 'skin', pose: 'pose' };
 
-/** Joue le son d'un objet quand il y en a un. */
+let lastPlay = 0;
+/** Joue le son d'un objet quand il y en a un (pas plus d'une fois toutes les 1,5 s : on ne peut pas le mitrailler). */
 export function playItem(key: string, profile: Profile) {
   const [kind, id] = key.split(':');
+  if (kind !== 'winsound' && kind !== 'entry') return;
+  const now = Date.now();
+  if (now - lastPlay < 1500) return;
+  lastPlay = now;
   if (kind === 'winsound') playWinSound(id);
   if (kind === 'entry') {
     const en = ENTRIES.find((x) => x.id === id);
@@ -45,9 +50,10 @@ export function ItemPreview({ item, profile, size = 130 }: { item: string; profi
     case 'frame':
       return (
         <div className="prev">
-          <span className="thumb-frame" style={{ ['--pf-r' as string]: `${size * 0.62}px` }}>
-            <PlayerFrame id={id} inset={0} />
-            {char}
+          {/* Avec une photo, le cadre va autour de la photo ; sinon autour de la bulle */}
+          <span className="thumb-frame" style={{ width: size * 1.25, height: size * 1.25 }}>
+            {!profile.selfie && <PlayerFrame id={id} inset={0} />}
+            <CharCanvas profile={{ ...profile, frame: id }} size={size * 0.8} />
           </span>
         </div>
       );
@@ -74,8 +80,8 @@ export function ItemPreview({ item, profile, size = 130 }: { item: string; profi
       const t = TRAILS.find((x) => x.id === id);
       return (
         <div className="prev prev-road">
-          {sparks.map((s) => (
-            <i key={s.i} className="prev-trail" style={{ top: `${50 + (s.i % 5) * 7}%`, animationDelay: `${s.d}s`, background: t?.colors ? t.colors[s.i % t.colors.length] : undefined, width: t?.colors ? 12 * s.s : undefined, height: t?.colors ? 12 * s.s : undefined, fontSize: 24 * s.s }}>
+          {sparks.slice(0, 7).map((s) => (
+            <i key={s.i} className="prev-trail" style={{ top: `${50 + (s.i % 5) * 7}%`, animationDelay: `${s.d}s`, background: t?.colors ? t.colors[s.i % t.colors.length] : undefined, width: t?.colors ? 9 * s.s : undefined, height: t?.colors ? 9 * s.s : undefined, fontSize: 13 * s.s }}>
               {t?.icons?.[s.i % t.icons.length]}
             </i>
           ))}

@@ -390,6 +390,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     }
   }
 
+  let backdrop: HTMLCanvasElement | null = null;
   const game: GameInstance = {
     over: false,
     input(pid, m) {
@@ -661,113 +662,131 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     render(g, t) {
       g.save();
       if (shake) g.translate(rnd(-shake, shake), rnd(-shake, shake));
-      g.fillStyle = circuit.grass;
-      g.fillRect(0, 0, 1920, 1080);
-      if (!ctx.light) {
-        g.fillStyle = circuit.dots;
-        for (let i = 0; i < 40; i++) {
-          g.beginPath();
-          g.arc((i * 397) % 1920, (i * 233) % 1080, 18, 0, Math.PI * 2);
-          g.fill();
-        }
-      }
-      g.strokeStyle = INK;
-      g.lineWidth = 4;
-      for (const d of decor) {
-        if (d.kind === 0) {
-          // Sucette géante
-          g.fillStyle = '#fff';
-          g.fillRect(d.x - 5, d.y - 10, 10, 60);
-          g.strokeRect(d.x - 5, d.y - 10, 10, 60);
-          g.fillStyle = d.c;
-          g.beginPath();
-          g.arc(d.x, d.y - 30, 34, 0, Math.PI * 2);
-          g.fill();
-          g.stroke();
-          g.strokeStyle = '#fff';
-          g.lineWidth = 6;
-          g.beginPath();
-          g.arc(d.x, d.y - 30, 18, 0, Math.PI * 1.5);
-          g.stroke();
+      // Herbe, décor et piste ne bougent pas : dessinés une fois (les redessiner coûtait cher à chaque image)
+      if (!backdrop) {
+        const k = ctx.light ? 2 / 3 : 1;
+        backdrop = document.createElement('canvas');
+        backdrop.width = 1920 * k;
+        backdrop.height = 1080 * k;
+        const paint = (g: CanvasRenderingContext2D) => {
+          g.fillStyle = circuit.grass;
+          g.fillRect(0, 0, 1920, 1080);
+          if (!ctx.light) {
+            g.fillStyle = circuit.dots;
+            for (let i = 0; i < 40; i++) {
+              g.beginPath();
+              g.arc((i * 397) % 1920, (i * 233) % 1080, 18, 0, Math.PI * 2);
+              g.fill();
+            }
+          }
           g.strokeStyle = INK;
           g.lineWidth = 4;
-        } else if (d.kind === 1) {
-          // Buisson
-          g.fillStyle = '#7bd13b';
-          g.beginPath();
-          g.arc(d.x - 26, d.y, 24, 0, Math.PI * 2);
-          g.arc(d.x, d.y - 14, 30, 0, Math.PI * 2);
-          g.arc(d.x + 26, d.y, 24, 0, Math.PI * 2);
-          g.fill();
-          g.stroke();
-          g.fillStyle = '#7bd13b';
-          g.fillRect(d.x - 40, d.y - 4, 80, 20);
-          g.fillStyle = d.c;
-          g.beginPath();
-          g.arc(d.x - 8, d.y - 18, 6, 0, Math.PI * 2);
-          g.arc(d.x + 16, d.y - 4, 6, 0, Math.PI * 2);
-          g.fill();
-        } else {
-          // Fleur
-          g.fillStyle = d.c;
-          for (let k = 0; k < 5; k++) {
-            g.beginPath();
-            g.arc(d.x + Math.cos((k * Math.PI * 2) / 5) * 14, d.y + Math.sin((k * Math.PI * 2) / 5) * 14, 11, 0, Math.PI * 2);
-            g.fill();
-            g.stroke();
+          for (const d of decor) {
+            if (d.kind === 0) {
+              // Sucette géante
+              g.fillStyle = '#fff';
+              g.fillRect(d.x - 5, d.y - 10, 10, 60);
+              g.strokeRect(d.x - 5, d.y - 10, 10, 60);
+              g.fillStyle = d.c;
+              g.beginPath();
+              g.arc(d.x, d.y - 30, 34, 0, Math.PI * 2);
+              g.fill();
+              g.stroke();
+              g.strokeStyle = '#fff';
+              g.lineWidth = 6;
+              g.beginPath();
+              g.arc(d.x, d.y - 30, 18, 0, Math.PI * 1.5);
+              g.stroke();
+              g.strokeStyle = INK;
+              g.lineWidth = 4;
+            } else if (d.kind === 1) {
+              // Buisson
+              g.fillStyle = '#7bd13b';
+              g.beginPath();
+              g.arc(d.x - 26, d.y, 24, 0, Math.PI * 2);
+              g.arc(d.x, d.y - 14, 30, 0, Math.PI * 2);
+              g.arc(d.x + 26, d.y, 24, 0, Math.PI * 2);
+              g.fill();
+              g.stroke();
+              g.fillStyle = '#7bd13b';
+              g.fillRect(d.x - 40, d.y - 4, 80, 20);
+              g.fillStyle = d.c;
+              g.beginPath();
+              g.arc(d.x - 8, d.y - 18, 6, 0, Math.PI * 2);
+              g.arc(d.x + 16, d.y - 4, 6, 0, Math.PI * 2);
+              g.fill();
+            } else {
+              // Fleur
+              g.fillStyle = d.c;
+              for (let k = 0; k < 5; k++) {
+                g.beginPath();
+                g.arc(d.x + Math.cos((k * Math.PI * 2) / 5) * 14, d.y + Math.sin((k * Math.PI * 2) / 5) * 14, 11, 0, Math.PI * 2);
+                g.fill();
+                g.stroke();
+              }
+              g.fillStyle = '#ffd60a';
+              g.beginPath();
+              g.arc(d.x, d.y, 9, 0, Math.PI * 2);
+              g.fill();
+              g.stroke();
+            }
           }
-          g.fillStyle = '#ffd60a';
-          g.beginPath();
-          g.arc(d.x, d.y, 9, 0, Math.PI * 2);
-          g.fill();
+          const loop = () => {
+            g.beginPath();
+            PATH.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+            g.closePath();
+          };
+          g.lineJoin = 'round';
+          g.lineCap = 'round';
+          loop();
+          g.strokeStyle = INK;
+          g.lineWidth = ROAD + 22;
           g.stroke();
-        }
+          loop();
+          g.strokeStyle = '#fff';
+          g.lineWidth = ROAD + 14;
+          g.setLineDash([26, 26]);
+          g.stroke();
+          g.setLineDash([]);
+          loop();
+          g.strokeStyle = '#ff6b9a';
+          g.lineWidth = ROAD + 14;
+          g.setLineDash([26, 26]);
+          g.lineDashOffset = 26;
+          g.stroke();
+          g.setLineDash([]);
+          g.lineDashOffset = 0;
+          loop();
+          g.strokeStyle = circuit.road;
+          g.lineWidth = ROAD;
+          g.stroke();
+          // Bordures en guimauve (on ne sort plus de la piste)
+          loop();
+          g.strokeStyle = 'rgba(255,255,255,0.55)';
+          g.lineWidth = ROAD - 8;
+          g.setLineDash([]);
+          g.stroke();
+          loop();
+          g.strokeStyle = circuit.road;
+          g.lineWidth = ROAD - 18;
+          g.stroke();
+          loop();
+          g.strokeStyle = 'rgba(255,255,255,0.7)';
+          g.lineWidth = 4;
+          g.setLineDash([30, 30]);
+          g.stroke();
+          g.setLineDash([]);
+        };
+        const bg = backdrop.getContext('2d', { alpha: false })!;
+        bg.scale(k, k);
+        paint(bg);
       }
-      const loop = () => {
-        g.beginPath();
-        PATH.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-        g.closePath();
-      };
+      g.fillStyle = circuit.grass;
+      g.fillRect(0, 0, 1920, 1080);
+      g.drawImage(backdrop, 0, 0, 1920, 1080);
       g.lineJoin = 'round';
       g.lineCap = 'round';
-      loop();
-      g.strokeStyle = INK;
-      g.lineWidth = ROAD + 22;
-      g.stroke();
-      loop();
-      g.strokeStyle = '#fff';
-      g.lineWidth = ROAD + 14;
-      g.setLineDash([26, 26]);
-      g.stroke();
-      g.setLineDash([]);
-      loop();
-      g.strokeStyle = '#ff6b9a';
-      g.lineWidth = ROAD + 14;
-      g.setLineDash([26, 26]);
-      g.lineDashOffset = 26;
-      g.stroke();
-      g.setLineDash([]);
-      g.lineDashOffset = 0;
-      loop();
-      g.strokeStyle = circuit.road;
-      g.lineWidth = ROAD;
-      g.stroke();
-      // Bordures en guimauve (on ne sort plus de la piste)
-      loop();
-      g.strokeStyle = 'rgba(255,255,255,0.55)';
-      g.lineWidth = ROAD - 8;
-      g.setLineDash([]);
-      g.stroke();
-      loop();
-      g.strokeStyle = circuit.road;
-      g.lineWidth = ROAD - 18;
-      g.stroke();
-      loop();
-      g.strokeStyle = 'rgba(255,255,255,0.7)';
       g.lineWidth = 4;
-      g.setLineDash([30, 30]);
-      g.stroke();
-      g.setLineDash([]);
 
       // Flèches de direction peintes sur la piste
       for (let c = 1; c < 18; c++) {

@@ -2640,6 +2640,7 @@ h3,
 }
 .ed-bottom {
   position: sticky;
+  z-index: 5; /* Au-dessus des vignettes qui défilent dessous */
   bottom: 0;
   width: 100%;
   max-width: 440px;

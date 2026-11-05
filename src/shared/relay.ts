@@ -5,11 +5,38 @@
 //   relais/<CODE>/u/<id>    : téléphone → télé  { p: joueur, j: message }
 //   relais/<CODE>/d/<pid>/<id> : télé → téléphone { j: message }
 // Chaque message est effacé dès qu'il est lu.
+// Pour écrire moins : les messages sont regroupés toutes les 100 ms, et seule la dernière position du stick est gardée.
 import { getApps, initializeApp } from 'firebase/app';
-import { getDatabase, onChildAdded, onDisconnect, push, ref, remove, serverTimestamp, set, type Database } from 'firebase/database';
+import { getDatabase, onChildAdded, onDisconnect, push, ref, remove, type Database } from 'firebase/database';
 import { CONFIG } from './cloud';
 
 const db = (): Database => getDatabase(getApps()[0] ?? initializeApp(CONFIG));
+
+type Msg = { t?: string; a?: unknown; b?: unknown; c?: unknown; d?: unknown };
+const WAIT = 100;
+function batcher(write: (json: string) => void) {
+  let q: Msg[] = [];
+  let timer = 0;
+  return (m: unknown) => {
+    const n = m as Msg;
+    const last = q[q.length - 1];
+    // Le stick a seulement bougé : la nouvelle position remplace l'ancienne (un bouton pressé, lui, n'est jamais perdu)
+    if (n?.t === 'in' && last?.t === 'in' && n.a === last.a && n.b === last.b && n.c === last.c && n.d === last.d) q[q.length - 1] = n;
+    else q.push(n);
+    if (timer) return;
+    timer = window.setTimeout(() => {
+      timer = 0;
+      const list = q;
+      q = [];
+      write(JSON.stringify(list.length === 1 ? list[0] : list));
+    }, WAIT);
+  };
+}
+const each = (json: string, fn: (m: unknown) => void) => {
+  const v: unknown = JSON.parse(json);
+  if (Array.isArray(v)) v.forEach(fn);
+  else fn(v);
+};
 
 export interface Relay {
   send(m: unknown): void;
@@ -19,24 +46,25 @@ export interface Relay {
 /** Côté télé : reçoit les messages de tous les téléphones passés par le relais. */
 export function tvRelay(code: string, onMsg: (pid: string, m: unknown) => void): { send(pid: string, m: unknown): void; stop(): void } {
   const d = db();
-  const here = ref(d, `relais/${code}/tv`);
-  void set(here, serverTimestamp()).catch(() => {});
-  void onDisconnect(here).remove().catch(() => {});
-  // Restes d'une ancienne partie avec le même code
-  void remove(ref(d, `relais/${code}/u`)).catch(() => {});
-  void remove(ref(d, `relais/${code}/d`)).catch(() => {});
+  // Tout s'efface quand la télé se ferme
+  void onDisconnect(ref(d, `relais/${code}`)).remove().catch(() => {});
+  const downs = new Map<string, (m: unknown) => void>();
   const stop = onChildAdded(ref(d, `relais/${code}/u`), (snap) => {
     const v = snap.val() as { p?: string; j?: string } | null;
     void remove(snap.ref).catch(() => {});
     if (!v?.p || !v.j) return;
     try {
-      onMsg(v.p, JSON.parse(v.j));
+      each(v.j, (m) => onMsg(v.p!, m));
     } catch {
       /* message abîmé */
     }
   });
   return {
-    send: (pid, m) => void push(ref(d, `relais/${code}/d/${pid}`), { j: JSON.stringify(m) }).catch(() => {}),
+    send: (pid, m) => {
+      let send = downs.get(pid);
+      if (!send) downs.set(pid, (send = batcher((j) => void push(ref(d, `relais/${code}/d/${pid}`), { j }).catch(() => {}))));
+      send(m);
+    },
     stop: () => {
       stop();
       void remove(ref(d, `relais/${code}`)).catch(() => {});
@@ -55,13 +83,13 @@ export function padRelay(code: string, pid: string, onMsg: (m: unknown) => void)
     void remove(snap.ref).catch(() => {});
     if (!v?.j) return;
     try {
-      onMsg(JSON.parse(v.j));
+      each(v.j, onMsg);
     } catch {
       /* message abîmé */
     }
   });
   return {
-    send: (m) => void push(ref(d, `relais/${code}/u`), { p: pid, j: JSON.stringify(m) }).catch(() => {}),
+    send: batcher((j) => void push(ref(d, `relais/${code}/u`), { p: pid, j }).catch(() => {})),
     stop: () => {
       stop();
       void remove(mine).catch(() => {});

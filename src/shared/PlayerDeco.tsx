@@ -1,26 +1,21 @@
-// Cadres animés, styles de nom et titres : affichés au salon, aux résultats, au podium et dans l'éditeur.
+// Cadres photo, styles de nom et titres : affichés au salon, aux résultats, au podium et dans l'éditeur.
 import type { CSSProperties } from 'react';
 import { FRAMES, PLATES, TITLES } from './cosmetics2';
 import { LIGHT } from './device';
 import type { Lang } from './protocol';
 import './deco.css';
 
-/** À poser dans un élément en position relative : l'anneau et les emojis en orbite tournent autour. */
-export function PlayerFrame({ id, inset = -6 }: { id?: string; inset?: number }) {
+/** À poser dans un élément en position relative : un anneau rond, de la hauteur de l'élément. `still` : immobile (vignettes). */
+export function PlayerFrame({ id, inset = -6, still }: { id?: string; inset?: number; still?: boolean }) {
   const f = FRAMES.find((x) => x.id === id);
-  if (!f) return null;
-  const still = LIGHT;
+  if (!f?.ring) return null;
+  const on = still || LIGHT ? '' : 'on';
+  const bg = `conic-gradient(${f.ring.join(',')})`;
+  const dur = `${f.spin ?? 3}s`;
   return (
-    <span className="pf" style={{ inset }} aria-hidden="true">
-      {f.ring && <i className={`pf-ring ${still ? '' : 'on'}`} style={{ background: `conic-gradient(${f.ring.join(',')})`, animationDuration: `${f.spin ?? 3}s` }} />}
-      {f.orbit && (
-        <span className={`pf-orbit ${still ? '' : 'on'}`}>
-          {f.orbit.map((e, i) => (
-            <b key={i} style={{ ['--a' as string]: `${(i / f.orbit!.length) * 360}deg` } as CSSProperties}>{e}</b>
-          ))}
-        </span>
-      )}
-      {f.top && <em className={`pf-top ${still ? '' : 'on'}`}>{f.top}</em>}
+    <span className={`pf pf-${f.r}`} style={{ top: inset, bottom: inset }} aria-hidden="true">
+      <i className={`pf-ring ${on}`} style={{ background: bg, animationDuration: dur }} />
+      {(f.r === 'legendaire' || f.r === 'mythique') && <i className={`pf-ring2 ${on}`} style={{ background: bg, animationDuration: dur }} />}
     </span>
   );
 }

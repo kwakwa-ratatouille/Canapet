@@ -215,7 +215,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
                   </span>
                 )}
                 <div className="slot-disc" style={{ background: tint(p.color, 0.35) }}>
-                  <PlayerFrame id={p.frame} />
+                  <PlayerFrame id={p.selfie ? undefined : p.frame} />
                   <CharCanvas profile={p} size={160} ghost={!p.connected} />
                 </div>
                 <div className="slot-name"><PlateName name={p.name} plate={p.plate} /></div>
@@ -1037,8 +1037,8 @@ function Results({ session }: { session: Session }) {
               <li key={r.pid} className="res-row">
                 <span className={`rank-disc r${Math.min(4, r.rank)}`}>{r.rank}</span>
                 {r.team !== undefined && <span className="team-dot" style={{ background: TEAMS[r.team].color }} />}
-                <span className="pf-host res-host">
-                  <PlayerFrame id={r.profile.frame} inset={0} />
+                <span className="pf-host res-host" style={{ width: (compact ? 52 : 64) * 1.25 }}>
+                  <PlayerFrame id={r.profile.selfie ? undefined : r.profile.frame} inset={0} />
                   <CharCanvas profile={r.profile} size={compact ? 52 : 64} still mood={r.rank === 1 ? 'win' : 'happy'} />
                 </span>
                 <span className="who">
@@ -1127,7 +1127,7 @@ function Podium({ players, lang, session }: { players: Player[]; lang: 'fr' | 'e
                 const wp = WIN_POSES.find((x) => x.id === p.winPose);
                 return (
                   <div className={`podium-char ${wp?.anim ?? ''}`}>
-                    <PlayerFrame id={p.frame} inset={-10} />
+                    <PlayerFrame id={p.selfie ? undefined : p.frame} inset={-10} />
                     <CharCanvas profile={p} size={[170, 210, 160][i]} mood="win" arms={!wp?.pose} wp={wp?.pose} />
                   </div>
                 );

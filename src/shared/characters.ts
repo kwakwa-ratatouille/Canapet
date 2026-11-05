@@ -5,7 +5,7 @@
 import { characterSvg, faceSlot, PLAYER_COLORS, CHARACTERS, selfieDecoSvg } from './art/canapet-art.js';
 import { LIGHT } from './device';
 import { SKINS, type SkinDef } from './lootTable';
-import { TRAILS, type TrailDef, type TrailMode } from './cosmetics2';
+import { FRAMES, TRAILS, type TrailDef, type TrailMode } from './cosmetics2';
 import type { Lang } from './protocol';
 
 type Name = Record<Lang, string>;
@@ -186,18 +186,23 @@ export interface DrawOpts {
   skin?: string;
   /** Pose de victoire. */
   wp?: string;
+  /** Cadre photo (sinon celui du joueur qui a cette couleur de baskets). */
+  frame?: string;
 }
 
 // À la télé, les jeux ne connaissent que la couleur du joueur : elle est unique, elle donne donc aussi son skin.
 const roomSkins = new Map<string, string>();
 const roomTrails = new Map<string, TrailDef>();
-export function setRoomSkins(list: { color: string; skin?: string; trail?: string }[]) {
+const roomFrames = new Map<string, string>();
+export function setRoomSkins(list: { color: string; skin?: string; trail?: string; frame?: string }[]) {
   roomSkins.clear();
   roomTrails.clear();
+  roomFrames.clear();
   list.forEach((p) => {
     if (p.skin) roomSkins.set(p.color, p.skin);
     const tr = TRAILS.find((x) => x.id === p.trail);
     if (tr) roomTrails.set(p.color, tr);
+    if (p.frame) roomFrames.set(p.color, p.frame);
   });
 }
 
@@ -205,10 +210,10 @@ export function setRoomSkins(list: { color: string; skin?: string; trail?: strin
 let trailMode: TrailMode | null = null;
 /** Réglage de la traînée selon le jeu : rythme (ms), taille, durée (s), écart, vitesse vers l'arrière. */
 const MODES: Record<TrailMode, { every: number; size: number; life: number; spread: number; back: number; twin?: boolean }> = {
-  kart: { every: 45, size: 0.5, life: 0.75, spread: 0.1, back: 30, twin: true },
-  lane: { every: 60, size: 0.42, life: 0.65, spread: 0.18, back: 340 },
-  run: { every: 70, size: 0.36, life: 0.55, spread: 0.2, back: 70 },
-  top: { every: 95, size: 0.28, life: 0.45, spread: 0.16, back: 30 },
+  kart: { every: 90, size: 0.22, life: 0.6, spread: 0.1, back: 30, twin: true },
+  lane: { every: 110, size: 0.2, life: 0.55, spread: 0.18, back: 340 },
+  run: { every: 120, size: 0.17, life: 0.45, spread: 0.2, back: 70 },
+  top: { every: 150, size: 0.13, life: 0.4, spread: 0.16, back: 30 },
 };
 export function setTrailMode(m: TrailMode | null) {
   trailMode = LIGHT ? null : m;
@@ -221,12 +226,13 @@ function emojiBitmap(e: string) {
   let c = emojiCache.get(e);
   if (!c) {
     c = document.createElement('canvas');
-    c.width = c.height = 72;
+    // Petite image : la traînée reste discrète, inutile de garder plus de détails
+    c.width = c.height = 40;
     const g = c.getContext('2d')!;
-    g.font = '56px sans-serif';
+    g.font = '30px sans-serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(e, 36, 40);
+    g.fillText(e, 20, 22);
     emojiCache.set(e, c);
   }
   return c;
@@ -245,7 +251,7 @@ function drawTrail(g: CanvasRenderingContext2D, x: number, y: number, s: number,
   const moved = Math.hypot(sx - t.x, sy - t.y);
   const jump = moved > scale * 2.5;
   const running = !o.ghost && !jump && (moved > 0.8 || (o.run ?? 0) > 0.2);
-  if (running && now - t.last > mode.every && t.parts.length < 26) {
+  if (running && now - t.last > mode.every && t.parts.length < 12) {
     t.last = now;
     const k = Math.hypot(m.a, m.b);
     // Vers l'arrière : le sens du déplacement à l'écran, sinon celui où regarde le perso
@@ -288,12 +294,20 @@ function drawTrail(g: CanvasRenderingContext2D, x: number, y: number, s: number,
     } else {
       g.fillStyle = p.color ?? '#fff';
       g.beginPath();
-      g.arc(px, py, (p.size / 3) * (0.4 + left * 0.6), 0, Math.PI * 2);
+      g.arc(px, py, (p.size / 2) * (0.4 + left * 0.6), 0, Math.PI * 2);
       g.fill();
     }
   }
   t.parts = keep;
   g.restore();
+}
+
+/** Couleurs du cadre photo, qui tournent doucement (couleur unie si le navigateur est trop ancien). */
+function ringPaint(g: CanvasRenderingContext2D, ring: string[], spin: number, x: number, y: number, t: number) {
+  if (!g.createConicGradient || ring.length < 2) return ring[0];
+  const c = g.createConicGradient(LIGHT ? 0 : ((t / spin) % 1) * Math.PI * 2, x, y);
+  ring.forEach((col, i) => c.addColorStop(i / (ring.length - 1), col));
+  return c;
 }
 
 /** Repeint le perso une seule fois, sur son image en cache : aucun coût pendant le jeu. */
@@ -465,13 +479,16 @@ export function drawCharacter(g: CanvasRenderingContext2D, x: number, y: number,
     const fx = (o.dir ?? 1) < 0 ? -cx : cx;
     g.save();
     if ((o.dir ?? 1) < 0) g.scale(-1, 1);
+    // Son cadre photo, s'il en a un, remplace le liseré blanc
+    const frame = FRAMES.find((x) => x.id === (o.frame ?? roomFrames.get(o.color)));
+    const edge = frame?.ring ? r * (frame.r === 'commun' || frame.r === 'rare' ? 0.16 : 0.22) : Math.max(1, r * 0.08);
     g.fillStyle = '#3a2140';
     g.beginPath();
-    g.arc(fx, cy, r + Math.max(2, r * 0.16), 0, Math.PI * 2);
+    g.arc(fx, cy, r + edge + Math.max(1, r * 0.08), 0, Math.PI * 2);
     g.fill();
-    g.fillStyle = '#fff';
+    g.fillStyle = frame?.ring ? ringPaint(g, frame.ring, frame.spin ?? 3, fx, cy, o.t) : '#fff';
     g.beginPath();
-    g.arc(fx, cy, r + Math.max(1, r * 0.08), 0, Math.PI * 2);
+    g.arc(fx, cy, r + edge, 0, Math.PI * 2);
     g.fill();
     g.beginPath();
     g.arc(fx, cy, r, 0, Math.PI * 2);

@@ -14,7 +14,7 @@ import { IS_IOS, newId, save, store } from '../shared/device';
 import { defaultLang, ordinal, t } from '../shared/i18n';
 import { gameIcon } from '../shared/Logo';
 import type { GameInfo, HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
-import { playWinSound, sfx, speak, unlockAudio } from '../shared/sound';
+import { sfx, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
 import { Stick, type Cools } from './Stick';
 import { ReactButton, SecretCard } from './ReactPad';
@@ -149,8 +149,12 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   // Retour sur la manette : un achat a pu être fait sur le site entre-temps
   useEffect(() => {
     if (!user) return;
+    let last = 0;
     const again = () => {
-      if (document.visibilityState === 'visible') loadItems(user.uid).then((items) => applyItems(user.uid, items)).catch(() => {});
+      // Au retour sur l'appli, mais pas plus d'une fois par minute
+      if (document.visibilityState !== 'visible' || Date.now() - last < 60000) return;
+      last = Date.now();
+      loadItems(user.uid).then((items) => applyItems(user.uid, items)).catch(() => {});
     };
     document.addEventListener('visibilitychange', again);
     return () => document.removeEventListener('visibilitychange', again);
@@ -158,12 +162,20 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   // Sauvegarde sur le compte (regroupée) à chaque changement.
   useEffect(() => {
     if (!user || !synced.current) return;
-    const id = setTimeout(() => {
+    const run = () => {
       saveCloud(user.uid, progress)
         .then(() => setCloud('ok'))
         .catch(() => setCloud('error'));
-    }, 800);
-    return () => clearTimeout(id);
+    };
+    const id = setTimeout(run, 3000);
+    const hide = () => {
+      if (document.visibilityState === 'hidden') run();
+    };
+    document.addEventListener('visibilitychange', hide);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener('visibilitychange', hide);
+    };
   }, [progress, user]);
   const connect = () => {
     save('cloud', true);
@@ -1193,12 +1205,7 @@ function Editor({
   const choose = (kind: Kind, id: string, name: string) => {
     if (owned(kind, id)) {
       set({ [FIELD[kind]]: id || undefined });
-      if (kind === 'winsound' && id) playWinSound(id);
-      if (kind === 'entry' && id) {
-        const en = ENTRIES.find((x) => x.id === id)!;
-        if (en.sound) playWinSound(en.sound);
-        speak(en.line[lang].replace('{n}', profile.name || 'Cana’pet'), lang, { rate: en.rate, pitch: en.pitch });
-      }
+      if (id && (kind === 'winsound' || kind === 'entry')) playItem(`${kind}:${id}`, profile);
     } else {
       sfx.click();
       setBuying({ kind, id, name });
@@ -1300,7 +1307,7 @@ function Editor({
     ['winsound', '🎺', fr ? 'Son de victoire' : 'Victory sound', nameOf(WIN_SOUNDS, profile.winSound ?? '', fr ? 'Classique' : 'Classic')],
     ['winfx', '🎆', fr ? 'Effet d’écran' : 'Screen effect', nameOf(WIN_FX, profile.winFx ?? '', fr ? 'Aucun' : 'None')],
     ['ko', '💥', fr ? 'Effet d’élimination' : 'Knockout effect', nameOf(KO_FX, profile.koFx ?? '', fr ? 'Aucun' : 'None')],
-    ['frame', '💫', fr ? 'Cadre animé' : 'Animated frame', nameOf(FRAMES, profile.frame ?? '', fr ? 'Aucun' : 'None')],
+    ['frame', '💫', fr ? 'Cadre photo' : 'Photo frame', nameOf(FRAMES, profile.frame ?? '', fr ? 'Aucun' : 'None')],
     ['plate', '🔤', fr ? 'Style de nom' : 'Name style', nameOf(PLATES, profile.plate ?? '', fr ? 'Normal' : 'Normal')],
     ['title', '🏷️', fr ? 'Titre' : 'Title', nameOf(TITLES, profile.title ?? '', fr ? 'Aucun' : 'None')],
     ['entry', '🎙️', fr ? 'Annonce d’entrée' : 'Entrance', nameOf(ENTRIES, profile.entry ?? '', fr ? 'Aucune' : 'None')],
@@ -1338,8 +1345,8 @@ function Editor({
       )}
       <div className="ed-stage">
         <div className="editor-preview">
-          <span className="thumb-frame" style={{ ['--pf-r' as string]: `${(tab ? 96 : 150) * 0.62}px` }}>
-            <PlayerFrame id={profile.frame} inset={0} />
+          <span className="thumb-frame">
+            <PlayerFrame id={profile.selfie ? undefined : profile.frame} inset={0} />
             <CharCanvas profile={profile} size={tab ? 96 : 150} />
           </span>
         </div>

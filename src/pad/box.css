@@ -319,7 +319,6 @@
 .set-pad .ctl-preview { zoom: .62; width: auto; }
 .pad-lobby .row { flex-wrap: nowrap; gap: 8px; width: 100%; }
 .pad-lobby .row .btn { flex: 1; min-width: 0; padding-inline: 8px; font-size: 17px; }
-.content-item .thumb-frame .pf-orbit b { font-size: 13px; }
 .odds-legend b { font-size: inherit; font-family: inherit; display: inline; font-weight: 800; }
 .box-buy { white-space: nowrap; }
 .box-buy.free { flex-direction: row; }

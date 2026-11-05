@@ -104,7 +104,7 @@ export const TRAIL_MODE: Record<string, TrailMode> = {
   trappe: 'top',
 };
 
-// ——— Cadres animés autour du perso ———
+// ——— Cadres photo : un anneau autour du portrait (salon, résultats, podium) ou de la photo du joueur ———
 export interface FrameDef {
   id: string;
   name: Name;
@@ -114,9 +114,8 @@ export interface FrameDef {
   ring?: string[];
   /** Tour complet en secondes. */
   spin?: number;
-  /** Petits emojis en orbite. */
+  /** Anciennes décorations, plus affichées : le cadre reste un simple anneau. */
   orbit?: string[];
-  /** Emoji qui rebondit au-dessus. */
   top?: string;
   season?: string;
   level?: number;
@@ -125,7 +124,7 @@ export const FRAMES: FrameDef[] = [
   { id: 'menthe', name: n('Anneau menthe', 'Mint ring'), emoji: '🟢', r: 'commun', ring: ['#22c99a', '#bff5e3'], spin: 5 },
   { id: 'citron', name: n('Anneau citron', 'Lemon ring'), emoji: '🟡', r: 'commun', ring: ['#ffd60a', '#fff6b3'], spin: 5 },
   { id: 'sucette', name: n('Sucre d’orge', 'Candy cane'), emoji: '🍭', r: 'commun', ring: ['#ff4f9a', '#ffffff', '#ff4f9a', '#ffffff', '#ff4f9a', '#ffffff'], spin: 6 },
-  { id: 'etoiles', name: n('Ronde d’étoiles', 'Star ring'), emoji: '⭐', r: 'rare', orbit: ['⭐', '⭐', '⭐'] },
+  { id: 'etoiles', name: n('Ronde d’étoiles', 'Star ring'), emoji: '⭐', r: 'rare', ring: ['#ffd60a', '#fff6b3', '#ff9d0a', '#fff6b3', '#ffd60a'], spin: 4, orbit: ['⭐', '⭐', '⭐'] },
   { id: 'bulles', name: n('Ronde de bulles', 'Bubble ring'), emoji: '🫧', r: 'rare', ring: ['#7fdcff', '#ffffff'], spin: 4, orbit: ['🫧', '🫧'] },
   { id: 'neon', name: n('Néon', 'Neon'), emoji: '💠', r: 'epique', ring: ['#00f0ff', '#ff17c4', '#00f0ff'], spin: 2 },
   { id: 'coeurs', name: n('Ronde de cœurs', 'Heart ring'), emoji: '💞', r: 'epique', ring: ['#ff4f9a', '#ffc2dd'], spin: 3, orbit: ['💖', '💖', '💖', '💖'] },

@@ -1,5 +1,6 @@
 // Côté télé : un « pair » PeerJS dont l'identifiant contient le code du salon.
 // Les téléphones s'y connectent en direct (WebRTC DataChannel).
+import { CONFIG } from '../shared/cloud';
 import Peer, { type DataConnection } from 'peerjs';
 import { ICE_SERVERS, PEER_PREFIX, randomCode, type ToPad, type ToTv } from '../shared/protocol';
 
@@ -85,16 +86,35 @@ export class TvNet {
   }
 
   private relayCode = '';
+  private relayWatch = 0;
   private startRelay(code: string) {
     if (this.relayCode === code) return;
     this.relayCode = code;
     this.relay?.stop();
     this.relay = undefined;
-    import('../shared/relay')
-      .then((r) => {
+    clearInterval(this.relayWatch);
+    // La plupart des parties passent en direct : on regarde juste de temps en temps si un téléphone attend sur le relais,
+    // et c'est seulement là qu'on charge Firebase et qu'on ouvre une connexion à la base.
+    const url = `${CONFIG.databaseURL}/relais/${code}`;
+    let first = true;
+    const look = async () => {
+      if (this.relayCode !== code || this.relay) return;
+      const wasFirst = first;
+      first = false;
+      try {
+        const got: unknown = await (await fetch(`${url}/u.json?shallow=true`)).json();
+        if (!got || this.relayCode !== code) return;
+        // Restes d'une ancienne partie avec le même code
+        if (wasFirst) return void fetch(`${url}.json`, { method: 'DELETE' }).catch(() => {});
+        clearInterval(this.relayWatch);
+        const r = await import('../shared/relay');
         if (this.relayCode === code) this.relay = r.tvRelay(code, (pid, d) => this.fromRelay(pid, d as ToTv));
-      })
-      .catch(() => (this.relayCode = ''));
+      } catch {
+        /* pas de réseau : on réessaiera */
+      }
+    };
+    void look();
+    this.relayWatch = window.setInterval(() => void look(), 4000);
   }
 
   private fromRelay(pid: string, m: ToTv) {

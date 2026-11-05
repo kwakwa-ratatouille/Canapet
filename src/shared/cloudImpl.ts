@@ -14,6 +14,13 @@ export function init(config: Record<string, string>) {
   app = getApps()[0] ?? initializeApp(config);
   auth = getAuth(app);
   db = getDatabase(app);
+  // Appli en arrière-plan depuis 30 s : on coupe la connexion à la base, elle reprend au retour
+  let sleep = 0;
+  document.addEventListener('visibilitychange', () => {
+    clearTimeout(sleep);
+    if (document.visibilityState === 'hidden') sleep = window.setTimeout(() => goOffline(db), 30000);
+    else goOnline(db);
+  });
   // L'appli a pu être fermée par le téléphone pendant la connexion dans le navigateur : on reprend l'attente
   const p = pending();
   if (p) void waitRelay(p.id, unB64(p.k)).catch(() => {});
@@ -234,7 +241,7 @@ export async function inviteFriend(other: string, room: string) {
 }
 export const dropInvite = (from: string) => remove(ref(db, `invites/${me()}/${from}`));
 
-/** Liste d'amis, relue toutes les 30 s pour savoir qui est en ligne. */
+/** Liste d'amis, relue toutes les minutes pour savoir qui est en ligne (pas si l'appli est cachée). */
 export function friendsWatch(cb: (l: { uid: string; name: string; food: string; color: string; hat?: string; seen: number; room?: string }[]) => void) {
   let ids: string[] = [];
   const read = async () => {
@@ -245,7 +252,9 @@ export function friendsWatch(cb: (l: { uid: string; name: string; food: string; 
     ids = Object.keys((s.val() as Record<string, boolean> | null) ?? {});
     void read();
   }, () => {});
-  const id = setInterval(() => void read().catch(() => {}), 30000);
+  const id = setInterval(() => {
+    if (document.visibilityState === 'visible') void read().catch(() => {});
+  }, 60000);
   return () => {
     off();
     clearInterval(id);
@@ -264,13 +273,12 @@ export async function load(uid: string): Promise<Partial<Progress> | null> {
   return snap.exists() ? (snap.val() as Partial<Progress>) : null;
 }
 
+let lastSaved = '';
 export async function save(uid: string, p: Progress) {
-  await set(ref(db, `players/${uid}/progress`), {
-    xp: p.xp,
-    coins: p.coins,
-    owned: p.owned,
-    games: p.games,
-    wins: p.wins,
-    updated: Date.now(),
-  });
+  // Rien n'a changé depuis la dernière sauvegarde : pas d'écriture
+  const body = { xp: p.xp, coins: p.coins, owned: p.owned, games: p.games, wins: p.wins };
+  const sum = uid + JSON.stringify(body);
+  if (sum === lastSaved) return;
+  await set(ref(db, `players/${uid}/progress`), { ...body, updated: Date.now() });
+  lastSaved = sum;
 }

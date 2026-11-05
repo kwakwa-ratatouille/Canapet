@@ -29,7 +29,7 @@ const KIND_NAME: Record<LootKind, Record<Lang, string>> = {
   ko: { fr: 'Effet d’élimination', en: 'Knockout effect' },
   winfx: { fr: 'Effet d’écran', en: 'Screen effect' },
   trail: { fr: 'Traînée', en: 'Trail' },
-  frame: { fr: 'Cadre animé', en: 'Animated frame' },
+  frame: { fr: 'Cadre photo', en: 'Photo frame' },
   plate: { fr: 'Style de nom', en: 'Name style' },
   title: { fr: 'Titre', en: 'Title' },
   react: { fr: 'Réaction', en: 'Reaction' },
@@ -53,9 +53,9 @@ export function ItemThumb({ item, profile, size }: { item: string; profile: Prof
   }
   if (kind === 'frame')
     return (
-      <span className="thumb-frame" style={{ ['--pf-r' as string]: `${size * 0.62}px` }}>
-        <PlayerFrame id={id} inset={0} />
-        <CharCanvas profile={{ ...profile, selfie: undefined }} size={size} still={size < 80} />
+      <span className="thumb-frame" style={{ width: size * 1.25, height: size * 1.25 }}>
+        <PlayerFrame id={id} inset={0} still />
+        <CharCanvas profile={{ ...profile, selfie: undefined }} size={size * 0.8} still />
       </span>
     );
   if (kind === 'plate') return <span className="thumb-name"><PlateName name={profile.name || 'Cana’pet'} plate={id} /></span>;

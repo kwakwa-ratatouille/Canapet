@@ -4,7 +4,7 @@ import { CharCanvas } from '../shared/CharCanvas';
 import { addFriend, friendsWatch, inviteFriend, invitesWatch, myFriendCode, removeFriend, dropInvite, publishPresence, type CloudUser, type FriendInfo, type InviteInfo } from '../shared/cloud';
 import type { Lang, Profile } from '../shared/protocol';
 
-const ONLINE_MS = 150000;
+const ONLINE_MS = 330000;
 
 export function seenText(at: number, fr: boolean) {
   const d = Date.now() - at;
@@ -17,13 +17,19 @@ export function seenText(at: number, fr: boolean) {
   return fr ? `Vu il y a ${j} jour${j > 1 ? 's' : ''}` : `Seen ${j} day${j > 1 ? 's' : ''} ago`;
 }
 
-/** Dit aux amis qu'on est là, toutes les minutes, tant que l'appli est ouverte. */
+let lastPresence = 0;
+/** Dit aux amis qu'on est là, toutes les 3 minutes, tant que l'appli est ouverte. */
 export function usePresence(user: CloudUser | null, profile: Profile, room: string) {
   useEffect(() => {
     if (!user) return;
-    const send = () => document.visibilityState === 'visible' && publishPresence({ name: profile.name, food: profile.food, color: profile.color, hat: profile.hat, room }).catch(() => {});
+    const send = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - lastPresence < 60000) return;
+      lastPresence = Date.now();
+      void publishPresence({ name: profile.name, food: profile.food, color: profile.color, hat: profile.hat, room }).catch(() => {});
+    };
+    lastPresence = 0; // Le pseudo, le perso ou la salle viennent de changer
     send();
-    const id = setInterval(send, 60000);
+    const id = setInterval(send, 180000);
     document.addEventListener('visibilitychange', send);
     return () => {
       clearInterval(id);

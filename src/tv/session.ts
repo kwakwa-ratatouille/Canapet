@@ -653,7 +653,7 @@ export class Session {
   }
 
   private syncSkins() {
-    setRoomSkins(this.list().map((p) => ({ color: p.color, skin: p.skin, trail: p.trail })));
+    setRoomSkins(this.list().map((p) => ({ color: p.color, skin: p.skin, trail: p.trail, frame: p.frame })));
   }
 
   startGame(id: string, opts?: Record<string, number>) {

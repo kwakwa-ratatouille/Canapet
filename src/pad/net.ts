@@ -24,6 +24,9 @@ export class PadNet {
   /** Vrai quand on passe par le relais de secours (Firebase) au lieu de la liaison directe. */
   viaRelay = false;
   private relay?: Relay | null;
+  private tick = 0;
+  private lastIn = '';
+  private lastInAt = 0;
   private triedAt = Date.now();
   private directAt = 0;
   private peer?: Peer;
@@ -170,7 +173,9 @@ export class PadNet {
   private watch() {
     if (this.stopped) return;
     if (this.status === 'ok') {
-      this.ping();
+      // Sur le relais, chaque ping est une écriture : un toutes les 6 s suffit
+      this.tick++;
+      if (!this.viaRelay || this.tick % 3 === 0) this.ping();
       if (this.viaRelay) {
         // Sur le relais : on retente la liaison directe de temps en temps (plus rapide)
         if (!FORCE_RELAY && Date.now() - this.directAt > 20000) {
@@ -192,6 +197,16 @@ export class PadNet {
 
   send(m: ToTv) {
     if (this.conn?.open) this.conn.send(m);
-    else if (this.viaRelay) this.relay?.send(m);
+    else if (this.viaRelay) {
+      // Le renvoi régulier du stick ne sert à rien tant que rien n'a bougé : une fois par seconde suffit
+      if (m.t === 'in') {
+        const sum = JSON.stringify(m);
+        const now = Date.now();
+        if (sum === this.lastIn && now - this.lastInAt < 1000) return;
+        this.lastIn = sum;
+        this.lastInAt = now;
+      }
+      this.relay?.send(m);
+    }
   }
 }

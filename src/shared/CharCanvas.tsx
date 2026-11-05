@@ -4,7 +4,7 @@ import { LIGHT } from './device';
 import type { Profile } from './protocol';
 
 interface Props {
-  profile: Pick<Profile, 'food' | 'color' | 'hat' | 'acc' | 'selfie' | 'eyes' | 'pose' | 'skin'>;
+  profile: Pick<Profile, 'food' | 'color' | 'hat' | 'acc' | 'selfie' | 'eyes' | 'pose' | 'skin' | 'frame'>;
   size: number;
   ghost?: boolean;
   still?: boolean;
@@ -40,6 +40,7 @@ export function CharCanvas({ profile, size, ghost, still, mood, arms, wp }: Prop
         eyes: p.eyes,
         pose: p.pose,
         skin: p.skin ?? '',
+        frame: p.frame,
         wp,
         selfie: selfieImage(p.selfie),
         t: animated ? now / 1000 + size : 0,
@@ -49,16 +50,41 @@ export function CharCanvas({ profile, size, ghost, still, mood, arms, wp }: Prop
       });
       if (animated) raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw);
-    // Vignettes immobiles : on redessine quand le dessin ou le selfie est prêt.
-    const off = onSpriteReady(() => !animated && requestAnimationFrame(draw));
-    const late = setTimeout(() => requestAnimationFrame(draw), 400);
+    // Vignettes immobiles : on ne les dessine que quand elles sont à l'écran (les listes en ont des dizaines)…
+    let seen = animated || typeof IntersectionObserver === 'undefined';
+    let queued = false;
+    const again = () => {
+      if (queued || !seen) return;
+      queued = true;
+      raf = requestAnimationFrame((n) => {
+        queued = false;
+        draw(n);
+      });
+    };
+    const io = seen
+      ? null
+      : new IntersectionObserver((l) => {
+          if (l.some((e) => e.isIntersecting)) {
+            seen = true;
+            io?.disconnect();
+            again();
+          }
+        }, { rootMargin: '240px' });
+    io?.observe(cv);
+    if (animated) raf = requestAnimationFrame(draw);
+    else again();
+    // …et on les redessine quand le dessin ou le selfie est prêt, une seule fois par image.
+    const off = onSpriteReady(() => {
+      if (!animated) again();
+    });
+    const late = setTimeout(again, 400);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(late);
+      io?.disconnect();
       off();
     };
-  }, [size, ghost, still, mood, arms, wp, profile.skin, profile.pose, profile.food, profile.color, profile.hat, profile.acc, profile.selfie]);
+  }, [size, ghost, still, mood, arms, wp, profile.skin, profile.pose, profile.food, profile.color, profile.hat, profile.acc, profile.selfie, profile.frame]);
 
   return <canvas ref={ref} style={{ width: size, height: size * 1.25 }} className="char" />;
 }
