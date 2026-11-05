@@ -7,7 +7,7 @@ import { GoogleLogo } from '../shared/GoogleLogo';
 import './editor.css';
 import { TiebreakPad, VotePad, WheelPad } from './PartyPad';
 import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRICES, rewardFor, saveProgress, type Kind, type Progress } from '../shared/progress';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { CharCanvas } from '../shared/CharCanvas';
 import { ACCS, COLORS, EYE_LIST, FOODS, HATS, POSE_LIST } from '../shared/characters';
 import { IS_IOS, newId, save, store } from '../shared/device';
@@ -1287,9 +1287,6 @@ function Editor({
             <PlayerFrame id={profile.frame} inset={0} />
             <CharCanvas profile={profile} size={tab ? 96 : 150} />
           </span>
-          {!tab && (profile.plate || profile.title) && (
-            <p className="ed-name-preview"><PlateName name={profile.name || 'Cana’pet'} plate={profile.plate} /><PlayerTitle id={profile.title} lang={lang} /></p>
-          )}
         </div>
         {!tab && (
           <div className="ed-quick">
@@ -1302,6 +1299,9 @@ function Editor({
           </div>
         )}
       </div>
+      {!tab && (profile.plate || profile.title) && (
+        <p className="ed-name-preview"><PlateName name={profile.name || 'Cana’pet'} plate={profile.plate} /><PlayerTitle id={profile.title} lang={lang} /></p>
+      )}
       {!tab && (
         <input
           className="name-input"
@@ -1315,14 +1315,20 @@ function Editor({
       {!tab && (
         <div className="ed-menu">
           {tabs.map(([k, icon, label, value]) => (
-            <button key={k} className="ed-cat" onClick={() => open(k)}>
-              <span className="ed-cat-ico">{k === 'color' ? <i style={{ background: profile.color }} /> : icon}</span>
-              <span className="ed-cat-txt">
-                <b>{label}</b>
-                {value && <small>{value}</small>}
-              </span>
-              <span className="ed-cat-go">›</span>
-            </button>
+            <Fragment key={k}>
+              {k === 'perso' && <p className="ed-sec">🧑 {fr ? 'Mon look' : 'My look'}</p>}
+              {k === 'winpose' && <p className="ed-sec">🏆 {fr ? 'Quand je gagne ou je perds' : 'When I win or lose'}</p>}
+              {k === 'frame' && <p className="ed-sec">✨ {fr ? 'Mon style à la télé' : 'My style on TV'}</p>}
+              {k === 'reactions' && <p className="ed-sec">📱 {fr ? 'Ma manette' : 'My controller'}</p>}
+              <button className="ed-cat" onClick={() => open(k)}>
+                <span className="ed-cat-ico">{k === 'color' ? <i style={{ background: profile.color }} /> : icon}</span>
+                <span className="ed-cat-txt">
+                  <b>{label}</b>
+                  {value && <small>{value}</small>}
+                </span>
+                <span className="ed-cat-go">›</span>
+              </button>
+            </Fragment>
           ))}
         </div>
       )}
