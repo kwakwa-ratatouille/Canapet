@@ -87,6 +87,8 @@ export function TvApp() {
         '6': 'lettre',
         ',': 'trous',
         '!': 'tranche',
+        ':': 'chef',
+        '=': 'fusion',
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');

@@ -12,7 +12,7 @@ import type { QuizPadData } from './quizShared';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 /** Sans accents, sans majuscules, sans article, au singulier : pour comparer deux mots. */
-function norm(s: string) {
+export function norm(s: string) {
   return s
     .toLowerCase()
     .normalize('NFD')

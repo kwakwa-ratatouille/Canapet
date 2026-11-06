@@ -424,3 +424,22 @@
 
 .quiz-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0; }
 .quiz-chips span { padding: 3px 10px; font-size: 15px; font-weight: 800; color: #3a2140; background: #a8efc9; border: 2px solid #3a2140; border-radius: 99px; }
+
+/* La Bataille des Fusions */
+.fusion-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 10px; touch-action: none; background: #ffe9c9; }
+.fusion-top { display: flex; justify-content: space-between; width: 100%; margin: 0; font-family: var(--cp-font-titre); font-size: 20px; color: #3a2140; }
+.fusion-top b { color: var(--c); -webkit-text-stroke: 0; }
+.fusion-turn { margin: 0; min-height: 28px; font-family: var(--cp-font-titre); font-size: 19px; font-weight: 700; text-align: center; color: #3a2140; }
+.fusion-board { position: relative; flex: 0 1 auto; width: 100%; max-height: 78vh; background: #fffaf2; border: 5px solid #3a2140; border-radius: 12px; touch-action: none; }
+.fusion-pad.mine .fusion-board { border-color: var(--c); box-shadow: 0 0 0 4px #3a2140; }
+.fusion-board canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Le Chef Cachottier */
+.chef-pad { gap: 8px; padding: 8px 8px 14px; overflow-y: auto; touch-action: pan-y; }
+.chef-badge { margin: 0; padding: 5px 12px; font-family: var(--cp-font-titre); font-size: 16px; font-weight: 700; text-align: center; color: #fff; background: var(--c); border: 3px solid #3a2140; border-radius: 99px; }
+.chef-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; width: 100%; }
+.chef-grid button { min-height: 52px; padding: 2px; overflow-wrap: anywhere; font-family: var(--cp-font-titre); font-size: 12px; font-weight: 700; line-height: 1.05; border: 2px solid #3a2140; border-radius: 9px; }
+.chef-grid button.on { box-shadow: 0 0 0 3px #ff9a1f; }
+.chef-count { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.chef-count small { width: 100%; text-align: center; font-weight: 800; }
+.chef-count button { width: 44px; height: 44px; font-family: var(--cp-font-titre); font-size: 20px; font-weight: 700; color: #3a2140; background: #fff; border: 3px solid #3a2140; border-radius: 50%; }
+.chef-count button.on { background: #ffd60a; }

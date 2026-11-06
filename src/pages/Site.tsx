@@ -18,6 +18,8 @@ const GAMES: [string, string, string][] = [
   ['lettre', 'Ça Commence Par…', 'Starts With…'],
   ['trous', 'Les Mots à Trous', 'Words With Holes'],
   ['tranche', 'Tranche de Rire', 'Slice of Laughs'],
+  ['chef', 'Le Chef Cachottier', 'The Secretive Chef'],
+  ['fusion', 'La Bataille des Fusions', 'Merge Battle'],
   ['plutot', 'Le Pire des Deux', 'Worst of Two'],
   ['chiffre', 'Le Juste Pif', 'Nose for Numbers'],
   ['cri', 'Crie Plus Fort', 'Shout Louder'],
