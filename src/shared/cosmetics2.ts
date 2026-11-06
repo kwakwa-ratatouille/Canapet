@@ -84,7 +84,7 @@ export const TRAILS: TrailDef[] = [
 /** La traînée s'adapte au jeu. Les jeux absents n'en ont pas (cartes, quiz, votes : personne ne court). */
 export type TrailMode = 'kart' | 'lane' | 'run' | 'top';
 export const TRAIL_MODE: Record<string, TrailMode> = {
-  cri: 'lane',
+  cri: 'run',
   kart: 'kart', // Deux lignes derrière le bolide, grosses et longues
   pouces: 'lane', // Le coureur reste au milieu de son couloir : ça file vers l'arrière
   obstacles: 'run',

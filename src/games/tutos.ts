@@ -44,8 +44,8 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     },
   },
   cri: {
-    fr: { goal: 'Crie dans ton téléphone pour avancer !', steps: [['📣', 'Plus tu cries fort, plus tu cours vite'], ['🤫', 'Quand l’écran devient rouge : silence ! Le moindre bruit te fait reculer'], ['🏁', 'Le premier à la ligne gagne']] },
-    en: { goal: 'Shout into your phone to move!', steps: [['📣', 'The louder you shout, the faster you run'], ['🤫', 'When the screen turns red: silence! Any noise pushes you back'], ['🏁', 'First to the line wins']] },
+    fr: { goal: 'Traverse les plateformes à la voix !', steps: [['🗣️', 'Parle pour marcher, tais-toi pour freiner'], ['📣', 'Crie pour sauter : plus c’est fort, plus c’est haut et loin'], ['❤️', '3 vies : gare aux trous, aux pics et au bord de l’écran']] },
+    en: { goal: 'Cross the platforms with your voice!', steps: [['🗣️', 'Talk to walk, go quiet to brake'], ['📣', 'Shout to jump: the louder, the higher and further'], ['❤️', '3 lives: watch the pits, spikes and screen edge']] },
   },
   doublage: {
     fr: { goal: 'Donne ta voix à une scène absurde !', steps: [['🎬', 'Lis la scène jouée par deux marionnettes'], ['🎙️', 'Enregistre toutes les voix, 7 secondes maximum'], ['🗳️', 'La télé joue chaque version : votez pour la plus drôle']] },

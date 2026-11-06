@@ -346,8 +346,8 @@
 .shout-meter { position: relative; width: 120px; height: 230px; overflow: hidden; background: #fff; border: 6px solid #3a2140; border-radius: 34px; }
 .shout-meter i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(0deg, #22c99a, #ffd60a 60%, #ff3b5c); }
 .shout-meter b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--cp-font-titre); font-size: 40px; color: #3a2140; }
-.shout-track { width: 100%; max-width: 340px; height: 18px; overflow: hidden; background: #fff; border: 4px solid #3a2140; border-radius: 99px; }
-.shout-track i { display: block; height: 100%; background: #ff4f9a; transition: width .2s; }
+.shout-meter em { position: absolute; left: 0; right: 0; padding-bottom: 1px; font-family: var(--cp-font-titre); font-size: 14px; font-style: normal; font-weight: 700; text-align: center; color: #3a2140; border-bottom: 3px dashed #3a2140; }
+.shout-lives { margin: 0; font-size: 34px; line-height: 1; }
 .shout-pad { align-items: center; }
 
 /* Éditeur sur téléphone : tout tient dans la largeur */

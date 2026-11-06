@@ -1,6 +1,9 @@
 // Manette de Crie Plus Fort : mesure le volume ; seul ce chiffre part vers la télé, pas le son.
 import { useEffect, useRef, useState } from 'react';
 import type { ShoutPadData } from '../games/shout';
+
+/** Même seuil que le jeu (la manette n'importe pas le code des jeux). */
+const JUMP_AT = 0.38;
 import { micBegin, micBlocked, micEnd } from '../shared/native';
 import type { Lang, ToTv } from '../shared/protocol';
 
@@ -36,10 +39,10 @@ export function ShoutPad({ data, lang, send }: { data: ShoutPadData; lang: Lang;
         const rms = Math.sqrt(sum / buf.length);
         // Le bruit ambiant est appris doucement pour ne pas avancer tout seul
         floor = rms < floor ? floor * 0.9 + rms * 0.1 : floor * 0.999 + rms * 0.001;
-        const v = Math.max(0, Math.min(1, (rms - floor * 1.4) * 7));
+        const v = Math.max(0, Math.min(1, (rms - floor * 1.4 - 0.03) * 5.5));
         setLevel(v);
         const now = performance.now();
-        if (now - sent > 180) {
+        if (now - sent > 100) {
           sent = now;
           send({ t: 'act', a: 'vol', n: [Math.round(v * 100)] });
         }
@@ -59,12 +62,12 @@ export function ShoutPad({ data, lang, send }: { data: ShoutPadData; lang: Lang;
   };
   // Arrivée : on coupe le micro tout de suite
   useEffect(() => {
-    if (data.phase === 'end') stop.current();
-  }, [data.phase]);
+    if (data.phase === 'end' || data.out) stop.current();
+  }, [data.phase, data.out]);
 
   return (
-    <div className={`traitor shout-pad shout-${data.phase}`} onPointerDown={() => state === 'denied' && send({ t: 'act', a: 'tap' })}>
-      <p className="shout-sign">{data.phase === 'chut' ? (fr ? '🤫 CHUT !' : '🤫 SHUSH!') : data.phase === 'warn' ? (fr ? '⚠️ Attention…' : '⚠️ Watch out…') : data.phase === 'end' ? (fr ? '🏁 Arrivée !' : '🏁 Finish!') : fr ? '📣 CRIE !' : '📣 SHOUT!'}</p>
+    <div className={`traitor shout-pad shout-${data.out ? 'chut' : data.phase}`} onPointerDown={() => state === 'denied' && send({ t: 'act', a: 'tap' })}>
+      <p className="shout-sign">{data.out ? (fr ? '💀 Éliminé !' : '💀 Out!') : data.phase === 'end' ? (fr ? '🏁 Fini !' : '🏁 Done!') : fr ? '📣 Crie !' : '📣 Shout!'}</p>
       {state === 'off' || state === 'asking' ? (
         <button className="mic-btn" disabled={state === 'asking'} onClick={() => void start()}>
           <i>🎙️</i>
@@ -76,10 +79,10 @@ export function ShoutPad({ data, lang, send }: { data: ShoutPadData; lang: Lang;
           <small>{fr ? 'Pas de micro : tape vite !' : 'No mic: tap fast!'}</small>
         </button>
       ) : (
-        <div className="shout-meter"><i style={{ height: `${Math.round(level * 100)}%` }} /><b>{Math.round(level * 100)}</b></div>
+        <div className="shout-meter"><i style={{ height: `${Math.round(level * 100)}%` }} /><em style={{ bottom: `${JUMP_AT * 100}%` }}>{fr ? 'saut' : 'jump'}</em><b>{Math.round(level * 100)}</b></div>
       )}
-      <div className="shout-track"><i style={{ width: `${data.dist}%` }} /></div>
-      <p className="pad-small">{data.rank}/{data.of} · {data.dist} % · ⏱ {data.left}</p>
+      <p className="shout-lives">{'❤️'.repeat(Math.max(0, data.lives))}{'🖤'.repeat(Math.max(0, 3 - data.lives))}</p>
+      <p className="pad-small">{data.rank}/{data.of}{data.wait > 0 ? (fr ? ` · ça part dans ${data.wait} s` : ` · starts in ${data.wait} s`) : ''}</p>
       {state === 'on' && <p className="pad-small">{fr ? 'Seul le volume part vers la télé. Le son n’est ni envoyé ni gardé.' : 'Only the volume goes to the TV. The sound is neither sent nor kept.'}</p>}
     </div>
   );
