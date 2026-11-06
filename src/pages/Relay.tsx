@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { goGoogle, relayTokens, type googleReturn } from '../shared/cloud';
 import { Wordmark } from '../shared/Logo';
 import { store } from '../shared/device';
+import { IS_INSTALLED, IS_NATIVE } from '../shared/native';
 import { defaultLang } from '../shared/i18n';
 import type { Lang } from '../shared/protocol';
 
@@ -33,7 +34,8 @@ export function Relay({ id, k, here = false, back }: { id: string; k: string; he
     relayTokens(id, k, back.token, back.here)
       .then(() => {
         setState('done');
-        if (back.here) setTimeout(() => location.replace(location.pathname + returnTo()), 800);
+        // Revenu directement dans l'appli : elle retrouve sa demande à l'accueil et se connecte
+        if (back.here || IS_NATIVE || IS_INSTALLED) setTimeout(() => location.replace(location.pathname + returnTo()), 800);
         else setTimeout(() => window.close(), 1500);
       })
       .catch(() => {

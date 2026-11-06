@@ -58,9 +58,10 @@ type Pending = { id: string; k: string; here: boolean; n: string };
 /** Page relais : part chez Google (en gardant de quoi finir au retour). */
 export function goGoogle(id: string, k: string, here: boolean) {
   const rnd = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
-  const st = rnd();
   const n = rnd();
-  localStorage.setItem('gauth-' + st, JSON.stringify({ id, k, here, n } satisfies Pending));
+  // Google peut nous ramener dans un autre navigateur, ou dans l'appli (surtout sur Android), où le stockage du téléphone n'est plus le même :
+  // la demande voyage donc avec lui, dans « state », au lieu d'être gardée sur place
+  const st = btoa(JSON.stringify({ id, k, here, n } satisfies Pending)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const q = new URLSearchParams({ client_id: CLIENT_ID, redirect_uri: back(), response_type: 'id_token', scope: 'openid email profile', nonce: n, state: st, prompt: 'select_account' });
   location.assign('https://accounts.google.com/o/oauth2/v2/auth?' + q);
 }
@@ -70,12 +71,14 @@ export function googleReturn(): (Pending & { token: string | null; error: string
   const q = new URLSearchParams(location.hash.slice(1));
   const st = q.get('state');
   if (!st || (!q.has('id_token') && !q.has('error'))) return null;
-  const raw = localStorage.getItem('gauth-' + st);
-  localStorage.removeItem('gauth-' + st);
   // Le jeton ne reste pas dans l'adresse
   history.replaceState(null, '', location.pathname + location.search);
-  if (!raw) return { id: '', k: '', here: false, n: '', token: null, error: 'lost' };
-  return { ...(JSON.parse(raw) as Pending), token: q.get('id_token'), error: q.get('error') };
+  try {
+    const p = JSON.parse(atob(st.replace(/-/g, '+').replace(/_/g, '/'))) as Pending;
+    return { ...p, token: q.get('id_token'), error: q.get('error') };
+  } catch {
+    return { id: '', k: '', here: false, n: '', token: null, error: 'lost' };
+  }
 }
 export const signOut = () => impl().then((m) => m.signOut());
 export const deleteAccount = () => impl().then((m) => m.deleteAccount());
