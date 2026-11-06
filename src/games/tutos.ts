@@ -97,6 +97,18 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  lettre: {
+    fr: { goal: 'Un thème, une lettre : trouve un mot !', steps: [['🔤', 'Tape un mot du thème qui commence par la lettre'], ['⭐', 'Mot que toi seul as = 3 points, mot en commun = 1, le plus rapide +1'], ['🤔', 'Un mot bizarre ? Les autres peuvent le refuser']] },
+    en: { goal: 'A theme, a letter: find a word!', steps: [['🔤', 'Type a word from the theme starting with the letter'], ['⭐', 'A word only you have = 3 points, shared = 1, fastest +1'], ['🤔', 'A strange word? The others can reject it']] },
+  },
+  trous: {
+    fr: { goal: 'Devine le mot à moitié caché !', steps: [['🕳️', 'Le thème et quelques lettres sont affichés'], ['⌨️', 'Tape le mot : tu peux te tromper autant que tu veux'], ['⭐', 'Plus c’est dur, plus ça rapporte. Le premier gagne le plus']] },
+    en: { goal: 'Guess the half-hidden word!', steps: [['🕳️', 'The theme and a few letters are shown'], ['⌨️', 'Type the word: as many tries as you like'], ['⭐', 'Harder words pay more. The first wins the most']] },
+  },
+  tranche: {
+    fr: { goal: 'Tranche tout ce qui vole !', steps: [['👆', 'Glisse ton doigt sur le téléphone : ta lame suit sur l’écran'], ['🍉', 'Plusieurs d’un coup = combo, l’aliment doré vaut 5'], ['💣', 'Bombe ou coussin péteur : -5 et ta lame est sonnée']] },
+    en: { goal: 'Slice everything that flies!', steps: [['👆', 'Swipe on your phone: your blade follows on screen'], ['🍉', 'Several at once = combo, the golden food is worth 5'], ['💣', 'Bomb or whoopee cushion: -5 and your blade is stunned']] },
+  },
   dico: {
     fr: {
       goal: 'Un vrai mot rare : invente une fausse définition crédible !',

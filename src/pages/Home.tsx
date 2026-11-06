@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { castAndGetCode, loadCast } from '../shared/cast';
 import { CharCanvas } from '../shared/CharCanvas';
 import { Wordmark } from '../shared/Logo';
@@ -12,6 +12,7 @@ import { LegalLinks } from './Legal';
 import { VIA_BROWSER, deleteAccount, loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser } from '../shared/cloud';
 import { levelInfo, loadProgress, saveProgress } from '../shared/progress';
 import { GoogleLogo } from '../shared/GoogleLogo';
+const QrScan = lazy(() => import('../pad/QrScan').then((m) => ({ default: m.QrScan })));
 
 export const PC_APP_URL = 'https://github.com/kwakwa-ratatouille/Canapet/releases/download/pc-latest/Canapet-Setup.exe';
 const IN_APP = /Electron/.test(navigator.userAgent);
@@ -178,6 +179,7 @@ export function Home() {
     save('profile', { ...p, lang: l });
   };
 
+  const [scan, setScan] = useState(false);
   const join = (
     <div className="home-card join">
       <h2>📱 {t(lang, 'joinBtn')}</h2>
@@ -206,6 +208,14 @@ export function Home() {
           {t(lang, 'join')}
         </button>
       </div>
+      <button className="btn mint qr-open" onClick={() => setScan(true)}>
+        📷 {lang === 'fr' ? 'Scanner le QR code' : 'Scan the QR code'}
+      </button>
+      {scan && (
+        <Suspense fallback={null}>
+          <QrScan lang={lang} onClose={() => setScan(false)} onCode={(c) => { location.hash = `/m/${c}`; }} />
+        </Suspense>
+      )}
     </div>
   );
   const tv = (

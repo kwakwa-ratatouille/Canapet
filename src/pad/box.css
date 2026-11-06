@@ -403,3 +403,21 @@
 .fam-badge { display: block; margin-top: 2px; padding: 1px 6px; font-family: var(--cp-font-titre); font-size: 11px; font-style: normal; font-weight: 700; line-height: 1.3; color: #3a2140; background: #ffe7a8; border: 2px solid #3a2140; border-radius: 99px; white-space: nowrap; }
 .fam-sheet { width: min(94vw, 460px); max-height: 86vh; overflow-y: auto; touch-action: pan-y; }
 .fam-sheet .pick-grid { width: 100%; }
+
+/* La lettre, ou le mot à trous, bien visible sur le téléphone */
+.quiz-big { margin: 0; font-family: var(--cp-font-titre); font-size: 40px; font-weight: 700; line-height: 1.1; text-align: center; letter-spacing: .04em; color: #3a2140; overflow-wrap: anywhere; }
+/* Tranche de Rire : tout l'écran sert à glisser le doigt */
+.slice-pad { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; background: #fff6e6; border: 8px solid var(--c); }
+.slice-pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.slice-score { position: absolute; top: 8px; left: 0; right: 0; margin: 0; font-family: var(--cp-font-titre); font-size: 32px; font-weight: 700; text-align: center; color: #3a2140; pointer-events: none; }
+.slice-hint { position: absolute; left: 12px; right: 12px; top: 50%; margin: 0; font-family: var(--cp-font-titre); font-size: 22px; text-align: center; color: #3a2140; opacity: .4; pointer-events: none; }
+.slice-pad.stun { background: #ffd1d9; }
+.slice-pad.stun .slice-hint { opacity: 1; font-size: 34px; }
+
+/* Scanner le QR code */
+.qr-open { width: 100%; margin-top: 10px; }
+.qr-scan { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 12px; padding: 20px 16px max(24px, env(safe-area-inset-bottom)); text-align: center; color: #fff; background: #1a0f24; }
+.qr-scan video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.qr-frame { position: absolute; left: 50%; top: 42%; width: min(70vw, 300px); aspect-ratio: 1; transform: translate(-50%, -50%); border: 6px solid #ffd60a; border-radius: 28px; box-shadow: 0 0 0 100vmax rgba(26, 15, 36, .55); }
+.qr-scan p { position: relative; margin: 0; font-family: var(--cp-font-titre); font-size: 20px; font-weight: 700; }
+.qr-scan .btn { position: relative; }

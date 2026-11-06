@@ -2,6 +2,8 @@ import { TEAMS } from '../games/teams';
 import { PresidentPad } from './PresidentPad';
 import type { PresidentPadData } from '../games/presidentShared';
 import { VOICES } from '../shared/sound';
+import { SlicePad } from './SlicePad';
+import type { SlicePadData } from '../games/slice';
 import { VARIANT_OF } from '../shared/art/canapet-art.js';
 import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser, loadItems, loadKeys, openChestCloud } from '../shared/cloud';
 import { GoogleLogo } from '../shared/GoogleLogo';
@@ -1047,7 +1049,8 @@ function PadScreenView({
       if (screen.game === 'roulette' && screen.data) return <RoulettePad data={screen.data as RoulettePadData} lang={lang} send={send} />;
       if (screen.game === 'cri' && screen.data) return <ShoutPad data={screen.data as ShoutPadData} lang={lang} send={send} />;
       if (VOICE_GAMES.includes(screen.game) && screen.data) return <VoicePad data={screen.data as VoicePadData} lang={lang} send={send} />;
-      if (['tribunal', 'dico', 'plutot', 'chiffre'].includes(screen.game) && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
+      if (screen.game === 'tranche' && screen.data) return <SlicePad data={screen.data as SlicePadData} lang={lang} send={send} />;
+      if (['tribunal', 'dico', 'plutot', 'chiffre', 'lettre', 'trous'].includes(screen.game) && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
       if (screen.game === 'undercover' && screen.data) return <UndercoverPad data={screen.data as UndercoverPadData} lang={lang} send={send} />;
       if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
       if (screen.game === 'president' && screen.data) return <PresidentPad data={screen.data as PresidentPadData} lang={lang} send={send} />;

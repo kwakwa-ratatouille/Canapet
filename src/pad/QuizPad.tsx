@@ -21,6 +21,7 @@ export function QuizPad({ data, lang, send }: { data: QuizPadData; lang: Lang; s
         {data.left > 0 && ` · ⏱ ${data.left}`}
       </p>
       <p className="pad-title">{data.prompt}</p>
+      {data.big && <p className="quiz-big">{data.big}</p>}
       {data.note && <p className="pad-small uc-note">{data.note}</p>}
       {data.act === 'write' ? (
         <form
@@ -40,7 +41,7 @@ export function QuizPad({ data, lang, send }: { data: QuizPadData; lang: Lang; s
           {data.options.map((o) => (
             <button
               key={o.i}
-              className={`choice ${data.picked === o.i ? 'on' : ''}`}
+              className={`choice ${data.picked === o.i || data.pickedAll?.includes(o.i) ? 'on' : ''}`}
               style={{ ['--c' as string]: o.color }}
               onClick={() => {
                 navigator.vibrate?.(20);

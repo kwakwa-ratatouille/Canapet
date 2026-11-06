@@ -18,4 +18,8 @@ export interface QuizPadData {
   numeric?: boolean;
   /** Texte d’aide dans le champ. */
   hint?: string;
+  /** Choix multiple : tout ce qui est déjà coché. */
+  pickedAll?: number[];
+  /** En très gros au-dessus du champ : la lettre, ou le mot à trous. */
+  big?: string;
 }

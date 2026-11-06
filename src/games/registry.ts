@@ -18,6 +18,8 @@ import { president } from './president';
 import { trapGame } from './trap';
 import { tribunal } from './tribunal';
 import { dico } from './dico';
+import { lettre, trous } from './lettre';
+import { slice } from './slice';
 import { casse, devine, doublage, envers, imite, karaoke, perroquet, voix } from './voice';
 import { shout } from './shout';
 import { chiffre, plutot } from './quick';
@@ -54,6 +56,9 @@ const ART: Record<string, string> = {
   pixel: 'pixel',
   tribunal: 'tribunal',
   dico: 'dico',
+  lettre: 'lettre',
+  trous: 'trous',
+  tranche: 'tranche',
   plutot: 'plutot',
   chiffre: 'chiffre',
   imite: 'imite',
@@ -68,7 +73,7 @@ const ART: Record<string, string> = {
 };
 
 /** Couleur des jeux ajoutés après la DA. */
-const EXTRA_COLORS: Record<string, string> = { doublage: '#3a6bff', karaoke: '#e08bff', cri: '#ff3b3b', imite: '#ff4f9a', devine: '#2ec5ff', perroquet: '#22c99a', envers: '#9b5cff', voix: '#3a2140', casse: '#ff9a1f', undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f', trappe: '#9b5cff', couleur: '#2ec5ff', maree: '#1e8fc0', pixel: '#9b5cff', tribunal: '#9b5cff', dico: '#2ec5ff', plutot: '#ffd60a', chiffre: '#7bd13b' };
+const EXTRA_COLORS: Record<string, string> = { lettre: '#2ec5ff', trous: '#9b5cff', tranche: '#ff5a1f', doublage: '#3a6bff', karaoke: '#e08bff', cri: '#ff3b3b', imite: '#ff4f9a', devine: '#2ec5ff', perroquet: '#22c99a', envers: '#9b5cff', voix: '#3a2140', casse: '#ff9a1f', undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f', trappe: '#9b5cff', couleur: '#2ec5ff', maree: '#1e8fc0', pixel: '#9b5cff', tribunal: '#9b5cff', dico: '#2ec5ff', plutot: '#ffd60a', chiffre: '#7bd13b' };
 
 const withArt = (g: GameBase): GameDef => {
   const slug = ART[g.id];
@@ -79,6 +84,9 @@ const withArt = (g: GameBase): GameDef => {
 export const GAMES: GameDef[] = [
   tribunal,
   dico,
+  lettre,
+  trous,
+  slice,
   plutot,
   chiffre,
   thumbRace,

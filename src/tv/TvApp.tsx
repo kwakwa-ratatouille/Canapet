@@ -84,6 +84,9 @@ export function TvApp() {
         '5': 'pixel',
         '0': 'tribunal',
         ';': 'dico',
+        '6': 'lettre',
+        ',': 'trous',
+        '!': 'tranche',
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');

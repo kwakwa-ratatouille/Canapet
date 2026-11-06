@@ -15,6 +15,9 @@ const BUY_AFTER = 'buy-after';
 const GAMES: [string, string, string][] = [
   ['tribunal', 'Le Tribunal du Canapé', 'Couch Court'],
   ['dico', 'Le Petit Bobard Illustré', 'The Oxford Fibber'],
+  ['lettre', 'Ça Commence Par…', 'Starts With…'],
+  ['trous', 'Les Mots à Trous', 'Words With Holes'],
+  ['tranche', 'Tranche de Rire', 'Slice of Laughs'],
   ['plutot', 'Le Pire des Deux', 'Worst of Two'],
   ['chiffre', 'Le Juste Pif', 'Nose for Numbers'],
   ['cri', 'Crie Plus Fort', 'Shout Louder'],
