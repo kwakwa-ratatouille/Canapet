@@ -722,20 +722,22 @@ function PadScreenView({
         );
       return (
         <div className="pad-body host pad-lobby">
-          <div className="code-card">
-            <div>
-              <small>{t(lang, 'codeLabel')}</small>
-              <b>{code}</b>
+          {tab === 'play' && (
+            <div className="code-card">
+              <div>
+                <small>{t(lang, 'codeLabel')}</small>
+                <b>{code}</b>
+              </div>
+              <div className="code-players">
+                <small>{t(lang, 'players', { n: screen.count })}</small>
+                <span className="dots">
+                  {[myColor, ...screen.taken].slice(0, 12).map((c, i) => (
+                    <i key={i} style={{ background: c }} />
+                  ))}
+                </span>
+              </div>
             </div>
-            <div className="code-players">
-              <small>{t(lang, 'players', { n: screen.count })}</small>
-              <span className="dots">
-                {[myColor, ...screen.taken].slice(0, 12).map((c, i) => (
-                  <i key={i} style={{ background: c }} />
-                ))}
-              </span>
-            </div>
-          </div>
+          )}
           {tab === 'perso' && (
             <>
               <button className="perso-hero" onClick={edit}>
@@ -746,39 +748,6 @@ function PadScreenView({
               <ProgressCard progress={progress} lang={lang} onShop={edit} account={account} />
               <FriendsCard user={account.user} lang={lang} room={code} connect={account.connect} />
             </>
-          )}
-          {tab === 'play' && screen.roster && <PlayersCard roster={screen.roster} host={screen.host} lang={lang} act={(a, pid) => host(a, pid)} />}
-          {tab === 'play' && (
-            <div className="mission-entry">
-              <button className={`mission-open ${claimableCount(progress.habits) ? 'hot' : ''}`} onClick={() => setMissionsOpen((v) => !v)} aria-expanded={missionsOpen}>
-                <span>🎯</span>
-                <b>{lang === 'fr' ? 'Mes défis' : 'My challenges'}</b>
-                {claimableCount(progress.habits) > 0 && <em>{claimableCount(progress.habits)} {lang === 'fr' ? 'à récupérer' : 'to claim'}</em>}
-                <i>{missionsOpen ? '▲' : '▼'}</i>
-              </button>
-              {missionsOpen && <Missions progress={progress} setProgress={account.setProgress} lang={lang} />}
-            </div>
-          )}
-          {tab === 'play' && <InviteBanner user={account.user} lang={lang} room={code} />}
-          {tab === 'play' && screen.teams && (
-            <div className="team-box">
-              <p className="opt-title">{t(lang, 'yourTeam')}</p>
-              <div className="team-pick">
-                {TEAMS.map((tm, k) => (
-                  <button
-                    key={k}
-                    className={screen.team === k ? 'on' : ''}
-                    style={{ ['--tc' as string]: tm.color }}
-                    onClick={() => send({ t: 'team', n: k })}
-                    aria-pressed={screen.team === k}
-                  >
-                    <span className="tp-emoji">{tm.emoji}</span>
-                    <span>{tm.name[lang]}</span>
-                    {screen.team === k && <span className="tp-check">✓</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
           )}
           {tab === 'play' && screen.host && (
             <>
@@ -952,6 +921,39 @@ function PadScreenView({
               <p className="pad-title pulse">{t(lang, 'waitHost', { name: screen.hostName })}</p>
               {screen.family && <p className="pad-small">👨‍👩‍👧 {t(lang, 'family')}</p>}
             </>
+          )}
+          {tab === 'play' && screen.roster && <PlayersCard roster={screen.roster} host={screen.host} lang={lang} act={(a, pid) => host(a, pid)} />}
+          {tab === 'play' && (
+            <div className="mission-entry">
+              <button className={`mission-open ${claimableCount(progress.habits) ? 'hot' : ''}`} onClick={() => setMissionsOpen((v) => !v)} aria-expanded={missionsOpen}>
+                <span>🎯</span>
+                <b>{lang === 'fr' ? 'Mes défis' : 'My challenges'}</b>
+                {claimableCount(progress.habits) > 0 && <em>{claimableCount(progress.habits)} {lang === 'fr' ? 'à récupérer' : 'to claim'}</em>}
+                <i>{missionsOpen ? '▲' : '▼'}</i>
+              </button>
+              {missionsOpen && <Missions progress={progress} setProgress={account.setProgress} lang={lang} />}
+            </div>
+          )}
+          {tab === 'play' && <InviteBanner user={account.user} lang={lang} room={code} />}
+          {tab === 'play' && screen.teams && (
+            <div className="team-box">
+              <p className="opt-title">{t(lang, 'yourTeam')}</p>
+              <div className="team-pick">
+                {TEAMS.map((tm, k) => (
+                  <button
+                    key={k}
+                    className={screen.team === k ? 'on' : ''}
+                    style={{ ['--tc' as string]: tm.color }}
+                    onClick={() => send({ t: 'team', n: k })}
+                    aria-pressed={screen.team === k}
+                  >
+                    <span className="tp-emoji">{tm.emoji}</span>
+                    <span>{tm.name[lang]}</span>
+                    {screen.team === k && <span className="tp-check">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
           {menu && screen.s === 'lobby' && (
             <div className="buy-veil" onClick={() => setMenu(null)}>
@@ -1418,7 +1420,7 @@ function Editor({
     ['winpose', '🏆', fr ? 'Pose de victoire' : 'Victory pose', nameOf(WIN_POSES, profile.winPose ?? '', fr ? 'Classique' : 'Classic')],
     ['winsound', '🎺', fr ? 'Son de victoire' : 'Victory sound', nameOf(WIN_SOUNDS, profile.winSound ?? '', fr ? 'Classique' : 'Classic')],
     ['winfx', '🎆', fr ? 'Effet d’écran' : 'Screen effect', nameOf(WIN_FX, profile.winFx ?? '', fr ? 'Aucun' : 'None')],
-    ['ko', '💥', fr ? 'Effet d’élimination' : 'Knockout effect', nameOf(KO_FX, profile.koFx ?? '', fr ? 'Aucun' : 'None')],
+    ['ko', '💥', fr ? 'Effet de K.-O.' : 'Knockout effect', nameOf(KO_FX, profile.koFx ?? '', fr ? 'Aucun' : 'None')],
     ['frame', '💫', fr ? 'Cadre photo' : 'Photo frame', nameOf(FRAMES, profile.frame ?? '', fr ? 'Aucun' : 'None')],
     ['plate', '🔤', fr ? 'Style de nom' : 'Name style', nameOf(PLATES, profile.plate ?? '', fr ? 'Normal' : 'Normal')],
     ['title', '🏷️', fr ? 'Titre' : 'Title', nameOf(TITLES, profile.title ?? '', fr ? 'Aucun' : 'None')],

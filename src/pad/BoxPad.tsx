@@ -26,7 +26,7 @@ const KIND_NAME: Record<LootKind, Record<Lang, string>> = {
   pose: { fr: 'Pose', en: 'Pose' },
   winpose: { fr: 'Pose de victoire', en: 'Victory pose' },
   winsound: { fr: 'Son de victoire', en: 'Victory sound' },
-  ko: { fr: 'Effet d’élimination', en: 'Knockout effect' },
+  ko: { fr: 'Effet de K.-O.', en: 'Knockout effect' },
   winfx: { fr: 'Effet d’écran', en: 'Screen effect' },
   trail: { fr: 'Traînée', en: 'Trail' },
   frame: { fr: 'Cadre photo', en: 'Photo frame' },
@@ -313,7 +313,6 @@ export function BoxShop({ progress, setProgress, profile, setProfile, lang, acco
   return (
     <div className="box-shop">
       <div className="box-coins">
-        <span>🍬 {progress.coins}</span>
         <span>🔑 {myKeys}</span>
       </div>
       {boxesNow().map((box) => {
