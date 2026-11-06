@@ -343,7 +343,8 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
     const tops = order.filter((p) => gap(p) === gap(order[0]));
     const last = order[order.length - 1];
     const lastBad = order.length > tops.length ? last : null;
-    bestNames = tops.map((p) => p.profile.name).join(' & ');
+    // Beaucoup d'égalités : on les compte plutôt que de sortir de l'écran
+    bestNames = tops.length > 2 ? (fr ? `${tops.length} joueurs` : `${tops.length} players`) : tops.map((p) => p.profile.name).join(' & ');
     worstName = lastBad?.profile.name ?? '';
     sfx.whoosh();
     // Suspense : le nombre défile, puis la vérité et les pifs
