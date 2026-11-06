@@ -98,8 +98,8 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     },
   },
   lettre: {
-    fr: { goal: 'Un thème, une lettre : trouve un mot !', steps: [['🔤', 'Tape un mot du thème qui commence par la lettre'], ['⭐', 'Mot que toi seul as = 3 points, mot en commun = 1, le plus rapide +1'], ['🤔', 'Un mot bizarre ? Les autres peuvent le refuser']] },
-    en: { goal: 'A theme, a letter: find a word!', steps: [['🔤', 'Type a word from the theme starting with the letter'], ['⭐', 'A word only you have = 3 points, shared = 1, fastest +1'], ['🤔', 'A strange word? The others can reject it']] },
+    fr: { goal: 'Un thème, une lettre : trouve un mot !', steps: [['🔤', 'Tape un maximum de mots du thème qui commencent par la lettre'], ['⭐', 'Chaque mot que toi seul as = 3 points, en commun = 1, le tout premier +1'], ['🤔', 'Un mot bizarre ? Les autres peuvent le refuser']] },
+    en: { goal: 'A theme, a letter: find a word!', steps: [['🔤', 'Type as many words from the theme with that letter as you can'], ['⭐', 'Each word only you have = 3 points, shared = 1, very first +1'], ['🤔', 'A strange word? The others can reject it']] },
   },
   trous: {
     fr: { goal: 'Devine le mot à moitié caché !', steps: [['🕳️', 'Le thème et quelques lettres sont affichés'], ['⌨️', 'Tape le mot : tu peux te tromper autant que tu veux'], ['⭐', 'Plus c’est dur, plus ça rapporte. Le premier gagne le plus']] },

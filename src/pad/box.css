@@ -421,3 +421,6 @@
 .qr-frame { position: absolute; left: 50%; top: 42%; width: min(70vw, 300px); aspect-ratio: 1; transform: translate(-50%, -50%); border: 6px solid #ffd60a; border-radius: 28px; box-shadow: 0 0 0 100vmax rgba(26, 15, 36, .55); }
 .qr-scan p { position: relative; margin: 0; font-family: var(--cp-font-titre); font-size: 20px; font-weight: 700; }
 .qr-scan .btn { position: relative; }
+
+.quiz-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0; }
+.quiz-chips span { padding: 3px 10px; font-size: 15px; font-weight: 800; color: #3a2140; background: #a8efc9; border: 2px solid #3a2140; border-radius: 99px; }

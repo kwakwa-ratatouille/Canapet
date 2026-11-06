@@ -20,6 +20,8 @@ export interface QuizPadData {
   hint?: string;
   /** Choix multiple : tout ce qui est déjà coché. */
   pickedAll?: number[];
+  /** Ce que le joueur a déjà donné dans cette manche. */
+  chips?: string[];
   /** En très gros au-dessus du champ : la lettre, ou le mot à trous. */
   big?: string;
 }

@@ -1,5 +1,5 @@
 // Deux jeux sur la même réserve de thèmes :
-// « Ça Commence Par… » : un thème, une lettre, chacun tape un mot. Mot unique = 3 points, mot en commun = 1, le plus rapide +1.
+// « Ça Commence Par… » : un thème, une lettre, chacun tape autant de mots qu'il peut (8 au plus). Mot unique = 3 points, mot en commun = 1, le tout premier +1.
 //   Un mot de la liste passe tout seul ; les autres, les joueurs peuvent les contester.
 // « Les Mots à Trous » : un thème et un mot à moitié caché. Plus c'est dur, moins il y a de lettres et plus ça rapporte.
 import { drawCharacter } from '../shared/characters';
@@ -77,15 +77,21 @@ function endScreen(g: CanvasRenderingContext2D, title: string, pls: (Runner & { 
 }
 
 // ——— Ça Commence Par… ———
-interface Pl extends Runner {
-  score: number;
+/** Mots qu'un joueur peut donner dans une manche. */
+const MAX_WORDS = 8;
+interface Entry {
   word: string;
   key: string;
   at: number;
   gain: number;
   refused: boolean;
-  botAt: number;
-  botWord: string;
+}
+interface Pl extends Runner {
+  score: number;
+  list: Entry[];
+  gain: number;
+  /** Ce que le bot va répondre, et quand. */
+  botPlan: { at: number; word: string }[];
 }
 type Phase = 'spin' | 'write' | 'contest' | 'reveal' | 'end';
 const ROW_COLORS = [ROSE, '#2ec5ff', SOLEIL, MENTHE, '#9b5cff', '#ff9a1f'];
@@ -93,9 +99,9 @@ const ROW_COLORS = [ROSE, '#2ec5ff', SOLEIL, MENTHE, '#9b5cff', '#ff9a1f'];
 function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const lang = ctx.lang;
-  const pls: Pl[] = runners.map((r) => ({ ...r, score: 0, word: '', key: '', at: 0, gain: 0, refused: false, botAt: 0, botWord: '' }));
+  const pls: Pl[] = runners.map((r) => ({ ...r, score: 0, list: [], gain: 0, botPlan: [] }));
   const rounds = ctx.opts.rounds || 6;
-  const writeTime = ctx.opts.time || 25;
+  const writeTime = ctx.opts.time || 30;
   const themes = freshDeck(`lettre-${lang}`, themesFor(ctx), rounds, (t) => t.fr);
   const used = new Set<string>();
   let round = -1;
@@ -138,15 +144,13 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
     const can = words.filter((w) => norm(pretty(w))[0] === letter);
     ideas = [...can].sort(() => Math.random() - 0.5).map(pretty);
     pls.forEach((p) => {
-      p.word = p.key = '';
+      p.list = [];
       p.gain = 0;
-      p.refused = false;
-      p.at = 0;
+      p.botPlan = [];
       if (p.bot) {
-        // Plus le bot est fort, plus il répond souvent et vite
-        const finds = Math.random() < 0.55 + ctx.botSkill * 0.4;
-        p.botWord = finds ? can[Math.floor(Math.random() * can.length)] : '';
-        p.botAt = 4 + Math.random() * (writeTime - 8) * (1.1 - ctx.botSkill * 0.5);
+        // Plus le bot est fort, plus il trouve de mots et vite
+        const n = Math.min(can.length, Math.floor(Math.random() * (1 + ctx.botSkill * 3)) + (Math.random() < 0.75 + ctx.botSkill * 0.2 ? 1 : 0));
+        p.botPlan = [...can].sort(() => Math.random() - 0.5).slice(0, n).map((w) => ({ word: w, at: 4 + Math.random() * (writeTime - 7) * (1.1 - ctx.botSkill * 0.4) }));
       }
     });
     notes.clear();
@@ -159,19 +163,21 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
   }
 
   function submit(p: Pl, raw: string) {
-    p.word = raw.trim().replace(/_/g, ' ').slice(0, 30);
-    p.key = norm(p.word);
-    p.at = clock;
+    const word = raw.trim().replace(/_/g, ' ').slice(0, 30);
+    p.list.push({ word, key: norm(word), at: clock, gain: 0, refused: false });
     sfx.join();
     ctx.refresh();
   }
 
   function score() {
-    const ok = pls.filter((p) => p.key && !p.refused);
+    const ok = pls.flatMap((p) => p.list).filter((e) => !e.refused);
     const fastest = [...ok].sort((a, b) => a.at - b.at)[0];
-    ok.forEach((p) => {
-      const same = ok.filter((x) => x.key === p.key).length;
-      p.gain = (same > 1 ? 1 : 3) + (p === fastest ? 1 : 0);
+    ok.forEach((e) => {
+      const same = ok.filter((x) => x.key === e.key).length;
+      e.gain = (same > 1 ? 1 : 3) + (e === fastest ? 1 : 0);
+    });
+    pls.forEach((p) => {
+      p.gain = p.list.reduce((n, e) => n + e.gain, 0);
       p.score += p.gain;
     });
     phase = 'reveal';
@@ -184,9 +190,12 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
     // Les mots hors liste passent devant les autres joueurs, s'il y en a pour les juger
     const humans = pls.filter((p) => !p.bot);
     const out = new Map<string, string>();
+    const has = (p: Pl, key: string) => p.list.some((e) => e.key === key);
     pls.forEach((p) => {
       // Inutile de le présenter si personne d'autre ne peut le juger
-      if (p.key && !known.has(p.key) && humans.some((h) => h.key !== p.key)) out.set(p.key, p.word);
+      p.list.forEach((e) => {
+        if (!known.has(e.key) && humans.some((h) => !has(h, e.key))) out.set(e.key, e.word);
+      });
     });
     if (out.size && humans.length >= 2) {
       doubts = [...out.entries()].map(([key, word]) => ({ key, word, against: new Set() }));
@@ -202,9 +211,9 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function endContest() {
     doubts.forEach((d) => {
-      const owners = pls.filter((p) => p.key === d.key);
+      const owners = pls.filter((p) => p.list.some((e) => e.key === d.key));
       const judges = pls.filter((p) => !p.bot && !owners.includes(p)).length;
-      if (judges && d.against.size * 2 >= judges && d.against.size > 0) owners.forEach((p) => (p.refused = true));
+      if (judges && d.against.size * 2 >= judges && d.against.size > 0) owners.forEach((p) => p.list.forEach((e) => { if (e.key === d.key) e.refused = true; }));
     });
     score();
   }
@@ -217,10 +226,15 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
       if (m.t !== 'act') return;
       const p = pls.find((x) => x.pid === pid);
       if (!p) return;
-      if (m.a === 'text' && phase === 'write' && m.s && !p.key) {
+      if (m.a === 'text' && phase === 'write' && m.s && p.list.length < MAX_WORDS) {
         const k = norm(m.s);
         if (k.length < 2 || k[0] !== letter) {
           notes.set(pid, fr ? `Il faut un mot en ${letter.toUpperCase()} !` : `It must start with ${letter.toUpperCase()}!`);
+          ctx.refresh();
+          return;
+        }
+        if (p.list.some((e) => e.key === k)) {
+          notes.set(pid, fr ? 'Tu l’as déjà dit !' : 'You already said that!');
           ctx.refresh();
           return;
         }
@@ -229,7 +243,7 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       if (m.a === 'pick' && phase === 'contest') {
         const d = doubts[m.n?.[0] ?? -1];
-        if (!d || p.key === d.key) return;
+        if (!d || p.list.some((e) => e.key === d.key)) return;
         if (d.against.has(pid)) d.against.delete(pid);
         else d.against.add(pid);
         sfx.click();
@@ -250,9 +264,14 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
         }
       } else if (phase === 'write') {
         pls.forEach((p) => {
-          if (p.bot && !p.key && p.botWord && clock >= p.botAt) submit(p, pretty(p.botWord));
+          const due = p.botPlan.find((b) => clock >= b.at);
+          if (due) {
+            p.botPlan.splice(p.botPlan.indexOf(due), 1);
+            submit(p, pretty(due.word));
+          }
         });
-        if (timer <= 0 || pls.every((p) => p.key || (p.bot && !p.botWord))) afterWrite();
+        // Tout le monde a donné tous ses mots : pas la peine d'attendre
+        if (timer <= 0 || pls.every((p) => (p.bot ? !p.botPlan.length : p.list.length >= MAX_WORDS))) afterWrite();
       } else if (phase === 'contest') {
         if (timer <= 0) endContest();
       } else if (phase === 'reveal') {
@@ -307,7 +326,7 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 650);
         g.fillStyle = INK;
         g.font = '700 42px Fredoka, sans-serif';
-        g.fillText(fr ? 'Tape un mot sur ton téléphone. Mot que toi seul as = 3 points !' : 'Type a word on your phone. A word only you have = 3 points!', 960, 730, 1760);
+        g.fillText(fr ? `Tape un maximum de mots (${MAX_WORDS} au plus). Mot que toi seul as = 3 points !` : `Type as many words as you can (up to ${MAX_WORDS}). A word only you have = 3 points!`, 960, 730, 1760);
       }
       if (phase === 'contest') {
         g.font = '700 50px Fredoka, sans-serif';
@@ -342,39 +361,61 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
           const col = k % cols;
           const x = 960 + (col - (cols - 1) / 2) * (w + 24);
           const y = 250 + Math.floor(k / cols) * (h + 14);
-          const same = p.key && !p.refused && pls.filter((o) => o.key === p.key && !o.refused).length > 1;
-          g.fillStyle = !p.key || p.refused ? '#f4e6ea' : same ? '#fff3c9' : '#d8f7e8';
+          g.fillStyle = '#fff';
           g.strokeStyle = INK;
           g.lineWidth = 5;
           g.beginPath();
           g.roundRect(x - w / 2, y, w, h, 20);
           g.fill();
           g.stroke();
-          candy(g, x - w / 2, y, w, h, 20);
           g.fillStyle = p.profile.color;
           g.beginPath();
-          g.arc(x - w / 2 + 40, y + h / 2, 20, 0, Math.PI * 2);
+          g.arc(x - w / 2 + 34, y + h / 2, 18, 0, Math.PI * 2);
           g.fill();
           g.stroke();
+          // Une étiquette par mot : vert = à lui seul, jaune = en commun, gris = refusé
+          g.font = '700 28px Fredoka, sans-serif';
           g.textAlign = 'left';
-          g.fillStyle = INK;
-          g.font = '700 38px Fredoka, sans-serif';
-          const label = !p.key ? (fr ? '— rien —' : '— nothing —') : `${p.word}${p.refused ? (fr ? ' (refusé)' : ' (rejected)') : ''}`;
-          g.fillText(label, x - w / 2 + 74, y + h / 2 + 2, w - 210);
+          let cx = x - w / 2 + 62;
+          let cy = y + (h >= 96 ? 8 : (h - 40) / 2);
+          const right = x + w / 2 - 84;
+          if (!p.list.length) {
+            g.fillStyle = INK;
+            g.fillText(fr ? '— rien —' : '— nothing —', cx, y + h / 2 + 2);
+          }
+          for (const e of p.list) {
+            const tw = Math.min(right - (x - w / 2 + 62), g.measureText(e.word).width + 22);
+            if (cx + tw > right) {
+              cx = x - w / 2 + 62;
+              cy += 44;
+              if (cy + 40 > y + h) break;
+            }
+            g.fillStyle = e.refused ? '#e4d8de' : e.gain >= 3 ? '#a8efc9' : '#ffe680';
+            g.strokeStyle = INK;
+            g.lineWidth = 3;
+            g.beginPath();
+            g.roundRect(cx, cy, tw, 40, 12);
+            g.fill();
+            g.stroke();
+            g.fillStyle = INK;
+            g.fillText(e.word, cx + 11, cy + 21, tw - 22);
+            if (e.refused) g.fillRect(cx + 8, cy + 19, tw - 16, 3);
+            cx += tw + 8;
+          }
           g.textAlign = 'right';
           g.font = '700 42px Fredoka, sans-serif';
           g.fillStyle = p.gain ? '#0f8f6a' : ROSE;
-          g.fillText(p.gain ? `+${p.gain}` : '0', x + w / 2 - 24, y + h / 2 + 2);
+          g.fillText(p.gain ? `+${p.gain}` : '0', x + w / 2 - 20, y + h / 2 + 2);
           g.textAlign = 'center';
         });
-        const idea = ideas.filter((w) => !pls.some((p) => p.key === norm(w))).slice(0, 3);
+        const idea = ideas.filter((w) => !pls.some((p) => p.list.some((e) => e.key === norm(w)))).slice(0, 3);
         if (idea.length) {
           g.fillStyle = INK;
           g.font = '700 36px Fredoka, sans-serif';
           g.fillText(`${fr ? '💡 On pouvait dire' : '💡 You could say'} : ${idea.join(', ')}`, 1060, 200, 1500);
         }
       }
-      drawPlayers(g, pls, t, (i) => !!pls[i].key);
+      drawPlayers(g, pls, t, (i) => pls[i].list.length > 0);
     },
     ranking: () => [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid),
     leader: () => null,
@@ -382,20 +423,22 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
       const p = pls.find((x) => x.pid === pid)!;
       const label = phase === 'end' ? '' : `${theme.emoji} ${fr ? theme.fr : theme.en}`;
       const L = letter.toUpperCase();
-      const mine = doubts.map((d, i) => ({ d, i })).filter((x) => x.d.key !== p.key);
+      const mine = doubts.map((d, i) => ({ d, i })).filter((x) => !p.list.some((e) => e.key === x.d.key));
+      const full = p.list.length >= MAX_WORDS;
       return {
         phase: phase === 'write' ? 'write' : phase === 'contest' ? 'choose' : phase === 'end' ? 'end' : 'reveal',
-        prompt: phase === 'spin' ? label : phase === 'contest' ? (fr ? 'Touche les mots à refuser' : 'Tap the words to reject') : phase === 'write' ? (p.key ? `${label} : « ${p.word} »` : `${label} — ${fr ? 'lettre' : 'letter'} ${L}`) : label,
+        prompt: phase === 'contest' ? (fr ? 'Touche les mots à refuser' : 'Tap the words to reject') : label,
         step: `${fr ? 'Manche' : 'Round'} ${Math.min(round + 1, themes.length)}/${themes.length}`,
-        act: phase === 'write' && !p.key ? 'write' : phase === 'contest' && mine.length ? 'choose' : null,
+        act: phase === 'write' && !full ? 'write' : phase === 'contest' && mine.length ? 'choose' : null,
         options: phase === 'contest' ? mine.map((x) => ({ i: x.i, label: x.d.word, color: ROW_COLORS[x.i % ROW_COLORS.length] })) : [],
         picked: -1,
         pickedAll: phase === 'contest' ? mine.filter((x) => x.d.against.has(pid)).map((x) => x.i) : undefined,
         score: p.score,
         left: phase === 'write' || phase === 'contest' ? Math.ceil(Math.max(0, timer)) : 0,
-        note: notes.get(pid) ?? '',
+        note: notes.get(pid) ?? (full && phase === 'write' ? (fr ? 'C’est le maximum, bravo !' : 'That’s the maximum, well done!') : ''),
         hint: fr ? `Un mot en ${L}…` : `A word with ${L}…`,
-        big: phase === 'write' && !p.key ? L : undefined,
+        big: phase === 'write' ? L : undefined,
+        chips: phase === 'write' ? p.list.map((e) => e.word) : undefined,
       };
     },
   };
@@ -407,8 +450,8 @@ export const lettre: GameBase = {
   emoji: '🔤',
   name: { fr: 'Ça Commence Par…', en: 'Starts With…' },
   how: {
-    fr: 'Un thème, une lettre : tape vite un mot. Si tu es le seul à l’avoir, 3 points !',
-    en: 'A theme, a letter: type a word fast. If you’re the only one with it, 3 points!',
+    fr: 'Un thème, une lettre : tape un maximum de mots. Chaque mot que toi seul as vaut 3 points !',
+    en: 'A theme, a letter: type as many words as you can. Each word only you have is worth 3 points!',
   },
   layout: 'buttons',
   min: 2,
@@ -417,7 +460,7 @@ export const lettre: GameBase = {
   music: 'party',
   options: [
     { id: 'rounds', label: { fr: 'Manches', en: 'Rounds' }, choices: [{ v: 6, label: { fr: '6 manches', en: '6 rounds' } }, { v: 4, label: { fr: '4 manches', en: '4 rounds' } }, { v: 10, label: { fr: '10 manches', en: '10 rounds' } }] },
-    { id: 'time', label: { fr: 'Temps', en: 'Time' }, choices: [{ v: 25, label: { fr: '25 s', en: '25 s' } }, { v: 15, label: { fr: '15 s', en: '15 s' } }, { v: 40, label: { fr: '40 s', en: '40 s' } }] },
+    { id: 'time', label: { fr: 'Temps', en: 'Time' }, choices: [{ v: 30, label: { fr: '30 s', en: '30 s' } }, { v: 20, label: { fr: '20 s', en: '20 s' } }, { v: 45, label: { fr: '45 s', en: '45 s' } }] },
   ],
   create: createLettre,
 };

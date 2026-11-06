@@ -22,6 +22,11 @@ export function QuizPad({ data, lang, send }: { data: QuizPadData; lang: Lang; s
       </p>
       <p className="pad-title">{data.prompt}</p>
       {data.big && <p className="quiz-big">{data.big}</p>}
+      {!!data.chips?.length && (
+        <p className="quiz-chips">
+          {data.chips.map((c) => <span key={c}>✓ {c}</span>)}
+        </p>
+      )}
       {data.note && <p className="pad-small uc-note">{data.note}</p>}
       {data.act === 'write' ? (
         <form
