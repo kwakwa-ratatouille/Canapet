@@ -1,5 +1,6 @@
 // Tous les sons sont fabriqués par le code (Web Audio) : aucune musique ni bruitage d'un autre jeu.
 import type { Lang } from './protocol';
+import { stCached, stPossible, stPrepare, stReady, stSay, stStart, stState, stWhenReady, type Clip } from './supertonic';
 
 let ac: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -37,7 +38,11 @@ export function audioLocked(): boolean {
 export function setMuted(m: boolean) {
   muted = m;
   if (master) master.gain.value = m ? 0 : 0.7;
-  if (m) speechSynthesis?.cancel();
+  if (m) {
+    speechSynthesis?.cancel();
+    ++sayToken;
+    stopVoice();
+  }
 }
 
 export function isMuted() {
@@ -777,9 +782,20 @@ export function playMusic(track: MusicId | '') {
 /**
  * Voix du présentateur, au choix de l'hôte. `accent` = langue de la voix qui lit le texte (fr, puis en).
  * `price` : à débloquer en bonbons par l'hôte. Les voix qui ne changeaient que la hauteur (écureuil, ogre, speedé…) sont retirées.
+ * `st` : vraie voix Supertonic (voir supertonic.ts) ; `male` choisit la voix de secours de l'appareil.
  */
-export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; rate: number; pitch: number; price?: number }[] = [
+export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; rate: number; pitch: number; price?: number; st?: string }[] = [
   { id: 'classique', fr: 'Classique', en: 'Classic', rate: 1.05, pitch: 1.15 },
+  { id: 'marcel', fr: 'Marcel', en: 'Marcel', st: 'M1', male: true, rate: 1.05, pitch: 1 },
+  { id: 'lucette', fr: 'Lucette', en: 'Lucette', st: 'F1', rate: 1.05, pitch: 1 },
+  { id: 'gaston', fr: 'Gaston', en: 'Gaston', st: 'M2', male: true, rate: 1.05, pitch: 1 },
+  { id: 'josiane', fr: 'Josiane', en: 'Josiane', st: 'F2', rate: 1.05, pitch: 1 },
+  { id: 'roger', fr: 'Roger', en: 'Roger', st: 'M3', male: true, rate: 1.05, pitch: 1, price: 200 },
+  { id: 'ginette', fr: 'Ginette', en: 'Ginette', st: 'F3', rate: 1.05, pitch: 1, price: 200 },
+  { id: 'bernard', fr: 'Bernard', en: 'Bernard', st: 'M4', male: true, rate: 1.05, pitch: 1, price: 200 },
+  { id: 'odette', fr: 'Odette', en: 'Odette', st: 'F4', rate: 1.05, pitch: 1, price: 200 },
+  { id: 'hubert', fr: 'Hubert', en: 'Hubert', st: 'M5', male: true, rate: 1.05, pitch: 1, price: 200 },
+  { id: 'simone', fr: 'Simone', en: 'Simone', st: 'F5', rate: 1.05, pitch: 1, price: 200 },
   { id: 'naturelle', fr: 'Naturelle', en: 'Natural', nice: true, rate: 1.02, pitch: 1 },
   { id: 'homme', fr: 'Voix d’homme', en: 'Male voice', nice: true, male: true, rate: 1.02, pitch: 1 },
   { id: 'quebec', fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05, price: 150 },
@@ -797,7 +813,15 @@ export const VOICES: { id: string; fr: string; en: string; accent?: [string, str
 let voiceIdx = 0;
 export function setVoice(i: number) {
   voiceIdx = Math.max(0, Math.min(VOICES.length - 1, i));
+  // Une vraie voix est choisie : le modèle se télécharge en arrière-plan
+  const st = VOICES[voiceIdx].st;
+  if (st) {
+    void stStart(st);
+    stWhenReady(prepareInstant);
+  }
 }
+/** Voix conseillée au tout premier lancement. */
+export const defaultVoiceId = () => (stPossible() ? 'marcel' : 'classique');
 
 const NICE = /natural|neural|online|google|premium|enhanced|siri|wavenet/i;
 
@@ -830,6 +854,7 @@ function findVoice(prefix: string, nice: boolean, local = false, male = false): 
  */
 export function voiceWorks(i: number, lang: Lang) {
   const pre = VOICES[i];
+  if (pre?.st) return stPossible() && stState() !== 'failed';
   if (!pre || !('speechSynthesis' in window)) return false;
   const all = speechSynthesis.getVoices();
   if (!all.length) return !pre.price; // Liste pas encore chargée : seulement les voix de base
@@ -841,8 +866,100 @@ export function voiceWorks(i: number, lang: Lang) {
   return true;
 }
 
+// ——— Lecture des vraies voix ———
+let voiceSrc: AudioBufferSourceNode | null = null;
+let sayToken = 0;
+let warmed = '';
+let lastLang: Lang = 'fr';
+/** Phrases qui doivent partir à l'instant : préparées dès que la voix est prête. */
+const INSTANT: Record<Lang, string[]> = {
+  fr: ['Stop ! Assis !', 'Boum !', 'Pouf !', 'Menteur !', 'Pause !', 'Dernier tour !', 'Plus que 30 secondes !', 'Dix secondes !', 'Temps écoulé !', 'Contre son camp !', 'Pluie d’étoiles !', 'ROSE', 'JAUNE', 'BLEU', 'VERT', 'ORANGE', 'VIOLET'],
+  en: ['Stop! Sit down!', 'Boom!', 'Poof!', 'Liar!', 'Paused!', 'Final lap!', '30 seconds left!', 'Ten seconds!', "Time's up!", 'Own goal!', 'Star shower!', 'PINK', 'YELLOW', 'BLUE', 'GREEN', 'ORANGE', 'PURPLE'],
+};
+/** Prépare en silence les phrases immédiates de la voix choisie. */
+function prepareInstant() {
+  const pre = VOICES[voiceIdx];
+  if (!pre?.st || warmed === pre.st + lastLang) return;
+  warmed = pre.st + lastLang;
+  INSTANT[lastLang].forEach((t) => stPrepare(t, lastLang, pre.st!, pre.rate));
+}
+function stopVoice() {
+  try {
+    voiceSrc?.stop();
+  } catch {
+    /* déjà fini */
+  }
+  voiceSrc = null;
+}
+function playVoice(clip: Clip) {
+  const c = ctx();
+  if (!c) return;
+  stopVoice();
+  speechSynthesis?.cancel();
+  const buf = c.createBuffer(1, clip.wav.length, clip.sr);
+  buf.copyToChannel(clip.wav as Float32Array<ArrayBuffer>, 0);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  // Ces voix sortent assez bas : on les remonte au niveau des bruitages
+  let peak = 0.01;
+  for (let i = 0; i < clip.wav.length; i += 8) peak = Math.max(peak, Math.abs(clip.wav[i]));
+  const g = c.createGain();
+  g.gain.value = Math.min(3, 0.9 / peak);
+  src.connect(g).connect(c.destination);
+  // La musique se fait discrète pendant que le présentateur parle
+  const bus = musicBus();
+  if (bus) {
+    const now = c.currentTime;
+    bus.gain.cancelScheduledValues(now);
+    bus.gain.setTargetAtTime(0.3, now, 0.05);
+    bus.gain.setTargetAtTime(0.55, now + buf.duration, 0.25);
+  }
+  src.start();
+  voiceSrc = src;
+}
+
+/** Fait dire une phrase par une vraie voix ; rend faux si c'est à la voix de l'appareil de la dire. */
+function speakReal(text: string, lang: Lang, st: string, speed: number, fallback: () => void) {
+  if (!stReady() || audioLocked()) return false;
+  prepareInstant();
+  const token = ++sayToken;
+  const hit = stCached(text, lang, st, speed);
+  if (hit) {
+    playVoice(hit);
+    return true;
+  }
+  stopVoice();
+  speechSynthesis?.cancel();
+  // Pas de réponse à temps : la voix de l'appareil prend le relais, plutôt qu'une annonce en retard
+  let done = false;
+  const late = setTimeout(() => {
+    if (done || token !== sayToken) return;
+    done = true;
+    fallback();
+  }, 1500);
+  void stSay(text, lang, st, speed).then((clip) => {
+    if (done || token !== sayToken || muted) return;
+    done = true;
+    clearTimeout(late);
+    if (clip) playVoice(clip);
+    else fallback();
+  });
+  return true;
+}
+
 /** `voice` : voix propre à une annonce (vitesse et hauteur). */
 export function speak(text: string, lang: Lang, voice_?: { rate?: number; pitch?: number }) {
+  if (muted) return;
+  const pre = VOICES[voiceIdx] ?? VOICES[0];
+  lastLang = lang;
+  ++sayToken;
+  stopVoice();
+  // Une annonce qui change la hauteur (voix d'écureuil…) reste à la voix de l'appareil, qui sait le faire
+  if (pre.st && !voice_?.pitch && text.length <= 280 && speakReal(text, lang, pre.st, voice_?.rate ?? pre.rate, () => speakDevice(text, lang, voice_))) return;
+  speakDevice(text, lang, voice_);
+}
+
+function speakDevice(text: string, lang: Lang, voice_?: { rate?: number; pitch?: number }) {
   if (muted || !('speechSynthesis' in window)) return;
   const pre = VOICES[voiceIdx] ?? VOICES[0];
   const u = new SpeechSynthesisUtterance(text);

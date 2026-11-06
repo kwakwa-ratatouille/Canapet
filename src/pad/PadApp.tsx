@@ -906,7 +906,7 @@ function PadScreenView({
                     </button>
                   ))}
                 </div>
-                {menu === 'voice' && <p className="pad-small">{lang === 'fr' ? 'La télé fait écouter chaque voix.' : 'The TV plays each voice.'}</p>}
+                {menu === 'voice' && <p className="pad-small">{lang === 'fr' ? 'La télé fait écouter chaque voix. Marcel, Lucette et les autres : des voix de synthèse (IA) très réalistes, téléchargées une seule fois par la télé (400 Mo).' : 'The TV plays each voice. Marcel, Lucette and the others: very realistic AI voices, downloaded once by the TV (400 MB).'}</p>}
                 {menu === 'voice' && voiceTry >= 0 && !voiceOwned(voiceTry) && (
                   <button
                     className="btn mint"

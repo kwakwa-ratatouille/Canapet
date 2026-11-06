@@ -12,6 +12,8 @@ import { drawCharacter } from '../shared/characters';
 import { joinUrl } from '../shared/protocol';
 import { QR } from '../shared/QR';
 import { VOICES, audioLocked, isMuted, setMuted, unlockAudio } from '../shared/sound';
+import { stProgress, stState } from '../shared/supertonic';
+import type { Lang } from '../shared/protocol';
 import { EVENTS, Session, TOURNAMENT_LEN, type Player } from './session';
 import { stickerCloud } from '../games/draw';
 import { ReplayRecorder, cosmeticsBusy, drawReactions } from './fx';
@@ -153,6 +155,7 @@ export function TvApp() {
         </button>
         <button className="pill" onClick={() => session.hostAction('voice')} title={lang === 'fr' ? 'Changer la voix du présentateur' : 'Change the announcer voice'}>
           🎙️ {VOICES[session.voice]?.[lang] ?? ''}
+          <VoiceLoading st={VOICES[session.voice]?.st} lang={lang} />
         </button>
         <button className="pill" onClick={toggleFullscreen}>
           ⛶ {t(lang, 'fullscreen')}
@@ -290,6 +293,21 @@ function GameView({ session }: { session: Session }) {
     return () => cancelAnimationFrame(raf);
   }, [session]);
   return <canvas ref={ref} className="game-canvas" />;
+}
+
+/** Pendant le premier téléchargement de la vraie voix : son avancement, à côté du nom de la voix. */
+function VoiceLoading({ st, lang }: { st?: string; lang: Lang }) {
+  const [, tick] = useState(0);
+  const loading = !!st && stState() === 'loading';
+  useEffect(() => {
+    if (!loading) return;
+    const id = setInterval(() => tick((n) => n + 1), 500);
+    return () => clearInterval(id);
+  });
+  if (!st || stState() === 'ready') return null;
+  // Toujours un rappel tant que la voix n'arrive pas, sans inquiéter personne
+  if (stState() === 'failed') return <> ({lang === 'fr' ? 'voix de l’appareil' : 'device voice'})</>;
+  return loading ? <> {Math.round(stProgress() * 100)} %</> : null;
 }
 
 /** Effet visible de l’événement surprise + étiquette « icône, nom, jauge » en haut à gauche. */

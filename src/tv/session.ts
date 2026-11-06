@@ -12,7 +12,8 @@ import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
 import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
-import { VOICES, voiceWorks, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
+import { stProgress, stReady, stState } from '../shared/supertonic';
+import { VOICES, audioLocked, unlockAudio, defaultVoiceId, voiceWorks, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
 import { REACTIONS } from '../shared/reactions';
 import { makeSecrets, type Secret } from './secrets';
@@ -147,7 +148,7 @@ export class Session {
   /** Niveau des bots : 0 facile, 1 normal, 2 fort. */
   botLevel = store('botLevel', 1);
   /** Voix du présentateur (numéro dans VOICES). */
-  voice = Math.max(0, VOICES.findIndex((x) => x.id === store('voiceId', 'classique')));
+  voice = Math.max(0, VOICES.findIndex((x) => x.id === store('voiceId', defaultVoiceId())));
   /** Mode équipes (Fraise contre Menthe) ; sinon mêlée générale. */
   teams = store('teams', false);
   /** Score des équipes à la dernière partie (moyenne des points de chaque camp). */
@@ -228,6 +229,8 @@ export class Session {
   constructor(preview: boolean) {
     setFamily(this.family);
     setVoice(this.voice);
+    // Aperçu : pour essayer la voix depuis la console
+    if (preview) (window as unknown as { __voice: unknown }).__voice = { speak, VOICES, stReady, stState, stProgress, unlockAudio, audioLocked };
     this.net = new TvNet({
       onMsg: (pid, m) => this.onMsg(pid, m),
       onLeave: (pid) => this.onLeave(pid),
