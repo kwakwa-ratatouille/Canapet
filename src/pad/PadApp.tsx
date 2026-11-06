@@ -1378,6 +1378,8 @@ function Editor({
   const fileRef = useRef<HTMLInputElement>(null);
   // null = le menu des catégories ; sinon la catégorie ouverte (avec un bouton retour)
   const [tab, setTab] = useState<Tab | null>(null);
+  /** Perso dont on regarde les variantes. */
+  const [family, setFamily] = useState<string | null>(null);
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
   const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 
@@ -1565,20 +1567,61 @@ function Editor({
 
       {tab === 'perso' && (
         <div className="pick-grid">
-          {[...byRarity('food', FOODS.filter((f) => !VARIANT_OF[f.id])), null, ...FOODS.filter((f) => VARIANT_OF[f.id])].map((f) => !f ? (
-            <p key="variantes" className="ed-sec">✨ {fr ? 'Variantes' : 'Variants'}</p>
-          ) : (
-            <button
-              key={f.id}
-              className={`pick ${profile.food === f.id ? 'on' : ''} ${owned('food', f.id) ? '' : 'locked'} ${takenFoods[f.id] && profile.food !== f.id ? 'taken' : ''}`}
-              disabled={!!takenFoods[f.id] && profile.food !== f.id}
-              onClick={() => choose('food', f.id, f.name[lang])}
-            >
-              <CharCanvas profile={{ ...profile, food: f.id, selfie: undefined, hat: 'aucun', acc: 'aucun' }} size={64} still />
-              <small>{takenFoods[f.id] && profile.food !== f.id ? (fr ? `Pris par ${takenFoods[f.id]}` : `Taken by ${takenFoods[f.id]}`) : f.name[lang]}</small>
-              {lock('food', f.id)}
-            </button>
-          ))}
+          {byRarity('food', FOODS.filter((x) => !VARIANT_OF[x.id])).map((f) => {
+            const vars = FOODS.filter((x) => VARIANT_OF[x.id] === f.id);
+            // Sa variante choisie s'affiche à la place du perso normal
+            const mine = VARIANT_OF[profile.food] === f.id ? profile.food : f.id;
+            const on = profile.food === f.id || mine !== f.id;
+            const taken = !vars.length && !!takenFoods[f.id] && profile.food !== f.id;
+            const got = vars.filter((v) => owned('food', v.id)).length;
+            return (
+              <button
+                key={f.id}
+                className={`pick ${on ? 'on' : ''} ${owned('food', mine) ? '' : 'locked'} ${taken ? 'taken' : ''}`}
+                disabled={taken}
+                onClick={() => {
+                  if (vars.length) {
+                    sfx.click();
+                    setFamily(f.id);
+                  } else choose('food', f.id, f.name[lang]);
+                }}
+              >
+                <CharCanvas profile={{ ...profile, food: mine, selfie: undefined, hat: 'aucun', acc: 'aucun' }} size={64} still />
+                <small>{taken ? (fr ? `Pris par ${takenFoods[f.id]}` : `Taken by ${takenFoods[f.id]}`) : f.name[lang]}</small>
+                {vars.length > 0 && <em className="fam-badge">✨ {got > 0 ? `${got}/${vars.length}` : vars.length} {fr ? `variante${vars.length > 1 ? 's' : ''}` : `variant${vars.length > 1 ? 's' : ''}`}</em>}
+                {lock('food', mine)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {tab === 'perso' && family && (
+        <div className="buy-veil" onClick={() => setFamily(null)}>
+          <div className="buy-card fam-sheet" onClick={(e) => e.stopPropagation()}>
+            <b>{FOODS.find((x) => x.id === family)?.name[lang]}</b>
+            <p className="pad-small">{fr ? 'Le normal et toutes ses variantes' : 'The original and all its variants'}</p>
+            <div className="pick-grid">
+              {FOODS.filter((x) => x.id === family || VARIANT_OF[x.id] === family).map((v) => {
+                const taken = !!takenFoods[v.id] && profile.food !== v.id;
+                return (
+                  <button
+                    key={v.id}
+                    className={`pick ${profile.food === v.id ? 'on' : ''} ${owned('food', v.id) ? '' : 'locked'} ${taken ? 'taken' : ''}`}
+                    disabled={taken}
+                    onClick={() => {
+                      choose('food', v.id, v.name[lang]);
+                      if (owned('food', v.id)) setFamily(null);
+                    }}
+                  >
+                    <CharCanvas profile={{ ...profile, food: v.id, selfie: undefined, hat: 'aucun', acc: 'aucun' }} size={64} still />
+                    <small>{taken ? (fr ? `Pris par ${takenFoods[v.id]}` : `Taken by ${takenFoods[v.id]}`) : v.id === family ? (fr ? 'Normal' : 'Original') : v.name[lang]}</small>
+                    {lock('food', v.id)}
+                  </button>
+                );
+              })}
+            </div>
+            <button className="btn" onClick={() => setFamily(null)}>{fr ? 'Fermer' : 'Close'}</button>
+          </div>
         </div>
       )}
       {tab === 'hat' && (

@@ -339,7 +339,7 @@ export function BoxShop({ progress, setProgress, profile, setProfile, lang, acco
             <div className="box-acts">
               {free > 0 && (
                 <button className="box-buy free" onClick={() => openLocal(box, { free: true })}>
-                  🎉 {fr ? 'Ouvrir' : 'Open'} <small>{fr ? 'offerte' : 'free'} ×{free}</small>
+                  🎁 {fr ? 'Ouvrir ma boîte' : 'Open my box'}{free > 1 && <b>×{free}</b>}
                 </button>
               )}
               {!chest && (
