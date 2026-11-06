@@ -132,7 +132,8 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
     const parts = cells.map(([cx, cy]) => Bodies.rectangle(cx * CELL, cy * CELL, CELL, CELL, { friction: 0.9, frictionStatic: 1.2, restitution: 0, density: 0.002 }));
     const body = Body.create({ parts, friction: 0.9, frictionStatic: 1.2, restitution: 0, frictionAir: 0.02, sleepThreshold: 40 });
     Body.setInertia(body, body.inertia * 3);
-    Body.setPosition(body, { x: p.cx + p.x * 60, y: -Math.min(p.height + 430, GOAL + 180) });
+    // Le bloc apparaît n'importe où sur la ligne : il faut le ramener, on ne peut pas juste tout faire tomber au même endroit
+    Body.setPosition(body, { x: p.cx + rnd(-REACH + 25, REACH - 25), y: -Math.min(p.height + 430, GOAL + 180) });
     if (Math.random() < 0.5) Body.rotate(body, Math.PI / 2);
     Composite.add(engine.world, body);
     pieces.push(body);
