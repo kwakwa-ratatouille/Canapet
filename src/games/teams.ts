@@ -7,6 +7,15 @@ export const TEAMS: { name: Record<Lang, string>; color: string; emoji: string }
   { name: { fr: 'Équipe Menthe', en: 'Team Mint' }, color: '#1fc9a0', emoji: '🌿' },
 ];
 
+/** Noms choisis par l'hôte (vides = les noms de base). Les jeux lisent TEAMS : tout suit. */
+const DEFAULT_NAMES = TEAMS.map((t) => t.name);
+export function setTeamNames(names: string[]) {
+  TEAMS.forEach((t, i) => {
+    const n = names[i]?.trim();
+    t.name = n ? { fr: n, en: n } : DEFAULT_NAMES[i];
+  });
+}
+
 /** Camp d'un joueur : son équipe, ou lui seul en mêlée générale. */
 export const side = (r: Runner) => (r.team === undefined ? 'p' + r.pid : 't' + r.team);
 

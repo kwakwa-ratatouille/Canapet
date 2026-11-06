@@ -97,6 +97,14 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  tour: {
+    fr: { goal: 'Monte ta tour jusqu’à la ligne !', steps: [['🕹️', 'Stick : déplace la pièce. A : tourne. B : descend vite'], ['🧱', 'Ça penche pour de vrai : pose bien à plat'], ['❤️', 'Une pièce tombe = une vie en moins, et 3 vies seulement']] },
+    en: { goal: 'Build your tower up to the line!', steps: [['🕹️', 'Stick: move the piece. A: rotate. B: drop fast'], ['🧱', 'It really wobbles: place pieces flat'], ['❤️', 'A piece falls = one life lost, and only 3 lives']] },
+  },
+  gateau: {
+    fr: { goal: 'Fais le plus haut gâteau !', steps: [['👆', 'Appuie quand l’étage passe au-dessus du gâteau'], ['🔪', 'Ce qui dépasse est coupé : l’étage suivant sera plus petit'], ['⭐', 'Pile dessus = PARFAIT, 3 points, et 3 de suite le font regrossir']] },
+    en: { goal: 'Make the tallest cake!', steps: [['👆', 'Tap when the layer is above the cake'], ['🔪', 'Whatever sticks out is cut: the next layer is smaller'], ['⭐', 'Spot on = PERFECT, 3 points, and 3 in a row make it grow']] },
+  },
   traverse: {
     fr: { goal: 'Va le plus loin possible sans te faire écraser !', steps: [['⬆️', 'Bouton A : avance d’une case. Le stick : saute dans une direction'], ['🚗', 'Évite les voitures et les trains, et reste sur les baguettes dans le sirop'], ['❤️', '3 vies. L’écran monte : ne reste pas en bas ! B = pousser les voisins']] },
     en: { goal: 'Go as far as you can without getting squashed!', steps: [['⬆️', 'A button: one tile forward. The stick: hop in a direction'], ['🚗', 'Dodge cars and trains, and stay on the baguettes in the syrup'], ['❤️', '3 lives. The screen rises: don’t stay at the bottom! B = shove your neighbours']] },

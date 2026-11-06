@@ -22,6 +22,7 @@ const LABELS: Record<string, Record<Lang, [string, string, string?, string?]>> =
   couleur: { fr: ['', 'POUSSER'], en: ['', 'SHOVE'] },
   maree: { fr: ['SAUT', 'POUSSER'], en: ['JUMP', 'SHOVE'] },
   traverse: { fr: ['AVANCE', 'POUSSER'], en: ['FORWARD', 'SHOVE'] },
+  tour: { fr: ['TOURNE', 'DESCEND'], en: ['ROTATE', 'DROP'] },
   pixel: { fr: ['GLISSE', 'POUSSER'], en: ['SLIDE', 'SHOVE'] },
   foot: { fr: ['TIR', 'SPRINT', 'ATTRAPE'], en: ['SHOOT', 'SPRINT', 'CATCH'] },
 };

@@ -5,7 +5,7 @@ import { setRoomSkins, setTrailMode } from '../shared/characters';
 import { FREE_PLAYERS, isLocked, PACKS, PASS, SALES_ON } from '../shared/offer';
 import { SKILLS } from '../games/botSkill';
 import { GAMES, gameById, playable, gameInfo } from '../games/registry';
-import { TEAMS } from '../games/teams';
+import { TEAMS, setTeamNames } from '../games/teams';
 import { TUTOS } from '../games/tutos';
 import type { GameDef, GameInstance, Runner } from '../games/types';
 import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
@@ -148,6 +148,8 @@ export class Session {
   /** Niveau des bots : 0 facile, 1 normal, 2 fort. */
   botLevel = store('botLevel', 1);
   /** Voix du présentateur (numéro dans VOICES). */
+  /** Noms d'équipe choisis par l'hôte. */
+  teamNames: string[] = store('teamNames', ['', '']);
   voice = Math.max(0, VOICES.findIndex((x) => x.id === store('voiceId', defaultVoiceId())));
   /** Mode équipes (Fraise contre Menthe) ; sinon mêlée générale. */
   teams = store('teams', false);
@@ -228,6 +230,7 @@ export class Session {
 
   constructor(preview: boolean) {
     setFamily(this.family);
+    setTeamNames(this.teamNames);
     setHelloHooks({ allowed: () => this.phase === 'lobby', ready: () => this.pushScreens() });
     setVoice(this.voice);
     // Aperçu : pour essayer la voix depuis la console
@@ -581,6 +584,16 @@ export class Session {
         this.changed();
         this.pushScreens();
         break;
+      case 'teamName': {
+        // Le nom est passé dans `game`, le numéro de l'équipe dans opts.v
+        const v = opts?.v === 1 ? 1 : 0;
+        this.teamNames[v] = (game ?? '').trim().slice(0, 16);
+        setTeamNames(this.teamNames);
+        save('teamNames', this.teamNames);
+        this.changed();
+        this.pushScreens();
+        break;
+      }
       case 'voice': {
         const fr = this.lang() === 'fr';
         const hello = (i: number) => {
@@ -1460,6 +1473,7 @@ export class Session {
           voiceLoading: VOICES.some((_, i) => voiceLoading(i)),
           voicesOk: VOICES.map((_, i) => i).filter((i) => voiceWorks(i, this.lang())),
           recap: [...this.stats.values()].some((x) => x.games > 0),
+          teamNames: this.teamNames,
           roster: this.list().filter((x) => x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color, level: x.level, chief: x.pid === this.hostPid(), me: x.pid === p.pid })),
           players: host ? this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color })) : [],
           team: p.team,

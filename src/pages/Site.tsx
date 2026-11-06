@@ -21,6 +21,8 @@ const GAMES: [string, string, string][] = [
   ['chef', 'Le Chef Cachottier', 'The Secretive Chef'],
   ['fusion', 'La Bataille des Fusions', 'Merge Battle'],
   ['traverse', 'Traverse Pas Ici !', 'Don’t Cross Here!'],
+  ['tour', 'La Tour Branlante', 'The Wobbly Tower'],
+  ['gateau', 'Le Gâteau qui Penche', 'The Leaning Cake'],
   ['plutot', 'Le Pire des Deux', 'Worst of Two'],
   ['chiffre', 'Le Juste Pif', 'Nose for Numbers'],
   ['cri', 'Crie Plus Fort', 'Shout Louder'],

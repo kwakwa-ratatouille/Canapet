@@ -90,6 +90,8 @@ export function TvApp() {
         ':': 'chef',
         '=': 'fusion',
         ')': 'traverse',
+        '(': 'tour',
+        '*': 'gateau',
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');

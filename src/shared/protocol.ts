@@ -58,7 +58,7 @@ export interface GhostInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; /** Achats des joueurs présents : profitent à tout le salon. */ roomItems?: string[]; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; /** Tous les joueurs présents. */ roster?: { pid: string; name: string; color: string; level?: number; chief: boolean; me: boolean }[]; /** Voix qui existent vraiment à la télé. */ voicesOk?: number[]; /** Les voix à prénom se téléchargent encore. */ voiceLoading?: boolean; recap?: boolean; players: { pid: string; name: string; color: string }[] }
+  | { s: 'lobby'; /** Achats des joueurs présents : profitent à tout le salon. */ roomItems?: string[]; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; /** Noms d'équipe choisis par l'hôte. */ teamNames?: string[]; /** Tous les joueurs présents. */ roster?: { pid: string; name: string; color: string; level?: number; chief: boolean; me: boolean }[]; /** Voix qui existent vraiment à la télé. */ voicesOk?: number[]; /** Les voix à prénom se téléchargent encore. */ voiceLoading?: boolean; recap?: boolean; players: { pid: string; name: string; color: string }[] }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean; secret?: SecretInfo }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }
@@ -99,7 +99,7 @@ export type ToPad =
   /** Salon complet : le Pass Soirée l'ouvre à 12. */
   | { t: 'full'; max: number };
 
-export type HostAction = 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief' | 'voice' | 'recap' | 'wheel' | 'vote';
+export type HostAction = 'teamName' | 'tournament' | 'pick' | 'replay' | 'next' | 'lobby' | 'family' | 'teams' | 'pause' | 'resume' | 'bots' | 'botlevel' | 'kick' | 'chief' | 'voice' | 'recap' | 'wheel' | 'vote';
 
 /** Téléphone → télé */
 export type ToTv =

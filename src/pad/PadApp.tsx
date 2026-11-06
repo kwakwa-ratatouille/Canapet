@@ -1,9 +1,11 @@
-import { TEAMS } from '../games/teams';
+import { TEAMS, setTeamNames } from '../games/teams';
 import { PresidentPad } from './PresidentPad';
 import type { PresidentPadData } from '../games/presidentShared';
 import { VOICES } from '../shared/sound';
 import { SlicePad } from './SlicePad';
 import { FusionPad } from './FusionPad';
+import { CakePad } from './CakePad';
+import type { CakePadData } from '../games/cakeShared';
 import { ChefPad } from './ChefPad';
 import type { FusionPadData } from '../games/fusionShared';
 import type { ChefPadData } from '../games/chefShared';
@@ -726,6 +728,7 @@ function PadScreenView({
             </button>
           </div>
         );
+      setTeamNames(screen.teamNames ?? []);
       return (
         <div className="pad-body host pad-lobby">
           {tab === 'play' && (
@@ -879,6 +882,25 @@ function PadScreenView({
                   </div>
                 </>
               )}
+              {screen.teams && <p className="opt-title">{lang === 'fr' ? 'Noms des équipes' : 'Team names'}</p>}
+              {screen.teams && <div className="team-names">
+                {TEAMS.map((tm, k) => (
+                  <label key={k} style={{ ['--tc' as string]: tm.color }}>
+                    <span>{tm.emoji}</span>
+                    <input
+                      key={screen.teamNames?.[k] ?? ''}
+                      defaultValue={screen.teamNames?.[k] ?? ''}
+                      maxLength={16}
+                      autoComplete="off"
+                      placeholder={k ? (lang === 'fr' ? 'Équipe Menthe' : 'Team Mint') : lang === 'fr' ? 'Équipe Fraise' : 'Team Strawberry'}
+                      onBlur={(e) => {
+                        if (e.target.value.trim() !== (screen.teamNames?.[k] ?? '')) host('teamName', e.target.value.trim(), { v: k });
+                      }}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                    />
+                  </label>
+                ))}
+              </div>}
               <p className="opt-title">{t(lang, 'options')}</p>
               <div className="opt-row">
                 <button className={`opt mint ${screen.family ? 'on' : ''}`} onClick={() => { save('moodAsked', true); host('family'); }} aria-pressed={screen.family}>
@@ -1054,6 +1076,7 @@ function PadScreenView({
       if (screen.game === 'cri' && screen.data) return <ShoutPad data={screen.data as ShoutPadData} lang={lang} send={send} />;
       if (VOICE_GAMES.includes(screen.game) && screen.data) return <VoicePad data={screen.data as VoicePadData} lang={lang} send={send} />;
       if (screen.game === 'tranche' && screen.data) return <SlicePad data={screen.data as SlicePadData} lang={lang} send={send} />;
+      if (screen.game === 'gateau' && screen.data) return <CakePad data={screen.data as CakePadData} lang={lang} send={send} />;
       if (screen.game === 'fusion' && screen.data) return <FusionPad data={screen.data as FusionPadData} lang={lang} send={send} />;
       if (screen.game === 'chef' && screen.data) return <ChefPad data={screen.data as ChefPadData} lang={lang} send={send} />;
       if (['tribunal', 'dico', 'plutot', 'chiffre', 'lettre', 'trous'].includes(screen.game) && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
