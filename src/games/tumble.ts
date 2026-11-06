@@ -367,6 +367,139 @@ function buildLevel(): Level {
       solid(x, y, 360);
       x += 360;
     },
+    hachoir() {
+      // Petites îles, chacune gardée par un moulin
+      entry();
+      for (let i = 0; i < 3; i++) {
+        x += rnd(110, 150);
+        solid(x, y, 340);
+        L.sweepers.push({ cx: x + 170, cy: y - 150, len: 150, speed: (i % 2 ? -1 : 1) * rnd(1.5, 2.1) * diff, ang: rnd(0, 6) });
+        x += 340;
+      }
+      x += 120;
+      solid(x, y, 220);
+      x += 220;
+    },
+    marteauxGlace() {
+      // Impossible de s'arrêter sous les marteaux : le sol glisse
+      entry();
+      solid(x, y, 1000, 'ice');
+      for (let i = 0; i < 2; i++) L.hammers.push({ cx: x + 320 + i * 360, cy: y - 400, len: 330, amp: 1, freq: rnd(1.4, 1.8) * diff, ph: rnd(0, 6), ang: 0, vel: 0 });
+      x += 1000;
+    },
+    tapisOranges() {
+      // Le tapis ramène en arrière et les boules arrivent de face
+      entry();
+      const start = x;
+      const t = solid(x, y, 1100, 'conveyor', 1500 - y);
+      t.push = -180;
+      x += 1100;
+      L.spawners.push({ x: x - 40, y, minX: start - 200, every: rnd(1.6, 2.1) / diff, t: 0.5 });
+    },
+    gantsTapis() {
+      // Tapis et gants de boxe : on avance entre les coups
+      entry();
+      for (let i = 0; i < 2; i++) {
+        const s = solid(x, y, 460, 'conveyor', 1500 - y);
+        s.push = -150;
+        L.gloves.push({ x: x + 230, y: y - 70, dir: -1, reach: 150, freq: rnd(1.5, 2) * diff, ph: rnd(0, 6), out: 0 });
+        x += 460 + (i ? 0 : 130);
+      }
+      solid(x, y, 220);
+      x += 220;
+    },
+    dallesPluie() {
+      // Les dalles tombent et il pleut en plus
+      entry();
+      for (let i = 0; i < 7; i++) solid(x + i * 104, y, 100, 'tile');
+      L.rains.push({ x0: x + 40, x1: x + 690, y, every: 0.6 / diff, t: 0 });
+      x += 7 * 104;
+      solid(x, y, 240);
+      x += 240;
+    },
+    ascenseurs() {
+      // Des plateformes qui montent et descendent
+      entry();
+      for (let i = 0; i < 4; i++) {
+        const bx = x + 130 + i * 270;
+        const m = solid(bx, y - 20, 170, 'mover', 30);
+        m.move = { bx, by: y - 20, ax: 0, ay: 110, freq: rnd(1, 1.4), ph: i * 1.6 };
+      }
+      x += 130 + 4 * 270 + 40;
+      solid(x, y, 260);
+      x += 260;
+    },
+    zigzag() {
+      // Des dalles fragiles en dents de scie
+      entry();
+      for (let i = 0; i < 6; i++) {
+        x += 60;
+        solid(x, y - (i % 2) * 90, 130, 'tile');
+        x += 130;
+      }
+      x += 70;
+      solid(x, y, 260);
+      x += 260;
+    },
+    caramelVent() {
+      // Le caramel s'enfonce et le vent pousse en arrière
+      entry();
+      const start = x;
+      for (let i = 0; i < 4; i++) {
+        x += 100;
+        const s = solid(x, y, 190, 'sink', 34);
+        s.baseY = s.y;
+        x += 190;
+      }
+      L.fans.push({ x: start + 100, w: x - start - 100, y, force: -700 });
+      x += 100;
+      solid(x, y, 260);
+      x += 260;
+    },
+    trampoGants() {
+      // On rebondit… et un gant attend à l'arrivée
+      entry();
+      solid(x + 10, y + 50, 170, 'bounce', 40);
+      x += 400;
+      y -= 300;
+      solid(x, y, 560);
+      L.gloves.push({ x: x + 300, y: y - 70, dir: -1, reach: 170, freq: rnd(1.5, 2) * diff, ph: rnd(0, 6), out: 0 });
+      x += 560;
+    },
+    escalierMarteaux() {
+      // Un grand escalier, et des marteaux sur le chemin
+      entry();
+      for (let i = 0; i < 3; i++) {
+        y -= 70;
+        const w = 340;
+        solid(x, y, w);
+        L.hammers.push({ cx: x + w / 2, cy: y - 400, len: 320, amp: 0.9, freq: rnd(1.3, 1.7) * diff, ph: rnd(0, 6), ang: 0, vel: 0 });
+        x += w;
+      }
+      solid(x, y, 240);
+      x += 240;
+    },
+    glaceEscalier() {
+      // Marches de glace : on glisse à chaque palier
+      entry();
+      for (let i = 0; i < 4; i++) {
+        y -= 60;
+        x += 50;
+        solid(x, y, 280, 'ice');
+        x += 280;
+      }
+      x += 80;
+      solid(x, y, 240);
+      x += 240;
+    },
+    tempete() {
+      // Du vent, de la pluie, et rien pour s'abriter
+      entry();
+      solid(x, y, 1200);
+      L.fans.push({ x: x + 200, w: 800, y, force: -800 });
+      L.rains.push({ x0: x + 160, x1: x + 1040, y, every: 0.55 / diff, t: 0 });
+      x += 1200;
+    },
     escaliers() {
       entry();
       for (let i = 0; i < 6; i++) {
@@ -384,9 +517,8 @@ function buildLevel(): Level {
   solid(x, y, 760);
   L.checkpoints.push({ x: 200, y });
   x += 760;
-  // Parcours long : 12 tronçons, tous différents puis quelques-uns qui reviennent, de plus en plus durs.
-  const all = Object.keys(segments).sort(() => Math.random() - 0.5);
-  const keys = [...all, ...all.sort(() => Math.random() - 0.5)].slice(0, 13);
+  // Parcours long : entre 11 et 15 étapes tirées parmi toutes, sans jamais la même deux fois, de plus en plus dures.
+  const keys = Object.keys(segments).sort(() => Math.random() - 0.5).slice(0, 11 + Math.floor(Math.random() * 5));
   keys.forEach((k, i) => {
     diff = 1 + i * 0.05;
     segments[k]();

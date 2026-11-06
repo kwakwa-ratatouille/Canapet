@@ -89,6 +89,7 @@ export function TvApp() {
         '!': 'tranche',
         ':': 'chef',
         '=': 'fusion',
+        ')': 'traverse',
       };
       if (k === 'h') session.hostAction('family');
       if (k === 'e') session.hostAction('teams');

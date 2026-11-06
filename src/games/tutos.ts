@@ -97,6 +97,10 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
       ],
     },
   },
+  traverse: {
+    fr: { goal: 'Va le plus loin possible sans te faire écraser !', steps: [['⬆️', 'Bouton A : avance d’une case. Le stick : saute dans une direction'], ['🚗', 'Évite les voitures et les trains, et reste sur les baguettes dans le sirop'], ['❤️', '3 vies. L’écran monte : ne reste pas en bas ! B = pousser les voisins']] },
+    en: { goal: 'Go as far as you can without getting squashed!', steps: [['⬆️', 'A button: one tile forward. The stick: hop in a direction'], ['🚗', 'Dodge cars and trains, and stay on the baguettes in the syrup'], ['❤️', '3 lives. The screen rises: don’t stay at the bottom! B = shove your neighbours']] },
+  },
   chef: {
     fr: { goal: 'Trouve les mots de ton équipe grâce à l’indice du chef !', steps: [['👨‍🍳', 'Le chef voit les couleurs et donne un seul mot + un nombre'], ['👆', 'Son équipe touche les mots sur le téléphone. Mauvais mot = fin du tour'], ['💀', 'Le mot maudit fait perdre tout de suite !']] },
     en: { goal: 'Find your team’s words with the chef’s clue!', steps: [['👨‍🍳', 'The chef sees the colours and gives one word + a number'], ['👆', 'The team taps words on the phone. Wrong word = end of turn'], ['💀', 'The cursed word loses the game at once!']] },

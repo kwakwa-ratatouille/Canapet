@@ -20,6 +20,7 @@ const GAMES: [string, string, string][] = [
   ['tranche', 'Tranche de Rire', 'Slice of Laughs'],
   ['chef', 'Le Chef Cachottier', 'The Secretive Chef'],
   ['fusion', 'La Bataille des Fusions', 'Merge Battle'],
+  ['traverse', 'Traverse Pas Ici !', 'Don’t Cross Here!'],
   ['plutot', 'Le Pire des Deux', 'Worst of Two'],
   ['chiffre', 'Le Juste Pif', 'Nose for Numbers'],
   ['cri', 'Crie Plus Fort', 'Shout Louder'],

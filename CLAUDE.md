@@ -57,7 +57,7 @@ Site : https://kwakwa-ratatouille.github.io/Canapet/ (GitHub Pages, mis en ligne
 
 Persos (nov. 2026) : 35, dont chewing-gum, croque-monsieur, yaourt, ravioli, œuf au plat, pastèque, cookie, ketchup, nouilles, gaufre (prix dans `PRICES`) ; 8 chapeaux ajoutés (viking, cowboy, afro, licorne, ninja, dj, frites, pizzahat) + bonnet tricoté ; un perso déjà pris par un autre joueur est grisé dans l’éditeur (`foods` dans l’écran lobby). État oct. 2026 : 25 persos (dont saucisse, champi, tasse, oignon, patate, pop-corn), ombrage BD par masque SVG dans `perso()`, podium avec projecteurs et titres (`TITLES`), résultats animés (CSS row-in/rise), manette sans perso au milieu (place + chrono), appui long bloqué sur mobile.
 
-Manette : boutons X (`c`) et Y (`d`) dans le message `in`, croix façon Switch dans `Stick.tsx` (libellés par jeu dans `LABELS`). La Dégringolade : 3 vies, 12 tronçons, glace/gants/pluie. Flèches : esquive X, coffre, bulle, une flèche revient toute seule toutes les 5 s jusqu’à 3 (anneau jaune au-dessus du carquois).
+Manette : boutons X (`c`) et Y (`d`) dans le message `in`, croix façon Switch dans `Stick.tsx` (libellés par jeu dans `LABELS`). La Dégringolade : 3 vies, 11 à 15 tronçons, glace/gants/pluie. Flèches : esquive X, coffre, bulle, une flèche revient toute seule toutes les 5 s jusqu’à 3 (anneau jaune au-dessus du carquois).
 Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 
 ## Cartes et ajouts (oct. 2026)
@@ -121,6 +121,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Jeux de mots (`lettre.ts`, mots dans `lettreWords.ts`, manette `QuizPad`) : Ça Commence Par… (id `lettre`, touche 6 : thème + lettre, jusqu’à 8 mots par manche (`MAX_WORDS`), chaque mot unique 3 pts, commun 1, le tout premier +1 ; hors liste = contestable) et Les Mots à Trous (id `trous`, touche `,`). Tranche de Rire (`slice.ts`, `SlicePad.tsx`, id `tranche`, touche `!`) : le téléphone envoie la position du doigt (`act cut`, n = x, y sur 1000, 1 posé / 2 glisse / 0 levé), pièges coussin et bombe, scores d’équipe additionnés.
 - Scanner le QR code : `QrScan.tsx` (jsQR, licence Apache-2.0, chargé à la demande) sur la carte « Rejoindre » de l’accueil ; pas besoin de mise à jour des applis, le droit à l’appareil photo y est déjà pour le selfie.
 - Le Chef Cachottier (`chef.ts`, `chefShared.ts`, `ChefPad.tsx`, id `chef`, touche `:`) : 2 équipes, 25 mots tirés de `lettreWords.ts`, indice d’un mot + nombre, mot maudit ; chef humain si 2 humains dans l’équipe, sinon bot (son indice = un thème). La Bataille des Fusions (`fusion.ts`, `fusionShared.ts`, `FusionPad.tsx`, id `fusion`, touche `=`) : 2 bacs, chacun son tour (visée au doigt sur le téléphone, plateau envoyé 4 fois/s), les fusions chargent un malus (`MALUS`), débordement = perdu, chrono 150 s. Noms et habillage originaux.
+- Traverse Pas Ici ! (`traverse.ts`, id `traverse`, touche `)`) : rangées générées (pelouse, route, rivière de sirop, rails + alerte), A = avancer, stick = sauter, B = pousser, bonus étoile/bouclier/super bonds, 3 vies, l’écran monte. La Dégringolade : 33 étapes, 11 à 15 tirées par partie sans redite.
 - Images Play : `store/images`, refaites par `store/make-images.cjs`.
 
 ## Mode équipes et musique
