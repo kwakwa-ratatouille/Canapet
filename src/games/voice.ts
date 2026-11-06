@@ -102,6 +102,9 @@ const SCENES: { fr: string; en: string; a: string; b: string; anim: Anim }[] = [
 ];
 
 /** Paroles à chanter sur la mélodie. */
+/** Vraies musiques du karaoké, toutes CC0 (liste et auteurs : public/licences/musiques-karaoke-cc0.txt). */
+const KARAOKE_TRACKS = ['funky', 'clappy', 'swing', 'saying', 'wisdom', 'celebrity', 'groove', 'floor', 'upbeat', 'happier'];
+
 const LYRICS: [string, string][] = [
   ['Mon cornichon m’a quitté en mai', 'My pickle left me back in May'],
   ['Oh ma tartine, tu tombes toujours du mauvais côté', 'Oh my toast, you always land the wrong way'],
@@ -181,6 +184,20 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
   let speaking: Pl | null = null;
   let listenLabel = '';
   let refBuf: AudioBuffer | null = null;
+  const tracks = mode === 'karaoke' ? freshDeck('karaoke-musique', KARAOKE_TRACKS, tune.rounds, (x) => x) : [];
+  /** Charge la musique de la manche ; sans réseau, on garde la petite mélodie maison. */
+  const loadTrack = (forRound: number) => {
+    fetch(`${import.meta.env.BASE_URL}karaoke/${tracks[forRound % tracks.length]}.mp3`)
+      .then((r) => {
+        if (!r.ok) throw new Error('musique');
+        return r.arrayBuffer();
+      })
+      .then((b) => decodeClip(b))
+      .catch(() => karaokeTune())
+      .then((b) => {
+        if (round === forRound) refBuf = b;
+      });
+  };
   let refAgain = 0;
   let botsDue: { p: Pl; at: number }[] = [];
   let clock = 0;
@@ -235,7 +252,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       speak(fr ? `Doublez cette scène : ${prompt}` : `Dub this scene: ${prompt}`, ctx.lang);
       pls.filter((p) => p.bot).forEach((p) => botsDue.push({ p, at: clock + 5 + Math.random() * 9 }));
     } else if (mode === 'karaoke') {
-      refBuf = karaokeTune();
+      loadTrack(round);
       prompt = L(deck[round % deck.length]);
       speak(fr ? 'Écoutez la mélodie et chantez ces paroles !' : 'Listen to the tune and sing these words!', ctx.lang);
       refAgain = clock + 3;
@@ -492,8 +509,8 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       if (phase === 'record') {
         if (refBuf && refAgain && clock >= refAgain) {
           stopPlay();
-          playing = playClip(refBuf, {});
-          // La mélodie du karaoké tourne en boucle pendant qu'on répète
+          playing = playClip(refBuf, mode === 'karaoke' ? { gain: 0.7 } : {});
+          // La musique du karaoké tourne en boucle pendant qu'on répète
           refAgain = mode === 'karaoke' ? clock + playing.dur + 2 : clock < 8 ? clock + playing.dur + 1 : 0;
         }
         for (const d of botsDue) {
