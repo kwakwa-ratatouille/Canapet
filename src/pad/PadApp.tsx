@@ -378,7 +378,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const padTheme = playing ? PAD_THEMES.find((x) => x.id === profile.padTheme) : undefined;
   return (
     // Manettes stick et tapotage : toujours en paysage, même si le téléphone reste droit (on tourne l'écran).
-    <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (screen.layout === 'stick' || screen.layout === 'tap') && !['traitre', 'dessin'].includes(screen.game) ? 'turn' : ''} ${padTheme?.anim ? 'pt-anim' : ''}`} data-pt={padTheme?.id} style={{ ['--c' as string]: profile.color, ...(padTheme ? { ['--pt-bg' as string]: padTheme.bg, ['--pt-grip' as string]: padTheme.grip, ['--pt-ink' as string]: padTheme.ink } : {}) }} onPointerDown={unlockAudio}>
+    <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (((screen.layout === 'stick' || screen.layout === 'tap') && !['traitre', 'dessin'].includes(screen.game)) || ['tranche', 'traverse', 'fusion'].includes(screen.game)) ? 'turn' : ''} ${padTheme?.anim ? 'pt-anim' : ''}`} data-pt={padTheme?.id} style={{ ['--c' as string]: profile.color, ...(padTheme ? { ['--pt-bg' as string]: padTheme.bg, ['--pt-grip' as string]: padTheme.grip, ['--pt-ink' as string]: padTheme.ink } : {}) }} onPointerDown={unlockAudio}>
       {status === 'lost' && !lostLong && screen && <div className="net-blip">⚡ {lang === 'fr' ? 'Reconnexion…' : 'Reconnecting…'}</div>}
       <header className={`pad-head ${playing ? 'slim' : ''}`}>
         <CharCanvas profile={profile} size={playing ? 34 : 46} still />

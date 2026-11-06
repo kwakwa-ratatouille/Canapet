@@ -16,10 +16,10 @@ export function SlicePad({ data, lang, send }: { data: SlicePadData; lang: Lang;
     const g = cv.getContext('2d')!;
     let raf = 0;
     const draw = () => {
-      const r = cv.getBoundingClientRect();
-      if (cv.width !== Math.round(r.width) || cv.height !== Math.round(r.height)) {
-        cv.width = Math.round(r.width);
-        cv.height = Math.round(r.height);
+      // offsetWidth : la taille réelle de la zone, même quand la manette est affichée tournée
+      if (cv.width !== cv.offsetWidth || cv.height !== cv.offsetHeight) {
+        cv.width = cv.offsetWidth;
+        cv.height = cv.offsetHeight;
       }
       g.clearRect(0, 0, cv.width, cv.height);
       const now = performance.now();
@@ -40,16 +40,21 @@ export function SlicePad({ data, lang, send }: { data: SlicePadData; lang: Lang;
   }, []);
 
   const emit = (e: React.PointerEvent, st: number) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
+    const el = e.currentTarget as HTMLElement;
+    const r = el.getBoundingClientRect();
+    // Téléphone tenu droit : la manette est tournée d'un quart de tour, on remet le doigt dans le bon repère
+    const turned = !!el.closest('.pad.turn') && window.matchMedia('(orientation: portrait)').matches;
+    const x = turned ? e.clientY - r.top : e.clientX - r.left;
+    const y = turned ? r.right - e.clientX : e.clientY - r.top;
+    const W = turned ? r.height : r.width;
+    const H = turned ? r.width : r.height;
     const now = performance.now();
     if (st !== 2) trail.current = st === 1 ? [{ x, y, at: now }] : trail.current;
     else trail.current.push({ x, y, at: now });
     // 30 fois par seconde suffisent : le poser et le lever partent toujours
     if (st === 2 && now - lastSend.current < 30) return;
     lastSend.current = now;
-    send({ t: 'act', a: 'cut', n: [Math.round((x / r.width) * 1000), Math.round((y / r.height) * 1000), st] });
+    send({ t: 'act', a: 'cut', n: [Math.round((x / W) * 1000), Math.round((y / H) * 1000), st] });
   };
 
   return (

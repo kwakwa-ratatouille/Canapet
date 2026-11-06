@@ -13,12 +13,7 @@ export interface FusionPadData {
   who: string;
   left: number;
   next: number;
-  aim: number;
-  /** [x, y, niveau, numéro] ; niveau -1 = chaussette. */
-  balls: number[][];
   score: number;
   other: number;
-  fog: boolean;
-  flip: boolean;
   banner: string;
 }

@@ -4,7 +4,7 @@ import { gameById } from '../games/registry';
 import { TUTOS } from '../games/tutos';
 import { sofaGroup, characterGroup, starGroup } from '../shared/art/canapet-art.js';
 import { CharCanvas } from '../shared/CharCanvas';
-import { LIGHT, PREVIEW } from '../shared/device';
+import { IS_PHONE, LIGHT, PREVIEW } from '../shared/device';
 import { ordinal, t } from '../shared/i18n';
 import { gameIcon, tint, Wordmark } from '../shared/Logo';
 import { INK, MENTHE, ROSE, SOLEIL, VIOLET } from '../shared/palette';
@@ -127,6 +127,18 @@ export function TvApp() {
 
   return (
     <div className="tv">
+      {/* Téléphone en mode télé : un bouton pour revenir à l'accueil */}
+      {IS_PHONE && (
+        <button
+          className="tv-quit"
+          onClick={() => {
+            const fr = session.lang() === 'fr';
+            if (session.phase === 'lobby' || window.confirm(fr ? 'Quitter le mode télé ? La partie s’arrêtera.' : 'Leave TV mode? The game will stop.')) location.hash = '#/';
+          }}
+        >
+          ✕ {session.lang() === 'fr' ? 'Quitter le mode télé' : 'Leave TV mode'}
+        </button>
+      )}
       {session.phase === 'lobby' ? <Lobby session={session} players={players} hostPid={hostPid} /> : <GameView session={session} />}
 
       {/* Pendant le jeu, le QR code se cache (il gênait les joueurs) : il revient en pause et aux résultats */}
@@ -636,7 +648,8 @@ function drawPause(g: CanvasRenderingContext2D, session: Session, t: number) {
 function drawTimer(g: CanvasRenderingContext2D, session: Session, t: number) {
   const left = session.timeLeft();
   const def = session.def;
-  if (left === null || !def?.limit) return;
+  const limit = session.limitNow();
+  if (left === null || !def || !limit) return;
   const lang = session.lang();
   if (session.timeUp > 0) {
     // Grand bandeau « Temps écoulé ! »
@@ -704,7 +717,7 @@ function drawTimer(g: CanvasRenderingContext2D, session: Session, t: number) {
   g.fillStyle = hot ? '#ff3b3b' : MENTHE;
   g.beginPath();
   g.moveTo(cx, 0);
-  g.arc(cx, 0, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (left / def.limit));
+  g.arc(cx, 0, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (left / limit));
   g.closePath();
   g.fill();
   g.beginPath();

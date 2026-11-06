@@ -1,156 +1,54 @@
-// Manette de La Bataille des Fusions : le bac de ton équipe en petit. À ton tour, glisse le doigt pour viser, lève-le pour lâcher.
+// Manette de La Bataille des Fusions : on regarde le bac sur la télé. Le téléphone sert juste à viser :
+// tout l'écran est une barre, l'aliment suit le doigt, et lever le doigt le lâche.
 import { useEffect, useRef, useState } from 'react';
-import { FUSION_COLORS, FUSION_EMOJI, FUSION_H, FUSION_R, FUSION_W, type FusionPadData } from '../games/fusionShared';
+import { FUSION_COLORS, FUSION_EMOJI, type FusionPadData } from '../games/fusionShared';
 import type { Lang, ToTv } from '../shared/protocol';
 
 export function FusionPad({ data, lang, send }: { data: FusionPadData; lang: Lang; send: (m: ToTv) => void }) {
   const fr = lang === 'fr';
-  const ref = useRef<HTMLCanvasElement>(null);
-  const latest = useRef(data);
-  latest.current = data;
   const [finger, setFinger] = useState<number | null>(null);
-  const fingerRef = useRef<number | null>(null);
-  fingerRef.current = finger;
   const lastSend = useRef(0);
-  const wasMine = useRef(false);
-  const wrap = useRef<HTMLDivElement>(null);
-  const board = useRef<HTMLDivElement>(null);
-  /** Où chaque aliment est affiché : il glisse vers sa vraie place, reçue 4 fois par seconde. */
-  const shown = useRef(new Map<number, { x: number; y: number }>());
-  const lastFrame = useRef(0);
 
-  // Ton tour arrive : on vibre
+  // Ton tour arrive : on vibre. Ton tour s'arrête : on oublie le doigt.
   useEffect(() => {
-    if (data.mine && !wasMine.current) navigator.vibrate?.([40, 40, 80]);
-    wasMine.current = data.mine;
-    if (!data.mine) setFinger(null);
+    if (data.mine) navigator.vibrate?.([40, 40, 80]);
+    else setFinger(null);
   }, [data.mine]);
 
-  useEffect(() => {
-    const cv = ref.current!;
-    const g = cv.getContext('2d')!;
-    let raf = 0;
-    const draw = () => {
-      const d = latest.current;
-      // Le bac garde toujours ses proportions et tient en entier dans la place disponible, debout comme couché
-      const w = wrap.current!;
-      const bd = board.current!;
-      const fit = Math.max(40, Math.floor(Math.min(w.clientWidth, (w.clientHeight * FUSION_W) / FUSION_H)));
-      const fitH = Math.floor((fit * FUSION_H) / FUSION_W);
-      if (bd.style.width !== `${fit}px` || bd.style.height !== `${fitH}px`) {
-        bd.style.width = `${fit}px`;
-        bd.style.height = `${fitH}px`;
-      }
-      const r = cv.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const bw = Math.max(1, Math.round(r.width * dpr));
-      const bh = Math.max(1, Math.round(r.height * dpr));
-      if (cv.width !== bw || cv.height !== bh) {
-        cv.width = bw;
-        cv.height = bh;
-      }
-      const k = bw / FUSION_W;
-      g.setTransform(k, 0, 0, k, 0, 0);
-      g.clearRect(0, 0, FUSION_W, FUSION_H);
-      g.strokeStyle = '#ff4f9a';
-      g.lineWidth = 6;
-      g.setLineDash([22, 16]);
-      g.beginPath();
-      g.moveTo(0, 90);
-      g.lineTo(FUSION_W, 90);
-      g.stroke();
-      g.setLineDash([]);
-      const disc = (x: number, y: number, l: number, rad: number) => {
-        if (l < 0) {
-          g.font = `${rad * 1.7}px sans-serif`;
-          g.textAlign = 'center';
-          g.textBaseline = 'middle';
-          g.fillText('🧦', x, y);
-          return;
-        }
-        g.fillStyle = FUSION_COLORS[l];
-        g.strokeStyle = '#3a2140';
-        g.lineWidth = 5;
-        g.beginPath();
-        g.arc(x, y, rad, 0, Math.PI * 2);
-        g.fill();
-        g.stroke();
-        g.font = `${rad * 1.15}px sans-serif`;
-        g.textAlign = 'center';
-        g.textBaseline = 'middle';
-        g.fillStyle = '#000';
-        g.fillText(FUSION_EMOJI[l], x, y + rad * 0.06);
-      };
-      const now = performance.now();
-      const step = Math.min(1, ((now - lastFrame.current) / 1000) * 12);
-      lastFrame.current = now;
-      const pos = shown.current;
-      const alive = new Set<number>();
-      for (const [x, y, l, id] of d.balls) {
-        alive.add(id);
-        let q = pos.get(id);
-        if (!q) {
-          q = { x, y };
-          pos.set(id, q);
-        }
-        q.x += (x - q.x) * step;
-        q.y += (y - q.y) * step;
-        disc(q.x, q.y, l, l < 0 ? 40 : FUSION_R[l]);
-      }
-      for (const id of pos.keys()) if (!alive.has(id)) pos.delete(id);
-      if (d.fog) {
-        g.fillStyle = 'rgba(232,236,242,.93)';
-        g.fillRect(0, 120, FUSION_W, FUSION_H - 240);
-      }
-      // La visée : celle du doigt à ton tour, sinon celle du joueur de l'équipe
-      const own = fingerRef.current;
-      const raw = own !== null ? own : (d.aim / 1000) * FUSION_W;
-      const nr = FUSION_R[d.next];
-      const ax = Math.max(nr, Math.min(FUSION_W - nr, own !== null && d.flip ? FUSION_W - raw : raw));
-      g.strokeStyle = 'rgba(58,33,64,.3)';
-      g.lineWidth = 5;
-      g.setLineDash([10, 12]);
-      g.beginPath();
-      g.moveTo(ax, 34);
-      g.lineTo(ax, FUSION_H);
-      g.stroke();
-      g.setLineDash([]);
-      disc(ax, 34, d.next, nr);
-      raf = requestAnimationFrame(draw);
-    };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
+  /** Position du doigt de 0 à 1, même quand la manette est affichée tournée. */
   const xOf = (e: React.PointerEvent) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    const el = e.currentTarget as HTMLElement;
+    const r = el.getBoundingClientRect();
+    const turned = !!el.closest('.pad.turn') && window.matchMedia('(orientation: portrait)').matches;
+    const k = turned ? (e.clientY - r.top) / r.height : (e.clientX - r.left) / r.width;
+    return Math.max(0, Math.min(1, k));
   };
+  const aim = (x: number) => send({ t: 'act', a: 'aim', n: [Math.round(x * 1000)] });
+
   return (
     <div className={`fusion-pad ${data.mine ? 'mine' : ''}`} style={{ ['--c' as string]: data.color }}>
       <p className="fusion-top">
         <b>{data.team}</b>
         <span>{data.score} · {data.other}</span>
       </p>
-      <p className="fusion-turn">{data.banner || (data.mine ? (fr ? `👆 À toi ! Glisse et lève le doigt (${data.left})` : `👆 Your turn! Slide and lift your finger (${data.left})`) : fr ? `Au tour de ${data.who}…` : `${data.who}’s turn…`)}</p>
-      <div className="fusion-wrap" ref={wrap}>
       <div
-        className="fusion-board"
-        ref={board}
+        className="fusion-zone"
         onPointerDown={(e) => {
           if (!data.mine) return;
           e.preventDefault();
           e.currentTarget.setPointerCapture(e.pointerId);
-          setFinger(xOf(e) * FUSION_W);
+          const x = xOf(e);
+          setFinger(x);
+          aim(x);
         }}
         onPointerMove={(e) => {
           if (finger === null) return;
           const x = xOf(e);
-          setFinger(x * FUSION_W);
+          setFinger(x);
           const now = performance.now();
-          if (now - lastSend.current > 70) {
+          if (now - lastSend.current > 60) {
             lastSend.current = now;
-            send({ t: 'act', a: 'aim', n: [Math.round(x * 1000)] });
+            aim(x);
           }
         }}
         onPointerUp={(e) => {
@@ -161,8 +59,23 @@ export function FusionPad({ data, lang, send }: { data: FusionPadData; lang: Lan
         }}
         onPointerCancel={() => setFinger(null)}
       >
-        <canvas ref={ref} />
-      </div>
+        <p className="fusion-turn">
+          {data.banner ||
+            (data.mine
+              ? fr
+                ? `👆 À toi ! Regarde la télé, glisse, lève le doigt (${data.left})`
+                : `👆 Your turn! Watch the TV, slide, lift your finger (${data.left})`
+              : fr
+                ? `📺 Au tour de ${data.who}…`
+                : `📺 ${data.who}’s turn…`)}
+        </p>
+        {data.mine && (
+          <div className="fusion-rail">
+            <i className="fusion-piece" style={{ left: `${(finger ?? 0.5) * 100}%`, background: FUSION_COLORS[data.next] }}>
+              {FUSION_EMOJI[data.next]}
+            </i>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -114,8 +114,8 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     en: { goal: 'Find your team’s words with the chef’s clue!', steps: [['👨‍🍳', 'The chef sees the colours and gives one word + a number'], ['👆', 'The team taps words on the phone. Wrong word = end of turn'], ['💀', 'The cursed word loses the game at once!']] },
   },
   fusion: {
-    fr: { goal: 'Fais le plus gros score sans faire déborder ton bac !', steps: [['🔄', 'Chacun son tour : glisse le doigt sur le téléphone, lève-le pour lâcher'], ['🍉', 'Deux aliments pareils fusionnent en plus gros et rapportent des points'], ['😈', 'Les fusions chargent un malus envoyé à l’autre équipe. Au-dessus de la ligne trop longtemps = perdu']] },
-    en: { goal: 'Get the highest score without overflowing your tub!', steps: [['🔄', 'Take turns: slide on your phone, lift your finger to drop'], ['🍉', 'Two identical foods merge into a bigger one for points'], ['😈', 'Merges charge a penalty sent to the other team. Above the line too long = you lose']] },
+    fr: { goal: 'Fais le plus gros score sans faire déborder ton bac !', steps: [['📺', 'Chacun son tour : regarde la télé, glisse le doigt pour viser, lève-le pour lâcher'], ['🍉', 'Deux aliments pareils fusionnent en plus gros et rapportent des points'], ['😈', 'Les fusions envoient des malus : rochers qui prennent la place, Glouton qui mange tes aliments. Au-dessus de la ligne = perdu']] },
+    en: { goal: 'Get the highest score without overflowing your tub!', steps: [['📺', 'Take turns: watch the TV, slide your finger to aim, lift it to drop'], ['🍉', 'Two identical foods merge into a bigger one for points'], ['😈', 'Merges send penalties: space-hogging boulders, the food-eating Glutton. Above the line = you lose']] },
   },
   lettre: {
     fr: { goal: 'Un thème, une lettre : trouve un mot !', steps: [['🔤', 'Tape un maximum de mots du thème qui commencent par la lettre'], ['⭐', 'Chaque mot que toi seul as = 3 points, en commun = 1, le tout premier +1'], ['🤔', 'Un mot bizarre ? Les autres peuvent le refuser']] },

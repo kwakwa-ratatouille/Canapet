@@ -18,21 +18,24 @@ const TURN = 6;
 const CHARGE = 6;
 const POINTS = [1, 3, 6, 10, 15, 21, 28, 36, 45, 55];
 
-type Malus = 'seisme' | 'brouillard' | 'vent' | 'inverse' | 'chaussette' | 'presse';
+// Des malus qui gênent vraiment : rien qui secoue le bac (ça aidait à fusionner)
+type Malus = 'rocher' | 'glouton' | 'brouillard' | 'inverse' | 'presse';
 const MALUS: Record<Malus, { emoji: string; fr: string; en: string; t: number }> = {
-  seisme: { emoji: '🌋', fr: 'Séisme !', en: 'Earthquake!', t: 1.4 },
-  brouillard: { emoji: '🌫️', fr: 'Brouillard !', en: 'Fog!', t: 6 },
-  vent: { emoji: '💨', fr: 'Coup de vent !', en: 'Gust of wind!', t: 5 },
+  rocher: { emoji: '🪨', fr: 'Un rocher tombe !', en: 'A boulder falls!', t: 1.5 },
+  glouton: { emoji: '😈', fr: 'Le Glouton mange tes aliments !', en: 'The Glutton eats your food!', t: 1.5 },
+  brouillard: { emoji: '🌫️', fr: 'Brouillard !', en: 'Fog!', t: 7 },
   inverse: { emoji: '🔄', fr: 'Visée inversée !', en: 'Reversed aim!', t: 8 },
-  chaussette: { emoji: '🧦', fr: 'Chaussette puante !', en: 'Smelly sock!', t: 1.5 },
   presse: { emoji: '⏱️', fr: 'Dépêche-toi !', en: 'Hurry up!', t: 8 },
 };
 const MALUS_LIST = Object.keys(MALUS) as Malus[];
+/** Les rochers et le Glouton tombent bien plus souvent que les autres malus. */
+const MALUS_BAG: Malus[] = ['rocher', 'rocher', 'rocher', 'glouton', 'glouton', 'brouillard', 'inverse', 'presse'];
+/** Taille d'un rocher : deux pareils se collent en un plus gros, plus lourd. */
+const ROCK_R = [0, 66, 96, 126, 156];
+/** Un rocher tombe tout seul dans chaque bac de temps en temps : le bac finit par se remplir. */
+const ROCK_EVERY = 32;
 
-let ballIds = 0;
 interface Ball {
-  /** Numéro fixe, pour que le téléphone le fasse glisser sans à-coups. */
-  id: number;
   x: number;
   y: number;
   vx: number;
@@ -41,7 +44,11 @@ interface Ball {
   r: number;
   age: number;
   dead?: boolean;
-  /** Chaussette : gêne puis disparaît. */
+  /** Rocher : ne fusionne qu'avec un rocher pareil, très lourd (de 1 à 4). */
+  rock?: number;
+  /** Glouton : mange ce qu'il touche, puis repart. */
+  bites?: number;
+  /** Temps avant de disparaître tout seul. */
   junk?: number;
 }
 interface Pop {
@@ -68,44 +75,49 @@ interface Board {
   banner: { text: string; t: number } | null;
   botAt: number;
   botAim: number;
+  /** La visée affichée à la télé, qui glisse vers la vraie. */
+  shownAim: number;
 }
 interface Pl extends Runner {
   side: number;
 }
 
-const pick = () => {
-  const r = Math.random();
-  return r < 0.35 ? 0 : r < 0.65 ? 1 : r < 0.85 ? 2 : r < 0.96 ? 3 : 4;
-};
-
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
+  let clock = 0;
+  /** Les aliments sont de plus en plus gros au fil de la partie : le bac se remplit plus vite. */
+  const pick = () => {
+    const boost = Math.min(0.24, clock / 500);
+    const r = Math.random();
+    return r < 0.35 - boost ? 0 : r < 0.65 - boost ? 1 : r < 0.85 - boost ? 2 : r < 0.96 - boost / 2 ? 3 : 4;
+  };
   // Les équipes du salon, sinon un sur deux
   const pls: Pl[] = runners.map((r, i) => ({ ...r, side: r.team ?? i % 2 }));
-  const boards: Board[] = [0, 1].map((id) => ({ id, players: pls.filter((p) => p.side === id), balls: [], pops: [], score: 0, turn: 0, left: TURN, cool: 0, aim: FUSION_W / 2, next: pick(), after: pick(), charge: 0, over: 0, effects: {}, banner: null, botAt: 1, botAim: FUSION_W / 2 }));
+  const boards: Board[] = [0, 1].map((id) => ({ id, players: pls.filter((p) => p.side === id), balls: [], pops: [], score: 0, turn: 0, left: TURN, cool: 0, aim: FUSION_W / 2, next: pick(), after: pick(), charge: 0, over: 0, effects: {}, banner: null, botAt: 1, botAim: FUSION_W / 2, shownAim: FUSION_W / 2 }));
   let winner = -1;
   let endT = 0;
-  let clock = 0;
   let lastPush = 0;
+  let nextRock = ROCK_EVERY;
   let shake = 0;
 
   const current = (b: Board) => b.players[b.turn % Math.max(1, b.players.length)];
+  const dropRock = (to: Board) => {
+    const r = ROCK_R[1];
+    to.balls.push({ x: r + Math.random() * (FUSION_W - r * 2), y: 30, vx: 0, vy: 200, l: -2, r, age: 0, rock: 1 });
+  };
   const sendMalus = (from: Board) => {
     const to = boards[1 - from.id];
-    const kind = MALUS_LIST[Math.floor(Math.random() * MALUS_LIST.length)];
+    const kind = MALUS_BAG[Math.floor(Math.random() * MALUS_BAG.length)];
     const m = MALUS[kind];
     to.effects[kind] = m.t;
     to.banner = { text: `${m.emoji} ${fr ? m.fr : m.en}`, t: 2.2 };
     from.charge = 0;
     sfx.boing();
-    if (kind === 'seisme') {
-      shake = 0.5;
-      to.balls.forEach((x) => {
-        x.vx += (Math.random() - 0.5) * 500;
-        x.vy -= 260 + Math.random() * 240;
-      });
+    if (kind === 'rocher') {
+      dropRock(to);
+      shake = 0.35;
     }
-    if (kind === 'chaussette') to.balls.push({ id: ++ballIds, x: 120 + Math.random() * (FUSION_W - 240), y: 30, vx: 0, vy: 0, l: -1, r: 40, age: 0, junk: 14 });
+    if (kind === 'glouton') to.balls.push({ x: 100 + Math.random() * (FUSION_W - 200), y: 30, vx: 0, vy: 0, l: -3, r: 44, age: 0, bites: 2, junk: 20 });
     to.players.forEach((p) => {
       if (!p.bot) ctx.buzz(p.pid, 120);
     });
@@ -114,7 +126,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const drop = (b: Board) => {
     if (b.cool > 0 || winner >= 0) return;
     const r = FUSION_R[b.next];
-    b.balls.push({ id: ++ballIds, x: Math.max(r, Math.min(FUSION_W - r, b.aim)), y: 34, vx: 0, vy: 0, l: b.next, r, age: 0 });
+    b.balls.push({ x: Math.max(r, Math.min(FUSION_W - r, b.aim)), y: 34, vx: 0, vy: 0, l: b.next, r, age: 0 });
     b.next = b.after;
     b.after = pick();
     b.cool = 0.65;
@@ -135,7 +147,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const pts = POINTS[l];
     b.score += pts;
     b.pops.push({ x, y, text: `+${pts}`, life: 0.9 });
-    if (l + 1 < FUSION_R.length) b.balls.push({ id: ++ballIds, x, y, vx: (a.vx + c.vx) / 2, vy: (a.vy + c.vy) / 2 - 80, l: l + 1, r: FUSION_R[l + 1], age: 0 });
+    if (l + 1 < FUSION_R.length) b.balls.push({ x, y, vx: (a.vx + c.vx) / 2, vy: (a.vy + c.vy) / 2 - 80, l: l + 1, r: FUSION_R[l + 1], age: 0 });
     else {
       // Les deux plus gros : ils disparaissent, gros bonus
       b.score += 100;
@@ -147,12 +159,34 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (b.charge >= CHARGE) sendMalus(b);
   };
 
+  /** Deux rochers pareils : un seul, plus gros et plus lourd. Ça ne rapporte rien. */
+  const mergeRocks = (b: Board, a: Ball, c: Ball) => {
+    a.dead = c.dead = true;
+    const rock = a.rock! + 1;
+    const r = ROCK_R[rock];
+    b.balls.push({ x: Math.max(r, Math.min(FUSION_W - r, (a.x + c.x) / 2)), y: (a.y + c.y) / 2, vx: 0, vy: 0, l: -2, r, age: 0, rock });
+    b.pops.push({ x: (a.x + c.x) / 2, y: (a.y + c.y) / 2 - 40, text: fr ? 'ENCORE PLUS GROS !' : 'EVEN BIGGER!', life: 1.2 });
+    shake = 0.3;
+    sfx.boom();
+  };
+  /** Le Glouton mange un aliment : il disparaît et son équipe perd ses points. */
+  const bite = (b: Board, e: Ball, food: Ball) => {
+    food.dead = true;
+    const lost = Math.max(2, POINTS[food.l]);
+    b.score = Math.max(0, b.score - lost);
+    b.pops.push({ x: food.x, y: food.y, text: `CROC ! -${lost}`, life: 1.1 });
+    e.bites = (e.bites ?? 1) - 1;
+    if (e.bites <= 0) e.dead = true;
+    sfx.boing();
+    b.players.forEach((p) => {
+      if (!p.bot) ctx.buzz(p.pid, 100);
+    });
+  };
+
   const physics = (b: Board, h: number) => {
-    const wind = (b.effects.vent ?? 0) > 0 ? Math.sin(clock * 1.7) * 900 : 0;
     for (const a of b.balls) {
       a.age += h;
       a.vy += GRAV * h;
-      a.vx += wind * h;
       a.vx *= 0.996;
       a.x += a.vx * h;
       a.y += a.vy * h;
@@ -173,13 +207,27 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             merge(b, a, c);
             break;
           }
+          if (a.rock && a.rock === c.rock && a.rock < 4) {
+            mergeRocks(b, a, c);
+            break;
+          }
+          if (a.bites && c.l >= 0) {
+            bite(b, a, c);
+            if (a.dead) break;
+            continue;
+          }
+          if (c.bites && a.l >= 0) {
+            bite(b, c, a);
+            break;
+          }
           const d = Math.sqrt(d2);
           const nx = dx / d;
           const ny = dy / d;
           const push = (min - d) / 2;
           // Le plus gros bouge moins
-          const ma = a.r * a.r;
-          const mc = c.r * c.r;
+          // Un rocher pèse bien plus lourd que tout le reste
+          const ma = a.r * a.r * (a.rock ? 10 : 1);
+          const mc = c.r * c.r * (c.rock ? 10 : 1);
           const ka = (2 * mc) / (ma + mc);
           const kc = (2 * ma) / (ma + mc);
           a.x -= nx * push * ka;
@@ -285,8 +333,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           ctx.refresh();
         }
       }
-      // Les téléphones voient le plateau, quelques fois par seconde : ça suffit et ça ne charge pas la liaison
-      if (clock - lastPush > 0.25) {
+      // Un rocher tombe tout seul de temps en temps, de plus en plus souvent
+      if (winner < 0 && clock >= nextRock) {
+        nextRock = clock + Math.max(14, ROCK_EVERY - clock / 12);
+        boards.forEach(dropRock);
+        sfx.boom();
+      }
+      for (const b of boards) b.shownAim += (b.aim - b.shownAim) * Math.min(1, dt * 16);
+      // Le téléphone n'affiche que le tour et le compte à rebours : une fois par seconde suffit
+      if (clock - lastPush > 1) {
         lastPush = clock;
         pushPads();
       }
@@ -298,7 +353,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const ox = OX[b.id];
         const team = TEAMS[b.id];
         g.save();
-        if (shake > 0 && (b.effects.seisme ?? 0) > 0) g.translate((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 12);
+        if (shake > 0) g.translate((Math.random() - 0.5) * 16 * shake * 2, (Math.random() - 0.5) * 12 * shake * 2);
         // L'équipe et son score
         g.fillStyle = team.color;
         g.strokeStyle = INK;
@@ -338,8 +393,31 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(fr ? 'malus' : 'malus', ox + 685, 170);
         const ball = (x: number, y: number, l: number, r: number) => {
           if (l < 0) {
-            g.font = `${Math.round(r * 1.7)}px sans-serif`;
-            g.fillText('🧦', x, y);
+            // Rocher gris, ou Glouton violet : on les reconnaît tout de suite
+            g.fillStyle = l === -2 ? '#8d8796' : '#7a2fd0';
+            g.strokeStyle = INK;
+            g.lineWidth = 6;
+            g.beginPath();
+            g.arc(x, y, r, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+            if (l === -2) {
+              g.fillStyle = 'rgba(58,33,64,.28)';
+              g.beginPath();
+              g.arc(x - r * 0.3, y + r * 0.2, r * 0.24, 0, Math.PI * 2);
+              g.arc(x + r * 0.38, y - r * 0.28, r * 0.16, 0, Math.PI * 2);
+              g.fill();
+              g.fillStyle = 'rgba(255,255,255,.3)';
+              g.beginPath();
+              g.arc(x - r * 0.35, y - r * 0.42, r * 0.17, 0, Math.PI * 2);
+              g.fill();
+            } else {
+              g.font = `${Math.round(r * 1.3)}px sans-serif`;
+              g.textAlign = 'center';
+              g.textBaseline = 'middle';
+              g.fillStyle = INK;
+              g.fillText('😈', x, y + r * 0.06);
+            }
             return;
           }
           g.fillStyle = FUSION_COLORS[l];
@@ -381,9 +459,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         // La visée
         if (winner < 0) {
           const nr = FUSION_R[b.next];
-          const ax = Math.max(nr, Math.min(FUSION_W - nr, b.aim));
-          g.strokeStyle = 'rgba(58,33,64,.25)';
-          g.lineWidth = 4;
+          const ax = Math.max(nr, Math.min(FUSION_W - nr, b.shownAim));
+          // La visée se voit de loin : on place en regardant la télé
+          g.strokeStyle = team.color;
+          g.lineWidth = 6;
           g.setLineDash([10, 12]);
           g.beginPath();
           g.moveTo(ox + ax, OY + 34);
@@ -448,12 +527,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         who: cur?.profile.name ?? '',
         left: Math.ceil(Math.max(0, b.left)),
         next: b.next,
-        aim: Math.round((b.aim / FUSION_W) * 1000),
-        balls: b.balls.map((a) => [Math.round(a.x), Math.round(a.y), a.l, a.id]),
         score: b.score,
         other: boards[1 - p.side].score,
-        fog: (b.effects.brouillard ?? 0) > 0,
-        flip: (b.effects.inverse ?? 0) > 0,
         banner: b.banner?.text ?? '',
       };
     },
@@ -467,15 +542,18 @@ export const fusion: GameBase = {
   emoji: '🍉',
   name: { fr: 'La Bataille des Fusions', en: 'Merge Battle' },
   how: {
-    fr: 'Chacun son tour, lâche un aliment : deux pareils fusionnent et envoient des malus à l’autre équipe. Si ton bac déborde, c’est perdu !',
-    en: 'Take turns dropping food: two alike merge and send penalties to the other team. If your tub overflows, you lose!',
+    fr: 'Chacun son tour, vise en regardant la télé et lâche un aliment : deux pareils fusionnent et envoient des malus à l’autre équipe (rochers, Glouton…). Si ton bac déborde, c’est perdu !',
+    en: 'Take turns: aim while watching the TV and drop food. Two alike merge and send penalties to the other team (boulders, the Glutton…). If your tub overflows, you lose!',
   },
   layout: 'buttons',
   min: 2,
   max: 12,
   botFill: 4,
   music: 'arcade',
-  limit: 150,
+  limit: 180,
+  limitOpt: 'time',
   timerTop: true,
+  // Le premier choix sert aussi au tournoi : 3 minutes, pour ne pas y passer trop de temps
+  options: [{ id: 'time', label: { fr: 'Temps', en: 'Time' }, choices: [{ v: 180, label: { fr: '3 min', en: '3 min' } }, { v: 300, label: { fr: '5 min', en: '5 min' } }, { v: 480, label: { fr: '8 min', en: '8 min' } }, { v: 0, label: { fr: 'Jusqu’à ce qu’un bac déborde', en: 'Until a tub overflows' } }] }],
   create,
 };

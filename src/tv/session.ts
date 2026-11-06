@@ -755,6 +755,7 @@ export class Session {
         else if (this.def?.id !== id) this.opts = {};
         const o: Record<string, number> = {};
         for (const op of def.options ?? []) o[op.id] = this.opts[op.id] ?? op.choices[0].v;
+        this.gameOpts = o;
         return o;
       })(),
     });
@@ -1360,9 +1361,18 @@ export class Session {
     this.changed();
   }
 
+  /** Options de la partie en cours. */
+  private gameOpts: Record<string, number> = {};
+  /** Le temps maximum de la partie en cours : celui du jeu, ou celui choisi par l'hôte. */
+  limitNow(): number {
+    const d = this.def;
+    if (!d) return 0;
+    return d.limitOpt ? (this.gameOpts[d.limitOpt] ?? d.limit ?? 0) : (d.limit ?? 0);
+  }
+
   /** Secondes de jeu restantes au chrono (null si le jeu n'a pas de temps maximum). */
   timeLeft(): number | null {
-    const lim = this.def?.limit;
+    const lim = this.limitNow();
     if (!lim || this.phase !== 'game') return null;
     return Math.max(0, lim - Math.max(0, this.clock - this.intro - COUNT));
   }

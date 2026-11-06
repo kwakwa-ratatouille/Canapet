@@ -61,6 +61,8 @@ export interface GameBase {
   music: MusicId;
   /** Temps de jeu maximum (s) : chrono à l'écran, la partie s'arrête à zéro avec le classement du moment. */
   limit?: number;
+  /** L'option de l'hôte qui donne ce temps (en secondes, 0 = sans limite). Sinon, c'est `limit`. */
+  limitOpt?: string;
   /** Chrono en haut de l'écran (quand le bas est pris par l'interface du jeu). */
   timerTop?: boolean;
   /** Chrono dans le coin en haut à droite (quand le haut et le bas sont pris). */
