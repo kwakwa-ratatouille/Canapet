@@ -18,6 +18,7 @@ import './styles.css';
 // La télé (tous les jeux) et la manette sont chargées à part : le téléphone ne télécharge pas le code des jeux.
 const TvApp = lazy(() => import('./tv/TvApp').then((m) => ({ default: m.TvApp })));
 const PadApp = lazy(() => import('./pad/PadApp').then((m) => ({ default: m.PadApp })));
+const PhoneHost = lazy(() => import('./tv/PhoneHost').then((m) => ({ default: m.PhoneHost })));
 
 // Navigation par « # » : marche sur GitHub Pages, Chromecast et l'appli PC sans réglage serveur.
 function parse() {
@@ -50,6 +51,12 @@ function App() {
       </Suspense>
     );
   }
+  if (page === 'hote')
+    return (
+      <Suspense fallback={null}>
+        <PhoneHost />
+      </Suspense>
+    );
   if (page === 'aide') return <Help />;
   if (page === 'site') return <Site result={route.query.get('achat')} />;
   if (page && isLegal(page)) return <Legal page={page} />;

@@ -2,6 +2,7 @@
 // Les téléphones s'y connectent en direct (WebRTC DataChannel).
 import { CONFIG } from '../shared/cloud';
 import Peer, { type DataConnection } from 'peerjs';
+import { localLink } from '../shared/noTv';
 import { ICE_SERVERS, PEER_PREFIX, randomCode, type ToPad, type ToTv } from '../shared/protocol';
 
 export type NetStatus = 'connecting' | 'ready' | 'error';
@@ -24,7 +25,27 @@ export class TvNet {
   private relay?: { send(pid: string, m: unknown): void; stop(): void };
   private viaRelay = new Set<string>();
 
+  /** Sans télé : la manette du même téléphone. */
+  private localPid = '';
+
   constructor(private h: Handlers) {}
+
+  /** Sans télé : la manette de ce téléphone passe directement, sans internet. */
+  acceptLocal() {
+    localLink.toTv = (m) => {
+      if (m.t === 'ping') localLink.toPad?.({ t: 'pong', ts: m.ts });
+      if (m.t === 'hello') this.localPid = m.pid;
+      if (this.localPid) this.h.onMsg(this.localPid, m);
+    };
+  }
+
+  /** Sans télé : la même chose pour tous les téléphones en direct ; on saute ceux qui n'arrivent pas à suivre. */
+  broadcast(m: ToPad) {
+    if (this.localPid) localLink.toPad?.(m);
+    for (const c of this.byPid.values()) {
+      if (c.open && (c.dataChannel?.bufferedAmount ?? 0) < 200000) c.send(m);
+    }
+  }
 
   start() {
     let code = '';
@@ -162,6 +183,10 @@ export class TvNet {
   }
 
   send(pid: string, m: ToPad) {
+    if (pid === this.localPid) {
+      localLink.toPad?.(m);
+      return;
+    }
     const c = this.byPid.get(pid);
     if (c?.open) c.send(m);
     else if (this.viaRelay.has(pid)) this.relay?.send(pid, m);

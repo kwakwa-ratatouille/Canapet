@@ -34,6 +34,14 @@ export interface Profile {
 
 export type PadLayout = 'tap' | 'stick' | 'bluff' | 'buttons';
 
+/** Une ligne du classement affiché sur le téléphone. */
+export interface BoardRow {
+  name: string;
+  color: string;
+  pts: number;
+  me: boolean;
+}
+
 /** Ce que la manette sait d’un jeu (la télé l’envoie : la manette ne charge pas le code des jeux). */
 export interface GameInfo {
   id: string;
@@ -58,8 +66,8 @@ export interface GhostInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; /** Achats des joueurs présents : profitent à tout le salon. */ roomItems?: string[]; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; /** Noms d'équipe choisis par l'hôte. */ teamNames?: string[]; /** Tous les joueurs présents. */ roster?: { pid: string; name: string; color: string; level?: number; chief: boolean; me: boolean }[]; /** Voix qui existent vraiment à la télé. */ voicesOk?: number[]; /** Les voix à prénom se téléchargent encore. */ voiceLoading?: boolean; recap?: boolean; players: { pid: string; name: string; color: string }[] }
-  | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean; secret?: SecretInfo }
+  | { s: 'lobby'; /** Achats des joueurs présents : profitent à tout le salon. */ roomItems?: string[]; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; /** Noms d'équipe choisis par l'hôte. */ teamNames?: string[]; /** Tous les joueurs présents. */ roster?: { off?: boolean; pid: string; name: string; color: string; level?: number; chief: boolean; me: boolean }[]; /** Voix qui existent vraiment à la télé. */ voicesOk?: number[]; /** Les voix à prénom se téléchargent encore. */ voiceLoading?: boolean; recap?: boolean; players: { pid: string; name: string; color: string }[] }
+  | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean; secret?: SecretInfo; /** Sans télé : le tuto, sur le téléphone. */ tutoInfo?: { goal: string; steps: string[][] } }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }
   | { s: 'wait'; game: string }
@@ -73,8 +81,10 @@ export type PadScreen =
       total: number;
       step: { index: number; count: number } | null;
       secret?: SecretInfo;
+      /** Sans télé : le classement, sur le téléphone. */
+      board?: BoardRow[];
     }
-  | { s: 'podium'; gid: number; host: boolean; rank: number; total: number; secret?: SecretInfo }
+  | { s: 'podium'; gid: number; host: boolean; rank: number; total: number; secret?: SecretInfo; board?: BoardRow[] }
   /** Bilan de la soirée (titres rigolos). */
   | { s: 'recap'; host: boolean }
   /** Roue de la honte : la victime (ou l'hôte) la fait tourner. */
@@ -86,7 +96,9 @@ export type PadScreen =
 
 /** Télé → téléphone */
 export type ToPad =
-  | { t: 'welcome'; color: string; code: string; games?: GameInfo[] }
+  | { t: 'welcome'; color: string; code: string; games?: GameInfo[]; /** Partie sans télé. */ noTv?: boolean }
+  /** Partie sans télé : une image du jeu. */
+  | { t: 'shot'; d: string }
   | { t: 'screen'; screen: PadScreen }
   | { t: 'buzz'; ms: number }
   /** Pendant la partie, chaque seconde : ta place et le temps restant. */

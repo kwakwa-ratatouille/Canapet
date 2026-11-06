@@ -220,6 +220,13 @@ export function Home() {
   );
   const tv = (
     <div className="home-card tv-card">
+      <h2>📱 {fr ? 'Jouer sans télé' : 'Play without a TV'}</h2>
+      <p>{fr ? 'Ton téléphone héberge la partie et te sert de manette. Les autres entrent le code, à côté de toi ou à distance.' : 'Your phone hosts the game and is your controller. The others enter the code, next to you or far away.'}</p>
+      <div className="row">
+        <a className="btn big mint" href="#/hote">
+          📱 {fr ? 'Créer une partie' : 'Create a game'}
+        </a>
+      </div>
       <h2>📺 {t(lang, 'tvBtn')}</h2>
       <p>{t(lang, 'tvBtnSub')}</p>
       {IS_PHONE && (

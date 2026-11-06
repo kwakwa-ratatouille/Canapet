@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { QuizPadData } from '../games/quizShared';
+import { noTvState } from '../shared/noTv';
 import type { Lang, ToTv } from '../shared/protocol';
 
 /** Manette du Tribunal et du Dico Bidon : écrire une réponse ou choisir dans une liste. */
@@ -58,7 +59,7 @@ export function QuizPad({ data, lang, send }: { data: QuizPadData; lang: Lang; s
           ))}
         </div>
       ) : (
-        <p className="pad-title pulse">📺 {fr ? 'Regarde la télé !' : 'Watch the TV!'}</p>
+        <p className="pad-title pulse">{noTvState.on ? (fr ? '🔍 Touche l’image pour l’agrandir' : '🔍 Tap the picture to enlarge it') : fr ? '📺 Regarde la télé !' : '📺 Watch the TV!'}</p>
       )}
     </div>
   );

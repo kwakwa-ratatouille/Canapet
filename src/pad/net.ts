@@ -1,6 +1,7 @@
 // Côté téléphone : connexion directe à la télé dont l'identifiant contient le code.
 import Peer, { type DataConnection } from 'peerjs';
 import { ICE_SERVERS, PEER_PREFIX, type ToPad, type ToTv } from '../shared/protocol';
+import { localLink } from '../shared/noTv';
 import type { Relay } from '../shared/relay';
 
 /** Pour tester : #/m/CODE?relais=1 passe tout de suite par le relais, sans liaison directe. */
@@ -39,7 +40,18 @@ export class PadNet {
 
   constructor(private code: string, private h: Handlers) {}
 
+  /** Sans télé, sur le téléphone de l'hôte : la session est juste à côté. */
+  private local = false;
+
   start() {
+    if (localLink.code && localLink.code === this.code && localLink.toTv) {
+      this.local = true;
+      localLink.toPad = (m) => queueMicrotask(() => !this.stopped && this.receive(m));
+      this.set('ok');
+      this.send(this.h.hello());
+      this.timer = window.setInterval(() => this.send({ t: 'ping', ts: performance.now() }), 2000);
+      return;
+    }
     if (FORCE_RELAY) {
       this.useRelay();
       this.timer = window.setInterval(() => this.watch(), 2000);
@@ -196,6 +208,10 @@ export class PadNet {
   }
 
   send(m: ToTv) {
+    if (this.local) {
+      queueMicrotask(() => localLink.toTv?.(m));
+      return;
+    }
     if (this.conn?.open) this.conn.send(m);
     else if (this.viaRelay) {
       // Le renvoi régulier du stick ne sert à rien tant que rien n'a bougé : une fois par seconde suffit

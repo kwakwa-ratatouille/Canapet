@@ -24,11 +24,13 @@ import { ACCS, COLORS, EYE_LIST, FOODS, HATS, POSE_LIST } from '../shared/charac
 import { IS_IOS, newId, save, store } from '../shared/device';
 import { defaultLang, ordinal, t } from '../shared/i18n';
 import { gameIcon } from '../shared/Logo';
-import type { GameInfo, HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
+import type { BoardRow, GameInfo, HostAction, Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
 import { sfx, unlockAudio } from '../shared/sound';
 import { PadNet, type PadStatus } from './net';
 import { Stick, type Cools } from './Stick';
 import { ReactButton, SecretCard } from './ReactPad';
+import { TvPeek } from './TvPeek';
+import { PHONE_GAMES, localLink, noTvState, setShot } from '../shared/noTv';
 import { BluffPad } from './BluffPad';
 import { ScribblePad } from './ScribblePad';
 import { TraitorPad } from './TraitorPad';
@@ -227,12 +229,15 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   const account = { user, cloud, connect, disconnect, gotItem, keys, refreshKeys, openChest, setProgress, setProfile };
   /** Quitter la partie : la télé est prévenue, on revient à l'accueil (on peut revenir avec le même code). */
   const leave = () => {
-    if (!confirm(lang === 'fr' ? 'Quitter la partie ?' : 'Leave the game?')) return;
+    const hosting = localLink.code === code;
+    if (!confirm(hosting ? (lang === 'fr' ? 'Tu héberges la partie : elle s’arrêtera pour tout le monde. Quitter ?' : 'You host this game: it will stop for everyone. Leave?') : lang === 'fr' ? 'Quitter la partie ?' : 'Leave the game?')) return;
     send({ t: 'bye' });
     save('lastGame', null);
     setTimeout(() => {
       netRef.current?.stop();
       location.hash = '#/';
+      // Hôte sans télé : la partie s'arrête avec lui
+      if (localLink.code === code) location.reload();
     }, 200);
   };
   const [live, setLive] = useState<{ rank: number; of: number; left: number | null } | null>(demo === 'stick' ? { rank: 2, of: 4, left: 83 } : null);
@@ -275,7 +280,13 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         }
         if (m.t === 'status') setLive({ rank: m.rank, of: m.of, left: m.left });
         if (m.t === 'cool') setCools((c) => ({ ...c, [m.b]: m.s > 0 ? { at: performance.now(), s: m.s } : undefined }));
-        if (m.t === 'welcome') save('lastGame', { code, at: Date.now() });
+        if (m.t === 'shot') setShot(m.d);
+        if (m.t === 'screen' && m.screen.s !== 'play' && noTvState.shot) setShot('');
+        if (m.t === 'welcome') {
+          noTvState.on = !!m.noTv;
+          // Sur le téléphone de l'hôte, il n'y a pas de partie à retrouver après l'avoir quittée
+          save('lastGame', localLink.code === code ? null : { code, at: Date.now() });
+        }
         if (m.t === 'welcome' && m.games) setCatalog(m.games);
         if (m.t === 'screen' && m.screen.s === 'lobby' && m.screen.games.length) setCatalog(m.screen.games);
         if (m.t === 'welcome' && m.color !== profileRef.current.color) setProfile((p) => ({ ...p, color: m.color }));
@@ -431,6 +442,8 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           <p className="pulse">{t(lang, 'connectingTv')}</p>
         </div>
       ) : (
+        <>
+        {noTvState.on && (screen.s === 'play' ? !screen.tuto : screen.s === 'paused' || screen.s === 'wait') && <TvPeek game={'game' in screen ? screen.game : ''} lang={lang} />}
         <PadScreenView
           screen={screen}
           lang={lang}
@@ -447,8 +460,31 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
           family={family}
           edit={() => setEditing(true)}
         />
+        </>
       )}
     </div>
+  );
+}
+
+/** Sans télé : les jeux adaptés d'abord. */
+function pickList(games: GameInfo[]) {
+  if (!noTvState.on) return games;
+  return [...games.filter((g) => PHONE_GAMES.includes(g.id)), ...games.filter((g) => !PHONE_GAMES.includes(g.id))];
+}
+
+/** Sans télé : le classement, qui s'affichait sur la télé. */
+function BoardList({ rows }: { rows: BoardRow[] }) {
+  return (
+    <ol className="board-list">
+      {rows.map((r, i) => (
+        <li key={i} className={r.me ? 'me' : ''}>
+          <span>{i + 1}</span>
+          <i style={{ background: r.color }} />
+          <b>{r.name}</b>
+          <em>{r.pts}</em>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -460,7 +496,7 @@ function fmtCoins(n: number) {
 }
 
 /** Qui est dans la partie ; le chef peut passer la main ou retirer quelqu'un d'un seul geste. */
-function PlayersCard({ roster, host, lang, act }: { roster: { pid: string; name: string; color: string; level?: number; chief: boolean; me: boolean }[]; host: boolean; lang: Lang; act: (a: 'chief' | 'kick', pid: string) => void }) {
+function PlayersCard({ roster, host, lang, act }: { roster: { off?: boolean; pid: string; name: string; color: string; level?: number; chief: boolean; me: boolean }[]; host: boolean; lang: Lang; act: (a: 'chief' | 'kick', pid: string) => void }) {
   const fr = lang === 'fr';
   return (
     <section className="roster">
@@ -469,6 +505,7 @@ function PlayersCard({ roster, host, lang, act }: { roster: { pid: string; name:
         <div key={p.pid} className={`roster-row ${p.me ? 'me' : ''}`}>
           <i style={{ background: p.color }} />
           <b>{p.name || '???'}{p.me && <em>{fr ? ' (toi)' : ' (you)'}</em>}</b>
+          {p.off && <span className="roster-off">🔌 {fr ? 'Déconnecté' : 'Disconnected'}</span>}
           {p.chief && <span className="roster-chief">👑 {fr ? 'Chef' : 'Host'}</span>}
           {p.level && p.level > 1 ? <small>{fr ? 'Niv.' : 'Lv.'} {p.level}</small> : null}
           {host && !p.me && (
@@ -692,13 +729,15 @@ function PadScreenView({
           <div className="pad-body top">
             <p className="pad-title">{t(lang, 'pickGame')}</p>
             <div className="game-list">
-              {screen.games.map((g) => {
+              {pickList(screen.games).map((g, gi, all) => {
                 const def = g;
                 const ids = screen.games.map((x) => x.id);
                 const locked = isLocked(g.id, ids, !!screen.roomItems?.includes(PASS));
                 return (
+                  <Fragment key={g.id}>
+                  {noTvState.on && gi === 0 && <p className="game-sec">📱 {lang === 'fr' ? 'Parfaits sans télé' : 'Great without a TV'}</p>}
+                  {noTvState.on && gi > 0 && PHONE_GAMES.includes(all[gi - 1].id) && !PHONE_GAMES.includes(g.id) && <p className="game-sec">📺 {lang === 'fr' ? 'Écran partagé conseillé (télé, ou partage d’écran à distance)' : 'Shared screen recommended (TV, or screen sharing when far away)'}</p>}
                   <button
-                    key={g.id}
                     className="game-card"
                     style={{ ['--g' as string]: def.color }}
                     disabled={g.soon}
@@ -722,6 +761,7 @@ function PadScreenView({
                     {locked && <small>🔒 Pass</small>}
                     {SALES_ON && gameOfDay(ids) === g.id && <small>🎁 {lang === 'fr' ? 'Offert aujourd’hui' : 'Free today'}</small>}
                   </button>
+                  </Fragment>
                 );
               })}
             </div>
@@ -748,6 +788,19 @@ function PadScreenView({
                 </span>
               </div>
             </div>
+          )}
+          {tab === 'play' && noTvState.on && (
+            <button
+              className="btn alt invite-btn"
+              onClick={() => {
+                const url = `${location.origin}${location.pathname}#/m/${code}`;
+                const text = lang === 'fr' ? `Viens jouer à Cana’pet ! Code : ${code}` : `Come play Cana’pet! Code: ${code}`;
+                if (navigator.share) void navigator.share({ title: 'Cana’pet', text, url }).catch(() => {});
+                else void navigator.clipboard?.writeText(`${text} ${url}`);
+              }}
+            >
+              🔗 {lang === 'fr' ? 'Inviter des joueurs' : 'Invite players'}
+            </button>
           )}
           {tab === 'perso' && (
             <>
@@ -1066,7 +1119,16 @@ function PadScreenView({
       if (screen.tuto)
         return (
           <div className="pad-body">
-            <p className="pad-title">📺 {t(lang, 'readTuto')}</p>
+            {screen.tutoInfo ? (
+              <div className="tuto-card">
+                <p className="pad-title">{screen.tutoInfo.goal}</p>
+                {screen.tutoInfo.steps.map((st, i) => (
+                  <p key={i} className="tuto-step"><span>{st[0]}</span>{st[1]}</p>
+                ))}
+              </div>
+            ) : (
+              <p className="pad-title">📺 {t(lang, 'readTuto')}</p>
+            )}
             <SecretCard secret={screen.secret} lang={lang} />
             <button className="round-btn rose reflex-btn" onClick={() => send({ t: 'act', a: 'tuto' })}>
               ✋ {t(lang, 'imReady')}
@@ -1128,6 +1190,7 @@ function PadScreenView({
               </div>
             </div>
           )}
+          {screen.board && <BoardList rows={screen.board} />}
           {reward && <RewardCard reward={reward} progress={progress} lang={lang} />}
           <SecretCard secret={screen.secret} lang={lang} />
           {screen.host && (
@@ -1159,13 +1222,16 @@ function PadScreenView({
               <p className="pad-small">{screen.total} pts</p>
             </div>
           </div>
+          {screen.board && <BoardList rows={screen.board} />}
           {reward && <RewardCard reward={reward} progress={progress} lang={lang} />}
           <SecretCard secret={screen.secret} lang={lang} />
           {screen.host && (
             <>
-              <button className="btn big mint" onClick={() => host('recap')}>
-                📊 {lang === 'fr' ? 'Bilan de la soirée' : 'Tonight’s awards'}
-              </button>
+              {!noTvState.on && (
+                <button className="btn big mint" onClick={() => host('recap')}>
+                  📊 {lang === 'fr' ? 'Bilan de la soirée' : 'Tonight’s awards'}
+                </button>
+              )}
               <button className="btn ghost" onClick={() => host('lobby')}>
                 {t(lang, 'toLobby')}
               </button>

@@ -764,7 +764,13 @@ function schedule() {
 
 export type MusicId = 'lobby' | 'race' | 'tumble' | 'podium' | 'fight' | 'arcade' | 'spy' | 'bar' | 'sport' | 'party';
 
+/** Sans télé : pas de musique sur le téléphone de l'hôte, ça gênerait. */
+let noMusic = false;
+export function setNoMusic(on: boolean) {
+  noMusic = on;
+}
 export function playMusic(track: MusicId | '') {
+  if (noMusic) track = '';
   if (track === current) return;
   current = track;
   rush = 1;

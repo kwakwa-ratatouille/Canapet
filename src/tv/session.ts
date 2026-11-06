@@ -7,13 +7,14 @@ import { SKILLS } from '../games/botSkill';
 import { GAMES, gameById, playable, gameInfo } from '../games/registry';
 import { TEAMS, setTeamNames } from '../games/teams';
 import { TUTOS } from '../games/tutos';
+import { PHONE_GAMES } from '../shared/noTv';
 import type { GameDef, GameInstance, Runner } from '../games/types';
 import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
 import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import { cleanMsg, type Lang, type PadScreen, type Profile, type ToTv } from '../shared/protocol';
 import { stProgress, stReady, stState } from '../shared/supertonic';
-import { VOICES, audioLocked, unlockAudio, defaultVoiceId, helloVoice, setHelloHooks, voiceLoading, voiceWorks, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
+import { VOICES, audioLocked, unlockAudio, defaultVoiceId, helloVoice, setHelloHooks, voiceLoading, voiceWorks, playMusic, setNoMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
 import { REACTIONS } from '../shared/reactions';
 import { makeSecrets, type Secret } from './secrets';
@@ -228,7 +229,12 @@ export class Session {
   /** Réactions envoyées au début du tournoi (pour le défi « envoie des réactions »). */
   private tourReacts = new Map<string, number>();
 
-  constructor(preview: boolean) {
+  /** Partie sans télé : un téléphone héberge et joue. */
+  noTv = false;
+
+  constructor(preview: boolean, noTv = false) {
+    this.noTv = noTv;
+    if (noTv) setNoMusic(true);
     setFamily(this.family);
     setTeamNames(this.teamNames);
     setHelloHooks({ allowed: () => this.phase === 'lobby', ready: () => this.pushScreens() });
@@ -240,6 +246,7 @@ export class Session {
       onLeave: (pid) => this.onLeave(pid),
       onStatus: () => this.changed(),
     });
+    if (noTv) this.net.acceptLocal();
     this.net.start();
     if (preview) {
       ['Momo', 'Lulu', 'Zaza'].forEach((name, i) =>
@@ -314,7 +321,7 @@ export class Session {
       if (entry.sound) playWinSound(entry.sound);
       setTimeout(() => speak(entry.line[this.lang()].replace('{n}', p.name), this.lang(), { rate: entry.rate, pitch: entry.pitch }), entry.sound ? 500 : 150);
     }
-    if (!fake) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code, games: GAMES_INFO() });
+    if (!fake) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code, games: GAMES_INFO(), noTv: this.noTv });
     this.changed();
     this.pushScreens();
   }
@@ -379,7 +386,7 @@ export class Session {
         if (!p) return;
         Object.assign(p, m.profile, { name: clean(m.profile.name), color: this.freeColor(m.profile.color, pid) });
         this.syncSkins();
-        if (p.color !== m.profile.color) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code, games: GAMES_INFO() });
+        if (p.color !== m.profile.color) this.net.send(pid, { t: 'welcome', color: p.color, code: this.net.code, games: GAMES_INFO(), noTv: this.noTv });
         this.changed();
         this.pushScreens();
         return;
@@ -479,7 +486,8 @@ export class Session {
         // Seulement les jeux jouables avec le nombre de joueurs présents (les bots complètent quand le jeu le permet).
         const count = this.list().filter((p) => p.connected).length;
         // L'hôte peut enlever des jeux (opts = { idDuJeu: 1 })
-        const allowed = playable().filter((g) => !opts?.[g.id] && !this.locked(g.id));
+        // Sans télé : seulement les jeux faits pour le téléphone
+        const allowed = playable().filter((g) => !opts?.[g.id] && !this.locked(g.id) && (!this.noTv || PHONE_GAMES.includes(g.id)));
         const base = allowed.length ? allowed : playable();
         const fit = base.filter((g) => Math.max(count, g.botFill) >= g.min);
         const pool = (fit.length ? fit : base).map((g) => g.id);
@@ -532,7 +540,8 @@ export class Session {
       case 'next':
         if (this.phase === 'podium') {
           // Tournoi : la roue de la honte pour le dernier, puis le bilan
-          if (this.list().filter((p) => p.connected).length >= 2) this.startWheel('podium');
+          if (this.noTv) this.toLobby();
+          else if (this.list().filter((p) => p.connected).length >= 2) this.startWheel('podium');
           else this.hostAction('recap');
           break;
         }
@@ -549,7 +558,7 @@ export class Session {
           this.step++;
           if (this.step >= this.plan.length) this.showPodium();
           // Questions de la soirée entre deux jeux du tournoi (après le 2e et le 4e)
-          else if ((this.step === 2 || this.step === 4) && this.list().filter((p) => p.connected).length >= 3) this.startVote('game');
+          else if (!this.noTv && (this.step === 2 || this.step === 4) && this.list().filter((p) => p.connected).length >= 3) this.startVote('game');
           else this.startGame(this.plan[this.step]);
         } else this.toLobby();
         break;
@@ -856,7 +865,7 @@ export class Session {
     // Égalité en tête : départage au chrono à l'aveugle avant le podium
     const ranked = this.list().filter((p) => p.connected).sort((a, b) => b.total - a.total);
     const tied = ranked.filter((p) => p.total === ranked[0]?.total);
-    if (!this.tieDone && tied.length >= 2) {
+    if (!this.noTv && !this.tieDone && tied.length >= 2) {
       this.startTie(tied.map((p) => p.pid));
       return;
     }
@@ -1103,6 +1112,7 @@ export class Session {
   // ——— Roue de la honte ———
 
   private startWheel(from: Phase) {
+    if (this.noTv) return;
     const humans = this.list().filter((p) => p.connected);
     if (!humans.length) return;
     let victim = '';
@@ -1159,6 +1169,7 @@ export class Session {
   // ——— Questions de la soirée ———
 
   private startVote(from: Phase) {
+    if (this.noTv) return;
     const fam = (q: { fam?: false }) => !(this.family && q.fam === false);
     const pickFrom = <T extends { fam?: false }>(all: T[], used: Set<number>, n: number) => {
       let idx = all.map((_, i) => i).filter((i) => !used.has(i) && fam(all[i]));
@@ -1480,7 +1491,30 @@ export class Session {
   }
 
   pushScreens() {
-    for (const p of this.players.values()) if (p.connected && !p.fake) this.net.send(p.pid, { t: 'screen', screen: this.screenFor(p) });
+    for (const p of this.players.values()) if (p.connected && !p.fake) this.net.send(p.pid, { t: 'screen', screen: this.noTv ? this.withBoard(p, this.screenFor(p)) : this.screenFor(p) });
+  }
+
+  /** Sans télé : ce qui s'affichait à la télé passe sur le téléphone (tuto, classement). */
+  private withBoard(p: Player, s: PadScreen): PadScreen {
+    if (s.s === 'play' && s.tuto && this.def) {
+      const tu = TUTOS[this.def.id]?.[this.lang()];
+      if (tu) return { ...s, tutoInfo: { goal: tu.goal, steps: tu.steps.map((x) => [...x]) } };
+    }
+    if (s.s === 'results') {
+      const board = this.results.map((r) => {
+        const o = this.players.get(r.pid);
+        return { name: o?.name ?? '', color: o?.color ?? '#fff', pts: r.points, me: r.pid === p.pid };
+      });
+      return { ...s, board };
+    }
+    if (s.s === 'podium') {
+      const board = this.list()
+        .filter((x) => x.connected)
+        .sort((a, b) => b.total - a.total)
+        .map((o) => ({ name: o.name, color: o.color, pts: o.total, me: o.pid === p.pid }));
+      return { ...s, board };
+    }
+    return s;
   }
 
   private screenFor(p: Player): PadScreen {
@@ -1508,7 +1542,7 @@ export class Session {
           voicesOk: VOICES.map((_, i) => i).filter((i) => voiceWorks(i, this.lang())),
           recap: [...this.stats.values()].some((x) => x.games > 0),
           teamNames: this.teamNames,
-          roster: this.list().filter((x) => x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color, level: x.level, chief: x.pid === this.hostPid(), me: x.pid === p.pid })),
+          roster: this.list().map((x) => ({ off: !x.connected, pid: x.pid, name: x.name, color: x.color, level: x.level, chief: x.pid === this.hostPid(), me: x.pid === p.pid })),
           players: host ? this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color })) : [],
           team: p.team,
         };

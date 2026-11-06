@@ -133,7 +133,11 @@ export function TvApp() {
           className="tv-quit"
           onClick={() => {
             const fr = session.lang() === 'fr';
-            if (session.phase === 'lobby' || window.confirm(fr ? 'Quitter le mode télé ? La partie s’arrêtera.' : 'Leave TV mode? The game will stop.')) location.hash = '#/';
+            if (session.phase === 'lobby' || window.confirm(fr ? 'Quitter le mode télé ? La partie s’arrêtera.' : 'Leave TV mode? The game will stop.')) {
+              // On repart de zéro : plus de partie ni de son en arrière-plan
+              location.hash = '#/';
+              location.reload();
+            }
           }}
         >
           ✕ {session.lang() === 'fr' ? 'Quitter le mode télé' : 'Leave TV mode'}
@@ -242,6 +246,7 @@ function Lobby({ session, players, hostPid }: { session: Session; players: Playe
                   <CharCanvas profile={p} size={160} ghost={!p.connected} />
                 </div>
                 <div className="slot-name"><PlateName name={p.name} plate={p.plate} /></div>
+                {!p.connected && <span className="slot-off">🔌 {lang === 'fr' ? 'Déconnecté' : 'Disconnected'}</span>}
                 <PlayerTitle id={p.title} lang={lang} />
                 {p.level && p.level > 1 ? <span className="slot-level">{lang === 'fr' ? 'Niv.' : 'Lv.'} {p.level}</span> : null}
               </div>
