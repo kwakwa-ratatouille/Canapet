@@ -19,6 +19,8 @@ const MEMO = ['🍕', '🦆', '🚀', '🧦', '🍩', '🐙', '🎸', '🌵', '�
 const ARROWS = ['⬅', '⬆', '➡', '⬇'];
 const OPPOSITE = [2, 3, 0, 1];
 const CHRONO = 5;
+/** Temps pour retenir l'ordre. */
+const MEMO_SHOW = 3.5;
 const FRUITS = ['🍓', '🍋', '🍇', '🍑'];
 const ROUNDS = 9;
 const POINTS = [5, 3, 2, 1];
@@ -41,6 +43,8 @@ interface Pl extends Runner {
 }
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+const ROPE_A = '#ff4f9a';
+const ROPE_B = '#2e9bff';
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
@@ -73,6 +77,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let rope = 0;
   // Boîtes : contenu de chacune (-2 = piège)
   let boxes: number[] = [];
+  /** Pour le plaisir des yeux : une taille différente par boîte, sans rapport avec le contenu. */
+  let boxSizes: number[] = [];
   // Pêche : le canard passe sous la ligne ; on note où il était au moment du tap
   let duck = 0;
   const vfPool = ALL_TRAP.filter((q) => !(ctx.family && q.fam === false) && q.a[0].fr === 'Vrai').sort(() => Math.random() - 0.5);
@@ -86,11 +92,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     jauge: ['Arrête la jauge sur la ligne !', 'Stop the bar on the line!'],
     calcul: ['Calcul éclair !', 'Quick maths!'],
     plus: ['Lequel est le plus nombreux ?', 'Which one is the most?'],
-    memo: ['Retiens bien la rangée…', 'Remember the row…'],
+    memo: ['Retiens l’ordre des 4 images !', 'Remember the order of the 4 pictures!'],
     vf: ['Vrai ou faux ? Vite !', 'True or false? Quick!'],
     chrono: [`Arrête le chrono à ${CHRONO} secondes pile… à l’aveugle !`, `Stop the clock at exactly ${CHRONO} seconds… blind!`],
     fleche: ['Touche le sens INVERSE de la flèche !', 'Tap the OPPOSITE way of the arrow!'],
-    corde: ['Tir à la corde ! Martèle pour ton équipe !', 'Tug of war! Mash for your team!'],
+    corde: ['Tir à la corde : tape vite pour ton équipe !', 'Tug of war: tap fast for your team!'],
     boites: ['Choisis une boîte… une seule est piégée !', 'Pick a box… only one is a trap!'],
     peche: ['Pêche au canard : tape quand il passe sous l’hameçon !', 'Duck fishing: tap when it’s under the hook!'],
   };
@@ -183,6 +189,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (kind === 'corde') rope = 0;
     if (kind === 'boites') {
       boxes = [...BOX_GIFTS, -2].sort(() => Math.random() - 0.5);
+      boxSizes = [0.68, 0.86, 1.04, 1.26].sort(() => Math.random() - 0.5);
     }
     if (kind === 'peche') duck = 0;
     ctx.refresh();
@@ -204,7 +211,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           pl.score += 3;
         }
       });
-      headline = fr ? `L’équipe ${win === 0 ? 'de gauche' : 'de droite'} gagne le tir à la corde !` : `The ${win === 0 ? 'left' : 'right'} team wins the tug of war!`;
+      headline = fr ? `L’équipe ${win === 0 ? 'rose' : 'bleue'} gagne le tir à la corde !` : `The ${win === 0 ? 'pink' : 'blue'} team wins the tug of war!`;
       sfx.win();
       phase = 'result';
       timer = 3;
@@ -255,7 +262,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         p.at = t0 - goAt;
       }
       if (kind === 'chrono' && t0 > CHRONO + rnd(-0.6, 0.6) && Math.random() < 0.2) p.answer = Math.round(t0 * 1000);
-      if ((kind === 'intrus' || kind === 'compte' || kind === 'couleur' || kind === 'calcul' || kind === 'plus' || kind === 'vf' || kind === 'fleche' || (kind === 'memo' && t0 > 2.6)) && t0 > rnd(1.5, 5) && Math.random() < 0.05) {
+      if ((kind === 'intrus' || kind === 'compte' || kind === 'couleur' || kind === 'calcul' || kind === 'plus' || kind === 'vf' || kind === 'fleche' || (kind === 'memo' && t0 > MEMO_SHOW + 0.1)) && t0 > rnd(1.5, 5) && Math.random() < 0.05) {
         p.answer = Math.random() < 0.6 ? correct : Math.floor(Math.random() * (kind === 'vf' ? 2 : 4));
         p.at = t0;
       }
@@ -324,7 +331,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (timer <= 0) {
           phase = 'play';
           t0 = 0;
-          timer = kind === 'marteau' || kind === 'corde' ? 6 : kind === 'peche' ? 4.5 : kind === 'vert' ? goAt + 3 : kind === 'jauge' ? 6 : kind === 'chrono' ? CHRONO + 3 : kind === 'memo' ? 10 : 8;
+          timer = kind === 'marteau' || kind === 'corde' ? 6 : kind === 'peche' ? 4.5 : kind === 'vert' ? goAt + 3 : kind === 'jauge' ? 6 : kind === 'chrono' ? CHRONO + 3 : kind === 'memo' ? 11 : 8;
           sfx.go();
           ctx.refresh();
         }
@@ -336,7 +343,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (kind === 'peche') duck = Math.min(1, t0 / 4);
         if (kind === 'corde') rope = Math.max(-1, Math.min(1, rope));
         // Mémoire : les choix arrivent sur les téléphones quand la rangée se cache
-        if (kind === 'memo' && t0 >= 2.5 && t0 - dt < 2.5) ctx.refresh();
+        if (kind === 'memo' && t0 >= MEMO_SHOW && t0 - dt < MEMO_SHOW) {
+          headline = fr ? `Quelle image était en ${['1re', '2e', '3e', '4e'][memoAsk]} position ?` : `Which picture was ${ordinal(memoAsk)}?`;
+          speak(headline, ctx.lang);
+          sfx.go();
+          ctx.refresh();
+        }
         if (kind === 'vert' && t0 >= goAt && t0 - dt < goAt) {
           sfx.go();
           ctx.refresh();
@@ -434,26 +446,46 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
       }
       if (showPlay && kind === 'memo') {
-        // La rangée s'affiche 2,5 s, puis on demande une position
-        const show = phase === 'result' || t0 < 2.5;
+        // La rangée s'affiche, puis se cache : la case demandée saute aux yeux
+        const show = phase === 'result' || t0 < MEMO_SHOW;
         memo.forEach((e, i) => {
           const x = 480 + i * 320;
-          g.fillStyle = '#fff';
+          const asked = !show && i === memoAsk;
+          const answer = phase === 'result' && i === memoAsk;
+          const up = asked ? Math.sin(t * 7) * 8 : 0;
+          g.fillStyle = asked || answer ? SOLEIL : show ? '#fff' : '#efe3ee';
           g.strokeStyle = INK;
-          g.lineWidth = 6;
+          g.lineWidth = asked || answer ? 12 : 6;
           g.beginPath();
-          g.roundRect(x - 130, 330, 260, 260, 30);
+          g.roundRect(x - 130, 330 + up, 260, 260, 30);
           g.fill();
           g.stroke();
-          g.font = show ? '150px sans-serif' : '700 150px Fredoka, sans-serif';
           g.fillStyle = INK;
-          g.fillText(show ? e : '?', x, 520);
-          g.font = '700 40px Fredoka, sans-serif';
-          g.fillText(ordinal(i), x, 650);
+          g.font = show ? '150px sans-serif' : '700 150px Fredoka, sans-serif';
+          if (show) g.fillText(e, x, 520);
+          else if (asked) g.fillText('?', x, 515 + up);
+          g.font = '700 44px Fredoka, sans-serif';
+          g.fillText(String(i + 1), x, 650);
+          if (asked) {
+            g.font = '80px sans-serif';
+            g.fillText('⬇', x, 310 + up);
+          }
         });
-        if (!show || phase === 'result') {
-          g.font = '700 70px Fredoka, sans-serif';
-          g.fillText(fr ? `Qui était en ${ordinal(memoAsk)} ?` : `What was ${ordinal(memoAsk)}?`, 960, 790);
+        // Le temps qu'il reste pour retenir
+        if (phase === 'play' && show) {
+          const k = Math.max(0, 1 - t0 / MEMO_SHOW);
+          g.fillStyle = 'rgba(58,33,64,.15)';
+          g.beginPath();
+          g.roundRect(560, 700, 800, 26, 13);
+          g.fill();
+          g.fillStyle = ROSE;
+          g.beginPath();
+          g.roundRect(560, 700, Math.max(26, 800 * k), 26, 13);
+          g.fill();
+        } else if (phase === 'play') {
+          g.font = '700 52px Fredoka, sans-serif';
+          g.fillStyle = INK;
+          g.fillText(fr ? '📱 Réponds sur ton téléphone' : '📱 Answer on your phone', 960, 760);
         }
       }
       if (showPlay && kind === 'vf') {
@@ -496,30 +528,129 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
       }
       if (showPlay && kind === 'corde') {
-        // La corde, le foulard du milieu et les deux équipes
+        // Chaque camp a sa moitié d'écran, sa couleur et ses joueurs accrochés à la corde
+        const groundY = 840;
+        const ropeY = 750;
         const cx = 960 + rope * 520;
-        g.strokeStyle = '#a0643a';
-        g.lineWidth = 22;
-        g.beginPath();
-        g.moveTo(200, 560);
-        g.lineTo(1720, 560);
-        g.stroke();
-        g.fillStyle = ROSE;
+        g.globalAlpha = 0.28;
+        g.fillStyle = ROPE_A;
+        g.fillRect(0, 180, 960, 720);
+        g.fillStyle = ROPE_B;
+        g.fillRect(960, 180, 960, 720);
+        g.globalAlpha = 1;
+        // Le sol et la flaque de boue au milieu
+        g.fillStyle = '#a8dd7a';
+        g.fillRect(0, groundY, 1920, 60);
+        g.fillStyle = '#8a5a35';
         g.strokeStyle = INK;
         g.lineWidth = 5;
         g.beginPath();
-        g.moveTo(cx, 560);
-        g.lineTo(cx - 30, 640);
-        g.lineTo(cx + 30, 640);
+        g.ellipse(960, groundY + 8, 170, 26, 0, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        // Les deux camps
+        const sum = (s: number) => pls.filter((p) => team(p) === s).reduce((n, p) => n + p.taps, 0);
+        [0, 1].forEach((s) => {
+          const c = s ? ROPE_B : ROPE_A;
+          const bx = s ? 1440 : 480;
+          g.fillStyle = c;
+          g.strokeStyle = INK;
+          g.lineWidth = 6;
+          g.beginPath();
+          g.roundRect(bx - 300, 205, 600, 92, 28);
+          g.fill();
+          g.stroke();
+          candy(g, bx - 300, 205, 600, 92, 28);
+          g.fillStyle = '#fff';
+          g.font = '700 54px Fredoka, sans-serif';
+          g.textAlign = 'center';
+          g.fillText(s ? (fr ? 'ÉQUIPE BLEUE ➡' : 'BLUE TEAM ➡') : fr ? '⬅ ÉQUIPE ROSE' : '⬅ PINK TEAM', bx, 269);
+          g.fillStyle = INK;
+          g.font = '700 44px Fredoka, sans-serif';
+          g.fillText(`💪 ${sum(s)}`, bx, 350);
+        });
+        // Les lignes à atteindre pour gagner
+        [[440, ROPE_A], [1480, ROPE_B]].forEach(([x, c]) => {
+          g.strokeStyle = c as string;
+          g.lineWidth = 10;
+          g.setLineDash([26, 18]);
+          g.beginPath();
+          g.moveTo(x as number, 380);
+          g.lineTo(x as number, groundY);
+          g.stroke();
+          g.setLineDash([]);
+        });
+        g.strokeStyle = INK;
+        g.lineWidth = 4;
+        g.setLineDash([12, 12]);
+        g.beginPath();
+        g.moveTo(960, 380);
+        g.lineTo(960, groundY);
+        g.stroke();
+        g.setLineDash([]);
+        // Une vraie corde : tressée, et ses torons glissent quand elle bouge
+        g.lineCap = 'round';
+        g.strokeStyle = INK;
+        g.lineWidth = 36;
+        g.beginPath();
+        g.moveTo(-20, ropeY);
+        g.lineTo(1940, ropeY);
+        g.stroke();
+        g.strokeStyle = '#d9a35a';
+        g.lineWidth = 26;
+        g.beginPath();
+        g.moveTo(-20, ropeY);
+        g.lineTo(1940, ropeY);
+        g.stroke();
+        g.strokeStyle = '#a0643a';
+        g.lineWidth = 6;
+        const off = ((rope * 520) % 34 + 34) % 34;
+        for (let x = -34 + off; x < 1960; x += 34) {
+          g.beginPath();
+          g.moveTo(x - 9, ropeY + 11);
+          g.lineTo(x + 9, ropeY - 11);
+          g.stroke();
+        }
+        g.lineCap = 'butt';
+        // Les joueurs, penchés en arrière
+        [0, 1].forEach((s) => {
+          const team_ = pls.filter((p) => team(p) === s);
+          const gap = Math.min(140, 520 / Math.max(1, team_.length));
+          team_.forEach((p, k) => {
+            const side = s ? 1 : -1;
+            const x = 960 + rope * 240 + side * (180 + k * gap);
+            const hop = phase === 'play' ? Math.abs(Math.sin(t * 9 + k)) * 6 : 0;
+            g.save();
+            g.translate(x, groundY - hop);
+            g.rotate(side * 0.16);
+            drawCharacter(g, 0, 0, 140, {
+              food: p.profile.food,
+              color: p.profile.color,
+              hat: p.profile.hat,
+              acc: p.profile.acc,
+              eyes: p.profile.eyes,
+              pose: p.profile.pose,
+              selfie: p.selfie,
+              t: t + k,
+              dir: s ? -1 : 1,
+              run: 0,
+              mood: phase === 'result' ? (p.gain ? 'win' : 'sad') : 'wow',
+            });
+            g.restore();
+          });
+        });
+        // Le foulard au milieu de la corde
+        g.fillStyle = SOLEIL;
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.moveTo(cx - 34, ropeY - 22);
+        g.lineTo(cx + 34, ropeY - 22);
+        g.lineTo(cx, ropeY + 76);
         g.closePath();
         g.fill();
         g.stroke();
-        g.fillStyle = INK;
-        g.fillRect(958, 470, 4, 180);
-        g.font = '700 50px Fredoka, sans-serif';
-        g.fillStyle = INK;
-        g.fillText(fr ? '⬅ Équipe gauche' : '⬅ Left team', 420, 460);
-        g.fillText(fr ? 'Équipe droite ➡' : 'Right team ➡', 1500, 460);
+        g.textAlign = 'center';
       }
       if (showPlay && kind === 'boites') {
         boxes.forEach((v, i) => {
@@ -528,21 +659,31 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillStyle = QUAD[i];
           g.strokeStyle = INK;
           g.lineWidth = 6;
+          const z = boxSizes[i] ?? 1;
+          const bw = 240 * z;
+          const bh = 220 * z;
+          const by = 620 - bh;
           g.beginPath();
-          g.roundRect(x - 120, 380, 240, 220, 24);
+          g.roundRect(x - bw / 2, by, bw, bh, 24 * z);
           g.fill();
           g.stroke();
-          candy(g, x - 120, 380, 240, 220, 24);
+          candy(g, x - bw / 2, by, bw, bh, 24 * z);
           g.fillStyle = '#fff';
-          g.fillRect(x - 14, 380, 28, 220);
-          g.font = '700 110px Fredoka, sans-serif';
+          g.fillRect(x - 14 * z, by, 28 * z, bh);
+          // Le nœud du ruban
+          g.beginPath();
+          g.ellipse(x - 30 * z, by - 14 * z, 30 * z, 18 * z, -0.4, 0, Math.PI * 2);
+          g.ellipse(x + 30 * z, by - 14 * z, 30 * z, 18 * z, 0.4, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.font = `700 ${Math.round(100 * Math.max(0.8, z))}px Fredoka, sans-serif`;
           g.fillStyle = INK;
-          g.fillText(open ? (v < 0 ? '💣' : `+${v}`) : String(i + 1), x, 530);
+          g.fillText(open ? (v < 0 ? '💣' : `+${v}`) : String(i + 1), x, by + bh / 2 + 36 * Math.max(0.8, z));
           const who = pls.filter((pl) => pl.answer === i);
           g.font = '700 30px Fredoka, sans-serif';
           who.forEach((pl, k) => {
             g.fillStyle = pl.profile.color;
-            g.fillText(pl.profile.name, x, 650 + k * 34);
+            g.fillText(pl.profile.name, x, 665 + k * 34);
           });
         });
       }
@@ -602,7 +743,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const cw = Math.min(200, 1800 / pls.length);
       pls.forEach((p, i) => {
         const x = 960 + (i - (pls.length - 1) / 2) * cw;
-        drawCharacter(g, x, 1000, 90, {
+        // Au tir à la corde, les persos sont sur la corde : ici, on garde juste les scores
+        if (!(showPlay && kind === 'corde')) drawCharacter(g, x, 1000, 90, {
           food: p.profile.food,
           color: p.profile.color,
           hat: p.profile.hat,
@@ -613,7 +755,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           t: t + i,
           mood: p.out ? 'sad' : phase === 'result' && p.gain ? 'win' : p.answer >= 0 || p.taps ? 'wow' : 'happy',
         });
-        roundRectText(g, `${p.profile.name} · ${p.score}`, x - cw / 2 + 6, 1030, cw - 12, 22, p.profile.color);
+        roundRectText(g, `${p.profile.name.slice(0, cw < 170 ? 5 : 9)} · ${p.score}`, x - cw / 2 + 6, 1040, cw - 12, 34, p.profile.color);
         g.font = '700 40px Fredoka, sans-serif';
         if (kind === 'marteau' && phase !== 'intro') {
           g.fillStyle = INK;
@@ -643,7 +785,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       let k: ReflexPadData['kind'] = 'wait';
       let options: ReflexPadData['options'] = [];
       if (play && (kind === 'vert' || kind === 'jauge' || kind === 'chrono')) k = 'buzz';
-      if (play && kind === 'memo' && t0 >= 2.5) {
+      if (play && kind === 'memo' && t0 >= MEMO_SHOW) {
         k = 'choice';
         options = memoOpts.map((e, i) => ({ label: e, color: QUAD[i] }));
       }
@@ -686,11 +828,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       return {
         kind: k,
-        title: kind === 'corde' && play ? `${headline} (${team(p) ? (fr ? 'droite' : 'right') : fr ? 'gauche' : 'left'})` : headline,
+        title: kind === 'memo' && play && t0 < MEMO_SHOW ? (fr ? 'Regarde l’écran et retiens l’ordre ! 👀' : 'Watch the screen, remember the order! 👀') : headline,
         options,
         locked: p.out || (kind !== 'marteau' && p.answer >= 0),
         note: p.out ? (fr ? 'Trop tôt ! Piégé 💥' : 'Too early! Gotcha 💥') : '',
         score: p.score,
+        ask: play && kind === 'memo' && t0 >= MEMO_SHOW ? memoAsk : undefined,
+        side: kind === 'corde' && (play || phase === 'intro') ? (team(p) ? { label: fr ? 'Tu es dans l’équipe BLEUE, à droite ➡' : 'You’re on the BLUE team, on the right ➡', color: ROPE_B } : { label: fr ? '⬅ Tu es dans l’équipe ROSE, à gauche' : '⬅ You’re on the PINK team, on the left', color: ROPE_A }) : undefined,
       };
     },
   };
@@ -712,5 +856,6 @@ export const reflex: GameBase = {
   botFill: 3,
   music: 'party',
   limit: 150,
+  timerCorner: true,
   create,
 };

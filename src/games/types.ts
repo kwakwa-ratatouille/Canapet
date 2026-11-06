@@ -61,6 +61,8 @@ export interface GameBase {
   limit?: number;
   /** Chrono en haut de l'écran (quand le bas est pris par l'interface du jeu). */
   timerTop?: boolean;
+  /** Chrono dans le coin en haut à droite (quand le haut et le bas sont pris). */
+  timerCorner?: boolean;
   soon?: boolean;
   /** Réglages proposés à l'hôte avant de lancer ce jeu. */
   options?: { id: string; label: Record<Lang, string>; choices: { v: number; label: Record<Lang, string>; pack?: string }[] }[];

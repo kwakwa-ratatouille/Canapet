@@ -388,3 +388,9 @@
 .roster-chief { flex: none; padding: 1px 8px; font-size: 12px; font-weight: 800; background: #ffd60a; border: 2px solid #3a2140; border-radius: 99px; }
 .roster-row .kick-btn { flex: none; min-width: 40px; min-height: 36px; padding: 2px 8px; }
 .roster-row > b { text-align: left; }
+
+/* Trop Lent, Mamie : camp au tir à la corde, cases de la mémoire */
+.reflex-side { margin: 0; padding: 12px 14px; font-family: var(--cp-font-titre); font-size: 22px; font-weight: 700; line-height: 1.15; text-align: center; color: #fff; border: 4px solid #3a2140; border-radius: 18px; box-shadow: 0 4px 0 #3a2140; }
+.reflex-slots { display: flex; justify-content: center; gap: 8px; }
+.reflex-slots i { display: flex; align-items: center; justify-content: center; width: 54px; height: 54px; font-family: var(--cp-font-titre); font-size: 24px; font-style: normal; font-weight: 700; color: #3a2140; background: #efe3ee; border: 3px solid #3a2140; border-radius: 12px; }
+.reflex-slots i.on { font-size: 34px; background: #ffd60a; border-width: 5px; }

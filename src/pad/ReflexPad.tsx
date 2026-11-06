@@ -14,7 +14,13 @@ export function ReflexPad({ data, lang, send }: { data: ReflexPadData; lang: Lan
       <p className="pad-small">
         {lang === 'fr' ? 'Score' : 'Score'} : {data.score}
       </p>
+      {data.side && <p className="reflex-side" style={{ background: data.side.color }}>{data.side.label}</p>}
       <p className="pad-title">{data.title}</p>
+      {data.ask !== undefined && (
+        <div className="reflex-slots" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => <i key={i} className={i === data.ask ? 'on' : ''}>{i === data.ask ? '?' : i + 1}</i>)}
+        </div>
+      )}
       {data.note && <p className="pad-title uc-note">{data.note}</p>}
       {(data.kind === 'buzz' || data.kind === 'mash') && (
         <button

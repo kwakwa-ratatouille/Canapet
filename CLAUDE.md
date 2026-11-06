@@ -117,6 +117,7 @@ Tout est **inspiré**, jamais copié : noms, persos, sons et images originaux.
 - Présentation des voix : `hello` dans `VOICES` (une phrase par voix), dite par `helloVoice`, sans repli rapide (`patient`) ; pendant le téléchargement du modèle, la voix attend et se présente à l’arrivée (`setHelloHooks`). Tour de Pouce : trous, sirop, obstacles surprises (`SURPRISE_AT`), écart mini `MIN_GAP`.
 - Karaoké : vraies musiques CC0 dans `public/karaoke` (`KARAOKE_TRACKS`, sources dans `public/licences/musiques-karaoke-cc0.txt`, tirage sans redite) ; `karaokeTune` seulement sans réseau. Pas de sons de mèmes (droits).
 - Variantes de persos : `VARIANTS` dans canapet-art.js (même dessin, couleurs remplacées, `VARIANT_OF`, `VARIANT_EN`), rareté dans `TABLE` ; légendaires et mythiques aussi dans `CHEST`. Salon : bonbons en haut (`.pad-coins`, `fmtCoins`), joueurs et chef dans l’onglet Jouer (`PlayersCard`, `roster`), position gardée au retour (`menuTop`, `tops`).
+- Trop Lent, Mamie : chrono dans le coin (`timerCorner`), mémoire (`MEMO_SHOW`, case demandée en jaune, `ask` sur le téléphone), boîtes de tailles variées (`boxSizes`), tir à la corde (équipes Rose/Bleue, `side` sur le téléphone). Karaoké : les bots ne chantent pas.
 - Images Play : `store/images`, refaites par `store/make-images.cjs`.
 
 ## Mode équipes et musique

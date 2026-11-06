@@ -515,7 +515,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
         }
         for (const d of botsDue) {
           if (clock >= d.at && !d.p.sent) {
-            clips.push({ pid: d.p.pid, buf: fakeVoice(2 + Math.random() * 2.5), url: '' });
+            if (mode !== 'karaoke') clips.push({ pid: d.p.pid, buf: fakeVoice(2 + Math.random() * 2.5), url: '' });
             d.p.sent = true;
             ctx.refresh();
           }
@@ -823,7 +823,7 @@ const base = (id: Mode, emoji: string, name: [string, string], how: [string, str
 });
 
 export const doublage = base('doublage', '🎬', ['Le Doublage', 'The Dub'], ['Une scène absurde : fais toutes les voix au micro. La télé la joue avec ta voix !', 'An absurd scene: do all the voices on the mic. The TV plays it with your voice!'], 2, 3);
-export const karaoke = base('karaoke', '🎤', ['Le Karaoké Bidon', 'Fake Karaoke'], ['Une mélodie inventée, des paroles absurdes : chante, et que le meilleur gagne !', 'A made-up tune, absurd lyrics: sing, and may the best win!'], 2, 3);
+export const karaoke = base('karaoke', '🎤', ['Le Karaoké Bidon', 'Fake Karaoke'], ['Une vraie musique, des paroles absurdes : chante, et que le meilleur gagne !', 'Real music, absurd lyrics: sing, and may the best win!'], 2, 3);
 export const imite = base('imite', '🎙️', ['Le Grand Bruiteur', 'The Great Noisemaker'], ['Un défi absurde, ton téléphone est le micro. La télé fait écouter, tout le monde vote !', 'An absurd challenge, your phone is the mic. The TV plays it back, everyone votes!'], 2, 3);
 export const devine = base('devine', '🔊', ['C’est Quoi Ce Bruit ?', 'What’s That Noise?'], ['Un joueur fait un bruit mystère au micro, les autres devinent.', 'One player makes a mystery sound, the others guess.'], 2, 3);
 export const perroquet = base('perroquet', '🦜', ['Le Perroquet Enrhumé', 'The Sniffly Parrot'], ['La télé fait un drôle de bruit. Imite-le le mieux possible !', 'The TV makes a funny sound. Imitate it as well as you can!'], 2, 3);

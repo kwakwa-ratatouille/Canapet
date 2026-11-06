@@ -9,4 +9,8 @@ export interface ReflexPadData {
   locked: boolean;
   note: string;
   score: number;
+  /** Mémoire : la case demandée (0 à 3). */
+  ask?: number;
+  /** Tir à la corde : ton camp. */
+  side?: { label: string; color: string };
 }

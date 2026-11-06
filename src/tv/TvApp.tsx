@@ -640,8 +640,8 @@ function drawTimer(g: CanvasRenderingContext2D, session: Session, t: number) {
   const s = Math.ceil(left);
   const hot = left <= 10;
   const warm = left <= 30;
-  const x = 960;
-  const y = def.timerTop ? 74 : 1006;
+  const x = def.timerCorner ? 1770 : 960;
+  const y = def.timerTop || def.timerCorner ? 74 : 1006;
   const beat = hot ? 1 + 0.22 * Math.pow(left % 1, 3) : warm ? 1 + 0.05 * Math.pow(left % 1, 4) : 1;
   // Alarme : bords de l'écran qui clignotent en rouge, de plus en plus fort
   if (hot) {
