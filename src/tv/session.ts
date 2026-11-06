@@ -1460,6 +1460,7 @@ export class Session {
           voiceLoading: VOICES.some((_, i) => voiceLoading(i)),
           voicesOk: VOICES.map((_, i) => i).filter((i) => voiceWorks(i, this.lang())),
           recap: [...this.stats.values()].some((x) => x.games > 0),
+          roster: this.list().filter((x) => x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color, level: x.level, chief: x.pid === this.hostPid(), me: x.pid === p.pid })),
           players: host ? this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color })) : [],
           team: p.team,
         };

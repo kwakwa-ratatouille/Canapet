@@ -2,12 +2,13 @@ import { TEAMS } from '../games/teams';
 import { PresidentPad } from './PresidentPad';
 import type { PresidentPadData } from '../games/presidentShared';
 import { VOICES } from '../shared/sound';
+import { VARIANT_OF } from '../shared/art/canapet-art.js';
 import { loadCloud, merge, preload, saveCloud, signIn, signOut, watchUser, type CloudUser, loadItems, loadKeys, openChestCloud } from '../shared/cloud';
 import { GoogleLogo } from '../shared/GoogleLogo';
 import './editor.css';
 import { TiebreakPad, VotePad, WheelPad } from './PartyPad';
 import { isOwned, itemKey, levelInfo, LEVEL_GIFT, loadProgress, podiumBonus, PRICES, rewardFor, saveProgress, type Kind, type Progress } from '../shared/progress';
-import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
+import { useEffect, useMemo, useRef, useState, Fragment, useLayoutEffect } from 'react';
 import { CharCanvas } from '../shared/CharCanvas';
 import { ACCS, COLORS, EYE_LIST, FOODS, HATS, POSE_LIST } from '../shared/characters';
 import { IS_IOS, newId, save, store } from '../shared/device';
@@ -62,7 +63,7 @@ function defaultProfile(): Profile {
 }
 
 const DEMO: Record<string, PadScreen> = {
-  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: [], count: 4, family: false, teams: true, team: 0, bots: -1, botLevel: 1, voice: 0, players: [{ pid: 'a', name: 'Lulu', color: COLORS[1] }] },
+  lobby: { s: 'lobby', host: true, hostName: 'Moi', taken: [COLORS[1], COLORS[4], COLORS[6]], games: [], count: 4, roster: [{ pid: 'a', name: 'Moi', color: COLORS[0], level: 15, chief: true, me: true }, { pid: 'b', name: 'Lulu', color: COLORS[1], level: 3, chief: false, me: false }, { pid: 'c', name: 'Zaza', color: COLORS[4], chief: false, me: false }, { pid: 'd', name: 'Momo', color: COLORS[6], level: 8, chief: false, me: false }], family: false, teams: true, team: 0, bots: -1, botLevel: 1, voice: 0, players: [{ pid: 'a', name: 'Lulu', color: COLORS[1] }] },
   tap: { s: 'play', layout: 'tap', game: 'pouces' },
   stick: { s: 'play', layout: 'stick', game: 'kart' },
   president: { s: 'play', layout: 'buttons', game: 'president', data: { hand: [0, 5, 9, 10, 11, 22, 23, 30, 37, 44, 46, 49, 51], phase: 'play', myTurn: true, need: 2, min: 2, give: 0, giveTo: '', role: '🎩 Vice-président', turnName: 'Moi', pile: [8, 10], pileBy: 'Lulu', note: '', done: 0 } },
@@ -371,8 +372,8 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
       {status === 'lost' && !lostLong && screen && <div className="net-blip">⚡ {lang === 'fr' ? 'Reconnexion…' : 'Reconnecting…'}</div>}
       <header className={`pad-head ${playing ? 'slim' : ''}`}>
         <CharCanvas profile={profile} size={playing ? 34 : 46} still />
-        <b className="pad-name">{profile.name || '???'}</b>
-        <span className="pad-info">{playing ? gameName : `${code} · ${status === 'ok' ? t(lang, 'ping', { ms: rtt }) : '…'}`}</span>
+        <b className="pad-name">{profile.name || '???'}{!playing && <small>{code} · {status === 'ok' ? t(lang, 'ping', { ms: rtt }) : '…'}</small>}</b>
+        {playing ? <span className="pad-info">{gameName}</span> : <span className="pad-coins">🍬 {fmtCoins(progress.coins)}</span>}
         {playing && screen?.s === 'play' && screen.host && (
           <button className="pill pause-btn" onClick={() => host('pause')} aria-label={t(lang, 'pause')}>
             ⏸
@@ -441,6 +442,52 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   );
 }
 
+/** Bonbons lisibles : 12 500, 500 k, 500 M. */
+function fmtCoins(n: number) {
+  if (n >= 1e6) return `${Math.floor(n / 1e5) / 10} M`.replace('.', ',');
+  if (n >= 1e5) return `${Math.floor(n / 1e3)} k`;
+  return n.toLocaleString('fr-FR');
+}
+
+/** Qui est dans la partie ; le chef peut passer la main ou retirer quelqu'un d'un seul geste. */
+function PlayersCard({ roster, host, lang, act }: { roster: { pid: string; name: string; color: string; level?: number; chief: boolean; me: boolean }[]; host: boolean; lang: Lang; act: (a: 'chief' | 'kick', pid: string) => void }) {
+  const fr = lang === 'fr';
+  return (
+    <section className="roster">
+      <h3>👥 {fr ? 'Dans la partie' : 'In this game'} <small>{roster.length}</small></h3>
+      {roster.map((p) => (
+        <div key={p.pid} className={`roster-row ${p.me ? 'me' : ''}`}>
+          <i style={{ background: p.color }} />
+          <b>{p.name || '???'}{p.me && <em>{fr ? ' (toi)' : ' (you)'}</em>}</b>
+          {p.chief && <span className="roster-chief">👑 {fr ? 'Chef' : 'Host'}</span>}
+          {p.level && p.level > 1 ? <small>{fr ? 'Niv.' : 'Lv.'} {p.level}</small> : null}
+          {host && !p.me && (
+            <>
+              <button
+                className="kick-btn chief-btn"
+                onClick={() => {
+                  if (confirm(fr ? `Donner la place de chef à ${p.name} ?` : `Make ${p.name} the host?`)) act('chief', p.pid);
+                }}
+              >
+                👑
+              </button>
+              <button
+                className="kick-btn"
+                aria-label={fr ? 'Retirer' : 'Remove'}
+                onClick={() => {
+                  if (confirm(fr ? `Retirer ${p.name} de la partie ?` : `Remove ${p.name} from the game?`)) act('kick', p.pid);
+                }}
+              >
+                ✕
+              </button>
+            </>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
+
 /** Code de test : disparaît dès que les ventes sont ouvertes (les bonbons n'ont aucune valeur avant). */
 function TestCode({ progress, setProgress, lang }: { progress: Progress; setProgress: Account['setProgress']; lang: Lang }) {
   const fr = lang === 'fr';
@@ -499,6 +546,19 @@ function PadScreenView({
   const [selling, setSelling] = useState<string | null>(null);
   /** Onglet du salon : jouer, mon perso, réglages. */
   const [tab, setTab] = useState<'play' | 'perso' | 'boxes' | 'settings'>('play');
+  // Chaque onglet et la liste des jeux gardent leur position
+  const tops = useRef<Record<string, number>>({});
+  const spot = picking ? 'picking' : tab;
+  useLayoutEffect(() => {
+    const el = document.querySelector('.pad-body');
+    if (!el) return;
+    el.scrollTop = tops.current[spot] ?? 0;
+    const save = () => {
+      tops.current[spot] = el.scrollTop;
+    };
+    el.addEventListener('scroll', save, { passive: true });
+    return () => el.removeEventListener('scroll', save);
+  }, [spot]);
   const [keysOpen, setKeysOpen] = useState(false);
   const [missionsOpen, setMissionsOpen] = useState(false);
   const [touring, setTouring] = useState(false);
@@ -687,6 +747,7 @@ function PadScreenView({
               <FriendsCard user={account.user} lang={lang} room={code} connect={account.connect} />
             </>
           )}
+          {tab === 'play' && screen.roster && <PlayersCard roster={screen.roster} host={screen.host} lang={lang} act={(a, pid) => host(a, pid)} />}
           {tab === 'play' && (
             <div className="mission-entry">
               <button className={`mission-open ${claimableCount(progress.habits) ? 'hot' : ''}`} onClick={() => setMissionsOpen((v) => !v)} aria-expanded={missionsOpen}>
@@ -814,7 +875,7 @@ function PadScreenView({
           )}
           {tab === 'settings' && screen.host && (
             <>
-              {screen.players.length > 0 && (
+              {!screen.roster && screen.players.length > 0 && (
                 <>
                   <p className="opt-title">{lang === 'fr' ? 'Joueurs' : 'Players'}</p>
                   <div className="kick-list">
@@ -1365,11 +1426,17 @@ function Editor({
     ['padtheme', '🎮', fr ? 'Thème de manette' : 'Controller theme', nameOf(PAD_THEMES, profile.padTheme ?? '', fr ? 'Classique' : 'Classic')],
     ['more', '⚙️', fr ? 'Langue' : 'Language', lang === 'fr' ? 'Français' : 'English'],
   ];
+  const menuTop = useRef(0);
   const open = (k: Tab) => {
     sfx.click();
+    menuTop.current = document.querySelector('.editor')?.scrollTop ?? 0;
     setTab(k);
     document.querySelector('.editor')?.scrollTo({ top: 0 });
   };
+  // Retour au menu : on retrouve l'endroit où on était
+  useLayoutEffect(() => {
+    if (tab === null) document.querySelector('.editor')?.scrollTo({ top: menuTop.current });
+  }, [tab]);
   const cur = tab && tabs.find((x) => x[0] === tab);
 
   return (
@@ -1498,7 +1565,9 @@ function Editor({
 
       {tab === 'perso' && (
         <div className="pick-grid">
-          {byRarity('food', FOODS).map((f) => (
+          {[...byRarity('food', FOODS.filter((f) => !VARIANT_OF[f.id])), null, ...FOODS.filter((f) => VARIANT_OF[f.id])].map((f) => !f ? (
+            <p key="variantes" className="ed-sec">✨ {fr ? 'Variantes' : 'Variants'}</p>
+          ) : (
             <button
               key={f.id}
               className={`pick ${profile.food === f.id ? 'on' : ''} ${owned('food', f.id) ? '' : 'locked'} ${takenFoods[f.id] && profile.food !== f.id ? 'taken' : ''}`}

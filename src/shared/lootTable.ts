@@ -160,7 +160,7 @@ export const TABLE: Record<Rarity, string[]> = {
     ...list('winfx', 'bonbons ballons'),
   ],
   rare: [
-    ...list('food', 'pizza glace avocat macaron banane croque chewing ravioli oignon champi ketchup gaufre'),
+    ...list('food', 'pizza glace avocat macaron banane croque chewing ravioli oignon champi ketchup gaufre cookie_velours sushi_thon sushi_avocat patate_douce champi_cepe beignet_choco beignet_matcha tomate_verte glace_choco glace_pistache banane_verte tartine_choco frites_douces bonbon_menthe'),
     ...list('hat', 'lapin chantier cornes haut toque cowboy dj frites pizzahat sombrero'),
     ...list('acc', 'monocle barbe masque echarpe crocs tuba'),
     ...list('skin', 'neon nuit'),
@@ -173,7 +173,7 @@ export const TABLE: Record<Rarity, string[]> = {
     ...list('winfx', 'pizza coeurs'),
   ],
   epique: [
-    ...list('food', 'nuage popcorn saucisse pasteque nouilles'),
+    ...list('food', 'nuage popcorn saucisse pasteque nouilles cookie_noir sushi_tamago patate_violette champi_bleu fromage_bleu pizza_pesto macaron_pistache pasteque_jaune cornichon_piment'),
     ...list('hat', 'pirate sorciere viking afro pere renne citrouille chauve ananas requin astronaute neon'),
     ...list('acc', 'etoiles coeurs cape vr'),
     ...list('skin', 'lave fantome chrome'),
@@ -185,7 +185,7 @@ export const TABLE: Record<Rarity, string[]> = {
     ...list('winfx', 'etoiles pets billets'),
   ],
   legendaire: [
-    ...list('food', 'burger telecommande manette ananas'),
+    ...list('food', 'burger telecommande manette ananas cookie_dore champi_dore burger_noir ananas_rose'),
     ...list('hat', 'couronne aureole licorne flammes samourai pharaon'),
     ...list('acc', 'ailes cyborg'),
     ...list('skin', 'or arcenciel'),
@@ -196,7 +196,7 @@ export const TABLE: Record<Rarity, string[]> = {
     ...list('winfx', 'feu disco'),
   ],
   mythique: [
-    ...list('food', 'canape ovni bouledisco'),
+    ...list('food', 'canape ovni bouledisco burger_or ananas_bleu'),
     ...list('hat', 'dragon cosmique'),
     ...list('acc', 'ailesdragon'),
     ...list('skin', 'galaxie diamant'),

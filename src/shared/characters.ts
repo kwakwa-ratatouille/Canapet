@@ -2,7 +2,7 @@
 // en image puis gardés en cache (un dessin par perso, couleur, chapeau, accessoire et humeur).
 // Repère d'appel inchangé : pieds en (x, y), hauteur ~ s.
 
-import { characterSvg, faceSlot, PLAYER_COLORS, CHARACTERS, selfieDecoSvg } from './art/canapet-art.js';
+import { characterSvg, faceSlot, PLAYER_COLORS, CHARACTERS, selfieDecoSvg, VARIANT_EN } from './art/canapet-art.js';
 import { LIGHT } from './device';
 import { SKINS, type SkinDef } from './lootTable';
 import { FRAMES, TRAILS, type TrailDef, type TrailMode } from './cosmetics2';
@@ -57,7 +57,7 @@ const EN: Record<string, string> = {
 
 export const FOODS: { id: string; name: Name }[] = Object.entries(CHARACTERS).map(([id, fr]) => ({
   id,
-  name: { fr, en: EN[id] ?? fr },
+  name: { fr, en: EN[id] ?? VARIANT_EN[id] ?? fr },
 }));
 
 /** Les 12 couleurs joueurs, dans le même ordre qu'avant (source : tokens de la DA). */

@@ -1,5 +1,5 @@
 // Défis du jour (orange) et de la semaine (violet), avec difficulté, barre et récompense à récupérer.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Progress } from '../shared/progress';
 import type { Lang } from '../shared/protocol';
 import { claimQuest, dailyNow, questsNow, weekNow } from '../shared/quests';
@@ -26,6 +26,9 @@ function Burst({ gift, seed }: { gift: number; seed: number }) {
 export function Missions({ progress, setProgress, lang }: { progress: Progress; setProgress: (f: (p: Progress) => Progress) => void; lang: Lang }) {
   const fr = lang === 'fr';
   const week = weekNow(progress.habits);
+  useEffect(() => {
+    document.querySelector('.mission.ready')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, []);
   const [burst, setBurst] = useState<{ id: string; gift: number; n: number } | null>(null);
   const claim = (id: string) => {
     const r = claimQuest(progress.habits, id);

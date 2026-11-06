@@ -823,6 +823,28 @@ h3,
   text-overflow: ellipsis;
   max-width: 40%;
 }
+.pad-name small {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+/* Les bonbons : toujours bien visibles en haut */
+.pad-coins {
+  flex: 1 0 auto;
+  margin-left: auto;
+  max-width: max-content;
+  padding: 4px 12px;
+  font-family: var(--cp-font-titre);
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink);
+  background: #ffd60a;
+  border: 3px solid var(--ink);
+  border-radius: 99px;
+  box-shadow: 0 3px 0 var(--ink);
+}
 .pad-info {
   flex: 1;
   text-align: right;

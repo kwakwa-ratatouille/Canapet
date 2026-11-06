@@ -37,3 +37,6 @@ export function wordmarkSvg(): string;
 export function appIconSvg(dark?: boolean): string;
 export const GAME_LIST: { slug: string; name: string; tagline: string; color: string }[];
 export function gameIconSvg(i: number): string;
+
+export const VARIANT_OF: Record<string, string>;
+export const VARIANT_EN: Record<string, string>;

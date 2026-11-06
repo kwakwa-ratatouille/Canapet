@@ -374,3 +374,17 @@
 .ed-in .pick { height: 100%; }
 .ed-in .pick small { flex: 1 0 2.3em; display: flex; align-items: center; justify-content: center; line-height: 1.1; }
 .rar-tag { margin-top: auto; flex: none; }
+
+/* Qui est dans la partie (onglet Jouer) */
+.roster { box-sizing: border-box; width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: #fff; border: 4px solid #3a2140; border-radius: 18px; box-shadow: 0 4px 0 #3a2140; }
+.roster h3 { margin: 0; display: flex; align-items: center; gap: 8px; font-family: var(--cp-font-titre); font-size: 18px; color: #3a2140; }
+.roster h3 small { padding: 0 9px; font-size: 15px; color: #fff; background: #3a2140; border-radius: 99px; }
+.roster-row { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 2px 6px; border-radius: 12px; color: #3a2140; }
+.roster-row.me { background: #fff0f7; }
+.roster-row > i { flex: none; width: 20px; height: 20px; border: 3px solid #3a2140; border-radius: 50%; }
+.roster-row > b { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--cp-font-titre); font-size: 17px; }
+.roster-row > b em { font-style: normal; font-size: 13px; opacity: .65; }
+.roster-row > small { flex: none; font-size: 12px; font-weight: 800; opacity: .75; }
+.roster-chief { flex: none; padding: 1px 8px; font-size: 12px; font-weight: 800; background: #ffd60a; border: 2px solid #3a2140; border-radius: 99px; }
+.roster-row .kick-btn { flex: none; min-width: 40px; min-height: 36px; padding: 2px 8px; }
+.roster-row > b { text-align: left; }
