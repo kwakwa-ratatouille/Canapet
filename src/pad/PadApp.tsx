@@ -441,6 +441,28 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   );
 }
 
+/** Code de test : disparaît dès que les ventes sont ouvertes (les bonbons n'ont aucune valeur avant). */
+function TestCode({ progress, setProgress, lang }: { progress: Progress; setProgress: Account['setProgress']; lang: Lang }) {
+  const fr = lang === 'fr';
+  const [v, setV] = useState('');
+  const [msg, setMsg] = useState('');
+  const go = () => {
+    if (v.trim().toUpperCase() !== 'MATIS500') return setMsg(fr ? 'Code inconnu' : 'Unknown code');
+    if (progress.owned.includes('code:matis500')) return setMsg(fr ? 'Déjà utilisé' : 'Already used');
+    setProgress((p) => ({ ...p, coins: p.coins + 500000000, owned: [...p.owned, 'code:matis500'] }));
+    setV('');
+    setMsg(fr ? '+500 000 000 🍬' : '+500,000,000 🍬');
+  };
+  return (
+    <section className="set-card">
+      <h3>🎟️ {fr ? 'Code de test' : 'Test code'}</h3>
+      <input className="name-input" value={v} onChange={(e) => setV(e.target.value)} placeholder={fr ? 'Ton code' : 'Your code'} autoCapitalize="characters" />
+      <button className="btn mint" onClick={go}>{fr ? 'Valider' : 'Apply'}</button>
+      {msg && <p className="set-help">{msg}</p>}
+    </section>
+  );
+}
+
 function PadScreenView({
   screen,
   lang,
@@ -777,6 +799,7 @@ function PadScreenView({
             </>
           )}
           {tab === 'settings' && <ControlsCard lang={lang} />}
+          {tab === 'settings' && !SALES_ON && <TestCode progress={progress} setProgress={account.setProgress} lang={lang} />}
           {tab === 'settings' && (
             <section className="set-card">
               <h3>🌍 {lang === 'fr' ? 'Langue' : 'Language'}</h3>

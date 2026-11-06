@@ -276,7 +276,8 @@ export async function load(uid: string): Promise<Partial<Progress> | null> {
 let lastSaved = '';
 export async function save(uid: string, p: Progress) {
   // Rien n'a changé depuis la dernière sauvegarde : pas d'écriture
-  const body = { xp: p.xp, coins: p.coins, owned: p.owned, games: p.games, wins: p.wins };
+  // Plafond des anciennes règles de la base : au-dessus, toute la sauvegarde serait refusée
+  const body = { xp: p.xp, coins: Math.min(p.coins, 9999999), owned: p.owned, games: p.games, wins: p.wins };
   const sum = uid + JSON.stringify(body);
   if (sum === lastSaved) return;
   await set(ref(db, `players/${uid}/progress`), { ...body, updated: Date.now() });
