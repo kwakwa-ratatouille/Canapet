@@ -784,31 +784,31 @@ export function playMusic(track: MusicId | '') {
  * `price` : à débloquer en bonbons par l'hôte. Les voix qui ne changeaient que la hauteur (écureuil, ogre, speedé…) sont retirées.
  * `st` : vraie voix Supertonic (voir supertonic.ts) ; `male` choisit la voix de secours de l'appareil.
  */
-export const VOICES: { id: string; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; rate: number; pitch: number; price?: number; st?: string }[] = [
-  { id: 'classique', fr: 'Classique', en: 'Classic', rate: 1.05, pitch: 1.15 },
-  { id: 'marcel', fr: 'Marcel', en: 'Marcel', st: 'M1', male: true, rate: 1.05, pitch: 1 },
-  { id: 'lucette', fr: 'Lucette', en: 'Lucette', st: 'F1', rate: 1.05, pitch: 1 },
-  { id: 'gaston', fr: 'Gaston', en: 'Gaston', st: 'M2', male: true, rate: 1.05, pitch: 1 },
-  { id: 'josiane', fr: 'Josiane', en: 'Josiane', st: 'F2', rate: 1.05, pitch: 1 },
-  { id: 'roger', fr: 'Roger', en: 'Roger', st: 'M3', male: true, rate: 1.05, pitch: 1, price: 200 },
-  { id: 'ginette', fr: 'Ginette', en: 'Ginette', st: 'F3', rate: 1.05, pitch: 1, price: 200 },
-  { id: 'bernard', fr: 'Bernard', en: 'Bernard', st: 'M4', male: true, rate: 1.05, pitch: 1, price: 200 },
-  { id: 'odette', fr: 'Odette', en: 'Odette', st: 'F4', rate: 1.05, pitch: 1, price: 200 },
-  { id: 'hubert', fr: 'Hubert', en: 'Hubert', st: 'M5', male: true, rate: 1.05, pitch: 1, price: 200 },
-  { id: 'simone', fr: 'Simone', en: 'Simone', st: 'F5', rate: 1.05, pitch: 1, price: 200 },
-  { id: 'naturelle', fr: 'Naturelle', en: 'Natural', nice: true, rate: 1.02, pitch: 1 },
-  { id: 'homme', fr: 'Voix d’homme', en: 'Male voice', nice: true, male: true, rate: 1.02, pitch: 1 },
-  { id: 'quebec', fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05, price: 150 },
-  { id: 'anglais', fr: 'Accent anglais', en: 'French accent', accent: ['en-gb', 'fr-fr'], rate: 0.95, pitch: 1.05, price: 150 },
-  { id: 'italien', fr: 'Accent italien', en: 'Italian accent', accent: ['it', 'it'], rate: 1.05, pitch: 1.1, price: 150 },
-  { id: 'espagnol', fr: 'Accent espagnol', en: 'Spanish accent', accent: ['es', 'es'], rate: 1.05, pitch: 1.05, price: 150 },
-  { id: 'grave', fr: 'Bande-annonce', en: 'Movie trailer', local: true, male: true, rate: 0.82, pitch: 0.3, price: 300 },
-  { id: 'robot', fr: 'Robot', en: 'Robot', local: true, male: true, rate: 0.8, pitch: 0.1, price: 300 },
+export const VOICES: { id: string; /** Sa phrase de présentation (fr, en). */ hello: [string, string]; fr: string; en: string; accent?: [string, string]; nice?: boolean; local?: boolean; male?: boolean; rate: number; pitch: number; price?: number; st?: string }[] = [
+  { id: 'classique', hello: ["Bonsoir, ici la voix classique. Simple et efficace, comme une tartine.","Good evening, this is the classic voice. Simple and solid, like toast."], fr: 'Classique', en: 'Classic', rate: 1.05, pitch: 1.15 },
+  { id: 'marcel', hello: ["Marcel à l’appareil. Quarante ans de canapé, et jamais une partie perdue.","Marcel speaking. Forty years on the couch, and never lost a game."], fr: 'Marcel', en: 'Marcel', st: 'M1', male: true, rate: 1.05, pitch: 1 },
+  { id: 'lucette', hello: ["Coucou, c’est Lucette ! J’ai fait des crêpes, mais d’abord, on joue.","Hi there, it’s Lucette! I made pancakes, but first, we play."], fr: 'Lucette', en: 'Lucette', st: 'F1', rate: 1.05, pitch: 1 },
+  { id: 'gaston', hello: ["Ici Gaston. Je commente tout, même quand personne ne m’a rien demandé.","Gaston here. I comment on everything, even when nobody asked."], fr: 'Gaston', en: 'Gaston', st: 'M2', male: true, rate: 1.05, pitch: 1 },
+  { id: 'josiane', hello: ["Josiane, pour vous servir. Je vous préviens : je vois tout, et je note tout.","Josiane, at your service. Fair warning: I see everything, and I write it down."], fr: 'Josiane', en: 'Josiane', st: 'F2', rate: 1.05, pitch: 1 },
+  { id: 'roger', hello: ["Roger au micro ! À mon époque, on criait sur la télé sans manette.","Roger on the mic! Back in my day, we yelled at the TV with no controller."], fr: 'Roger', en: 'Roger', st: 'M3', male: true, rate: 1.05, pitch: 1, price: 200 },
+  { id: 'ginette', hello: ["Ginette, enchantée. Essuyez vos pieds avant de monter sur le canapé.","Ginette, delighted. Wipe your feet before getting on the couch."], fr: 'Ginette', en: 'Ginette', st: 'F3', rate: 1.05, pitch: 1, price: 200 },
+  { id: 'bernard', hello: ["Bonsoir, c’est Bernard. Je ne dis rien, mais je n’en pense pas moins.","Evening, it’s Bernard. I say nothing, but I think plenty."], fr: 'Bernard', en: 'Bernard', st: 'M4', male: true, rate: 1.05, pitch: 1, price: 200 },
+  { id: 'odette', hello: ["Odette est là ! Qui a encore caché la télécommande ?","Odette is here! Who hid the remote again?"], fr: 'Odette', en: 'Odette', st: 'F4', rate: 1.05, pitch: 1, price: 200 },
+  { id: 'hubert', hello: ["Hubert, présentateur de père en fils. Mesdames et messieurs, tenez-vous bien.","Hubert, a host like his father before him. Ladies and gentlemen, brace yourselves."], fr: 'Hubert', en: 'Hubert', st: 'M5', male: true, rate: 1.05, pitch: 1, price: 200 },
+  { id: 'simone', hello: ["Simone, à votre écoute. J’ai déjà parié sur le perdant, et il est dans cette pièce.","Simone, listening. I’ve already bet on the loser, and they’re in this room."], fr: 'Simone', en: 'Simone', st: 'F5', rate: 1.05, pitch: 1, price: 200 },
+  { id: 'naturelle', hello: ["Bonjour, je suis la voix naturelle. Zéro effet, cent pour cent canapé.","Hello, I’m the natural voice. Zero effects, all couch."], fr: 'Naturelle', en: 'Natural', nice: true, rate: 1.02, pitch: 1 },
+  { id: 'homme', hello: ["Bonsoir. Voix grave, regard profond, et chaussettes dépareillées.","Good evening. Deep voice, deep gaze, and odd socks."], fr: 'Voix d’homme', en: 'Male voice', nice: true, male: true, rate: 1.02, pitch: 1 },
+  { id: 'quebec', hello: ["Allô la gang ! On va avoir ben du fun à soir sur le divan !","Hello gang! We’re gonna have a blast on the couch tonight!"], fr: 'Québécoise', en: 'Québécois', accent: ['fr-ca', 'fr-ca'], rate: 1.05, pitch: 1.05, price: 150 },
+  { id: 'anglais', hello: ["Bonjour everybody ! Je suis very happy d’être sur votre canapé.","Bonjour everybody! Tonight, ze couch is ours."], fr: 'Accent anglais', en: 'French accent', accent: ['en-gb', 'fr-fr'], rate: 0.95, pitch: 1.05, price: 150 },
+  { id: 'italien', hello: ["Mamma mia, quelle belle soirée ! Allez, on joue, et après, les pâtes !","Mamma mia, what a night! Come on, we play, and then pasta!"], fr: 'Accent italien', en: 'Italian accent', accent: ['it', 'it'], rate: 1.05, pitch: 1.1, price: 150 },
+  { id: 'espagnol', hello: ["Olé ! Ce soir, sur le canapé, c’est la fiesta !","Olé! Tonight, on the couch, it’s a fiesta!"], fr: 'Accent espagnol', en: 'Spanish accent', accent: ['es', 'es'], rate: 1.05, pitch: 1.05, price: 150 },
+  { id: 'grave', hello: ["Cet hiver. Un canapé. Une manette. Et un seul survivant.","This winter. One couch. One controller. And only one survivor."], fr: 'Bande-annonce', en: 'Movie trailer', local: true, male: true, rate: 0.82, pitch: 0.3, price: 300 },
+  { id: 'robot', hello: ["Bip. Analyse du salon terminée. Probabilité de dispute : cent pour cent.","Beep. Living room scan complete. Chance of an argument: one hundred percent."], fr: 'Robot', en: 'Robot', local: true, male: true, rate: 0.8, pitch: 0.1, price: 300 },
   // Accents du monde : une voix de cette langue lit le texte (si le PC l'a ; « a|b » = la première trouvée)
-  { id: 'japonais', fr: 'Accent japonais', en: 'Japanese accent', accent: ['ja', 'ja'], male: true, rate: 1.05, pitch: 1.1, price: 300 },
-  { id: 'chinois', fr: 'Accent chinois', en: 'Chinese accent', accent: ['zh', 'zh'], male: true, rate: 1, pitch: 1.05, price: 300 },
-  { id: 'indien', fr: 'Accent indien', en: 'Indian accent', accent: ['en-in|hi', 'en-in|hi'], male: true, rate: 1.05, pitch: 1.05, price: 300 },
-  { id: 'africain', fr: 'Accent africain', en: 'African accent', accent: ['fr-sn|fr-ci|fr-cm|en-ng|en-za|sw', 'en-ng|en-za|en-ke|sw'], male: true, rate: 1, pitch: 1, price: 300 },
+  { id: 'japonais', hello: ["Bonsoir ! J’ai fait dix mille kilomètres pour vous voir perdre.","Good evening! I came ten thousand kilometres to watch you lose."], fr: 'Accent japonais', en: 'Japanese accent', accent: ['ja', 'ja'], male: true, rate: 1.05, pitch: 1.1, price: 300 },
+  { id: 'chinois', hello: ["Bonsoir à tous ! Installez-vous, ce soir personne ne dort avant la finale.","Good evening all! Get comfy, nobody sleeps before the final tonight."], fr: 'Accent chinois', en: 'Chinese accent', accent: ['zh', 'zh'], male: true, rate: 1, pitch: 1.05, price: 300 },
+  { id: 'indien', hello: ["Bonsoir mes amis ! Ce soir, grande fête sur le canapé, tout le monde est invité !","Good evening my friends! Big party on the couch tonight, everyone’s invited!"], fr: 'Accent indien', en: 'Indian accent', accent: ['en-in|hi', 'en-in|hi'], male: true, rate: 1.05, pitch: 1.05, price: 300 },
+  { id: 'africain', hello: ["Salut la famille ! Ce soir on rigole, et que le meilleur gagne !","Hello family! Tonight we laugh, and may the best one win!"], fr: 'Accent africain', en: 'African accent', accent: ['fr-sn|fr-ci|fr-cm|en-ng|en-za|sw', 'en-ng|en-za|en-ke|sw'], male: true, rate: 1, pitch: 1, price: 300 },
 ];
 let voiceIdx = 0;
 export function setVoice(i: number) {
@@ -817,7 +817,7 @@ export function setVoice(i: number) {
   const st = VOICES[voiceIdx].st;
   if (st) {
     void stStart(st);
-    stWhenReady(prepareInstant);
+    stWhenReady(voiceArrived);
   }
 }
 /** Voix conseillée au tout premier lancement. */
@@ -882,6 +882,38 @@ function prepareInstant() {
   if (!pre?.st || warmed === pre.st + lastLang) return;
   warmed = pre.st + lastLang;
   INSTANT[lastLang].forEach((t) => stPrepare(t, lastLang, pre.st!, pre.rate));
+  // La présentation de chaque voix, pour l'entendre tout de suite quand on la choisit
+  VOICES.forEach((v) => {
+    if (v.st) stPrepare(v.hello[lastLang === 'fr' ? 0 : 1], lastLang, v.st, v.rate);
+  });
+}
+let helloWaiting = -1;
+let helloHooks: { allowed(): boolean; ready(): void } = { allowed: () => true, ready: () => {} };
+export const setHelloHooks = (h: typeof helloHooks) => {
+  helloHooks = h;
+};
+/** Une vraie voix est-elle encore en train d'arriver ? */
+export const voiceLoading = (i: number) => !!VOICES[i]?.st && !stReady() && stState() !== 'failed';
+/** La voix `i` se présente. Si son modèle n'est pas encore là, elle attend : la voix de l'appareil les ferait toutes pareilles. */
+export function helloVoice(i: number, lang: Lang) {
+  lastLang = lang;
+  if (voiceLoading(i)) {
+    helloWaiting = i;
+    stWhenReady(voiceArrived);
+    return false;
+  }
+  const back = voiceIdx;
+  voiceIdx = i;
+  speak(VOICES[i].hello[lang === 'fr' ? 0 : 1], lang, { patient: true });
+  voiceIdx = back;
+  return true;
+}
+function voiceArrived() {
+  prepareInstant();
+  helloHooks.ready();
+  const i = helloWaiting;
+  helloWaiting = -1;
+  if (i >= 0 && helloHooks.allowed()) helloVoice(i, lastLang);
 }
 function stopVoice() {
   try {
@@ -919,7 +951,7 @@ function playVoice(clip: Clip) {
 }
 
 /** Fait dire une phrase par une vraie voix ; rend faux si c'est à la voix de l'appareil de la dire. */
-function speakReal(text: string, lang: Lang, st: string, speed: number, fallback: () => void) {
+function speakReal(text: string, lang: Lang, st: string, speed: number, fallback: () => void, patient = false) {
   if (!stReady() || audioLocked()) return false;
   prepareInstant();
   const token = ++sayToken;
@@ -936,7 +968,8 @@ function speakReal(text: string, lang: Lang, st: string, speed: number, fallback
     if (done || token !== sayToken) return;
     done = true;
     fallback();
-  }, 1500);
+    // Pour se présenter, une voix peut prendre son temps : sinon on entendrait celle de l'appareil à sa place
+  }, patient ? 15000 : 1500);
   void stSay(text, lang, st, speed).then((clip) => {
     if (done || token !== sayToken || muted) return;
     done = true;
@@ -948,14 +981,14 @@ function speakReal(text: string, lang: Lang, st: string, speed: number, fallback
 }
 
 /** `voice` : voix propre à une annonce (vitesse et hauteur). */
-export function speak(text: string, lang: Lang, voice_?: { rate?: number; pitch?: number }) {
+export function speak(text: string, lang: Lang, voice_?: { rate?: number; pitch?: number; patient?: boolean }) {
   if (muted) return;
   const pre = VOICES[voiceIdx] ?? VOICES[0];
   lastLang = lang;
   ++sayToken;
   stopVoice();
   // Une annonce qui change la hauteur (voix d'écureuil…) reste à la voix de l'appareil, qui sait le faire
-  if (pre.st && !voice_?.pitch && text.length <= 280 && speakReal(text, lang, pre.st, voice_?.rate ?? pre.rate, () => speakDevice(text, lang, voice_))) return;
+  if (pre.st && !voice_?.pitch && text.length <= 280 && speakReal(text, lang, pre.st, voice_?.rate ?? pre.rate, () => speakDevice(text, lang, voice_), voice_?.patient)) return;
   speakDevice(text, lang, voice_);
 }
 

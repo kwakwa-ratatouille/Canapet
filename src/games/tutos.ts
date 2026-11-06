@@ -119,16 +119,16 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     fr: {
       goal: 'Arrive le premier ! Ton perso court tout seul, à toi de franchir les obstacles',
       steps: [
-        ['⬆', 'Bouton gauche : SAUTE par-dessus les haies roses'],
-        ['⬇', 'Bouton droit : GLISSE sous les barres jaunes'],
+        ['⬆', 'Bouton gauche : SAUTE les haies, les trous et le sirop'],
+        ['⬇', 'Bouton droit : GLISSE sous les barres. Gare aux obstacles surprises (!)'],
         ['⚡', 'Pile au bon moment = PARFAIT et petit turbo. Trop tôt ou mauvais bouton = tu trébuches'],
       ],
     },
     en: {
       goal: 'Finish first! Your character runs by itself, you handle the obstacles',
       steps: [
-        ['⬆', 'Left button: JUMP over the pink hurdles'],
-        ['⬇', 'Right button: SLIDE under the yellow bars'],
+        ['⬆', 'Left button: JUMP hurdles, holes and syrup'],
+        ['⬇', 'Right button: SLIDE under bars. Watch out for surprises (!)'],
         ['⚡', 'Right on time = PERFECT and a little boost. Too early or wrong button = you trip'],
       ],
     },

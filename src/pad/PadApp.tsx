@@ -929,7 +929,7 @@ function PadScreenView({
                     </button>
                   ))}
                 </div>
-                {menu === 'voice' && <p className="pad-small">{lang === 'fr' ? 'La télé fait écouter chaque voix. Marcel, Lucette et les autres : des voix de synthèse (IA) très réalistes, téléchargées une seule fois par la télé (400 Mo).' : 'The TV plays each voice. Marcel, Lucette and the others: very realistic AI voices, downloaded once by the TV (400 MB).'}</p>}
+                {menu === 'voice' && <p className="pad-small">{screen.voiceLoading ? (lang === 'fr' ? 'Les voix à prénom se téléchargent sur la télé (la première fois seulement). Tu les entendras dès que c’est prêt.' : 'Named voices are downloading on the TV (first time only). You’ll hear them when ready.') : lang === 'fr' ? 'La télé fait écouter chaque voix.' : 'The TV plays each voice.'}</p>}
                 {menu === 'voice' && voiceTry >= 0 && !voiceOwned(voiceTry) && (
                   <button
                     className="btn mint"
@@ -1084,7 +1084,7 @@ function PadScreenView({
     case 'recap':
       return (
         <div className="pad-body">
-          <p className="pad-title">📊 {lang === 'fr' ? 'Regarde la télé : le bilan de la soirée !' : 'Look at the TV: tonight’s awards!'}</p>
+          <p className="pad-title">📊 {lang === 'fr' ? 'Regarde l’écran : le bilan de la soirée !' : 'Look at the screen: tonight’s awards!'}</p>
           {screen.host && (
             <button className="btn big mint" onClick={() => host('lobby')}>
               {t(lang, 'toLobby')}

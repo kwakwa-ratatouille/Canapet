@@ -13,7 +13,7 @@ import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
 import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
 import { stProgress, stReady, stState } from '../shared/supertonic';
-import { VOICES, audioLocked, unlockAudio, defaultVoiceId, voiceWorks, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
+import { VOICES, audioLocked, unlockAudio, defaultVoiceId, helloVoice, setHelloHooks, voiceLoading, voiceWorks, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
 import { REACTIONS } from '../shared/reactions';
 import { makeSecrets, type Secret } from './secrets';
@@ -228,6 +228,7 @@ export class Session {
 
   constructor(preview: boolean) {
     setFamily(this.family);
+    setHelloHooks({ allowed: () => this.phase === 'lobby', ready: () => this.pushScreens() });
     setVoice(this.voice);
     // Aperçu : pour essayer la voix depuis la console
     if (preview) (window as unknown as { __voice: unknown }).__voice = { speak, VOICES, stReady, stState, stProgress, unlockAudio, audioLocked };
@@ -582,7 +583,9 @@ export class Session {
         break;
       case 'voice': {
         const fr = this.lang() === 'fr';
-        const hello = (i: number) => speak(fr ? `Salut ! Je suis la voix ${VOICES[i].fr}. Que la fête commence !` : `Hi! I'm the ${VOICES[i].en} voice. Let's party!`, this.lang());
+        const hello = (i: number) => {
+          if (!helloVoice(i, this.lang())) this.toast = { text: fr ? `${VOICES[i].fr} arrive : téléchargement des voix…` : `${VOICES[i].en} is coming: downloading voices…`, t: 3 };
+        };
         const v = opts && typeof opts.v === 'number' ? Math.max(0, Math.min(VOICES.length - 1, opts.v)) : -1;
         // Écouter une voix pas encore débloquée, sans la garder
         if (v >= 0 && opts?.try) {
@@ -1454,6 +1457,7 @@ export class Session {
           bots: this.bots,
           botLevel: this.botLevel,
           voice: this.voice,
+          voiceLoading: VOICES.some((_, i) => voiceLoading(i)),
           voicesOk: VOICES.map((_, i) => i).filter((i) => voiceWorks(i, this.lang())),
           recap: [...this.stats.values()].some((x) => x.games > 0),
           players: host ? this.list().filter((x) => x.pid !== p.pid && x.connected).map((x) => ({ pid: x.pid, name: x.name, color: x.color })) : [],

@@ -58,7 +58,7 @@ export interface GhostInfo {
 }
 
 export type PadScreen =
-  | { s: 'lobby'; /** Achats des joueurs présents : profitent à tout le salon. */ roomItems?: string[]; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; /** Voix qui existent vraiment à la télé. */ voicesOk?: number[]; recap?: boolean; players: { pid: string; name: string; color: string }[] }
+  | { s: 'lobby'; /** Achats des joueurs présents : profitent à tout le salon. */ roomItems?: string[]; host: boolean; hostName: string; taken: string[]; /** Persos déjà pris → pseudo de celui qui l'a. */ foods?: Record<string, string>; games: GameInfo[]; count: number; family: boolean; teams: boolean; team: number; bots: number; botLevel: number; voice: number; /** Voix qui existent vraiment à la télé. */ voicesOk?: number[]; /** Les voix à prénom se téléchargent encore. */ voiceLoading?: boolean; recap?: boolean; players: { pid: string; name: string; color: string }[] }
   | { s: 'play'; layout: PadLayout; game: string; data?: unknown; host?: boolean; tuto?: boolean; secret?: SecretInfo }
   /** Partie en pause : l'hôte choisit reprendre, recommencer ou revenir au salon. */
   | { s: 'paused'; host: boolean; game: string }

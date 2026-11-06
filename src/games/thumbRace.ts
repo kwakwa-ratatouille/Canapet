@@ -1,5 +1,6 @@
 // Course de pouces : les persos courent tout seuls. Bouton gauche = SAUTER les haies, bouton droit = GLISSER sous les barres.
 // Mauvais bouton ou trop tard = on trébuche ; pile au bon moment = PARFAIT (petit turbo). Pas de spam : chaque geste dure un moment.
+// Pièges : trous (grosse chute), flaques de sirop (ralentissent), obstacles surprises qui surgissent au dernier moment, enchaînements serrés.
 import { drawCharacter } from '../shared/characters';
 import { sfx } from '../shared/sound';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
@@ -15,7 +16,11 @@ const COOLDOWN = 0.22;
 const MAX_TIME = 45;
 const AFTER_FIRST = 8;
 
-type Kind = 'haie' | 'barre';
+type Kind = 'haie' | 'barre' | 'trou' | 'sirop';
+/** À quelle distance un obstacle surprise apparaît. */
+const SURPRISE_AT = 460;
+/** Écart minimum entre deux obstacles : même avec le turbo, on a le temps d'enchaîner. */
+const MIN_GAP = 380;
 
 interface R extends Runner {
   pos: number;
@@ -25,6 +30,7 @@ interface R extends Runner {
   cd: number;
   trip: number;
   boost: number;
+  slow: number;
   done: number;
   /** Dernier obstacle déjà franchi ou raté (pour ne compter chacun qu'une fois). */
   passed: number;
@@ -48,13 +54,18 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
   // Même parcours pour tout le monde : obstacles de plus en plus serrés
-  const obs: { x: number; k: Kind }[] = [];
-  for (let x = 900; x < TRACK - 400; ) {
-    obs.push({ x, k: Math.random() < 0.5 ? 'haie' : 'barre' });
+  const obs: { x: number; k: Kind; surprise?: boolean }[] = [];
+  for (let x = 800; x < TRACK - 400; ) {
+    const r = Math.random();
+    const k: Kind = x < 1500 ? (r < 0.5 ? 'haie' : 'barre') : r < 0.33 ? 'haie' : r < 0.66 ? 'barre' : r < 0.83 ? 'trou' : 'sirop';
+    obs.push({ x, k, surprise: x > 3000 && (k === 'haie' || k === 'barre') && Math.random() < 0.28 });
     const prog = x / TRACK;
-    x += 640 - prog * 300 + Math.random() * 220;
+    // Parfois deux obstacles coup sur coup, et de plus en plus serré
+    x += Math.random() < 0.2 + prog * 0.2 ? MIN_GAP + Math.random() * 40 : Math.max(MIN_GAP, 520 - prog * 200 + Math.random() * 180);
   }
-  const rs: R[] = runners.map((r) => ({ ...r, pos: 0, v: 0, jump: 0, slide: 0, cd: 0, trip: 0, boost: 0, done: 0, passed: -1, combo: 0, pop: null, botPlan: -1, botAt: -1, botSide: 0 }));
+  const seen = (o: { x: number; surprise?: boolean }, pos: number) => !o.surprise || o.x - pos < SURPRISE_AT;
+  const sideOf = (k: Kind): 0 | 1 => (k === 'barre' ? 1 : 0);
+  const rs: R[] = runners.map((r) => ({ ...r, pos: 0, v: 0, jump: 0, slide: 0, cd: 0, trip: 0, boost: 0, slow: 0, done: 0, passed: -1, combo: 0, pop: null, botPlan: -1, botAt: -1, botSide: 0 }));
   let time = 0;
   let order = 0;
   let firstAt = -1;
@@ -70,7 +81,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const o = nextObs(r);
     if (o) {
       const d = o.x - r.pos;
-      const good = (side === 0 && o.k === 'haie') || (side === 1 && o.k === 'barre');
+      const good = side === sideOf(o.k);
       if (good && d > 30 && d < 120) {
         r.combo++;
         r.boost = 0.7;
@@ -108,11 +119,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (r.jump === 0 && r.slide === 0) r.cd = Math.max(0, r.cd - dt);
         if ((r.jump > 0 && r.jump - dt <= 0) || (r.slide > 0 && r.slide - dt <= 0)) r.cd = COOLDOWN;
         r.boost = Math.max(0, r.boost - dt);
+        r.slow = Math.max(0, r.slow - dt);
         if (r.trip > 0) {
           r.trip -= dt;
           r.v = 0;
         } else {
-          const want = SPEED * (r.boost > 0 ? 1.3 : 1);
+          // Ça accélère doucement jusqu'à l'arrivée
+          const want = SPEED * (1 + 0.15 * Math.min(1, r.pos / TRACK)) * (r.boost > 0 ? 1.3 : 1) * (r.slow > 0 ? 0.5 : 1);
           r.v += (want - r.v) * Math.min(1, dt * 3);
         }
         // Bots : ils réagissent quand l'obstacle approche (plus ou moins bien selon leur niveau)
@@ -123,7 +136,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             r.botPlan = k;
             const skill = 0.55 + 0.4 * ctx.botSkill;
             const delay = (o.x - r.pos - (50 + Math.random() * 60)) / Math.max(1, r.v);
-            const side: 0 | 1 = Math.random() < skill ? (o.k === 'haie' ? 0 : 1) : o.k === 'haie' ? 1 : 0;
+            const side: 0 | 1 = Math.random() < skill ? sideOf(o.k) : sideOf(o.k) === 0 ? 1 : 0;
             r.botAt = time + Math.max(0, delay);
             r.botSide = side;
           }
@@ -136,13 +149,21 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         // Obstacles franchis ou percutés
         obs.forEach((o, k) => {
           if (k <= r.passed || Math.abs(o.x - r.pos) > 26) return;
-          const ok = o.k === 'haie' ? r.jump > 0.1 && r.jump < ACT - 0.05 : r.slide > 0;
+          const ok = o.k === 'barre' ? r.slide > 0 : r.jump > 0.1 && r.jump < ACT - 0.05;
           r.passed = k;
           if (ok) return;
-          r.trip = 0.9;
           r.combo = 0;
+          if (o.k === 'sirop') {
+            // Pas de chute, mais on patauge
+            r.slow = 1.4;
+            r.pop = { text: fr ? 'SIROP !' : 'SYRUP!', t: 0.9, c: '#ff8a1f' };
+            sfx.boing();
+            if (!r.bot) ctx.buzz(r.pid, 120);
+            return;
+          }
+          r.trip = o.k === 'trou' ? 1.6 : 1.05;
           r.jump = r.slide = 0;
-          r.pop = { text: fr ? 'AÏE !' : 'OUCH!', t: 0.9, c: '#ff3b3b' };
+          r.pop = o.k === 'trou' ? { text: fr ? 'PLOUF !' : 'SPLASH!', t: 1.3, c: '#7b4dff' } : { text: fr ? 'AÏE !' : 'OUCH!', t: 0.9, c: '#ff3b3b' };
           sfx.boing();
           if (!r.bot) ctx.buzz(r.pid, 200);
         });
@@ -244,10 +265,32 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const s = h / 130;
         for (const o of obs) {
           const ox = 60 + o.x - cam;
-          if (ox < 0 || ox > 1900) continue;
+          if (ox < 0 || ox > 1900 || !seen(o, r.pos)) continue;
           g.strokeStyle = INK;
           g.lineWidth = 4;
-          if (o.k === 'haie') {
+          if (o.k === 'trou') {
+            // Trou : à sauter, grosse chute sinon
+            g.fillStyle = '#3a2140';
+            g.beginPath();
+            g.ellipse(ox, ground - 2, 52 * s, 13 * s, 0, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+            g.fillStyle = '#7b4dff';
+            g.beginPath();
+            g.ellipse(ox, ground + 1, 34 * s, 6 * s, 0, 0, Math.PI * 2);
+            g.fill();
+          } else if (o.k === 'sirop') {
+            // Flaque de sirop : à sauter, on patauge sinon
+            g.fillStyle = '#ff9a2e';
+            g.beginPath();
+            g.ellipse(ox, ground - 2, 74 * s, 11 * s, 0, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+            g.fillStyle = 'rgba(255,255,255,.6)';
+            g.beginPath();
+            g.ellipse(ox - 22 * s, ground - 5, 16 * s, 3 * s, 0, 0, Math.PI * 2);
+            g.fill();
+          } else if (o.k === 'haie') {
             // Haie basse : à sauter
             g.fillStyle = '#fff';
             g.fillRect(ox - 22 * s, ground - 40 * s, 6 * s, 40 * s);
@@ -276,7 +319,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           // Indice : zone où appuyer (au sol) et grosse pastille SAUTE / GLISSE au-dessus de l'obstacle
           const ahead = o.x - r.pos;
           if (ahead > -40 && ahead < 900 && !r.done) {
-            const col = o.k === 'haie' ? '#ff4f9a' : '#ffb800';
+            const col = o.k === 'barre' ? '#ffb800' : o.k === 'trou' ? '#7b4dff' : o.k === 'sirop' ? '#ff8a1f' : '#ff4f9a';
             const next = o === nextObs(r);
             if (next) {
               g.globalAlpha = 0.35;
@@ -298,11 +341,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             g.font = `700 ${Math.round(br * 1.2)}px Fredoka, sans-serif`;
             g.textAlign = 'center';
             g.textBaseline = 'middle';
-            g.fillText(o.k === 'haie' ? '⬆' : '⬇', bx, by + 2);
+            g.fillText(o.surprise ? '!' : o.k === 'barre' ? '⬇' : '⬆', bx, by + 2);
             if (next && h > 150) {
               g.font = `700 ${Math.max(28, 20 * s)}px Fredoka, sans-serif`;
               g.lineWidth = 5;
-              const word = o.k === 'haie' ? (fr ? 'SAUTE' : 'JUMP') : fr ? 'GLISSE' : 'SLIDE';
+              const word = o.k === 'barre' ? (fr ? 'GLISSE' : 'SLIDE') : fr ? 'SAUTE' : 'JUMP';
               g.textAlign = 'right';
               g.strokeText(word, bx - br - 10, by);
               g.fillStyle = col;
@@ -392,8 +435,8 @@ export const thumbRace: GameBase = {
   emoji: '👍',
   name: { fr: 'Le Tour de Pouce', en: 'Thumb de France' },
   how: {
-    fr: 'Ça court tout seul : ⬆ SAUTE les haies roses, ⬇ GLISSE sous les barres jaunes, pile au bon moment !',
-    en: 'You run by yourself: ⬆ JUMP the pink hurdles, ⬇ SLIDE under the yellow bars, right on time!',
+    fr: 'Ça court tout seul : ⬆ SAUTE les haies, les trous et le sirop, ⬇ GLISSE sous les barres. Gare aux obstacles surprises !',
+    en: 'You run by yourself: ⬆ JUMP hurdles, holes and syrup, ⬇ SLIDE under bars. Watch out for surprise obstacles!',
   },
   layout: 'tap',
   min: 1,
