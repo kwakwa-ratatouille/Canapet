@@ -504,9 +504,9 @@ function TestCode({ progress, setProgress, lang }: { progress: Progress; setProg
   const go = () => {
     if (v.trim().toUpperCase() !== 'MATIS500') return setMsg(fr ? 'Code inconnu' : 'Unknown code');
     if (progress.owned.includes('code:matis500')) return setMsg(fr ? 'Déjà utilisé' : 'Already used');
-    setProgress((p) => ({ ...p, coins: p.coins + 500000000, owned: [...p.owned, 'code:matis500'] }));
+    setProgress((p) => ({ ...p, coins: p.coins + 500000, owned: [...p.owned, 'code:matis500'] }));
     setV('');
-    setMsg(fr ? '+500 000 000 🍬' : '+500,000,000 🍬');
+    setMsg(fr ? '+500 000 🍬' : '+500,000 🍬');
   };
   return (
     <section className="set-card">

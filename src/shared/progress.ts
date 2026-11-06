@@ -28,8 +28,14 @@ export const PRICES: Record<string, { price: number; level?: number; rarity?: Ra
 
 const START: Progress = { xp: 0, coins: 60, owned: [], games: 0, wins: 0, last: '' };
 
+/** Même limite que database.rules.json : au-delà, la sauvegarde du compte serait refusée. */
+export const MAX_COINS = 10000000;
+/** Un compte au-dessus de la limite (ancien code de test à 500 millions) revient à 500 000. */
+export const fixCoins = (n: number) => (n >= MAX_COINS ? 500000 : n);
+
 export function loadProgress(): Progress {
-  return { ...START, ...store<Partial<Progress>>('progress', {}) };
+  const p = { ...START, ...store<Partial<Progress>>('progress', {}) };
+  return { ...p, coins: fixCoins(p.coins) };
 }
 
 export function saveProgress(p: Progress) {

@@ -2,7 +2,7 @@
 // Firebase n'est chargé qu'à la demande, pour garder la télé et la manette légères.
 import { IS_PHONE } from './device';
 import { IS_INSTALLED, IS_NATIVE } from './native';
-import type { Progress } from './progress';
+import { fixCoins, type Progress } from './progress';
 
 export const CONFIG = {
   apiKey: 'AIzaSyCBOa9SNOnyN6GkG7asYT2J1Y350EU7rmY',
@@ -115,7 +115,7 @@ export function merge(a: Progress, b: Partial<Progress> | null): Progress {
   return {
     ...a,
     xp: Math.max(a.xp, b.xp ?? 0),
-    coins: Math.max(a.coins, b.coins ?? 0),
+    coins: Math.max(fixCoins(a.coins), fixCoins(b.coins ?? 0)),
     owned: [...new Set([...a.owned, ...(b.owned ?? [])])],
     games: Math.max(a.games, b.games ?? 0),
     wins: Math.max(a.wins, b.wins ?? 0),
