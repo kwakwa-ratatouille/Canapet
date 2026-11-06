@@ -29,7 +29,10 @@ const MALUS: Record<Malus, { emoji: string; fr: string; en: string; t: number }>
 };
 const MALUS_LIST = Object.keys(MALUS) as Malus[];
 
+let ballIds = 0;
 interface Ball {
+  /** Numéro fixe, pour que le téléphone le fasse glisser sans à-coups. */
+  id: number;
   x: number;
   y: number;
   vx: number;
@@ -102,7 +105,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         x.vy -= 260 + Math.random() * 240;
       });
     }
-    if (kind === 'chaussette') to.balls.push({ x: 120 + Math.random() * (FUSION_W - 240), y: 30, vx: 0, vy: 0, l: -1, r: 40, age: 0, junk: 14 });
+    if (kind === 'chaussette') to.balls.push({ id: ++ballIds, x: 120 + Math.random() * (FUSION_W - 240), y: 30, vx: 0, vy: 0, l: -1, r: 40, age: 0, junk: 14 });
     to.players.forEach((p) => {
       if (!p.bot) ctx.buzz(p.pid, 120);
     });
@@ -111,7 +114,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const drop = (b: Board) => {
     if (b.cool > 0 || winner >= 0) return;
     const r = FUSION_R[b.next];
-    b.balls.push({ x: Math.max(r, Math.min(FUSION_W - r, b.aim)), y: 34, vx: 0, vy: 0, l: b.next, r, age: 0 });
+    b.balls.push({ id: ++ballIds, x: Math.max(r, Math.min(FUSION_W - r, b.aim)), y: 34, vx: 0, vy: 0, l: b.next, r, age: 0 });
     b.next = b.after;
     b.after = pick();
     b.cool = 0.65;
@@ -132,7 +135,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const pts = POINTS[l];
     b.score += pts;
     b.pops.push({ x, y, text: `+${pts}`, life: 0.9 });
-    if (l + 1 < FUSION_R.length) b.balls.push({ x, y, vx: (a.vx + c.vx) / 2, vy: (a.vy + c.vy) / 2 - 80, l: l + 1, r: FUSION_R[l + 1], age: 0 });
+    if (l + 1 < FUSION_R.length) b.balls.push({ id: ++ballIds, x, y, vx: (a.vx + c.vx) / 2, vy: (a.vy + c.vy) / 2 - 80, l: l + 1, r: FUSION_R[l + 1], age: 0 });
     else {
       // Les deux plus gros : ils disparaissent, gros bonus
       b.score += 100;
@@ -446,7 +449,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         left: Math.ceil(Math.max(0, b.left)),
         next: b.next,
         aim: Math.round((b.aim / FUSION_W) * 1000),
-        balls: b.balls.map((a) => [Math.round(a.x), Math.round(a.y), a.l]),
+        balls: b.balls.map((a) => [Math.round(a.x), Math.round(a.y), a.l, a.id]),
         score: b.score,
         other: boards[1 - p.side].score,
         fog: (b.effects.brouillard ?? 0) > 0,

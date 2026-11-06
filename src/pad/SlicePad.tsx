@@ -54,7 +54,7 @@ export function SlicePad({ data, lang, send }: { data: SlicePadData; lang: Lang;
 
   return (
     <div
-      className={`slice-pad ${data.stun ? 'stun' : ''}`}
+      className={`slice-pad ${data.stun ? 'stun' : ''} ${data.effect ? `fx-${data.effect}` : ''}`}
       style={{ ['--c' as string]: data.color }}
       onPointerDown={(e) => {
         e.preventDefault();
@@ -69,7 +69,7 @@ export function SlicePad({ data, lang, send }: { data: SlicePadData; lang: Lang;
     >
       <canvas ref={ref} />
       <p className="slice-score">⭐ {data.score}</p>
-      <p className="slice-hint">{data.stun ? (fr ? '💥 Sonné !' : '💥 Stunned!') : fr ? 'Glisse ton doigt pour trancher !' : 'Swipe to slice!'}</p>
+      <p className="slice-hint">{data.stun ? (fr ? '💥 Sonné !' : '💥 Stunned!') : data.effect === 'gel' ? (fr ? '🧊 Gelé ! Attends…' : '🧊 Frozen! Wait…') : data.effect === 'inv' ? (fr ? '🔀 Lame à l’envers !' : '🔀 Blade flipped!') : data.effect === 'dbl' ? (fr ? '✖️2 Points doublés !' : '✖️2 Double points!') : data.effect === 'big' ? (fr ? '🗡️ Lame géante !' : '🗡️ Giant blade!') : fr ? 'Glisse ton doigt pour trancher !' : 'Swipe to slice!'}</p>
     </div>
   );
 }

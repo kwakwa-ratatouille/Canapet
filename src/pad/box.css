@@ -430,7 +430,8 @@
 .fusion-top { display: flex; justify-content: space-between; width: 100%; margin: 0; font-family: var(--cp-font-titre); font-size: 20px; color: #3a2140; }
 .fusion-top b { color: var(--c); -webkit-text-stroke: 0; }
 .fusion-turn { margin: 0; min-height: 28px; font-family: var(--cp-font-titre); font-size: 19px; font-weight: 700; text-align: center; color: #3a2140; }
-.fusion-board { position: relative; flex: 0 1 auto; width: 100%; max-height: 78vh; background: #fffaf2; border: 5px solid #3a2140; border-radius: 12px; touch-action: none; }
+.fusion-wrap { flex: 1; min-height: 0; width: 100%; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; }
+.fusion-board { position: relative; flex: none; box-sizing: border-box; background: #fffaf2; border: 5px solid #3a2140; border-radius: 12px; touch-action: none; }
 .fusion-pad.mine .fusion-board { border-color: var(--c); box-shadow: 0 0 0 4px #3a2140; }
 .fusion-board canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* Le Chef Cachottier */
@@ -455,3 +456,22 @@
 .team-names input { flex: 1; min-width: 0; padding: 8px 10px; font-family: var(--cp-font-titre); font-size: 18px; color: #3a2140; background: #fff; border: 3px solid #3a2140; border-radius: 10px; user-select: text; -webkit-user-select: text; }
 /* Mots longs sur la grille du Chef */
 .chef-grid button { font-size: 11px; hyphens: auto; }
+
+/* Tranche de Rire : bonus */
+.slice-pad.fx-gel { background: #cfefff; }
+.slice-pad.fx-inv { background: #e8dcff; }
+.slice-pad.fx-dbl { background: #fff3b0; }
+.slice-pad.fx-big { background: #d6f7e8; }
+.slice-pad.fx-gel .slice-hint, .slice-pad.fx-inv .slice-hint, .slice-pad.fx-dbl .slice-hint, .slice-pad.fx-big .slice-hint { opacity: 1; font-size: 30px; }
+/* Traverse Pas Ici ! : quatre boutons en croix */
+.trav-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px 12px 14px; gap: 10px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.trav-top { display: flex; justify-content: space-between; margin: 0; font-family: var(--cp-font-titre); font-size: 26px; font-weight: 700; color: #3a2140; }
+.trav-cross { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1.25fr 1fr 1fr; gap: 10px; }
+.trav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 46px; line-height: 1; color: #3a2140; background: #fff; border: 5px solid #3a2140; border-radius: 26px; box-shadow: 0 7px 0 #3a2140; touch-action: none; }
+.trav-btn small { margin-top: 4px; font-family: var(--cp-font-titre); font-size: 17px; font-weight: 700; }
+.trav-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #3a2140; }
+.trav-btn.up { grid-column: 1 / 4; grid-row: 1; background: var(--c); }
+.trav-btn.left { grid-column: 1; grid-row: 2; }
+.trav-btn.push { grid-column: 2; grid-row: 2; background: #ffe680; font-size: 34px; }
+.trav-btn.right { grid-column: 3; grid-row: 2; }
+.trav-btn.down { grid-column: 1 / 4; grid-row: 3; }

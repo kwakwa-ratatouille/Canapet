@@ -35,6 +35,13 @@ interface Lane {
   wait?: number;
   train?: number;
 }
+export interface TraversePadData {
+  color: string;
+  lives: number;
+  score: number;
+  alive: boolean;
+}
+
 interface Pl extends Runner {
   col: number;
   x: number;
@@ -59,6 +66,7 @@ interface Pl extends Runner {
   lastB: boolean;
   repeat: number;
   inp: { x: number; y: number; a: boolean; b: boolean };
+  queued: [number, number] | null;
   outAt: number;
   botT: number;
 }
@@ -114,7 +122,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const n = runners.length;
   const pls: Pl[] = runners.map((r, i) => {
     const col = Math.round((COLS - 1) / 2 + (i - (n - 1) / 2) * Math.min(1.2, (COLS - 2) / Math.max(1, n)));
-    return { ...r, col, x: (col + 0.5) * CW, row: 0, fromX: 0, fromRow: 0, hop: 0, dirX: 1, lives: LIVES, alive: true, safe: 1, best: 0, bonus: 0, shield: false, superJump: 0, sunk: 0, pushCd: 0, flat: 0, lastX: 0, lastY: 0, lastA: false, lastB: false, repeat: 0, inp: { x: 0, y: 0, a: false, b: false }, outAt: 0, botT: rnd(0.3, 1) };
+    return { ...r, col, x: (col + 0.5) * CW, row: 0, fromX: 0, fromRow: 0, hop: 0, dirX: 1, lives: LIVES, alive: true, safe: 1, best: 0, bonus: 0, shield: false, superJump: 0, sunk: 0, pushCd: 0, flat: 0, lastX: 0, lastY: 0, lastA: false, lastB: false, repeat: 0, inp: { x: 0, y: 0, a: false, b: false }, queued: null, outAt: 0, botT: rnd(0.3, 1) };
   });
   let cam = 0;
   let clock = 0;
@@ -251,12 +259,27 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     }
   };
 
+  let lastSum = '';
+  let lastPush = 0;
   const game: GameInstance = {
     over: false,
+    padData(pid): TraversePadData {
+      const p = pls.find((x) => x.pid === pid)!;
+      return { color: p.profile.color, lives: p.lives, score: scoreOf(p), alive: p.alive };
+    },
     input(pid, m) {
-      if (m.t !== 'in') return;
       const p = pls.find((x) => x.pid === pid);
-      if (p) p.inp = { x: m.x, y: m.y, a: m.a, b: m.b };
+      if (!p) return;
+      if (m.t === 'in') p.inp = { x: m.x, y: m.y, a: m.a, b: m.b };
+      if (m.t !== 'act') return;
+      if (m.a === 'push') shove(p);
+      if (m.a === 'hop') {
+        const dx = Math.sign(m.n?.[0] ?? 0);
+        const dy = Math.sign(m.n?.[1] ?? 0);
+        // Un appui pendant un saut est gardé pour la suite : rien n'est perdu
+        if (p.hop > 0) p.queued = [dx, dy];
+        else hopTo(p, dx, dy);
+      }
     },
     update(dt) {
       clock += dt;
@@ -324,6 +347,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if (p.hop <= 0) {
             p.hop = 0;
             land(p);
+            if (p.queued && p.alive) {
+              hopTo(p, p.queued[0], p.queued[1]);
+              p.queued = null;
+            }
           }
           continue;
         }
@@ -341,7 +368,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       for (const o of pops) o.life -= dt;
       for (let i = pops.length - 1; i >= 0; i--) if (pops[i].life <= 0) pops.splice(i, 1);
-      const left = pls.filter((p) => p.alive);
+      const sum = pls.map((p) => `${p.lives}:${scoreOf(p)}`).join();
+      if (sum !== lastSum && clock - lastPush > 0.7) {
+        lastSum = sum;
+        lastPush = clock;
+        ctx.refresh();
+      }
+const left = pls.filter((p) => p.alive);
       const humans = pls.filter((p) => !p.bot);
       const camps = pls.some((p) => p.team !== undefined) ? sidesLeft(left) : left.length;
       if (camps <= 1 && n > 1) endT = 2.5;
@@ -555,10 +588,10 @@ export const traverse: GameBase = {
   emoji: '🚗',
   name: { fr: 'Traverse Pas Ici !', en: 'Don’t Cross Here!' },
   how: {
-    fr: 'Saute de case en case : routes, rivières de sirop, trains… L’écran monte ! A = avancer, stick = sauter dans une direction, B = pousser. 3 vies.',
-    en: 'Hop from tile to tile: roads, syrup rivers, trains… The screen is rising! A = forward, stick = hop in a direction, B = shove. 3 lives.',
+    fr: 'Saute de case en case : routes, rivières de sirop, trains… L’écran monte ! Quatre boutons sur le téléphone : avance, gauche, droite, recule. Le bouton du milieu pousse les autres.',
+    en: 'Hop from tile to tile: roads, syrup rivers, trains… The screen is rising! Four buttons on your phone: forward, left, right, back. The middle button shoves others.',
   },
-  layout: 'stick',
+  layout: 'buttons',
   min: 1,
   max: 12,
   botFill: 4,

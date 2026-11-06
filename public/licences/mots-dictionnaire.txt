@@ -1,0 +1,6 @@
+Dictionnaires de Ça Commence Par… (public/mots/fr.txt et en.txt)
+Fabriqués par scripts/make-dict.cjs depuis les paquets npm :
+- an-array-of-french-words 2.0.0, licence MIT, (c) 2016 Zeke Sikelianos
+- an-array-of-english-words 2.0.0, licence MIT, (c) 2016 Zeke Sikelianos
+https://github.com/words/an-array-of-french-words
+https://github.com/words/an-array-of-english-words

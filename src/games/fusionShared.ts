@@ -14,7 +14,7 @@ export interface FusionPadData {
   left: number;
   next: number;
   aim: number;
-  /** [x, y, niveau] ; niveau -1 = chaussette. */
+  /** [x, y, niveau, numéro] ; niveau -1 = chaussette. */
   balls: number[][];
   score: number;
   other: number;

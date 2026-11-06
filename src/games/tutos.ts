@@ -106,8 +106,8 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     en: { goal: 'Make the tallest cake!', steps: [['👆', 'Tap when the layer is above the cake'], ['🔪', 'Whatever sticks out is cut: the next layer is smaller'], ['⭐', 'Spot on = PERFECT, 3 points, and 3 in a row make it grow']] },
   },
   traverse: {
-    fr: { goal: 'Va le plus loin possible sans te faire écraser !', steps: [['⬆️', 'Bouton A : avance d’une case. Le stick : saute dans une direction'], ['🚗', 'Évite les voitures et les trains, et reste sur les baguettes dans le sirop'], ['❤️', '3 vies. L’écran monte : ne reste pas en bas ! B = pousser les voisins']] },
-    en: { goal: 'Go as far as you can without getting squashed!', steps: [['⬆️', 'A button: one tile forward. The stick: hop in a direction'], ['🚗', 'Dodge cars and trains, and stay on the baguettes in the syrup'], ['❤️', '3 lives. The screen rises: don’t stay at the bottom! B = shove your neighbours']] },
+    fr: { goal: 'Va le plus loin possible sans te faire écraser !', steps: [['⬆️', 'Quatre boutons : avance, gauche, droite, recule. Un appui = une case'], ['🚗', 'Évite les voitures et les trains, et reste sur les baguettes dans le sirop'], ['❤️', '3 vies. L’écran monte : ne reste pas en bas ! B = pousser les voisins']] },
+    en: { goal: 'Go as far as you can without getting squashed!', steps: [['⬆️', 'Four buttons: forward, left, right, back. One tap = one tile'], ['🚗', 'Dodge cars and trains, and stay on the baguettes in the syrup'], ['❤️', '3 lives. The screen rises: don’t stay at the bottom! B = shove your neighbours']] },
   },
   chef: {
     fr: { goal: 'Trouve les mots de ton équipe grâce à l’indice du chef !', steps: [['👨‍🍳', 'Le chef voit les couleurs et donne un seul mot + un nombre'], ['👆', 'Son équipe touche les mots sur le téléphone. Mauvais mot = fin du tour'], ['💀', 'Le mot maudit fait perdre tout de suite !']] },
@@ -122,12 +122,12 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     en: { goal: 'A theme, a letter: find a word!', steps: [['🔤', 'Type as many words from the theme with that letter as you can'], ['⭐', 'Each word only you have = 3 points, shared = 1, very first +1'], ['🤔', 'A strange word? The others can reject it']] },
   },
   trous: {
-    fr: { goal: 'Devine le mot à moitié caché !', steps: [['🕳️', 'Le thème et quelques lettres sont affichés'], ['⌨️', 'Tape le mot : tu peux te tromper autant que tu veux'], ['⭐', 'Plus c’est dur, plus ça rapporte. Le premier gagne le plus']] },
-    en: { goal: 'Guess the half-hidden word!', steps: [['🕳️', 'The theme and a few letters are shown'], ['⌨️', 'Type the word: as many tries as you like'], ['⭐', 'Harder words pay more. The first wins the most']] },
+    fr: { goal: 'Trouve les mots du tableau avant les autres !', steps: [['🕳️', 'Tous les mots du thème sont affichés, avec des lettres en moins'], ['⌨️', 'Tape n’importe quel mot du tableau : ton nom s’affiche à côté'], ['⭐', 'Plus il manque de lettres, plus ça rapporte : 3, 5 ou 8 points']] },
+    en: { goal: 'Find the words on the board before the others!', steps: [['🕳️', 'All the theme’s words are shown, with letters missing'], ['⌨️', 'Type any word on the board: your name appears next to it'], ['⭐', 'The more letters missing, the more it pays: 3, 5 or 8 points']] },
   },
   tranche: {
-    fr: { goal: 'Tranche tout ce qui vole !', steps: [['👆', 'Glisse ton doigt sur le téléphone : ta lame suit sur l’écran'], ['🍉', 'Plusieurs d’un coup = combo, l’aliment doré vaut 5'], ['💣', 'Bombe ou coussin péteur : -5 et ta lame est sonnée']] },
-    en: { goal: 'Slice everything that flies!', steps: [['👆', 'Swipe on your phone: your blade follows on screen'], ['🍉', 'Several at once = combo, the golden food is worth 5'], ['💣', 'Bomb or whoopee cushion: -5 and your blade is stunned']] },
+    fr: { goal: 'Tranche tout ce qui vole !', steps: [['👆', 'Glisse ton doigt sur le téléphone : ta lame suit sur l’écran'], ['🫧', 'Tranche les bulles pour un bonus : geler un adversaire, points doublés, pluie d’aliments…'], ['💣', 'Bombe ou coussin péteur : -5 et ta lame est sonnée']] },
+    en: { goal: 'Slice everything that flies!', steps: [['👆', 'Swipe on your phone: your blade follows on screen'], ['🫧', 'Slice the bubbles for a bonus: freeze a rival, double points, food rain…'], ['💣', 'Bomb or whoopee cushion: -5 and your blade is stunned']] },
   },
   dico: {
     fr: {

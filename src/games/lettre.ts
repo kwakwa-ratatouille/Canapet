@@ -1,12 +1,13 @@
 // Deux jeux sur la même réserve de thèmes :
 // « Ça Commence Par… » : un thème, une lettre, chacun tape autant de mots qu'il peut (8 au plus). Mot unique = 3 points, mot en commun = 1, le tout premier +1.
-//   Un mot de la liste passe tout seul ; les autres, les joueurs peuvent les contester.
-// « Les Mots à Trous » : un thème et un mot à moitié caché. Plus c'est dur, moins il y a de lettres et plus ça rapporte.
+//   Un mot de la liste passe tout seul ; un mot qui n'existe pas (dict.ts) est refusé ; les autres, les joueurs peuvent les contester.
+// « Les Mots à Trous » : un thème et un tableau de 15 mots à trous, tous à l'écran. Le nom de celui qui trouve s'affiche à côté du mot.
 import { drawCharacter } from '../shared/characters';
 import { INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
+import { inDict, loadDict, looksReal } from '../shared/dict';
 import { sfx, speak } from '../shared/sound';
 import { freshDeck } from './decks';
-import { candy } from './draw';
+import { fitText } from './draw';
 import { LETTER_THEMES, type LetterTheme } from './lettreWords';
 import type { QuizPadData } from './quizShared';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
@@ -22,6 +23,11 @@ export function norm(s: string) {
     .replace(/[^a-z0-9]/g, '')
     .replace(/s$/, '');
 }
+const rnd2 = (a: number, b: number) => a + Math.random() * (b - a);
+const luminance = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+};
 const wordsOf = (t: LetterTheme, lang: 'fr' | 'en') => t.words[lang].split(' ').filter(Boolean);
 const pretty = (w: string) => w.replace(/_/g, ' ');
 const themesFor = (ctx: GameCtx) => LETTER_THEMES.filter((t) => !(ctx.family && t.adult));
@@ -96,9 +102,27 @@ interface Pl extends Runner {
 type Phase = 'spin' | 'write' | 'contest' | 'reveal' | 'end';
 const ROW_COLORS = [ROSE, '#2ec5ff', SOLEIL, MENTHE, '#9b5cff', '#ff9a1f'];
 
+/** Thèmes de noms propres : aucun dictionnaire ne les connaît, on écarte seulement le charabia. */
+const FREE_THEMES = new Set(['Un prénom', 'Une ville', 'Un pays', 'Un chanteur ou un groupe', 'Une personne célèbre', 'Une marque', 'Un film ou une série', 'Un jeu vidéo ou un personnage de jeu', 'Un héros ou une créature de légende', 'Un jeu ou un jouet', 'Une chose sur un téléphone', 'Une insulte rigolote']);
+
 function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const lang = ctx.lang;
+  const otherLang = fr ? 'en' : 'fr';
+  void loadDict(lang);
+  void loadDict(otherLang);
+  /** Le mot existe-t-il ? null = on ne peut pas le savoir (pas de réseau). */
+  const exists = (raw: string, key: string) => {
+    if (known.has(key)) return true;
+    if (FREE_THEMES.has(theme.fr)) return looksReal(key);
+    // « Un mot en anglais » (ou en français pour les parties en anglais) : l'autre dictionnaire
+    const d = theme.fr === 'Un mot en anglais' ? otherLang : lang;
+    const whole = inDict(d, key);
+    if (whole !== false) return whole;
+    // Plusieurs mots (« pomme de terre ») : chacun doit exister
+    const parts = raw.toLowerCase().split(/[\s'’-]+/).map(norm).filter((w) => w.length > 2);
+    return parts.length > 1 && parts.every((w) => inDict(d, w));
+  };
   const pls: Pl[] = runners.map((r) => ({ ...r, score: 0, list: [], gain: 0, botPlan: [] }));
   const rounds = ctx.opts.rounds || 6;
   const writeTime = ctx.opts.time || 30;
@@ -174,7 +198,8 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
     const fastest = [...ok].sort((a, b) => a.at - b.at)[0];
     ok.forEach((e) => {
       const same = ok.filter((x) => x.key === e.key).length;
-      e.gain = (same > 1 ? 1 : 3) + (e === fastest ? 1 : 0);
+      const noJudge = !known.has(e.key) && pls.filter((x) => !x.bot).length < 2;
+      e.gain = noJudge ? 1 : (same > 1 ? 1 : 3) + (e === fastest ? 1 : 0);
     });
     pls.forEach((p) => {
       p.gain = p.list.reduce((n, e) => n + e.gain, 0);
@@ -238,7 +263,15 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
           ctx.refresh();
           return;
         }
+        if (exists(m.s, k) === false) {
+          notes.set(pid, fr ? `« ${m.s.trim().slice(0, 20)} » : ce mot n’existe pas !` : `“${m.s.trim().slice(0, 20)}”: that’s not a word!`);
+          sfx.boing();
+          ctx.refresh();
+          return;
+        }
         notes.delete(pid);
+        // Tout seul, personne ne peut juger un mot que je ne connais pas : il rapporte moins
+        if (!known.has(k) && pls.filter((x) => !x.bot).length < 2) notes.set(pid, fr ? 'Pas dans ma liste : 1 point seulement' : 'Not on my list: 1 point only');
         submit(p, m.s);
       }
       if (m.a === 'pick' && phase === 'contest') {
@@ -466,46 +499,63 @@ export const lettre: GameBase = {
 };
 
 // ——— Les Mots à Trous ———
+// Un thème, 15 mots affichés d'un coup sur 3 colonnes de difficulté. N'importe qui tape n'importe quel mot :
+// le mot se remplit, le nom de celui qui l'a trouvé s'affiche à côté, et il reste à l'écran.
 interface TPl extends Runner {
   score: number;
-  found: number;
-  gain: number;
+  mine: string[];
   botAt: number;
+  lastAt: number;
 }
 const LEVELS = [
   { keep: 0.6, pts: 3, stars: '⭐', fr: 'Facile', en: 'Easy' },
   { keep: 0.4, pts: 5, stars: '⭐⭐', fr: 'Moyen', en: 'Medium' },
   { keep: 0.2, pts: 8, stars: '⭐⭐⭐', fr: 'Dur', en: 'Hard' },
 ];
-const SHOW_EVERY = 5;
+/** Mots par colonne. */
+const PER_LEVEL = 5;
+const BOARD_TIME = 90;
+const HINT_EVERY = 7;
+interface Slot {
+  word: string;
+  key: string;
+  chars: string[];
+  open: boolean[];
+  level: number;
+  by: TPl | null;
+  at: number;
+}
 
 function createTrous(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const lang = ctx.lang;
-  const pls: TPl[] = runners.map((r) => ({ ...r, score: 0, found: 0, gain: 0, botAt: 0 }));
-  const rounds = ctx.opts.rounds || 9;
-  // Tous les mots assez longs, d'une seule pièce à l'écran
-  const all = themesFor(ctx).flatMap((t) => wordsOf(t, lang).filter((w) => norm(pretty(w)).length >= 5 && norm(pretty(w)).length <= 14).map((w) => ({ w: pretty(w), t })));
-  const deck = freshDeck(`trous-${lang}`, all, rounds, (x) => x.w + x.t.fr);
+  const pls: TPl[] = runners.map((r) => ({ ...r, score: 0, mine: [], botAt: 0, lastAt: -9 }));
+  const rounds = ctx.opts.rounds || 3;
+  /** Les mots utilisables d'un thème : d'une seule pièce, ni trop courts ni trop longs. */
+  const usable = (t: LetterTheme) => {
+    const seen = new Set<string>();
+    return wordsOf(t, lang).filter((w) => {
+      const k = norm(pretty(w));
+      if (w.includes('_') || k.length < 4 || k.length > 11 || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+  const boards = freshDeck(`trous2-${lang}`, themesFor(ctx).filter((t) => usable(t).length >= PER_LEVEL * 3), rounds, (t) => t.fr);
   let round = -1;
   let phase: 'write' | 'reveal' | 'end' = 'write';
   let timer = 0;
-  let order = 0;
-  let open: boolean[] = [];
-  let level = LEVELS[0];
-  let nextShow = 0;
+  let clock = 0;
+  let nextHint = 0;
+  let slots: Slot[] = [];
   const notes = new Map<string, string>();
   const isLetter = (c: string) => /[\p{L}\p{N}]/u.test(c);
-  const roundTime = 28;
-
-  const showOne = () => {
-    const hidden = open.map((o, i) => (o ? -1 : i)).filter((i) => i >= 0);
-    if (hidden.length > 1) open[hidden[Math.floor(Math.random() * hidden.length)]] = true;
-  };
+  const open = () => slots.filter((x) => !x.by);
+  const theme = () => boards[round];
 
   function next() {
     round++;
-    if (round >= deck.length) {
+    if (round >= boards.length) {
       phase = 'end';
       timer = 6;
       const top = [...pls].sort((a, b) => b.score - a.score)[0];
@@ -514,77 +564,100 @@ function createTrous(runners: Runner[], ctx: GameCtx): GameInstance {
       ctx.refresh();
       return;
     }
-    // De plus en plus dur au fil de la partie
-    level = LEVELS[Math.min(2, Math.floor((round / deck.length) * 3))];
-    const chars = Array.from(deck[round].w);
-    const letters = chars.map((c, i) => (isLetter(c) ? i : -1)).filter((i) => i >= 0);
-    open = chars.map((c) => !isLetter(c));
-    const n = Math.max(1, Math.round(letters.length * level.keep));
-    [...letters].sort(() => Math.random() - 0.5).slice(0, n).forEach((i) => (open[i] = true));
-    pls.forEach((p) => {
-      p.found = 0;
-      p.gain = 0;
-      p.botAt = 5 + Math.random() * 18 * (1.3 - ctx.botSkill * 0.8) + (level.pts - 3);
+    // Les mots les plus longs vont dans les colonnes difficiles
+    const picked = usable(boards[round]).sort(() => Math.random() - 0.5).slice(0, PER_LEVEL * 3).sort((a, b) => a.length - b.length);
+    slots = picked.map((w, i) => {
+      const level = Math.floor(i / PER_LEVEL);
+      const chars = Array.from(pretty(w));
+      const letters = chars.map((c, k) => (isLetter(c) ? k : -1)).filter((k) => k >= 0);
+      const o = chars.map((c) => !isLetter(c));
+      const keep = Math.max(1, Math.round(letters.length * LEVELS[level].keep));
+      [...letters].sort(() => Math.random() - 0.5).slice(0, keep).forEach((k) => (o[k] = true));
+      return { word: pretty(w), key: norm(pretty(w)), chars, open: o, level, by: null, at: 0 };
     });
-    order = 0;
+    pls.forEach((p) => {
+      p.mine = [];
+      p.botAt = botDelay();
+    });
     notes.clear();
     phase = 'write';
-    timer = roundTime;
-    nextShow = SHOW_EVERY + 2;
-    speak(fr ? deck[round].t.fr : deck[round].t.en, lang);
+    timer = BOARD_TIME;
+    clock = 0;
+    nextHint = HINT_EVERY;
+    speak(fr ? boards[round].fr : boards[round].en, lang);
     sfx.whoosh();
     ctx.refresh();
   }
-
-  function found(p: TPl) {
-    order++;
-    p.found = order;
-    // Le premier prend tout, les suivants un peu moins
-    p.gain = Math.max(1, level.pts - (order - 1) * 2);
-    p.score += p.gain;
+  /** Les bots laissent de la place aux joueurs, d'autant plus qu'ils sont nombreux. */
+  function botDelay() {
+    const bots = Math.max(1, pls.filter((p) => p.bot).length);
+    return rnd2(8, 18) * (1.35 - ctx.botSkill * 0.7) * Math.max(1, bots / 2);
+  }
+  function find(p: TPl, slot: Slot) {
+    slot.by = p;
+    slot.at = clock;
+    slot.open = slot.open.map(() => true);
+    p.score += LEVELS[slot.level].pts;
+    p.mine.push(slot.word);
+    p.lastAt = clock;
     sfx.join();
     ctx.buzz(p.pid, 80);
-    showOne();
-    ctx.refresh();
+    if (!open().length) reveal();
+    else ctx.refresh();
   }
   function reveal() {
     phase = 'reveal';
-    timer = 4;
-    open = open.map(() => true);
+    timer = 6;
+    slots.forEach((x) => (x.open = x.open.map(() => true)));
     sfx.boom();
     ctx.refresh();
   }
 
   next();
-  const elapsed = () => roundTime - timer;
 
   const game: GameInstance = {
     over: false,
     input(pid, m) {
       if (m.t !== 'act' || m.a !== 'text' || phase !== 'write' || !m.s) return;
       const p = pls.find((x) => x.pid === pid);
-      if (!p || p.found) return;
-      if (norm(m.s) === norm(deck[round].w)) {
-        notes.delete(pid);
-        found(p);
-      } else {
-        notes.set(pid, fr ? `« ${m.s.slice(0, 20)} » : non, retente !` : `“${m.s.slice(0, 20)}”: no, try again!`);
-        ctx.refresh();
+      if (!p) return;
+      const k = norm(m.s);
+      const slot = slots.find((x) => x.key === k);
+      const shown = m.s.trim().slice(0, 20);
+      if (!slot) notes.set(pid, fr ? `« ${shown} » n’est pas au tableau` : `“${shown}” isn’t on the board`);
+      else if (slot.by) notes.set(pid, fr ? `Déjà trouvé par ${slot.by.profile.name}` : `Already found by ${slot.by.profile.name}`);
+      else {
+        notes.set(pid, `+${LEVELS[slot.level].pts} 🎉`);
+        return find(p, slot);
       }
+      ctx.refresh();
     },
     update(dt) {
       timer -= dt;
+      clock += dt;
       if (phase === 'write') {
-        pls.forEach((p) => {
-          if (p.bot && !p.found && elapsed() >= p.botAt) found(p);
-        });
-        // Des indices arrivent peu à peu si personne ne trouve
-        if (elapsed() >= nextShow) {
-          nextShow += SHOW_EVERY;
-          showOne();
-          sfx.click();
+        for (const p of pls) {
+          if (!p.bot || clock < p.botAt) continue;
+          // Un bot trouve surtout les faciles
+          const can = open();
+          const pool = can.filter((x) => Math.random() < [0.8, 0.5, 0.25][x.level]);
+          const slot = (pool.length ? pool : can)[Math.floor(Math.random() * (pool.length || can.length))];
+          p.botAt = clock + botDelay();
+          if (slot) find(p, slot);
+          if (phase !== 'write') return;
         }
-        if (timer <= 0 || pls.every((p) => p.found || (!p.bot && ctx.away(p.pid)))) reveal();
+        // Des lettres s'ajoutent peu à peu aux mots pas encore trouvés
+        if (clock >= nextHint) {
+          nextHint += HINT_EVERY;
+          const can = open().filter((x) => x.open.filter((o) => !o).length > 1);
+          const slot = can[Math.floor(Math.random() * can.length)];
+          if (slot) {
+            const hidden = slot.open.map((o, i) => (o ? -1 : i)).filter((i) => i >= 0);
+            slot.open[hidden[Math.floor(Math.random() * hidden.length)]] = true;
+            sfx.click();
+          }
+        }
+        if (timer <= 0) reveal();
       } else if (phase === 'reveal') {
         if (timer <= 0) next();
       } else if (timer <= 0) game.over = true;
@@ -596,63 +669,100 @@ function createTrous(runners: Runner[], ctx: GameCtx): GameInstance {
       g.textBaseline = 'middle';
       g.fillStyle = INK;
       if (phase === 'end') return endScreen(g, fr ? 'Les champions des trous' : 'The gap champions', pls, t);
-      g.font = '700 34px Fredoka, sans-serif';
-      g.fillText(`${fr ? 'Mot' : 'Word'} ${round + 1}/${deck.length} · ${level.stars} ${fr ? level.fr : level.en} · ${level.pts} ${fr ? 'points' : 'points'}`, 960, 50);
-      const th = deck[round].t;
-      g.font = '700 74px Fredoka, sans-serif';
-      g.fillText(`${th.emoji} ${fr ? th.fr : th.en}`, 960, 150, 1800);
-      const chars = Array.from(deck[round].w);
-      const cell = Math.min(118, 1760 / chars.length);
-      chars.forEach((c, i) => {
-        const x = 960 + (i - (chars.length - 1) / 2) * cell;
-        const y = 400;
-        if (!isLetter(c)) return;
-        const shown = open[i];
-        g.fillStyle = shown ? (phase === 'reveal' ? '#d8f7e8' : '#fff') : '#efe0ea';
-        g.strokeStyle = INK;
-        g.lineWidth = 6;
-        g.beginPath();
-        g.roundRect(x - cell / 2 + 6, y - 72, cell - 12, 144, 20);
-        g.fill();
-        g.stroke();
+      const th = theme();
+      g.font = '700 30px Fredoka, sans-serif';
+      g.fillText(`${fr ? 'Tableau' : 'Board'} ${round + 1}/${boards.length}`, 960, 34);
+      g.font = '700 66px Fredoka, sans-serif';
+      g.fillText(`${th.emoji} ${fr ? th.fr : th.en}`, 960, 92, 1420);
+      // Le chrono, et ce qu'il reste à trouver
+      g.textAlign = 'right';
+      g.font = '700 54px Fredoka, sans-serif';
+      g.fillStyle = timer < 10 && phase === 'write' ? ROSE : INK;
+      if (phase === 'write') g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 1890, 70);
+      g.textAlign = 'left';
+      g.fillStyle = INK;
+      g.font = '700 38px Fredoka, sans-serif';
+      g.fillText(`🕳️ ${open().length}`, 30, 70);
+      const colW = 610;
+      LEVELS.forEach((l, c) => {
+        const left = 30 + c * (colW + 15);
+        g.textAlign = 'center';
         g.fillStyle = INK;
-        g.font = `700 ${Math.round(cell * 0.72)}px Fredoka, sans-serif`;
-        g.fillText(shown ? c.toUpperCase() : '?', x, y + 4);
+        g.font = '700 34px Fredoka, sans-serif';
+        g.fillText(`${l.stars} ${fr ? l.fr : l.en} · ${l.pts} pts`, left + colW / 2, 162);
+        slots.filter((x) => x.level === c).forEach((x, k) => {
+          const y = 196 + k * 133;
+          const h = 118;
+          // La ligne devient de la couleur de celui qui a trouvé
+          g.fillStyle = x.by ? x.by.profile.color : '#fff';
+          g.strokeStyle = INK;
+          g.lineWidth = 5;
+          g.beginPath();
+          g.roundRect(left, y, colW, h, 22);
+          g.fill();
+          g.stroke();
+          // Petit éclat quand un mot vient d'être trouvé
+          const fresh = x.by ? Math.max(0, 1 - (clock - x.at) * 2) : 0;
+          if (fresh > 0) {
+            g.globalAlpha = fresh;
+            g.fillStyle = '#fff';
+            g.beginPath();
+            g.roundRect(left, y, colW, h, 22);
+            g.fill();
+            g.globalAlpha = 1;
+          }
+          const room = x.by ? 400 : colW - 28;
+          const cell = Math.min(54, room / x.chars.length);
+          const startX = x.by ? left + 14 : left + (colW - cell * x.chars.length) / 2;
+          x.chars.forEach((ch, i) => {
+            const cx = startX + i * cell;
+            const missed = phase === 'reveal' && !x.by;
+            g.fillStyle = !x.open[i] ? '#efe0ea' : missed ? '#ffd1d9' : '#fff';
+            g.strokeStyle = INK;
+            g.lineWidth = 3;
+            g.beginPath();
+            g.roundRect(cx + 2, y + 26, cell - 4, 66, 10);
+            g.fill();
+            g.stroke();
+            if (x.open[i]) {
+              g.fillStyle = INK;
+              g.textAlign = 'center';
+              g.font = `700 ${Math.max(28, Math.round(cell * 0.72))}px Fredoka, sans-serif`;
+              g.fillText(ch.toUpperCase(), cx + cell / 2, y + 61, cell - 6);
+            }
+          });
+          if (x.by) {
+            g.fillStyle = luminance(x.by.profile.color) > 0.6 ? INK : '#fff';
+            g.textAlign = 'right';
+            g.font = '700 32px Fredoka, sans-serif';
+            g.fillText(fitText(g, x.by.profile.name, 172), left + colW - 14, y + h / 2 + 1);
+          }
+        });
       });
-      if (phase === 'write') {
-        g.font = '700 64px Fredoka, sans-serif';
-        g.fillStyle = timer < 6 ? ROSE : INK;
-        g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 590);
+      g.textAlign = 'center';
+      if (phase === 'write' && clock < 5) {
         g.fillStyle = INK;
-        g.font = '700 42px Fredoka, sans-serif';
-        g.fillText(fr ? 'Tape le mot sur ton téléphone : le premier gagne le plus !' : 'Type the word on your phone: the first wins the most!', 960, 680, 1760);
+        g.font = '700 30px Fredoka, sans-serif';
       }
-      if (phase === 'reveal') {
-        const firsts = [...pls].filter((p) => p.found).sort((a, b) => a.found - b.found);
-        g.font = '700 52px Fredoka, sans-serif';
-        g.fillText(firsts.length ? `🏆 ${firsts[0].profile.name} +${firsts[0].gain}` : fr ? 'Personne n’a trouvé !' : 'Nobody got it!', 960, 620);
-      }
-      drawPlayers(g, pls, t, (i) => !!pls[i].found);
+      drawPlayers(g, pls, t, (i) => clock - pls[i].lastAt < 1.5, 1000);
     },
     ranking: () => [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid),
     leader: () => null,
     padData(pid): QuizPadData {
       const p = pls.find((x) => x.pid === pid)!;
-      const chars = phase === 'end' ? [] : Array.from(deck[round].w);
-      const mask = chars.map((c, i) => (open[i] ? c.toUpperCase() : '_')).join(' ');
-      const th = phase === 'end' ? null : deck[round].t;
+      const th = phase === 'end' ? null : theme();
       return {
         phase: phase === 'write' ? 'write' : phase === 'end' ? 'end' : 'reveal',
         prompt: th ? `${th.emoji} ${fr ? th.fr : th.en}` : '',
-        step: `${fr ? 'Mot' : 'Word'} ${Math.min(round + 1, deck.length)}/${deck.length} · ⭐ ${p.score}`,
-        act: phase === 'write' && !p.found ? 'write' : null,
+        step: `${fr ? 'Tableau' : 'Board'} ${Math.min(round + 1, boards.length)}/${boards.length} · 🕳️ ${open().length}`,
+        act: phase === 'write' ? 'write' : null,
         options: [],
         picked: -1,
         score: p.score,
         left: phase === 'write' ? Math.ceil(Math.max(0, timer)) : 0,
-        note: p.found ? (fr ? `Trouvé ! +${p.gain} 🎉` : `Got it! +${p.gain} 🎉`) : notes.get(pid) ?? '',
-        hint: fr ? 'Le mot…' : 'The word…',
-        big: phase === 'end' ? undefined : mask,
+        note: notes.get(pid) ?? (fr ? 'Regarde le tableau sur la télé 📺' : 'Look at the board on the TV 📺'),
+        hint: fr ? 'Un mot du tableau…' : 'A word on the board…',
+        chips: phase === 'write' ? p.mine : undefined,
       };
     },
   };
@@ -664,14 +774,14 @@ export const trous: GameBase = {
   emoji: '🕳️',
   name: { fr: 'Les Mots à Trous', en: 'Words With Holes' },
   how: {
-    fr: 'Un thème et un mot à moitié caché. Plus c’est dur, moins il y a de lettres et plus ça rapporte. Le premier qui trouve gagne le plus !',
-    en: 'A theme and a half-hidden word. The harder, the fewer letters and the more points. First to find it wins the most!',
+    fr: 'Un thème et 15 mots à trous affichés d’un coup. Tape n’importe lequel : ton nom s’affiche à côté. Plus il manque de lettres, plus ça rapporte !',
+    en: 'A theme and 15 words with holes, all on screen. Type any of them: your name appears next to it. The more letters missing, the more it pays!',
   },
   layout: 'buttons',
   min: 2,
   max: 12,
   botFill: 3,
   music: 'party',
-  options: [{ id: 'rounds', label: { fr: 'Nombre de mots', en: 'Number of words' }, choices: [{ v: 9, label: { fr: '9 mots', en: '9 words' } }, { v: 6, label: { fr: '6 mots', en: '6 words' } }, { v: 15, label: { fr: '15 mots', en: '15 words' } }] }],
+  options: [{ id: 'rounds', label: { fr: 'Tableaux', en: 'Boards' }, choices: [{ v: 3, label: { fr: '3 tableaux', en: '3 boards' } }, { v: 2, label: { fr: '2 tableaux', en: '2 boards' } }, { v: 5, label: { fr: '5 tableaux', en: '5 boards' } }] }],
   create: createTrous,
 };

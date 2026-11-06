@@ -13,6 +13,11 @@ export function FusionPad({ data, lang, send }: { data: FusionPadData; lang: Lan
   fingerRef.current = finger;
   const lastSend = useRef(0);
   const wasMine = useRef(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const board = useRef<HTMLDivElement>(null);
+  /** Où chaque aliment est affiché : il glisse vers sa vraie place, reçue 4 fois par seconde. */
+  const shown = useRef(new Map<number, { x: number; y: number }>());
+  const lastFrame = useRef(0);
 
   // Ton tour arrive : on vibre
   useEffect(() => {
@@ -27,13 +32,24 @@ export function FusionPad({ data, lang, send }: { data: FusionPadData; lang: Lan
     let raf = 0;
     const draw = () => {
       const d = latest.current;
+      // Le bac garde toujours ses proportions et tient en entier dans la place disponible, debout comme couché
+      const w = wrap.current!;
+      const bd = board.current!;
+      const fit = Math.max(40, Math.floor(Math.min(w.clientWidth, (w.clientHeight * FUSION_W) / FUSION_H)));
+      const fitH = Math.floor((fit * FUSION_H) / FUSION_W);
+      if (bd.style.width !== `${fit}px` || bd.style.height !== `${fitH}px`) {
+        bd.style.width = `${fit}px`;
+        bd.style.height = `${fitH}px`;
+      }
       const r = cv.getBoundingClientRect();
       const dpr = Math.min(2, window.devicePixelRatio || 1);
-      if (cv.width !== Math.round(r.width * dpr)) {
-        cv.width = Math.round(r.width * dpr);
-        cv.height = Math.round(r.height * dpr);
+      const bw = Math.max(1, Math.round(r.width * dpr));
+      const bh = Math.max(1, Math.round(r.height * dpr));
+      if (cv.width !== bw || cv.height !== bh) {
+        cv.width = bw;
+        cv.height = bh;
       }
-      const k = (r.width / FUSION_W) * dpr;
+      const k = bw / FUSION_W;
       g.setTransform(k, 0, 0, k, 0, 0);
       g.clearRect(0, 0, FUSION_W, FUSION_H);
       g.strokeStyle = '#ff4f9a';
@@ -65,7 +81,23 @@ export function FusionPad({ data, lang, send }: { data: FusionPadData; lang: Lan
         g.fillStyle = '#000';
         g.fillText(FUSION_EMOJI[l], x, y + rad * 0.06);
       };
-      for (const [x, y, l] of d.balls) disc(x, y, l, l < 0 ? 40 : FUSION_R[l]);
+      const now = performance.now();
+      const step = Math.min(1, ((now - lastFrame.current) / 1000) * 12);
+      lastFrame.current = now;
+      const pos = shown.current;
+      const alive = new Set<number>();
+      for (const [x, y, l, id] of d.balls) {
+        alive.add(id);
+        let q = pos.get(id);
+        if (!q) {
+          q = { x, y };
+          pos.set(id, q);
+        }
+        q.x += (x - q.x) * step;
+        q.y += (y - q.y) * step;
+        disc(q.x, q.y, l, l < 0 ? 40 : FUSION_R[l]);
+      }
+      for (const id of pos.keys()) if (!alive.has(id)) pos.delete(id);
       if (d.fog) {
         g.fillStyle = 'rgba(232,236,242,.93)';
         g.fillRect(0, 120, FUSION_W, FUSION_H - 240);
@@ -101,9 +133,10 @@ export function FusionPad({ data, lang, send }: { data: FusionPadData; lang: Lan
         <span>{data.score} · {data.other}</span>
       </p>
       <p className="fusion-turn">{data.banner || (data.mine ? (fr ? `👆 À toi ! Glisse et lève le doigt (${data.left})` : `👆 Your turn! Slide and lift your finger (${data.left})`) : fr ? `Au tour de ${data.who}…` : `${data.who}’s turn…`)}</p>
+      <div className="fusion-wrap" ref={wrap}>
       <div
         className="fusion-board"
-        style={{ aspectRatio: `${FUSION_W} / ${FUSION_H}` }}
+        ref={board}
         onPointerDown={(e) => {
           if (!data.mine) return;
           e.preventDefault();
@@ -129,6 +162,7 @@ export function FusionPad({ data, lang, send }: { data: FusionPadData; lang: Lan
         onPointerCancel={() => setFinger(null)}
       >
         <canvas ref={ref} />
+      </div>
       </div>
     </div>
   );

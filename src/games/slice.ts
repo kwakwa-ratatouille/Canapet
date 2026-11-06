@@ -12,7 +12,21 @@ export interface SlicePadData {
   score: number;
   /** Secondes pendant lesquelles la lame est sonnée. */
   stun: boolean;
+  /** Ce qui arrive à ce joueur : '', gel, inv, dbl, big. */
+  effect: string;
 }
+
+/** Les bonus : une bulle à trancher. */
+const BONUS = {
+  gel: { emoji: '🧊', color: '#7fd6ff', solo: false },
+  inv: { emoji: '🔀', color: '#b98cff', solo: false },
+  vol: { emoji: '🧲', color: '#ff9a1f', solo: false },
+  dbl: { emoji: '✖️', color: '#ffd60a', solo: true },
+  big: { emoji: '🗡️', color: '#22c99a', solo: true },
+  rain: { emoji: '🌪️', color: '#ff86bd', solo: true },
+  slow: { emoji: '🐌', color: '#a8efc9', solo: true },
+} as const;
+type BonusId = keyof typeof BONUS;
 
 const GRAV = 1150;
 const FRUITS: { food: string; juice: string }[] = [
@@ -31,7 +45,7 @@ const FRUITS: { food: string; juice: string }[] = [
   { food: 'avocat', juice: '#7bbf4a' },
   { food: 'glace', juice: '#ffc6e3' },
 ];
-type Kind = 'fruit' | 'gold' | 'coussin' | 'bombe';
+type Kind = 'fruit' | 'gold' | 'coussin' | 'bombe' | 'bonus';
 interface Item {
   x: number;
   y: number;
@@ -43,6 +57,7 @@ interface Item {
   food: string;
   juice: string;
   r: number;
+  bonus?: BonusId;
 }
 interface Half {
   x: number;
@@ -82,6 +97,11 @@ interface Pl extends Runner {
   comboAt: number;
   botAim: Item | null;
   botPause: number;
+  /** Bonus et sabotages en cours (secondes restantes). */
+  gel: number;
+  inv: number;
+  dbl: number;
+  big: number;
 }
 
 /** Distance entre un point et un segment. */
@@ -96,7 +116,7 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
-  const pls: Pl[] = runners.map((r, i) => ({ ...r, score: 0, x: 200 + i * 120, y: 500, down: false, trail: [], stun: 0, combo: 0, comboAt: 0, botAim: null, botPause: 0 }));
+  const pls: Pl[] = runners.map((r, i) => ({ ...r, score: 0, x: 200 + i * 120, y: 500, down: false, trail: [], stun: 0, combo: 0, comboAt: 0, botAim: null, botPause: 0, gel: 0, inv: 0, dbl: 0, big: 0 }));
   const teams = pls.some((p) => p.team !== undefined);
   const items: Item[] = [];
   const halves: Half[] = [];
@@ -107,8 +127,20 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let shake = 0;
   let last = '';
   const n = pls.length;
+  // Des limites pour que ça reste fluide, même à 12
+  const MAX_ITEMS = ctx.light ? 16 : 30;
+  const MAX_HALVES = ctx.light ? 6 : 16;
+  const MAX_DROPS = ctx.light ? 24 : 70;
+  /** Aliments à lancer un par un, plutôt que tous à la même image. */
+  let pending = 0;
+  let pendingAt = 0;
+  let nextBonus = Math.max(4, 8 - n * 0.3);
+  let rainT = 0;
+  let slowT = 0;
+  let notice: { text: string; c: string; t: number } | null = null;
 
-  const spawn = (kind: Kind) => {
+  const spawn = (kind: Kind, bonus?: BonusId) => {
+    if (items.length >= MAX_ITEMS && kind === 'fruit') return;
     const f = FRUITS[Math.floor(Math.random() * FRUITS.length)];
     const x = rnd(220, 1700);
     items.push({
@@ -121,20 +153,74 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       kind,
       food: kind === 'coussin' ? 'coussin' : f.food,
       juice: f.juice,
-      r: kind === 'bombe' ? 62 : 72,
+      r: kind === 'bombe' ? 62 : kind === 'bonus' ? 84 : 72,
+      bonus,
     });
   };
 
   const wave = () => {
-    // Plus de monde = plus de choses à trancher, et ça s'accélère
+    // Plus de monde = plus de choses à trancher, et ça s'accélère : environ 1 aliment par seconde, plus 0,55 par joueur
     const pace = Math.min(1, clock / 50);
-    const count = Math.round(rnd(1, 2 + pace * 2) + n / 4);
-    for (let i = 0; i < count; i++) spawn(Math.random() < 0.03 + pace * 0.03 ? 'gold' : 'fruit');
-    if (clock > 4 && Math.random() < 0.3 + pace * 0.25) spawn(Math.random() < 0.5 ? 'bombe' : 'coussin');
-    nextWave = clock + rnd(1.5, 2.2) - pace * 0.8;
+    const every = rnd(1.5, 2.1) - pace * 0.6;
+    pending += Math.max(1, Math.round((1 + n * 0.55) * every * (0.7 + pace * 0.5)));
+    // Les pièges aussi suivent le nombre de joueurs
+    if (clock > 4) {
+      const traps = 1 + Math.floor(n / 5);
+      for (let i = 0; i < traps; i++) if (Math.random() < 0.3 + pace * 0.25) spawn(Math.random() < 0.5 ? 'bombe' : 'coussin');
+    }
+    nextWave = clock + every;
+  };
+
+  const say = (text: string, c: string) => {
+    notice = { text, c, t: 2.4 };
+  };
+  /** Un adversaire au hasard, jamais un coéquipier. */
+  const rival = (p: Pl) => {
+    const can = pls.filter((o) => o !== p && (p.team === undefined || o.team !== p.team));
+    const fresh = can.filter((o) => o.gel <= 0);
+    const list = fresh.length ? fresh : can;
+    return list[Math.floor(Math.random() * list.length)] ?? null;
+  };
+  const useBonus = (p: Pl, id: BonusId) => {
+    const name = p.profile.name;
+    const c = BONUS[id].color;
+    sfx.whoosh();
+    if (id === 'gel' || id === 'inv' || id === 'vol') {
+      const o = id === 'vol' ? [...pls].filter((x) => x !== p && (p.team === undefined || x.team !== p.team)).sort((a, b) => b.score - a.score)[0] : rival(p);
+      if (!o) return;
+      if (id === 'gel') {
+        o.gel = 4;
+        o.down = false;
+        o.trail = [];
+        say(fr ? `🧊 ${o.profile.name} est gelé ! Plus de lame pendant 4 s` : `🧊 ${o.profile.name} is frozen! No blade for 4 s`, c);
+      } else if (id === 'inv') {
+        o.inv = 6;
+        say(fr ? `🔀 ${o.profile.name} : lame à l’envers !` : `🔀 ${o.profile.name}: blade flipped!`, c);
+      } else {
+        const got = Math.min(8, o.score);
+        o.score -= got;
+        p.score += got;
+        say(fr ? `🧲 ${name} vole ${got} points à ${o.profile.name} !` : `🧲 ${name} steals ${got} points from ${o.profile.name}!`, c);
+      }
+      if (!o.bot) ctx.buzz(o.pid, 300);
+    } else if (id === 'dbl') {
+      p.dbl = 7;
+      say(fr ? `✖️2 ${name} : points doublés !` : `✖️2 ${name}: double points!`, c);
+    } else if (id === 'big') {
+      p.big = 7;
+      say(fr ? `🗡️ ${name} a une lame géante !` : `🗡️ ${name} has a giant blade!`, c);
+    } else if (id === 'rain') {
+      rainT = 3.5;
+      say(fr ? '🌪️ Pluie d’aliments !' : '🌪️ Food rain!', c);
+    } else {
+      slowT = 4;
+      say(fr ? '🐌 Tout ralentit !' : '🐌 Slow motion!', c);
+    }
+    ctx.refresh();
   };
 
   const add = (p: Pl, x: number, y: number, pts: number, c: string, text?: string) => {
+    if (pts > 0 && p.dbl > 0) pts *= 2;
     p.score = Math.max(0, p.score + pts);
     pops.push({ x, y, text: text ?? (pts > 0 ? `+${pts}` : String(pts)), c, life: 0.9 });
   };
@@ -150,8 +236,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (it.kind === 'bombe') sfx.boom();
       else sfx.pet();
       if (!p.bot) ctx.buzz(p.pid, 300);
-      for (let i = 0; i < 14; i++) drops.push({ x: it.x, y: it.y, vx: rnd(-520, 520), vy: rnd(-520, 200), c: it.kind === 'bombe' ? '#3a2140' : '#ff86bd', life: 0.7 });
+      for (let i = 0; i < 10; i++) drops.push({ x: it.x, y: it.y, vx: rnd(-520, 520), vy: rnd(-520, 200), c: it.kind === 'bombe' ? '#3a2140' : '#ff86bd', life: 0.7 });
       ctx.refresh();
+      return;
+    }
+    if (it.kind === 'bonus' && it.bonus) {
+      for (let i = 0; i < 8; i++) drops.push({ x: it.x, y: it.y, vx: rnd(-420, 420), vy: rnd(-460, 160), c: BONUS[it.bonus].color, life: 0.6 });
+      useBonus(p, it.bonus);
       return;
     }
     // Combo : plusieurs d'un coup, dans le même geste
@@ -162,8 +253,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     add(p, it.x, it.y, base + bonus, it.kind === 'gold' ? SOLEIL : p.profile.color, p.combo >= 3 ? `COMBO ×${p.combo} !` : undefined);
     sfx.pop();
     if (!p.bot) ctx.buzz(p.pid, 25);
-    for (const side of [1, -1] as const) halves.push({ x: it.x, y: it.y, vx: it.vx + side * rnd(120, 240), vy: it.vy * 0.5 - 120, rot: it.rot, spin: side * rnd(2, 5), food: it.food, side, life: 1.1 });
-    for (let i = 0; i < 9; i++) drops.push({ x: it.x, y: it.y, vx: rnd(-420, 420), vy: rnd(-460, 160), c: it.juice, life: rnd(0.35, 0.7) });
+    // Quand il y a beaucoup de monde, moins de morceaux : ils restent moins longtemps et les plus vieux disparaissent
+    const life = n > 6 ? 0.7 : 1.1;
+    if (halves.length + 2 > MAX_HALVES) halves.splice(0, halves.length + 2 - MAX_HALVES);
+    for (const side of [1, -1] as const) halves.push({ x: it.x, y: it.y, vx: it.vx + side * rnd(120, 240), vy: it.vy * 0.5 - 120, rot: it.rot, spin: side * rnd(2, 5), food: it.food, side, life });
+    const juice = n > 6 ? 4 : 8;
+    for (let i = 0; i < juice; i++) drops.push({ x: it.x, y: it.y, vx: rnd(-420, 420), vy: rnd(-460, 160), c: it.juice, life: rnd(0.35, 0.7) });
   };
 
   const swipe = (p: Pl, x: number, y: number) => {
@@ -171,19 +266,24 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const ay = p.y;
     p.x = x;
     p.y = y;
-    if (!p.down || p.stun > 0) return;
+    if (!p.down || p.stun > 0 || p.gel > 0) return;
     p.trail.push({ x, y, at: clock });
     if (Math.hypot(x - ax, y - ay) < 6) return;
-    for (const it of [...items]) if (segDist(it.x, it.y, ax, ay, x, y) < it.r) cut(p, it);
+    const reach = p.big > 0 ? 60 : 0;
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      if (it && segDist(it.x, it.y, ax, ay, x, y) < it.r + reach) cut(p, it);
+    }
   };
 
   const bot = (p: Pl, dt: number) => {
-    if (p.stun > 0) return;
+    if (p.stun > 0 || p.gel > 0) return;
     p.botPause -= dt;
     if (p.botPause > 0) return;
     if (!p.botAim || !items.includes(p.botAim)) {
-      const safe = items.filter((i) => (i.kind === 'fruit' || i.kind === 'gold') && i.y < 1000);
-      p.botAim = safe[Math.floor(Math.random() * safe.length)] ?? null;
+      const safe = items.filter((i) => (i.kind === 'fruit' || i.kind === 'gold' || i.kind === 'bonus') && i.y < 1000);
+      const bubble = safe.find((i) => i.kind === 'bonus');
+      p.botAim = bubble && Math.random() < 0.3 * ctx.botSkill ? bubble : safe[Math.floor(Math.random() * safe.length)] ?? null;
       p.down = false;
       if (!p.botAim) return;
     }
@@ -199,6 +299,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     }
   };
 
+  const effectOf = (p: Pl) => (p.gel > 0 ? 'gel' : p.inv > 0 ? 'inv' : p.dbl > 0 ? 'dbl' : p.big > 0 ? 'big' : '');
   const teamScore = (s: number) => pls.filter((p) => p.team === s).reduce((m, p) => m + p.score, 0);
 
   const game: GameInstance = {
@@ -209,8 +310,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (!p) return;
       const [nx, ny, st] = m.n ?? [];
       if (typeof nx !== 'number' || typeof ny !== 'number') return;
-      const x = (Math.max(0, Math.min(1000, nx)) / 1000) * 1920;
+      // Lame à l'envers : gauche et droite échangées
+      const x = ((p.inv > 0 ? 1000 - Math.max(0, Math.min(1000, nx)) : Math.max(0, Math.min(1000, nx))) / 1000) * 1920;
       const y = (Math.max(0, Math.min(1000, ny)) / 1000) * 1080;
+      if (p.gel > 0) {
+        p.x = x;
+        p.y = y;
+        return;
+      }
       if (st === 1) {
         // Le doigt se pose : pas de trait depuis l'ancienne position
         p.x = x;
@@ -233,12 +340,32 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     update(dt) {
       clock += dt;
       shake = Math.max(0, shake - dt);
+      rainT = Math.max(0, rainT - dt);
+      slowT = Math.max(0, slowT - dt);
+      if (notice && (notice.t -= dt) <= 0) notice = null;
       if (clock >= nextWave) wave();
+      // Les aliments partent un par un
+      if (pending > 0 && clock >= pendingAt) {
+        pending--;
+        pendingAt = clock + 0.07;
+        spawn(Math.random() < 0.04 ? 'gold' : 'fruit');
+      }
+      if (rainT > 0 && clock >= pendingAt) {
+        pendingAt = clock + 0.07;
+        spawn('fruit');
+      }
+      // Une bulle bonus de temps en temps, plus souvent quand on est nombreux
+      if (clock >= nextBonus) {
+        nextBonus = clock + rnd(6, 9) - Math.min(3, n * 0.25);
+        const ids = (Object.keys(BONUS) as BonusId[]).filter((k) => BONUS[k].solo || n > 1);
+        spawn('bonus', ids[Math.floor(Math.random() * ids.length)]);
+      }
+      const fall = slowT > 0 ? dt * 0.45 : dt;
       for (const it of items) {
-        it.vy += GRAV * dt;
-        it.x += it.vx * dt;
-        it.y += it.vy * dt;
-        it.rot += it.spin * dt;
+        it.vy += GRAV * fall;
+        it.x += it.vx * fall;
+        it.y += it.vy * fall;
+        it.rot += it.spin * fall;
       }
       for (let i = items.length - 1; i >= 0; i--) if (items[i].y > 1240 && items[i].vy > 0) items.splice(i, 1);
       for (const h of halves) {
@@ -256,7 +383,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         d.life -= dt;
       }
       for (let i = drops.length - 1; i >= 0; i--) if (drops[i].life <= 0) drops.splice(i, 1);
-      if (drops.length > 90) drops.splice(0, drops.length - 90);
+      if (drops.length > MAX_DROPS) drops.splice(0, drops.length - MAX_DROPS);
       for (const o of pops) {
         o.y -= 60 * dt;
         o.life -= dt;
@@ -265,10 +392,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       for (const p of pls) {
         if (p.bot) bot(p, dt);
         p.stun = Math.max(0, p.stun - dt);
+        p.gel = Math.max(0, p.gel - dt);
+        p.inv = Math.max(0, p.inv - dt);
+        p.dbl = Math.max(0, p.dbl - dt);
+        p.big = Math.max(0, p.big - dt);
         while (p.trail.length && clock - p.trail[0].at > 0.22) p.trail.shift();
         if (p.trail.length > 24) p.trail.splice(0, p.trail.length - 24);
       }
-      const sum = pls.map((p) => p.score).join();
+      const sum = pls.map((p) => `${p.score}${effectOf(p)}`).join();
       if (sum !== last && Math.floor(clock * 2) !== Math.floor((clock - dt) * 2)) {
         last = sum;
         ctx.refresh();
@@ -305,6 +436,27 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       for (const it of items) {
         g.save();
         g.translate(it.x, it.y);
+        if (it.kind === 'bonus' && it.bonus) {
+          // Une grosse bulle qui pulse, bien différente des aliments
+          g.fillStyle = BONUS[it.bonus].color;
+          g.strokeStyle = INK;
+          g.lineWidth = 7;
+          g.beginPath();
+          g.arc(0, 0, 76 + Math.sin(t * 8) * 6, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          g.fillStyle = 'rgba(255,255,255,.55)';
+          g.beginPath();
+          g.arc(-26, -30, 14, 0, Math.PI * 2);
+          g.fill();
+          g.font = '78px sans-serif';
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          g.fillStyle = INK;
+          g.fillText(BONUS[it.bonus].emoji, 0, 6);
+          g.restore();
+          continue;
+        }
         g.rotate(it.rot);
         if (it.kind === 'bombe') {
           g.fillStyle = '#2b2730';
@@ -348,20 +500,18 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         g.restore();
       }
+      // Des petits carrés plutôt que des ronds : bien moins cher à dessiner, et ça ne se voit pas à cette vitesse
       for (const d of drops) {
-        g.globalAlpha = Math.min(1, d.life * 2);
         g.fillStyle = d.c;
-        g.beginPath();
-        g.arc(d.x, d.y, 9, 0, Math.PI * 2);
-        g.fill();
+        g.fillRect(d.x - 8, d.y - 8, 16, 16);
       }
-      g.globalAlpha = 1;
       // Les lames : une couleur par joueur, épaisses puis fines
       g.lineCap = 'round';
       g.lineJoin = 'round';
       for (const p of pls) {
         if (p.trail.length > 1) {
-          for (const [w, c] of [[20, INK], [13, p.profile.color]] as [number, string][]) {
+          const fat = p.big > 0 ? 18 : 0;
+          for (const [w, c] of [[20 + fat, INK], [13 + fat, p.profile.color]] as [number, string][]) {
             g.strokeStyle = c;
             g.lineWidth = w;
             g.beginPath();
@@ -371,14 +521,21 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         // Le curseur du joueur, pour savoir où est son doigt
         g.globalAlpha = p.stun > 0 ? 0.35 : p.down ? 1 : 0.55;
-        g.fillStyle = p.profile.color;
+        g.fillStyle = p.gel > 0 ? '#7fd6ff' : p.profile.color;
         g.strokeStyle = INK;
         g.lineWidth = 4;
         g.beginPath();
-        g.arc(p.x, p.y, p.down ? 14 : 18, 0, Math.PI * 2);
+        g.arc(p.x, p.y, p.gel > 0 ? 34 : p.down ? 14 : 18, 0, Math.PI * 2);
         g.fill();
         g.stroke();
         g.globalAlpha = 1;
+        if (p.gel > 0) {
+          g.font = '40px sans-serif';
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          g.fillStyle = INK;
+          g.fillText('🧊', p.x, p.y + 2);
+        }
       }
       g.textAlign = 'center';
       g.textBaseline = 'middle';
@@ -392,6 +549,22 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(o.text, o.x, o.y);
       }
       g.globalAlpha = 1;
+      if (notice) {
+        g.font = '700 54px Fredoka, sans-serif';
+        const tw = Math.min(1700, g.measureText(notice.text).width) + 60;
+        const ny = teams ? 200 : 118;
+        g.globalAlpha = Math.min(1, notice.t * 3);
+        g.fillStyle = notice.c;
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.roundRect(960 - tw / 2, ny - 42, tw, 84, 26);
+        g.fill();
+        g.stroke();
+        g.fillStyle = INK;
+        g.fillText(notice.text, 960, ny + 2, 1700);
+        g.globalAlpha = 1;
+      }
       // Les scores, en haut
       if (teams) {
         [0, 1].forEach((s) => {
@@ -421,7 +594,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.stroke();
         g.fillStyle = INK;
         g.font = '700 28px Fredoka, sans-serif';
-        g.fillText(`${p.profile.name.slice(0, w < 170 ? 5 : 9)} · ${p.score}`, x + w / 2, top + 28, w - 20);
+        const ef = effectOf(p);
+        const mark = ef ? `${BONUS[ef as BonusId].emoji} ` : '';
+        g.fillText(`${mark}${p.profile.name.slice(0, w < 170 ? 5 : 9)} · ${p.score}`, x + w / 2, top + 28, w - 20);
       });
       g.restore();
     },
@@ -429,7 +604,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     leader: () => null,
     padData(pid): SlicePadData {
       const p = pls.find((x) => x.pid === pid)!;
-      return { color: p.profile.color, score: p.score, stun: p.stun > 0 };
+      return { color: p.profile.color, score: p.score, stun: p.stun > 0, effect: effectOf(p) };
     },
   };
   speak(fr ? 'Tranchez tout, sauf les pièges !' : 'Slice everything, except the traps!', ctx.lang);
@@ -441,8 +616,8 @@ export const slice: GameBase = {
   emoji: '🔪',
   name: { fr: 'Tranche de Rire', en: 'Slice of Laughs' },
   how: {
-    fr: 'Glisse ton doigt sur le téléphone pour trancher les aliments à l’écran. Gare au coussin péteur et aux bombes !',
-    en: 'Swipe on your phone to slice the food on screen. Watch out for the whoopee cushion and the bombs!',
+    fr: 'Glisse ton doigt sur le téléphone pour trancher les aliments. Plus on est, plus il y en a ! Les bulles donnent des bonus : geler un adversaire, voler des points… Gare aux bombes !',
+    en: 'Swipe on your phone to slice the food. More players, more food! Bubbles give bonuses: freeze a rival, steal points… Watch out for the bombs!',
   },
   layout: 'buttons',
   min: 1,

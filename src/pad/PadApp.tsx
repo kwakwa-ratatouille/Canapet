@@ -5,6 +5,8 @@ import { VOICES } from '../shared/sound';
 import { SlicePad } from './SlicePad';
 import { FusionPad } from './FusionPad';
 import { CakePad } from './CakePad';
+import { TraversePad } from './TraversePad';
+import type { TraversePadData } from '../games/traverse';
 import type { CakePadData } from '../games/cakeShared';
 import { ChefPad } from './ChefPad';
 import type { FusionPadData } from '../games/fusionShared';
@@ -1076,6 +1078,7 @@ function PadScreenView({
       if (screen.game === 'cri' && screen.data) return <ShoutPad data={screen.data as ShoutPadData} lang={lang} send={send} />;
       if (VOICE_GAMES.includes(screen.game) && screen.data) return <VoicePad data={screen.data as VoicePadData} lang={lang} send={send} />;
       if (screen.game === 'tranche' && screen.data) return <SlicePad data={screen.data as SlicePadData} lang={lang} send={send} />;
+      if (screen.game === 'traverse' && screen.data) return <TraversePad data={screen.data as TraversePadData} lang={lang} send={send} />;
       if (screen.game === 'gateau' && screen.data) return <CakePad data={screen.data as CakePadData} lang={lang} send={send} />;
       if (screen.game === 'fusion' && screen.data) return <FusionPad data={screen.data as FusionPadData} lang={lang} send={send} />;
       if (screen.game === 'chef' && screen.data) return <ChefPad data={screen.data as ChefPadData} lang={lang} send={send} />;
