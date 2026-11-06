@@ -32,8 +32,7 @@ function laneChip(g: CanvasRenderingContext2D, x: number, w: number, y: number, 
 
 // ——— La Tour Branlante ———
 const CELL = 34;
-const GOAL = 800;
-const LIVES = 3;
+const GOAL = 1000;
 const TRAY = 250;
 /** Largeur d'une colonne : assez proche pour qu'une tour qui tombe touche la voisine. */
 const LANE = 380;
@@ -56,15 +55,12 @@ interface Tw extends Runner {
   cx: number;
   cur: Matter.Body | null;
   wait: number;
-  lives: number;
-  alive: boolean;
   height: number;
   x: number;
   rot: boolean;
   fast: boolean;
   big: boolean;
   hit: number;
-  outAt: number;
   safe: number;
   botX: number;
   botT: number;
@@ -74,7 +70,6 @@ interface Tw extends Runner {
 function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   let clock = 0;
-  let deaths = 0;
   let best = 0;
   let record = 200;
   let endT = -1;
@@ -87,7 +82,7 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
   const pls: Tw[] = list.map((r, i) => {
     const cx = (i - (list.length - 1) / 2) * LANE;
     Composite.add(engine.world, Bodies.rectangle(cx, 15, TRAY, 30, { isStatic: true, friction: 1 }));
-    return { ...r, cx, cur: null, wait: 0.2 + i * 0.05, lives: LIVES, alive: true, height: 0, x: 0, rot: false, fast: false, big: false, hit: 0, outAt: 0, safe: 0, botX: 0, botT: 0, banner: null };
+    return { ...r, cx, cur: null, wait: 0.2 + i * 0.05, height: 0, x: 0, rot: false, fast: false, big: false, hit: 0, safe: 0, botX: 0, botT: 0, banner: null };
   });
   const pieces: Matter.Body[] = [];
   const owner = new Map<Matter.Body, Tw>();
@@ -120,8 +115,8 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
   function release(p: Tw) {
     if (!p.cur) return;
     born.set(p.cur, clock);
-    // La pièce se pose sans tout renverser
-    Body.setVelocity(p.cur, { x: 0, y: Math.min(1.5, p.cur.velocity.y) });
+    // Posée doucement, elle ne bouge presque rien ; lâchée à toute vitesse, elle cogne et fait trembler la pile
+    Body.setVelocity(p.cur, { x: 0, y: Math.min(p.fast ? 7 : 1.5, p.cur.velocity.y) });
     p.cur = null;
     p.wait = 0.3;
     sfx.step();
@@ -163,23 +158,15 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
     }
     p.botT = rnd(0.3, 0.9);
   }
-  /** Une pièce est tombée : elle coûte une vie à celui qui l'a posée. */
-  const loseLife = (p: Tw) => {
-    // Quand tout s'écroule, c'est une seule vie
-    if (!p.alive || p.safe > 0) return;
-    p.safe = 1.8;
-    // Les bots tiennent plus longtemps, pour ne pas finir la partie en 30 s
-    if (p.bot && Math.random() < 0.6) return;
-    p.lives--;
+  /** Une pièce tombe dans le vide : pas de punition, juste le temps perdu (et ça se voit). */
+  const pieceLost = (p: Tw) => {
+    if (p.safe > 0) return;
+    p.safe = 1.2;
     p.hit = 0.5;
+    // Une pièce perdue, c'est du temps perdu
+    p.wait = Math.max(p.wait, 1.2);
     sfx.boing();
-    if (!p.bot) ctx.buzz(p.pid, 220);
-    if (p.lives <= 0) {
-      p.alive = false;
-      p.outAt = ++deaths;
-      if (p.cur) p.cur = null;
-      sfx.boom();
-    }
+    if (!p.bot) ctx.buzz(p.pid, 120);
   };
 
   const game: GameInstance = {
@@ -187,7 +174,7 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
     input(pid, m) {
       if (m.t !== 'in') return;
       const p = pls.find((x) => x.pid === pid);
-      if (!p || !p.alive) return;
+      if (!p) return;
       p.x = Math.max(-1, Math.min(1, m.x));
       if (m.a && !p.rot && p.cur) {
         Body.rotate(p.cur, Math.PI / 2);
@@ -208,7 +195,6 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
         p.hit = Math.max(0, p.hit - dt);
         p.safe = Math.max(0, p.safe - dt);
         if (p.banner && (p.banner.t -= dt) <= 0) p.banner = null;
-        if (!p.alive) continue;
         if (p.bot) {
           // Le bot se place, puis accélère
           p.botT -= dt;
@@ -237,7 +223,7 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
         owner.delete(b);
         colors.delete(b);
         born.delete(b);
-        if (o) loseLife(o);
+        if (o) pieceLost(o);
       }
       // La hauteur de chacun : ce qui tient au-dessus de SON plateau, même si ça vient d'ailleurs
       for (const p of pls) {
@@ -249,22 +235,21 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
         }
         p.height = top;
       }
-      best = Math.max(...pls.map((p) => (p.alive ? p.height : 0)));
+      best = Math.max(...pls.map((p) => p.height));
       // Nouveau palier : les autres reçoivent une grosse pièce
       if (best > record) {
         record += 200;
-        const lead = pls.find((p) => p.alive && p.height === best);
+        const lead = pls.find((p) => p.height === best);
         pls.forEach((o) => {
-          if (o !== lead && o.alive) {
+          if (o !== lead) {
             o.big = true;
             o.banner = { t: 2, text: fr ? '😈 Gros bloc !' : '😈 Big block!', c: SOLEIL };
           }
         });
         sfx.hurry();
       }
-      const alive = pls.filter((p) => p.alive);
-      const humans = pls.filter((p) => !p.bot && !ctx.away(p.pid));
-      if (best >= GOAL || alive.length === 0 || (alive.length === 1 && pls.length > 1) || (humans.length > 0 && !humans.some((p) => p.alive))) {
+      // Une seule façon de gagner : arriver à la ligne (sinon, le plus haut quand le temps est écoulé)
+      if (best >= GOAL) {
         endT = 3;
         sfx.win();
         if (best >= GOAL) speak(fr ? 'Quelle tour !' : 'What a tower!', ctx.lang);
@@ -282,7 +267,7 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
       g.save();
       if (shake > 0) g.translate(Math.sin(t * 70) * shake * 40, Math.cos(t * 55) * shake * 24);
       const n = pls.length;
-      const s = Math.min(1, 1900 / (n * LANE));
+      const s = Math.min(0.85, 1900 / (n * LANE));
       const w = LANE * s;
       const left = 960 - (n * w) / 2;
       const base = 980;
@@ -310,10 +295,6 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillRect(lx, y, 16, 3);
           g.fillText(String(h / 10), lx + 22, y);
         }
-        if (!p.alive) {
-          g.fillStyle = 'rgba(58,33,64,.22)';
-          g.fillRect(lx, 80, w, 1000);
-        }
         // Le plateau, avec le perso qui regarde
         const ty = sy(0);
         g.fillStyle = '#ffd76a';
@@ -324,7 +305,7 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fill();
         g.stroke();
         candy(g, sx(p.cx - TRAY / 2), ty, TRAY * s, 30 * s, 12);
-        drawCharacter(g, sx(p.cx - TRAY / 2 - 34), Math.min(1076, ty + 90 * s), 56 * s + 26, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc, eyes: p.profile.eyes, pose: p.profile.pose, selfie: p.selfie, t: t + i, mood: !p.alive || p.hit > 0 ? 'sad' : p.height > 300 ? 'win' : 'wow' });
+        drawCharacter(g, sx(p.cx - TRAY / 2 - 34), Math.min(1076, ty + 90 * s), 56 * s + 26, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc, eyes: p.profile.eyes, pose: p.profile.pose, selfie: p.selfie, t: t + i, mood: p.hit > 0 ? 'sad' : p.height > 300 ? 'win' : 'wow' });
       });
       // Les pièces, par-dessus tout : elles passent d'une colonne à l'autre quand ça tombe
       for (const b of pieces) {
@@ -358,11 +339,10 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillStyle = p.banner.c;
           g.fillText(p.banner.text, lx + w / 2, 140, w - 16);
         }
-        laneChip(g, lx, w, 12, p, `${p.profile.name.slice(0, w < 260 ? 6 : 10)} · ${Math.round(p.height / 10)} ${'❤'.repeat(Math.max(0, p.lives))}`, !p.alive);
+        laneChip(g, lx, w, 12, p, `${p.profile.name.slice(0, w < 260 ? 6 : 10)} · ${Math.round(p.height / 10)}`);
       });
     },
-    ranking: () => [...pls].sort((a, b) => Number(b.alive) - Number(a.alive) || b.height - a.height || b.outAt - a.outAt).map((p) => p.pid),
-    out: (pid) => !pls.find((p) => p.pid === pid)?.alive,
+    ranking: () => [...pls].sort((a, b) => b.height - a.height).map((p) => p.pid),
     leader: () => null,
   };
   speak(fr ? 'Empilez, et que ça tienne !' : 'Stack it, and make it hold!', ctx.lang);
@@ -374,8 +354,8 @@ export const tower: GameBase = {
   emoji: '🧱',
   name: { fr: 'La Tour Branlante', en: 'The Wobbly Tower' },
   how: {
-    fr: 'Chacun sa tour, côte à côte : ça penche vraiment, et une tour qui s’écroule peut renverser la voisine ! Stick = déplacer, A = tourner, B = descendre vite. 3 vies, le premier à la ligne gagne !',
-    en: 'Towers side by side: they really wobble, and a falling tower can knock over its neighbour! Stick = move, A = rotate, B = drop fast. 3 lives, first to the line wins!',
+    fr: 'Chacun sa tour, côte à côte : ça penche vraiment, et une tour qui s’écroule peut renverser la voisine ! Stick = déplacer, A = tourner, B = descendre vite. Ce qui tombe part dans le vide : le premier à la ligne gagne !',
+    en: 'Towers side by side: they really wobble, and a falling tower can knock over its neighbour! Stick = move, A = rotate, B = drop fast. Whatever falls is gone: first to the line wins!',
   },
   layout: 'stick',
   min: 1,
