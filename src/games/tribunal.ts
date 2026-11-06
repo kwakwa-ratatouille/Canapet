@@ -172,7 +172,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             if (p.bot && p.pick < 0) p.pick = Math.floor(Math.random() * pls.length);
           });
         }
-        if (timer <= 0 || pls.every((p) => p.pick >= 0)) verdict();
+        if (timer <= 0 || pls.every((p) => p.pick >= 0 || (!p.bot && ctx.away(p.pid)))) verdict();
       } else if (phase === 'reveal') {
         if (timer <= 0) next();
       } else if (timer <= 0) game.over = true;
@@ -284,12 +284,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.restore();
         if (verdictT > 0.7) {
           const pop = Math.min(1, (verdictT - 0.7) * 6);
-          g.save();
-          g.translate(960, 985);
-          g.scale(pop, pop);
-          g.rotate(-0.012);
           const ls = wrap(g, sentence.charAt(0).toUpperCase() + sentence.slice(1), 1320, '700 44px Fredoka, sans-serif');
           const hh = 40 + ls.length * 54;
+          g.save();
+          // À plus de 6 joueurs, tout en bas pour ne pas cacher la deuxième rangée
+          g.translate(960, pls.length > 6 ? 1074 - hh / 2 : 985);
+          g.scale(pop, pop);
+          g.rotate(-0.012);
           g.fillStyle = '#fff7c9';
           g.strokeStyle = INK;
           g.lineWidth = 6;

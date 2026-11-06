@@ -275,7 +275,15 @@ function GameView({ session }: { session: Session }) {
       // Événements surprises : le séisme secoue l’image, les autres se dessinent par-dessus
       const ev = session.phase === 'game' && !session.paused ? session.event : null;
       if (ev?.kind === 'seisme') g.translate(Math.sin(tt * 60) * 14, Math.cos(tt * 47) * 10);
-      if (session.game) session.game.render(g, tt);
+      if (session.game) {
+        try {
+          session.game.render(g, tt);
+        } catch (e) {
+          // Une image ratée ne doit pas figer la télé
+          g.globalAlpha = 1;
+          console.error('Dessin impossible', session.def?.id, e);
+        }
+      }
       g.setTransform(scale, 0, 0, scale, 0, 0);
       if (session.game && !LIGHT) drawAmbience(g, tt, session);
       // On garde des images pour le ralenti (pendant le jeu seulement)

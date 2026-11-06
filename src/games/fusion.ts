@@ -265,7 +265,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         b.cool = Math.max(0, b.cool - dt);
         b.left -= dt * ((b.effects.presse ?? 0) > 0 ? 2.5 : 1);
         const cur = current(b);
-        if (cur?.bot) {
+        if (cur && (cur.bot || ctx.away(cur.pid))) {
           b.botAt -= dt;
           if (b.botAt <= 0.5 && b.botAt + dt > 0.5) botThink(b);
           b.aim += (b.botAim - b.aim) * Math.min(1, dt * 6);

@@ -4,7 +4,7 @@
 import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, MENTHE, ROSE } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { candy } from './draw';
+import { candy, fitText } from './draw';
 import { PACKS, PACK_OPTION } from '../shared/offer';
 import { PACK_PAIRS } from './packsData';
 import { freshDeck } from './decks';
@@ -109,7 +109,8 @@ function drawRow(g: CanvasRenderingContext2D, pls: Pl[], t: number, label: (p: P
     g.font = '700 30px Fredoka, sans-serif';
     g.fillStyle = INK;
     g.textAlign = 'center';
-    g.fillText(label(p), x, y + 44);
+    const step = Math.min(230, 1760 / pls.length);
+    label(p).split('\n').forEach((line, k) => g.fillText(fitText(g, line, step - 8), x, y + 44 + k * 34));
   });
 }
 
@@ -214,7 +215,7 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
             if (p.bot && p.pick < 0) p.pick = Math.random() < 0.5 ? 0 : 1;
           });
         }
-        if (timer <= 0 || pls.every((p) => p.pick >= 0)) reveal();
+        if (timer <= 0 || pls.every((p) => p.pick >= 0 || (!p.bot && ctx.away(p.pid)))) reveal();
       } else if (phase === 'reveal') {
         if (timer <= 0) next();
       } else if (timer <= 0) game.over = true;
@@ -228,7 +229,7 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
       if (phase === 'end') {
         g.font = '700 72px Fredoka, sans-serif';
         g.fillText(fr ? 'Qui pense comme tout le monde ?' : 'Who thinks like everyone else?', 960, 200);
-        drawRow(g, pls, t, (p) => `${p.profile.name} : ${p.score}`, 640, 170);
+        drawRow(g, pls, t, (p) => `${p.profile.name}\n${p.score}`, 640, 170);
         return;
       }
       g.font = '700 40px Fredoka, sans-serif';
@@ -251,17 +252,19 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
         [0, 1].forEach((k) => {
           const side = pls.filter((p) => p.pick === k);
           side.forEach((p, i) => {
-            const x = (k ? 1410 : 510) + (i - (side.length - 1) / 2) * Math.min(150, 780 / Math.max(1, side.length));
-            drawCharacter(g, x, 880 + Math.abs(Math.sin(t * 5 + i)) * -14, 130, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc, eyes: p.profile.eyes, pose: p.profile.pose, selfie: p.selfie, t: t + i, mood: p.gain ? 'win' : 'sad' });
+            const step = Math.min(150, 780 / Math.max(1, side.length));
+            const x = (k ? 1410 : 510) + (i - (side.length - 1) / 2) * step;
+            drawCharacter(g, x, 852 + Math.abs(Math.sin(t * 5 + i)) * -14, 124, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc, eyes: p.profile.eyes, pose: p.profile.pose, selfie: p.selfie, t: t + i, mood: p.gain ? 'win' : 'sad' });
             g.fillStyle = INK;
             g.font = '700 30px Fredoka, sans-serif';
-            g.fillText(`${p.profile.name}${p.gain ? ` +${p.gain}` : ''}`, x, 920);
+            g.fillText(fitText(g, p.profile.name, step - 6), x, 886);
+            if (p.gain) g.fillText(`+${p.gain}`, x, 920);
           });
         });
         card(g, 260, 950, 1400, 96, '#fff7c9');
         g.fillStyle = INK;
         centerText(g, roast, 960, 998, 1320, 38);
-      } else drawRow(g, pls, t, (p) => (phase === 'reveal' && p.gain ? `+${p.gain} · ${p.profile.name}` : p.pick >= 0 && phase === 'choose' ? `✅ ${p.profile.name}` : p.profile.name));
+      } else drawRow(g, pls, t, (p) => (phase === 'reveal' && p.gain ? `${p.profile.name}\n+${p.gain}` : p.pick >= 0 && phase === 'choose' ? `✅ ${p.profile.name}` : p.profile.name));
     },
     ranking: () => [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid),
     leader: () => null,
@@ -375,7 +378,7 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
             if (p.bot && p.guess === null) p.guess = Math.max(1, Math.round(truth() * (0.6 + Math.random() * 0.8)));
           });
         }
-        if (timer <= 0 || pls.every((p) => p.guess !== null)) reveal();
+        if (timer <= 0 || pls.every((p) => p.guess !== null || (!p.bot && ctx.away(p.pid)))) reveal();
       } else if (phase === 'reveal') {
         if (timer <= 0) next();
       } else if (timer <= 0) game.over = true;
@@ -389,7 +392,7 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
       if (phase === 'end') {
         g.font = '700 72px Fredoka, sans-serif';
         g.fillText(fr ? 'Qui a le meilleur flair ?' : 'Who has the best instinct?', 960, 200);
-        drawRow(g, pls, t, (p) => `${p.profile.name} : ${p.score}`, 640, 170);
+        drawRow(g, pls, t, (p) => `${p.profile.name}\n${p.score}`, 640, 170);
         return;
       }
       g.font = '700 40px Fredoka, sans-serif';
@@ -417,7 +420,7 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
           if (worstName) g.fillText(`👃📦 ${fr ? 'Pif en carton' : 'Cardboard nose'} : ${worstName}`, 1400, 610);
         }
       }
-      drawRow(g, pls, t, (p) => (phase === 'reveal' ? `${p.profile.name} : ${p.guess ?? '—'}${p.gain ? ` (+${p.gain})` : ''}` : p.guess !== null ? `✅ ${p.profile.name}` : p.profile.name), 860, 130);
+      drawRow(g, pls, t, (p) => (phase === 'reveal' ? `${p.profile.name}\n${p.guess ?? '—'}${p.gain ? ` (+${p.gain})` : ''}` : p.guess !== null ? `✅ ${p.profile.name}` : p.profile.name), 860, 130);
     },
     ranking: () => [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid),
     leader: () => null,

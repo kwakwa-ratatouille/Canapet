@@ -3,7 +3,7 @@
 import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
 import { decodeClip, fakeVoice, karaokeTune, playClip, playMusic, referenceSound, REF_SOUNDS, sfx, speak, type ClipPlayer, type MusicId } from '../shared/sound';
-import { candy } from './draw';
+import { candy, fitText } from './draw';
 import { wrap } from './tribunal';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 import { freshDeck } from './decks';
@@ -313,12 +313,15 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
     ctx.refresh();
   }
   const recorders = () => (mode === 'devine' || mode === 'envers' ? (actor ? [actor] : []) : pls);
-  const allIn = () => recorders().every((p) => p.sent);
+  const allIn = () => recorders().every((p) => p.sent || (!p.bot && ctx.away(p.pid)));
 
   /** Le Téléphone Cassé : au suivant. */
   function chainStep() {
     chainAt++;
-    if (chainAt >= chain.length - 1 && chain.length >= 2) {
+    // Il faut au moins deux téléphones pour faire passer la phrase ; on saute ceux qui sont partis
+    if (chain.length < 2) return next();
+    while (chainAt < chain.length - 1 && ctx.away(chain[chainAt].pid)) chainAt++;
+    if (chainAt >= chain.length - 1) {
       // Le dernier écoute et écrit ce qu'il a compris
       chainAt = chain.length - 1;
       actor = chain[chainAt];
@@ -518,8 +521,11 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
             if (mode !== 'karaoke') clips.push({ pid: d.p.pid, buf: fakeVoice(2 + Math.random() * 2.5), url: '' });
             d.p.sent = true;
             ctx.refresh();
+            // Une voix fabriquée par image, pour ne pas faire saccader la télé
+            break;
           }
         }
+        if (mode === 'casse' && actor && !actor.bot && ctx.away(actor.pid)) chainStep();
         if (allIn() && mode !== 'casse') toListen();
         else if (timer <= 0) {
           if (mode === 'casse') {
@@ -542,7 +548,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
           });
         }
         const voters = pls.filter((p) => !((mode === 'devine' || mode === 'envers') && p === actor));
-        if (timer <= 0 || voters.every((p) => p.pick >= 0)) reveal();
+        if (timer <= 0 || voters.every((p) => p.pick >= 0 || (!p.bot && ctx.away(p.pid)))) reveal();
       } else if (phase === 'reveal') {
         if (timer <= 0) next();
       } else if (timer <= 0) {
@@ -587,8 +593,11 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       g.textBaseline = 'middle';
       g.font = '700 30px Fredoka, sans-serif';
       if (phase !== 'end' && round >= 0) g.fillText(`🎙️ ${fr ? 'Manche' : 'Round'} ${round + 1}/${rounds}`, 960, 76);
-      const ls = wrap(g, title, 1380, '700 50px Fredoka, sans-serif');
-      ls.slice(0, 2).forEach((l, i) => g.fillText(l, 960, 160 + (i - (Math.min(2, ls.length) - 1) / 2) * 58));
+      // Texte long (la phrase de départ et celle d'arrivée du Téléphone Cassé) : plus petit, sur 3 lignes, sans rien perdre
+      let ls = wrap(g, title, 1380, '700 50px Fredoka, sans-serif');
+      const gapY = ls.length > 2 ? 46 : 58;
+      if (ls.length > 2) ls = wrap(g, title, 1400, '700 38px Fredoka, sans-serif').slice(0, 3);
+      ls.forEach((l, i) => g.fillText(l, 960, 160 + (i - (ls.length - 1) / 2) * gapY, 1420));
       // Chrono
       if ((phase === 'record' || phase === 'choose' || phase === 'write') && timer < 900) {
         g.font = phase === 'choose' && (mode === 'devine' || mode === 'envers') ? '700 40px Fredoka, sans-serif' : '700 54px Fredoka, sans-serif';
@@ -673,8 +682,10 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
         g.font = '700 30px Fredoka, sans-serif';
         g.textAlign = 'center';
         g.fillStyle = INK;
-        const label = phase === 'end' ? `${p.profile.name} : ${p.score}` : phase === 'reveal' && p.gain ? `${p.profile.name} +${p.gain}` : p.profile.name;
-        g.fillText(label, x, 942);
+        const gap = Math.min(230, 1500 / pls.length);
+        g.fillText(fitText(g, p.profile.name, gap - 8), x, 942);
+        if (phase === 'end') g.fillText(String(p.score), x, 976);
+        else if (phase === 'reveal' && p.gain) g.fillText(`+${p.gain}`, x, 976);
         if (ready || voted) {
           g.font = '44px sans-serif';
           g.fillText('✅', x, y - size - 16);
@@ -790,7 +801,7 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       g.fillStyle = INK;
       g.font = '700 34px Fredoka, sans-serif';
       g.textAlign = 'center';
-      g.fillText('!?#', bx2 + 100, y - 328);
+      g.fillText('!?#', bx2 + 60, y - 328);
     }
   }
 

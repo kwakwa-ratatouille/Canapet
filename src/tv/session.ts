@@ -11,7 +11,7 @@ import type { GameDef, GameInstance, Runner } from '../games/types';
 import { COLORS, FOODS, HATS, selfieImage } from '../shared/characters';
 import { LIGHT, newId, save, store } from '../shared/device';
 import { defaultLang, t } from '../shared/i18n';
-import type { Lang, PadScreen, Profile, ToTv } from '../shared/protocol';
+import { cleanMsg, type Lang, type PadScreen, type Profile, type ToTv } from '../shared/protocol';
 import { stProgress, stReady, stState } from '../shared/supertonic';
 import { VOICES, audioLocked, unlockAudio, defaultVoiceId, helloVoice, setHelloHooks, voiceLoading, voiceWorks, playMusic, playWinSound, setFamily, setMusicRush, setVoice, sfx, speak } from '../shared/sound';
 import { TvNet } from './net';
@@ -325,6 +325,23 @@ export class Session {
     return l.filter((p) => p.team === 1).length < l.filter((p) => p.team === 0).length ? 1 : 0;
   }
 
+  private safeInput(pid: string, m: ToTv) {
+    try {
+      this.game?.input(pid, m);
+    } catch (e) {
+      console.error('Message refusé par le jeu', this.def?.id, e);
+    }
+  }
+
+  private safePad(pid: string): unknown {
+    try {
+      return this.game?.padData?.(pid);
+    } catch (e) {
+      console.error('Écran de téléphone impossible', this.def?.id, e);
+      return undefined;
+    }
+  }
+
   private onLeave(pid: string) {
     const p = this.players.get(pid);
     if (!p || !p.connected) return;
@@ -336,7 +353,7 @@ export class Session {
 
   private onMsg(pid: string, raw: ToTv) {
     // Sort d'un fantôme : les commandes du joueur visé sont modifiées
-    const m = this.cursed(pid, raw);
+    const m = this.cursed(pid, cleanMsg(raw));
     const p = this.players.get(pid);
     if (p) p.lastSeen = performance.now();
     switch (m.t) {
@@ -370,7 +387,7 @@ export class Session {
       case 'in':
       case 'act':
         // Les envois de fichiers (Photo Roulette) passent même pendant le tuto
-        if (this.phase === 'game' && this.game && (this.clock >= this.intro + COUNT || (m.t === 'act' && m.a === 'up'))) this.game.input(pid, m);
+        if (this.phase === 'game' && this.game && (this.clock >= this.intro + COUNT || (m.t === 'act' && m.a === 'up'))) this.safeInput(pid, m);
         else if (this.phase === 'game' && this.clock < this.intro && (m.t !== 'in' || m.a || m.b) && !(m.t === 'act' && m.a === 'up')) this.markReady(pid);
         return;
       case 'ghost': {
@@ -727,6 +744,7 @@ export class Session {
       light: LIGHT,
       family: this.family,
       buzz: (pid, ms) => this.net.send(pid, { t: 'buzz', ms }),
+      away: (pid) => !this.players.get(pid)?.connected,
       cool: (pid, b, s) => {
         if (!this.players.get(pid)?.fake) this.net.send(pid, { t: 'cool', b, s });
       },
@@ -885,7 +903,13 @@ export class Session {
         }
         // Turbo / ralenti : le jeu avance plus ou moins vite
         const speed = this.event?.kind === 'turbo' ? 1.35 : this.event?.kind === 'ralenti' ? 0.55 : 1;
-        this.game.update(STEP * speed);
+        try {
+          this.game.update(STEP * speed);
+        } catch (e) {
+          // Un jeu qui plante s'arrête avec le classement du moment, la soirée continue
+          console.error('Erreur dans le jeu', this.def?.id, e);
+          this.game.over = true;
+        }
         this.stepEvent();
         if (!this.started) this.onPlayStart();
         for (const [pid, c] of this.curses) if ((c.t -= STEP) <= 0) this.curses.delete(pid);
@@ -1033,7 +1057,7 @@ export class Session {
 
   private curse(pid: string, kind: CurseKind, dur: number, by: string) {
     this.curses.set(pid, { kind, t: dur, by });
-    if (kind === 'gel') this.game?.input(pid, { t: 'in', x: 0, y: 0, a: false, b: false });
+    if (kind === 'gel') this.safeInput(pid, { t: 'in', x: 0, y: 0, a: false, b: false });
     if (!this.players.get(pid)?.fake) this.net.send(pid, { t: 'buzz', ms: 250 });
     const L = this.lang();
     const name = (id: string) => this.players.get(id)?.name ?? '?';
@@ -1481,7 +1505,7 @@ export class Session {
       case 'game':
         if (this.paused) return { s: 'paused', host, game: this.def!.id };
         return playing
-          ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.game?.padData?.(p.pid), host, tuto: this.clock < this.intro && !this.ready.has(p.pid), secret: this.secretFor(p) }
+          ? { s: 'play', layout: this.def!.layout, game: this.def!.id, data: this.safePad(p.pid), host, tuto: this.clock < this.intro && !this.ready.has(p.pid), secret: this.secretFor(p) }
           : { s: 'wait', game: this.def!.id };
       case 'results': {
         const row = this.results.find((r) => r.pid === p.pid);

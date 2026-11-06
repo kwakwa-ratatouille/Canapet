@@ -16,6 +16,8 @@ export interface GameCtx {
   /** Mode famille : textes et bruitages adoucis. */
   family: boolean;
   buzz(pid: string, ms: number): void;
+  /** Ce joueur humain a quitté la partie ou perdu la liaison : ne plus l'attendre. */
+  away(pid: string): boolean;
   /** Renvoie aux téléphones leur écran (à appeler quand padData change). */
   refresh(): void;
   /** Options choisies par l'hôte au lancement (sinon le premier choix de chaque option). */

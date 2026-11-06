@@ -155,3 +155,17 @@ export function randomCode(): string {
 export function joinUrl(code: string): string {
   return `${location.origin}${import.meta.env.BASE_URL}#/m/${code}`;
 }
+
+/** Remet d'aplomb ce qu'envoie un téléphone (chiffres valides, textes en texte, stick entre -1 et 1). */
+export function cleanMsg(m: ToTv): ToTv {
+  if (m.t === 'act') {
+    const n = Array.isArray(m.n) ? m.n.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : -1)) : undefined;
+    const s = typeof m.s === 'string' ? m.s : undefined;
+    return { t: 'act', a: String(m.a), n, s };
+  }
+  if (m.t === 'in') {
+    const axis = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
+    return { t: 'in', x: axis(m.x), y: axis(m.y), a: !!m.a, b: !!m.b, c: !!m.c, d: !!m.d };
+  }
+  return m;
+}

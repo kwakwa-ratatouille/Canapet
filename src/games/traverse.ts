@@ -511,9 +511,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.lineWidth = 8;
         g.strokeStyle = INK;
         const y = screenY(o.row) - 110 - (1 - o.life) * 40;
-        g.strokeText(o.text, o.x, y);
+        const half = g.measureText(o.text).width / 2 + 8;
+        const px = Math.max(half, Math.min(1920 - half, o.x));
+        g.strokeText(o.text, px, y);
         g.fillStyle = o.c;
-        g.fillText(o.text, o.x, y);
+        g.fillText(o.text, px, y);
       }
       g.globalAlpha = 1;
       // Bord du bas dangereux
@@ -534,7 +536,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillStyle = INK;
         g.font = '700 28px Fredoka, sans-serif';
         g.fillText(`${p.profile.name.slice(0, w < 180 ? 5 : 9)} · ${scoreOf(p)}`, x + w / 2, 32, w - 20);
-        g.font = '24px sans-serif';
+        g.font = '28px sans-serif';
         g.fillStyle = '#000';
         g.fillText('❤️'.repeat(Math.max(0, p.lives)) + (p.shield ? ' 🛡️' : '') + (p.superJump ? ' 🚀' : ''), x + w / 2, 62);
         g.globalAlpha = 1;

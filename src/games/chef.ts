@@ -35,7 +35,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const humansOf = (s: number) => teamOf(s).filter((p) => !p.bot);
   // Un vrai chef s'il y a au moins 2 humains dans l'équipe ; sinon le chef est un bot, et l'humain cherche
   const chefs = [0, 1].map((s) => (humansOf(s).length >= 2 ? humansOf(s)[Math.floor(Math.random() * humansOf(s).length)] : null));
-  const guessers = (s: number) => humansOf(s).filter((p) => p !== chefs[s]);
+  /** Un chef parti est remplacé par un bot, et on n'attend plus les absents. */
+  const chefOf = (s: number) => (chefs[s] && !ctx.away(chefs[s]!.pid) ? chefs[s] : null);
+  const guessers = (s: number) => humansOf(s).filter((p) => p !== chefOf(s) && !ctx.away(p.pid));
 
   // La grille : quelques thèmes, plusieurs mots par thème
   const themes = freshDeck(`chef-${lang}`, LETTER_THEMES.filter((t) => !t.adult && !SKIP.has(t.fr)), 10, (t) => t.fr);
@@ -66,6 +68,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let why = '';
   let botT = 0;
   let found = false;
+  let calm = 0;
+  let turns = 0;
   const notes = new Map<string, string>();
   const leftOf = (s: number) => cards.filter((c) => c.key === s && c.owner < 0).length;
 
@@ -108,6 +112,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     ctx.refresh();
   };
   const endTurn = () => {
+    // Personne ne joue plus, ou la partie s'éternise : on s'arrête avec le score du moment
+    calm = found ? 0 : calm + 1;
+    turns++;
+    if (calm >= 4 || turns >= 20) {
+      const w = leftOf(0) === leftOf(1) ? 1 - turn : leftOf(0) < leftOf(1) ? 0 : 1;
+      return finish(w, fr ? 'Il lui restait le moins de mots !' : 'It had the fewest words left!');
+    }
     turn = 1 - turn;
     startClue();
   };
@@ -161,7 +172,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (m.t !== 'act') return;
       const p = pls.find((x) => x.pid === pid);
       if (!p || p.side !== turn) return;
-      if (m.a === 'clue' && phase === 'clue' && chefs[turn] === p && m.s) {
+      if (m.a === 'clue' && phase === 'clue' && chefOf(turn) === p && m.s) {
         const text = m.s.trim().slice(0, 24);
         const n = Math.max(1, Math.min(9, m.n?.[0] ?? 1));
         if (!text) return;
@@ -178,7 +189,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         notes.delete(pid);
         setClue(text, n);
       }
-      if (phase !== 'guess' || chefs[turn] === p) return;
+      if (phase !== 'guess' || chefOf(turn) === p) return;
       if (m.a === 'guess') {
         const c = cards[m.n?.[0] ?? -1];
         if (!c || c.owner >= 0) return;
@@ -186,7 +197,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         c.votes.add(pid);
         sfx.click();
         // Dès que plus de la moitié des chercheurs sont d'accord, on retourne le mot
-        if (c.votes.size * 2 > guessers(turn).length) reveal(c);
+        if (c.votes.size * 2 > Math.max(1, guessers(turn).length)) reveal(c);
         else ctx.refresh();
       }
       if (m.a === 'pass' && found) endTurn();
@@ -194,7 +205,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     update(dt) {
       timer -= dt;
       if (phase === 'clue') {
-        if (!chefs[turn] && (botT -= dt) <= 0) botClue();
+        if (!chefOf(turn) && (botT -= dt) <= 0) botClue();
         else if (timer <= 0) endTurn();
       } else if (phase === 'guess') {
         if (!guessers(turn).length && (botT -= dt) <= 0) botGuess();
@@ -224,8 +235,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       });
       g.fillStyle = INK;
       g.textAlign = 'center';
-      g.font = '700 30px Fredoka, sans-serif';
-      if (phase !== 'end') g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 44);
+      g.font = '700 46px Fredoka, sans-serif';
+      if (phase !== 'end') g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 62);
       // L'indice, le plus visible possible
       g.font = '700 58px Fredoka, sans-serif';
       if (phase === 'clue') g.fillText(fr ? '🤫 Le chef cherche son indice…' : '🤫 The chef is thinking of a clue…', 960, 158, 1800);
@@ -268,7 +279,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     leader: () => null,
     padData(pid): ChefPadData {
       const p = pls.find((x) => x.pid === pid)!;
-      const isChef = chefs[p.side] === p;
+      const isChef = chefOf(p.side) === p;
       return {
         phase,
         role: isChef ? 'chef' : p.side === turn ? 'guess' : 'watch',

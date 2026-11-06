@@ -271,7 +271,7 @@ function createLettre(runners: Runner[], ctx: GameCtx): GameInstance {
           }
         });
         // Tout le monde a donné tous ses mots : pas la peine d'attendre
-        if (timer <= 0 || pls.every((p) => (p.bot ? !p.botPlan.length : p.list.length >= MAX_WORDS))) afterWrite();
+        if (timer <= 0 || pls.every((p) => (p.bot ? !p.botPlan.length : p.list.length >= MAX_WORDS || ctx.away(p.pid)))) afterWrite();
       } else if (phase === 'contest') {
         if (timer <= 0) endContest();
       } else if (phase === 'reveal') {
@@ -584,7 +584,7 @@ function createTrous(runners: Runner[], ctx: GameCtx): GameInstance {
           showOne();
           sfx.click();
         }
-        if (timer <= 0 || pls.every((p) => p.found)) reveal();
+        if (timer <= 0 || pls.every((p) => p.found || (!p.bot && ctx.away(p.pid)))) reveal();
       } else if (phase === 'reveal') {
         if (timer <= 0) next();
       } else if (timer <= 0) game.over = true;

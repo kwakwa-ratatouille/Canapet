@@ -5,9 +5,8 @@ import { MORE_DICO } from './moreContent';
 import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { candy } from './draw';
+import { candy, fitText } from './draw';
 import type { QuizPadData } from './quizShared';
-import { wrap } from './tribunal';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const WRITE_TIME = 50;
@@ -235,7 +234,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       timer -= dt;
       if (phase === 'write') {
         if ((botT -= dt) <= 0) botT = 99;
-        if (timer <= 0 || pls.every((p) => p.lie || p.bot)) toVote();
+        if (timer <= 0 || pls.every((p) => p.lie || p.bot || ctx.away(p.pid))) toVote();
       } else if (phase === 'choose') {
         if ((botT -= dt) <= 0) {
           botT = 99;
@@ -245,7 +244,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             p.pick = can[Math.floor(Math.random() * can.length)];
           });
         }
-        if (timer <= 0 || pls.every((p) => p.pick >= 0)) reveal();
+        if (timer <= 0 || pls.every((p) => p.pick >= 0 || (!p.bot && ctx.away(p.pid)))) reveal();
       } else if (phase === 'reveal') {
         if (timer <= 0) next();
       } else if (timer <= 0) game.over = true;
@@ -282,8 +281,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 350);
       }
       if (phase === 'choose' || phase === 'reveal') {
-        const top = 240;
-        const h = Math.min(100, 640 / opts.length);
+        // Les définitions s'arrêtent au-dessus des persos, même à 9 lignes
+        const top = 230;
+        const h = Math.min(100, 675 / opts.length - 12);
         opts.forEach((o, k) => {
           const y = top + k * (h + 12);
           const real = o.by === -1;
@@ -298,7 +298,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       candy(g, 180, y, 1560, h, 24);
           g.fillStyle = COLORS[k % COLORS.length];
           g.beginPath();
-          g.arc(240, y + h / 2, 32, 0, Math.PI * 2);
+          g.arc(240, y + h / 2, Math.min(32, h / 2 - 2), 0, Math.PI * 2);
           g.fill();
           g.stroke();
           g.fillStyle = INK;
@@ -306,8 +306,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.textAlign = 'center';
           g.fillText(String(k + 1), 240, y + h / 2 + 2);
           g.textAlign = 'left';
-          const line = wrap(g, o.text, show ? 1000 : 1400, '600 36px Fredoka, sans-serif')[0];
-          g.fillText(line, 295, y + h / 2 + 2);
+          // Une définition longue reste entière : plus petite s'il le faut
+          const room = show ? 1000 : 1400;
+          g.font = '600 36px Fredoka, sans-serif';
+          if (g.measureText(o.text).width > room) g.font = '600 30px Fredoka, sans-serif';
+          g.fillText(o.text, 295, y + h / 2 + 2, room);
           if (show) {
             const voters = pls.filter((p) => p.pick === k).length;
             const by = real ? (fr ? '✅ LA VRAIE' : '✅ THE REAL ONE') : pls[o.by].profile.name;
@@ -322,8 +325,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const n = pls.length;
       const low = phase === 'end' ? 620 : 1000;
       const size = phase === 'end' ? 170 : 90;
-      pls.forEach((p, i) => {
-        const x = 960 + (i - (n - 1) / 2) * Math.min(230, 1760 / n);
+      const gap = Math.min(230, 1760 / n);
+      (phase === 'end' ? [...pls].sort((a, b) => b.score - a.score) : pls).forEach((p, i) => {
+        const x = 960 + (i - (n - 1) / 2) * gap;
         const done = phase === 'write' ? !!p.lie : phase === 'choose' ? p.pick >= 0 : false;
         drawCharacter(g, x, low, size, {
           food: p.profile.food,
@@ -340,7 +344,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillStyle = INK;
         g.textAlign = 'center';
         const label = phase === 'reveal' && p.gain ? `+${p.gain} · ${p.profile.name}` : phase === 'end' ? `${p.profile.name} : ${p.score}` : done ? `✅ ${p.profile.name}` : p.profile.name;
-        g.fillText(label, x, low + 44);
+        if (phase === 'end') {
+          g.fillText(fitText(g, p.profile.name, gap - 8), x, low + 44);
+          g.fillText(String(p.score), x, low + 80);
+        } else g.fillText(fitText(g, label, gap - 8), x, low + 44);
       });
     },
     ranking() {

@@ -35,6 +35,10 @@ const CELL = 34;
 const GOAL = 800;
 const LIVES = 3;
 const TRAY = 250;
+/** Largeur d'une colonne : assez proche pour qu'une tour qui tombe touche la voisine. */
+const LANE = 380;
+/** Jusqu'où on peut déplacer sa pièce depuis le centre de son plateau. */
+const REACH = 175;
 const SHAPES: [number, number][][] = [
   [[0, 0], [1, 0], [2, 0], [3, 0]],
   [[0, 0], [1, 0], [0, 1], [1, 1]],
@@ -48,16 +52,13 @@ const BIG: [number, number][] = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1],
 const COLORS = ['#ff4f9a', '#2ec5ff', '#ffd60a', '#9b5cff', '#ff9a1f', '#22c99a', '#ff3b5c'];
 
 interface Tw extends Runner {
-  engine: Matter.Engine;
-  pieces: Matter.Body[];
-  colors: Map<Matter.Body, string>;
-  born: Map<Matter.Body, number>;
+  /** Centre de son plateau dans le monde. */
+  cx: number;
   cur: Matter.Body | null;
   wait: number;
   lives: number;
   alive: boolean;
   height: number;
-  shownCam: number;
   x: number;
   rot: boolean;
   fast: boolean;
@@ -67,7 +68,7 @@ interface Tw extends Runner {
   safe: number;
   botX: number;
   botT: number;
-  banner: { t: number; text: string } | null;
+  banner: { t: number; text: string; c: string } | null;
 }
 
 function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
@@ -77,27 +78,48 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
   let best = 0;
   let record = 200;
   let endT = -1;
-  const pls: Tw[] = runners.slice(0, 8).map((r) => {
-    const engine = Engine.create({ positionIterations: 10, velocityIterations: 8, enableSleeping: true });
-    engine.gravity.y = 1;
-    const tray = Bodies.rectangle(0, 15, TRAY, 30, { isStatic: true, friction: 1 });
-    Composite.add(engine.world, tray);
-    const p: Tw = { ...r, engine, pieces: [], colors: new Map(), born: new Map(), cur: null, wait: 0.2, lives: LIVES, alive: true, height: 0, shownCam: 0, x: 0, rot: false, fast: false, big: false, hit: 0, outAt: 0, safe: 0, botX: 0, botT: 0, banner: null };
-    Events.on(engine, 'collisionStart', (e: Matter.IEventCollision<Matter.Engine>) => {
-      if (!p.cur) return;
-      for (const pair of e.pairs) {
-        if (pair.bodyA.parent === p.cur || pair.bodyB.parent === p.cur) {
-          release(p);
-          break;
+  let shake = 0;
+  let crashAt = -9;
+  // Un seul monde : les plateaux sont côte à côte, ce qui tombe d'une tour peut renverser la voisine
+  const engine = Engine.create({ positionIterations: 10, velocityIterations: 8, enableSleeping: true });
+  engine.gravity.y = 1;
+  const list = runners.slice(0, 8);
+  const pls: Tw[] = list.map((r, i) => {
+    const cx = (i - (list.length - 1) / 2) * LANE;
+    Composite.add(engine.world, Bodies.rectangle(cx, 15, TRAY, 30, { isStatic: true, friction: 1 }));
+    return { ...r, cx, cur: null, wait: 0.2 + i * 0.05, lives: LIVES, alive: true, height: 0, x: 0, rot: false, fast: false, big: false, hit: 0, outAt: 0, safe: 0, botX: 0, botT: 0, banner: null };
+  });
+  const pieces: Matter.Body[] = [];
+  const owner = new Map<Matter.Body, Tw>();
+  const colors = new Map<Matter.Body, string>();
+  const born = new Map<Matter.Body, number>();
+  /** Le joueur sur le plateau duquel se trouve ce point. */
+  const laneOf = (x: number) => pls.find((p) => Math.abs(x - p.cx) <= LANE / 2);
+
+  Events.on(engine, 'collisionStart', (e: Matter.IEventCollision<Matter.Engine>) => {
+    for (const pair of e.pairs) {
+      const A = pair.bodyA.parent;
+      const B = pair.bodyB.parent;
+      for (const p of pls) if (p.cur && (A === p.cur || B === p.cur)) release(p);
+      // Une pièce d'un autre joueur vient cogner une tour : tout le monde le voit
+      const oa = owner.get(A);
+      const ob = owner.get(B);
+      if (oa && ob && oa !== ob && Math.max(A.speed, B.speed) > 2.2 && clock - crashAt > 0.8) {
+        crashAt = clock;
+        const victim = laneOf(A.speed > B.speed ? B.position.x : A.position.x);
+        if (victim) {
+          victim.banner = { t: 1.6, text: fr ? '💥 Ça cogne !' : '💥 Crash!', c: ROSE };
+          if (!victim.bot) ctx.buzz(victim.pid, 120);
         }
+        shake = 0.25;
+        sfx.boing();
       }
-    });
-    return p;
+    }
   });
 
   function release(p: Tw) {
     if (!p.cur) return;
-    p.born.set(p.cur, clock);
+    born.set(p.cur, clock);
     // La pièce se pose sans tout renverser
     Body.setVelocity(p.cur, { x: 0, y: Math.min(1.5, p.cur.velocity.y) });
     p.cur = null;
@@ -110,14 +132,15 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
     const parts = cells.map(([cx, cy]) => Bodies.rectangle(cx * CELL, cy * CELL, CELL, CELL, { friction: 0.9, frictionStatic: 1.2, restitution: 0, density: 0.002 }));
     const body = Body.create({ parts, friction: 0.9, frictionStatic: 1.2, restitution: 0, frictionAir: 0.02, sleepThreshold: 40 });
     Body.setInertia(body, body.inertia * 3);
-    Body.setPosition(body, { x: p.x, y: -(p.height + 430) });
+    Body.setPosition(body, { x: p.cx + p.x * 60, y: -Math.min(p.height + 430, GOAL + 180) });
     if (Math.random() < 0.5) Body.rotate(body, Math.PI / 2);
-    Composite.add(p.engine.world, body);
-    p.pieces.push(body);
-    p.colors.set(body, COLORS[Math.floor(Math.random() * COLORS.length)]);
+    Composite.add(engine.world, body);
+    pieces.push(body);
+    owner.set(body, p);
+    colors.set(body, COLORS[Math.floor(Math.random() * COLORS.length)]);
     p.cur = body;
     if (p.bot) {
-      // Le bot met la pièce à plat et vise le creux le plus proche du centre
+      // Le bot met la pièce à plat et vise le creux le plus proche du centre de son plateau
       const wide = body.bounds.max.x - body.bounds.min.x;
       const tall = body.bounds.max.y - body.bounds.min.y;
       if (tall > wide) Body.rotate(body, Math.PI / 2);
@@ -126,8 +149,8 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
       let bestV = Infinity;
       for (let x = -TRAY / 2 + half; x <= TRAY / 2 - half + 0.1; x += 17) {
         let top = 0;
-        for (const b of p.pieces) {
-          if (b !== body && b.bounds.max.x > x - half && b.bounds.min.x < x + half) top = Math.max(top, -b.bounds.min.y);
+        for (const b of pieces) {
+          if (b !== body && b.bounds.max.x > p.cx + x - half && b.bounds.min.x < p.cx + x + half) top = Math.max(top, -b.bounds.min.y);
         }
         const v = top + Math.abs(x) * 0.5 + rnd(0, 34) * (1.25 - ctx.botSkill);
         if (v < bestV) {
@@ -139,11 +162,10 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
     }
     p.botT = rnd(0.3, 0.9);
   }
-  const loseLife = (p: Tw, b: Matter.Body) => {
-    Composite.remove(p.engine.world, b);
-    p.pieces.splice(p.pieces.indexOf(b), 1);
+  /** Une pièce est tombée : elle coûte une vie à celui qui l'a posée. */
+  const loseLife = (p: Tw) => {
     // Quand tout s'écroule, c'est une seule vie
-    if (p.safe > 0) return;
+    if (!p.alive || p.safe > 0) return;
     p.safe = 1.8;
     // Les bots tiennent plus longtemps, pour ne pas finir la partie en 30 s
     if (p.bot && Math.random() < 0.6) return;
@@ -154,6 +176,7 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
     if (p.lives <= 0) {
       p.alive = false;
       p.outAt = ++deaths;
+      if (p.cur) p.cur = null;
       sfx.boom();
     }
   };
@@ -174,6 +197,7 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       clock += dt;
+      shake = Math.max(0, shake - dt);
       if (endT >= 0) {
         endT -= dt;
         if (endT <= 0) game.over = true;
@@ -183,57 +207,62 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
         p.hit = Math.max(0, p.hit - dt);
         p.safe = Math.max(0, p.safe - dt);
         if (p.banner && (p.banner.t -= dt) <= 0) p.banner = null;
-        if (p.alive) {
-          if (p.bot) {
-            // Le bot se place, tourne parfois, puis accélère
-            p.botT -= dt;
-            if (p.cur) {
-              const d = p.botX - p.cur.position.x;
-              p.x = Math.max(-1, Math.min(1, d / 40));
-              p.fast = Math.abs(d) < 8 && p.botT <= 0 && -p.cur.position.y > p.height + 170;
-            }
-          }
-          if (!p.cur && (p.wait -= dt) <= 0) spawn(p);
+        if (!p.alive) continue;
+        if (p.bot) {
+          // Le bot se place, puis accélère
+          p.botT -= dt;
           if (p.cur) {
-            // La pièce qui descend se pilote ; elle redevient libre au premier contact
-            Body.setVelocity(p.cur, { x: p.bot ? p.x * 3.4 : p.x * 4.6, y: p.fast ? 7.5 : 2.6 + Math.min(1.6, clock / 60) });
-            Body.setAngularVelocity(p.cur, 0);
-            if (Math.abs(p.cur.position.x) > 200) Body.setPosition(p.cur, { x: Math.sign(p.cur.position.x) * 200, y: p.cur.position.y });
+            const d = p.cx + p.botX - p.cur.position.x;
+            p.x = Math.max(-1, Math.min(1, d / 40));
+            p.fast = Math.abs(d) < 8 && p.botT <= 0 && -p.cur.position.y > p.height + 170;
           }
         }
-        Engine.update(p.engine, 1000 / 60);
-        for (const b of [...p.pieces]) if (b.position.y > 260) {
-          if (b === p.cur) p.cur = null;
-          if (p.alive) loseLife(p, b);
-          else {
-            Composite.remove(p.engine.world, b);
-            p.pieces.splice(p.pieces.indexOf(b), 1);
-          }
+        if (!p.cur && (p.wait -= dt) <= 0) spawn(p);
+        if (p.cur) {
+          // La pièce qui descend se pilote ; elle redevient libre au premier contact
+          Body.setVelocity(p.cur, { x: p.bot ? p.x * 3.4 : p.x * 4.6, y: p.fast ? 7.5 : 2.6 + Math.min(1.6, clock / 60) });
+          Body.setAngularVelocity(p.cur, 0);
+          const off = p.cur.position.x - p.cx;
+          if (Math.abs(off) > REACH) Body.setPosition(p.cur, { x: p.cx + Math.sign(off) * REACH, y: p.cur.position.y });
         }
-        // La hauteur compte seulement pour ce qui tient
+      }
+      Engine.update(engine, 1000 / 60);
+      for (const b of [...pieces]) {
+        if (b.position.y <= 260) continue;
+        const o = owner.get(b);
+        if (o && o.cur === b) o.cur = null;
+        Composite.remove(engine.world, b);
+        pieces.splice(pieces.indexOf(b), 1);
+        owner.delete(b);
+        colors.delete(b);
+        born.delete(b);
+        if (o) loseLife(o);
+      }
+      // La hauteur de chacun : ce qui tient au-dessus de SON plateau, même si ça vient d'ailleurs
+      for (const p of pls) {
         let top = 0;
-        for (const b of p.pieces) {
-          if (b === p.cur) continue;
-          if (clock - (p.born.get(b) ?? clock) > 0.8 && b.speed < 0.6) top = Math.max(top, -b.bounds.min.y);
+        for (const b of pieces) {
+          if (owner.get(b)?.cur === b) continue;
+          if (Math.abs(b.position.x - p.cx) > LANE / 2) continue;
+          if (clock - (born.get(b) ?? clock) > 0.8 && b.speed < 0.6) top = Math.max(top, -b.bounds.min.y);
         }
         p.height = top;
-        p.shownCam += (Math.max(0, p.height - 380) - p.shownCam) * Math.min(1, dt * 3);
       }
-      best = Math.max(...pls.map((p) => p.height));
+      best = Math.max(...pls.map((p) => (p.alive ? p.height : 0)));
       // Nouveau palier : les autres reçoivent une grosse pièce
       if (best > record) {
         record += 200;
-        const lead = pls.find((p) => p.height === best);
+        const lead = pls.find((p) => p.alive && p.height === best);
         pls.forEach((o) => {
           if (o !== lead && o.alive) {
             o.big = true;
-            o.banner = { t: 2, text: fr ? '😈 Gros bloc !' : '😈 Big block!' };
+            o.banner = { t: 2, text: fr ? '😈 Gros bloc !' : '😈 Big block!', c: SOLEIL };
           }
         });
         sfx.hurry();
       }
       const alive = pls.filter((p) => p.alive);
-      const humans = pls.filter((p) => !p.bot);
+      const humans = pls.filter((p) => !p.bot && !ctx.away(p.pid));
       if (best >= GOAL || alive.length === 0 || (alive.length === 1 && pls.length > 1) || (humans.length > 0 && !humans.some((p) => p.alive))) {
         endT = 3;
         sfx.win();
@@ -249,29 +278,26 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
       smileSun(g, 1720, 190, 80, SOLEIL, t);
       stickerCloud(g, 320 + Math.sin(t * 0.1) * 60, 200, 1.1);
       stickerCloud(g, 1060 - Math.sin(t * 0.08) * 70, 290, 0.8);
+      g.save();
+      if (shake > 0) g.translate(Math.sin(t * 70) * shake * 40, Math.cos(t * 55) * shake * 24);
       const n = pls.length;
-      const w = 1920 / n;
-      const s = Math.min(1.25, w / 420);
+      const s = Math.min(1, 1900 / (n * LANE));
+      const w = LANE * s;
+      const left = 960 - (n * w) / 2;
       const base = 980;
+      const sx = (x: number) => 960 + x * s;
+      const sy = (y: number) => base + y * s;
+      // La ligne d'arrivée, d'un bord à l'autre
+      const gy = sy(-GOAL);
+      for (let k = 0; k * 24 < 1920; k++) {
+        g.fillStyle = k % 2 ? '#fff' : INK;
+        g.fillRect(k * 24, gy - 8, 24, 16);
+      }
       pls.forEach((p, i) => {
-        const cx = i * w + w / 2;
-        const sx = (x: number) => cx + x * s;
-        const sy = (y: number) => base + (y - p.shownCam) * s;
-        g.save();
-        g.beginPath();
-        g.rect(i * w, 0, w, 1080);
-        g.clip();
+        const lx = left + i * w;
         if (i) {
           g.fillStyle = 'rgba(58,33,64,.18)';
-          g.fillRect(i * w - 2, 0, 4, 1080);
-        }
-        // La ligne d'arrivée
-        const gy = sy(-GOAL);
-        if (gy > -20) {
-          for (let k = 0; k * 24 < w; k++) {
-            g.fillStyle = k % 2 ? '#fff' : INK;
-            g.fillRect(i * w + k * 24, gy - 8, 24, 16);
-          }
+          g.fillRect(lx - 2, 90, 4, 990);
         }
         // Les paliers de hauteur
         g.fillStyle = 'rgba(58,33,64,.45)';
@@ -280,9 +306,12 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
         g.textBaseline = 'middle';
         for (let h = 200; h < GOAL; h += 200) {
           const y = sy(-h);
-          if (y < 90 || y > 960) continue;
-          g.fillRect(i * w, y, 16, 3);
-          g.fillText(String(h / 10), i * w + 22, y);
+          g.fillRect(lx, y, 16, 3);
+          g.fillText(String(h / 10), lx + 22, y);
+        }
+        if (!p.alive) {
+          g.fillStyle = 'rgba(58,33,64,.22)';
+          g.fillRect(lx, 80, w, 1000);
         }
         // Le plateau, avec le perso qui regarde
         const ty = sy(0);
@@ -290,47 +319,45 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
         g.strokeStyle = INK;
         g.lineWidth = 6;
         g.beginPath();
-        g.roundRect(sx(-TRAY / 2), ty, TRAY * s, 30 * s, 12);
+        g.roundRect(sx(p.cx - TRAY / 2), ty, TRAY * s, 30 * s, 12);
         g.fill();
         g.stroke();
-        candy(g, sx(-TRAY / 2), ty, TRAY * s, 30 * s, 12);
-        if (ty < 1100) {
-          drawCharacter(g, sx(-TRAY / 2 - 42), ty + 92 * s > 1080 ? 1080 : ty + 92 * s, 60 * s + 28, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc, eyes: p.profile.eyes, pose: p.profile.pose, selfie: p.selfie, t: t + i, mood: !p.alive || p.hit > 0 ? 'sad' : p.height > 300 ? 'win' : 'wow' });
+        candy(g, sx(p.cx - TRAY / 2), ty, TRAY * s, 30 * s, 12);
+        drawCharacter(g, sx(p.cx - TRAY / 2 - 34), Math.min(1076, ty + 90 * s), 56 * s + 26, { food: p.profile.food, color: p.profile.color, hat: p.profile.hat, acc: p.profile.acc, eyes: p.profile.eyes, pose: p.profile.pose, selfie: p.selfie, t: t + i, mood: !p.alive || p.hit > 0 ? 'sad' : p.height > 300 ? 'win' : 'wow' });
+      });
+      // Les pièces, par-dessus tout : elles passent d'une colonne à l'autre quand ça tombe
+      for (const b of pieces) {
+        const col = colors.get(b) ?? ROSE;
+        for (let k = 1; k < b.parts.length; k++) {
+          const q = b.parts[k];
+          g.fillStyle = col;
+          g.strokeStyle = INK;
+          g.lineWidth = 3;
+          g.beginPath();
+          q.vertices.forEach((v, j) => (j ? g.lineTo(sx(v.x), sy(v.y)) : g.moveTo(sx(v.x), sy(v.y))));
+          g.closePath();
+          g.fill();
+          g.stroke();
+          g.fillStyle = 'rgba(255,255,255,.35)';
+          g.beginPath();
+          g.arc(sx(q.position.x) - 6 * s, sy(q.position.y) - 6 * s, 5 * s, 0, Math.PI * 2);
+          g.fill();
         }
-        // Les pièces, chaque case en bonbon
-        for (const b of p.pieces) {
-          const col = p.colors.get(b) ?? ROSE;
-          for (let k = 1; k < b.parts.length; k++) {
-            const q = b.parts[k];
-            g.fillStyle = col;
-            g.strokeStyle = INK;
-            g.lineWidth = 3;
-            g.beginPath();
-            q.vertices.forEach((v, j) => (j ? g.lineTo(sx(v.x), sy(v.y)) : g.moveTo(sx(v.x), sy(v.y))));
-            g.closePath();
-            g.fill();
-            g.stroke();
-            g.fillStyle = 'rgba(255,255,255,.35)';
-            g.beginPath();
-            g.arc(sx(q.position.x) - 6 * s, sy(q.position.y) - 6 * s, 5 * s, 0, Math.PI * 2);
-            g.fill();
-          }
-        }
+      }
+      g.restore();
+      pls.forEach((p, i) => {
+        const lx = left + i * w;
         if (p.banner) {
           g.textAlign = 'center';
-          g.font = `700 ${Math.max(28, Math.round(46 * s))}px Fredoka, sans-serif`;
+          g.textBaseline = 'middle';
+          g.font = '700 42px Fredoka, sans-serif';
           g.lineWidth = 7;
           g.strokeStyle = INK;
-          g.strokeText(p.banner.text, cx, 180, w - 20);
-          g.fillStyle = SOLEIL;
-          g.fillText(p.banner.text, cx, 180, w - 20);
+          g.strokeText(p.banner.text, lx + w / 2, 140, w - 16);
+          g.fillStyle = p.banner.c;
+          g.fillText(p.banner.text, lx + w / 2, 140, w - 16);
         }
-        if (!p.alive) {
-          g.fillStyle = 'rgba(58,33,64,.35)';
-          g.fillRect(i * w, 0, w, 1080);
-        }
-        g.restore();
-        laneChip(g, i * w, w, 12, p, `${p.profile.name.slice(0, w < 260 ? 6 : 10)} · ${Math.round(p.height / 10)} ${'❤'.repeat(Math.max(0, p.lives))}`, !p.alive);
+        laneChip(g, lx, w, 12, p, `${p.profile.name.slice(0, w < 260 ? 6 : 10)} · ${Math.round(p.height / 10)} ${'❤'.repeat(Math.max(0, p.lives))}`, !p.alive);
       });
     },
     ranking: () => [...pls].sort((a, b) => Number(b.alive) - Number(a.alive) || b.height - a.height || b.outAt - a.outAt).map((p) => p.pid),
@@ -346,8 +373,8 @@ export const tower: GameBase = {
   emoji: '🧱',
   name: { fr: 'La Tour Branlante', en: 'The Wobbly Tower' },
   how: {
-    fr: 'Chacun sa tour : les pièces tombent et penchent vraiment. Stick = déplacer, A = tourner, B = descendre vite. 3 vies, le premier à la ligne gagne !',
-    en: 'Everyone has a tower: pieces fall and really wobble. Stick = move, A = rotate, B = drop fast. 3 lives, first to the line wins!',
+    fr: 'Chacun sa tour, côte à côte : ça penche vraiment, et une tour qui s’écroule peut renverser la voisine ! Stick = déplacer, A = tourner, B = descendre vite. 3 vies, le premier à la ligne gagne !',
+    en: 'Towers side by side: they really wobble, and a falling tower can knock over its neighbour! Stick = move, A = rotate, B = drop fast. 3 lives, first to the line wins!',
   },
   layout: 'stick',
   min: 1,
@@ -477,6 +504,10 @@ function createCake(runners: Runner[], ctx: GameCtx): GameInstance {
         // La vue monte avec le gâteau
         const want = Math.max(0, (p.layers.length + 3) * LAYER - 800 / vs);
         p.cam += (want - p.cam) * Math.min(1, dt * 5);
+        if (!p.done && !p.bot && ctx.away(p.pid)) {
+          p.done = true;
+          ctx.refresh();
+        }
         if (p.done || endT >= 0) continue;
         p.x += p.dir * p.speed * dt;
         const lim = SWING + p.w / 2;
@@ -507,7 +538,7 @@ function createCake(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       const n = pls.length;
       const w = 1920 / n;
-      const s = Math.min(1.5, w / 660);
+      const s = Math.min(1.5, w / 430);
       const ground = 950;
       pls.forEach((p, i) => {
         const cx = i * w + w / 2;

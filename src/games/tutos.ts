@@ -98,8 +98,8 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     },
   },
   tour: {
-    fr: { goal: 'Monte ta tour jusqu’à la ligne !', steps: [['🕹️', 'Stick : déplace la pièce. A : tourne. B : descend vite'], ['🧱', 'Ça penche pour de vrai : pose bien à plat'], ['❤️', 'Une pièce tombe = une vie en moins, et 3 vies seulement']] },
-    en: { goal: 'Build your tower up to the line!', steps: [['🕹️', 'Stick: move the piece. A: rotate. B: drop fast'], ['🧱', 'It really wobbles: place pieces flat'], ['❤️', 'A piece falls = one life lost, and only 3 lives']] },
+    fr: { goal: 'Monte ta tour jusqu’à la ligne !', steps: [['🕹️', 'Stick : déplace la pièce. A : tourne. B : descend vite'], ['🧱', 'Ça penche, et une tour qui s’écroule peut renverser la voisine'], ['❤️', 'Une pièce tombe = une vie en moins, et 3 vies seulement']] },
+    en: { goal: 'Build your tower up to the line!', steps: [['🕹️', 'Stick: move the piece. A: rotate. B: drop fast'], ['🧱', 'It wobbles, and a falling tower can knock over its neighbour'], ['❤️', 'A piece falls = one life lost, and only 3 lives']] },
   },
   gateau: {
     fr: { goal: 'Fais le plus haut gâteau !', steps: [['👆', 'Appuie quand l’étage passe au-dessus du gâteau'], ['🔪', 'Ce qui dépasse est coupé : l’étage suivant sera plus petit'], ['⭐', 'Pile dessus = PARFAIT, 3 points, et 3 de suite le font regrossir']] },

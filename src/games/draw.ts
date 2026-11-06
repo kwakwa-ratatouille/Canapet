@@ -183,6 +183,12 @@ export function playerTag(g: CanvasRenderingContext2D, x: number, y: number, nam
   g.save();
   g.font = '700 28px Fredoka, sans-serif';
   const w = Math.min(220, g.measureText(name).width + 24);
+  // Toujours en entier à l'écran, même quand le joueur est au bord
+  const k = g.canvas.width / 1920;
+  const m = g.getTransform();
+  const zoom = m.a / k || 1;
+  const onScreen = (m.a * x + m.e) / k;
+  x += (Math.max(w / 2 + 6, Math.min(1914 - w / 2, onScreen)) - onScreen) / zoom;
   g.fillStyle = color;
   g.strokeStyle = INK;
   g.lineWidth = 4;
@@ -200,4 +206,12 @@ export function playerTag(g: CanvasRenderingContext2D, x: number, y: number, nam
   while (s.length > 1 && g.measureText(s).width > w - 16) s = s.slice(0, -1);
   g.fillText(s, x, y - 21);
   g.restore();
+}
+
+/** Raccourcit un texte pour qu'il tienne dans maxW avec la police en cours (jamais de noms qui se chevauchent). */
+export function fitText(g: CanvasRenderingContext2D, s: string, maxW: number): string {
+  if (g.measureText(s).width <= maxW) return s;
+  let t = s;
+  while (t.length > 2 && g.measureText(t + '.').width > maxW) t = t.slice(0, -1);
+  return t + '.';
 }
