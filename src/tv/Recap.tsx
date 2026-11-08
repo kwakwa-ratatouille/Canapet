@@ -1,3 +1,4 @@
+import { gameIcon } from '../shared/Logo';
 // Bilan de la soirée : des titres rigolos tirés des statistiques (victoires, dernières places, réactions…).
 import { CharCanvas } from '../shared/CharCanvas';
 import { REACTIONS } from '../shared/reactions';
@@ -100,6 +101,21 @@ export function Recap({ session, lang }: { session: Session; players: Player[]; 
         ))}
         {!list.length && <p className="results-sub">{fr ? 'Jouez encore un peu pour débloquer les titres !' : 'Play a bit more to unlock the awards!'}</p>}
       </div>
+      {session.history.length > 0 && (
+        <div className="tape-list">
+          <b className="tape-title">📼 {fr ? 'La cassette de la soirée' : 'Tonight’s tape'}</b>
+          <ol>
+            {session.history.slice(-8).map((h, i) => (
+              <li key={i} style={{ animationDelay: `${1 + i * 0.25}s` }}>
+                <img src={gameIcon(h.slug)} alt="" />
+                <span>{h.game}</span>
+                <CharCanvas profile={h.profile} size={46} still mood="win" />
+                <em>{h.profile.name}</em>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 }

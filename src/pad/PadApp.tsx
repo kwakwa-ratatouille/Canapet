@@ -390,12 +390,25 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
   }
 
   const playing = screen?.s === 'play' && status === 'ok';
+  // C'est à moi d'agir ? (mon tour, ou une réponse à donner) : vibration, bandeau « À toi ! » et bord lumineux
+  const turnData = playing && screen?.s === 'play' && !screen.tuto ? (screen.data as { myTurn?: boolean; mine?: boolean; act?: unknown } | undefined) : undefined;
+  const needsMe = !!turnData && (turnData.myTurn === true || turnData.mine === true || (turnData.act !== undefined && turnData.act !== null));
+  const [turnFlash, setTurnFlash] = useState(0);
+  const wasNeeded = useRef(false);
+  useEffect(() => {
+    if (needsMe && !wasNeeded.current) {
+      navigator.vibrate?.([60, 50, 60]);
+      setTurnFlash((k) => k + 1);
+    }
+    wasNeeded.current = needsMe;
+  }, [needsMe]);
   const gameName = screen && 'game' in screen ? catalog.find((g) => g.id === screen.game)?.name?.[lang] : '';
 
   const padTheme = playing ? PAD_THEMES.find((x) => x.id === profile.padTheme) : undefined;
   return (
     // Manettes stick et tapotage : toujours en paysage, même si le téléphone reste droit (on tourne l'écran).
-    <div className={`pad ${playing ? 'pad-play' : ''} ${playing && screen.s === 'play' && (((screen.layout === 'stick' || screen.layout === 'tap') && !['traitre', 'dessin'].includes(screen.game)) || ['tranche', 'traverse', 'fusion'].includes(screen.game)) ? 'turn' : ''} ${padTheme?.anim ? 'pt-anim' : ''}`} data-pt={padTheme?.id} style={{ ['--c' as string]: profile.color, ...(padTheme ? { ['--pt-bg' as string]: padTheme.bg, ['--pt-grip' as string]: padTheme.grip, ['--pt-ink' as string]: padTheme.ink } : {}) }} onPointerDown={unlockAudio}>
+    <div className={`pad ${playing ? 'pad-play' : ''} ${needsMe ? 'my-turn' : ''} ${playing && screen.s === 'play' && (((screen.layout === 'stick' || screen.layout === 'tap') && !['traitre', 'dessin'].includes(screen.game)) || ['tranche', 'traverse', 'fusion'].includes(screen.game)) ? 'turn' : ''} ${padTheme?.anim ? 'pt-anim' : ''}`} data-pt={padTheme?.id} style={{ ['--c' as string]: profile.color, ...(padTheme ? { ['--pt-bg' as string]: padTheme.bg, ['--pt-grip' as string]: padTheme.grip, ['--pt-ink' as string]: padTheme.ink } : {}) }} onPointerDown={unlockAudio}>
+      {turnFlash > 0 && needsMe && <div key={turnFlash} className="turn-flash">{lang === 'fr' ? 'À toi !' : 'Your turn!'}</div>}
       {status === 'lost' && !lostLong && screen && <div className="net-blip">⚡ {lang === 'fr' ? 'Reconnexion…' : 'Reconnecting…'}</div>}
       <header className={`pad-head ${playing ? 'slim' : ''}`}>
         <CharCanvas profile={profile} size={playing ? 34 : 46} still />
