@@ -255,7 +255,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   /** Choix de la majorité (null si égalité ou personne). */
   function majority(voters: Pl[]): number | null {
     const count = new Map<number, number>();
-    for (const v of voters) if (v.pick >= 0 || v.pick === SKIP) count.set(v.pick, (count.get(v.pick) ?? 0) + 1);
+    for (const v of voters) if ((v.pick >= 0 && v.pick < pls.length) || v.pick === SKIP) count.set(v.pick, (count.get(v.pick) ?? 0) + 1);
     lastVotes = count;
     let best = -1;
     let bc = 0;

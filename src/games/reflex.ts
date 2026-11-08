@@ -221,7 +221,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       ranked = [];
       pls.forEach((pl) => {
         if (pl.answer < 0) return;
-        const v = boxes[pl.answer];
+        const v = boxes[pl.answer] ?? 0;
         pl.gain = v;
         pl.score = Math.max(0, pl.score + v);
       });
@@ -511,7 +511,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             if (p.answer < 0) return;
             g.font = '700 36px Fredoka, sans-serif';
             g.fillStyle = p.profile.color;
-            g.fillText(`${p.profile.name} : ${(p.answer / 1000).toFixed(2)}`, 960, 700 + i * 44);
+            const two = pls.length > 7;
+            g.fillText(`${p.profile.name} : ${(p.answer / 1000).toFixed(2)}`, two ? (i % 2 ? 1300 : 620) : 960, 700 + Math.floor(two ? i / 2 : i) * 44);
           });
       }
       if (showPlay && kind === 'fleche') {

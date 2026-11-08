@@ -976,9 +976,9 @@ function drawCard(g: CanvasRenderingContext2D, cx: number, cy: number, w: number
       g.fill();
     } else drawCharacter(g, cx, cy + h * 0.22, h * 0.48, { food: c, color: '#ffffff', t });
     g.fillStyle = INK;
-    g.font = `700 ${Math.round(h * 0.11)}px Fredoka, sans-serif`;
+    g.font = `700 ${Math.max(28, Math.round(h * 0.11))}px Fredoka, sans-serif`;
     g.textAlign = 'center';
-    g.fillText(CARD_NAMES[c][lang], cx, cy + h * 0.4);
+    g.fillText(CARD_NAMES[c][lang], cx, cy + h * 0.4, w * 0.9);
   }
   g.restore();
 }

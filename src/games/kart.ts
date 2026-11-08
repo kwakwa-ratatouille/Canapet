@@ -1199,10 +1199,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.textAlign = 'center';
         g.lineWidth = 8;
         g.strokeStyle = INK;
-        const yy = q.y - (1 - q.t) * 40;
-        g.strokeText(q.text, q.x, yy);
+        const yy = Math.max(40, q.y - (1 - q.t) * 40);
+        const half = g.measureText(q.text).width / 2 + 8;
+        const xx = Math.max(half, Math.min(1920 - half, q.x));
+        g.strokeText(q.text, xx, yy);
         g.fillStyle = q.c;
-        g.fillText(q.text, q.x, yy);
+        g.fillText(q.text, xx, yy);
         g.restore();
       }
       if (bannerT > 0) {

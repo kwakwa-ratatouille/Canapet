@@ -5,7 +5,7 @@ import { freshDeck } from './decks';
 import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL, MENTHE } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { candy, roundRectText } from './draw';
+import { candy, roundRectText, fitText } from './draw';
 import { norm } from './scribbleShared';
 import type { UndercoverPadData } from './undercoverShared';
 import { THEMES } from './undercoverWords';
@@ -302,7 +302,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   /** Majorité des votes (null si égalité ou personne). */
   function majority(): number | null {
     const count = new Map<number, number>();
-    for (const { p } of alive()) if (p.pick >= 0 || p.pick === SKIP) count.set(p.pick, (count.get(p.pick) ?? 0) + 1);
+    for (const { p } of alive()) if ((p.pick >= 0 && p.pick < pls.length) || p.pick === SKIP) count.set(p.pick, (count.get(p.pick) ?? 0) + 1);
     lastVotes = count;
     let best = -1;
     let bc = 0;
@@ -635,7 +635,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.font = '600 28px Fredoka, sans-serif';
           g.fillStyle = '#d9ccff';
           g.textAlign = 'center';
-          g.fillText(old.join(' · '), x, y + 50);
+          const room = Math.min(360, 1500 / Math.max(1, cnt - 1));
+          const cx2 = Math.max(room / 2 + 8, Math.min(1912 - room / 2, x));
+          g.fillText(fitText(g, old.join(' · '), room), cx2, y + 50);
         }
         if (!p.alive || phase === 'end') {
           g.font = '700 28px Fredoka, sans-serif';
