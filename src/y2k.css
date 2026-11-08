@@ -42,22 +42,21 @@ body,
   letter-spacing: -0.01em;
 }
 .sticker {
-  font-weight: 800;
-  color: transparent;
-  background-image: var(--y-chrome);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-stroke: 0.045em var(--ink);
-  text-shadow: none;
+  font-weight: 900;
+  color: #fff;
+  background: none;
+  -webkit-text-stroke: 0.1em var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0.05em 0.09em 0 var(--ink);
   filter: none;
   position: relative;
 }
-/* Lettres chromées : pas d'ombre (elle se verrait à travers le chrome), un contour plus épais */
 .sticker.title,
 .overlay .title {
-  text-shadow: none;
-  -webkit-text-stroke: 0.075em var(--ink);
+  color: #fff;
+  -webkit-text-stroke: 0.1em var(--ink);
   paint-order: stroke fill;
+  text-shadow: 0.05em 0.09em 0 #ff4f9a, 0.07em 0.12em 0 var(--ink);
 }
 .pad-title {
   font-weight: 700;
