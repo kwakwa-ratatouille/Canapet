@@ -571,9 +571,11 @@ function iconImage(slug: string) {
 }
 
 /** Texte « autocollant » : ombre prune décalée, rebord blanc, puis la couleur. */
+/** Police des grands titres (style « Salon an 2000 ») : large, un peu plus petite pour garder la même place. */
+export const stickerFont = (size: number) => `800 ${Math.round(size * 0.8)}px Unbounded, Fredoka, sans-serif`;
 export function stickerText(g: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, fill: string) {
   g.save();
-  g.font = `700 ${size}px Fredoka, sans-serif`;
+  g.font = stickerFont(size);
   g.textAlign = 'center';
   g.lineJoin = 'round';
   g.lineWidth = size * 0.28;
@@ -586,7 +588,16 @@ export function stickerText(g: CanvasRenderingContext2D, text: string, x: number
   g.lineWidth = size * 0.1;
   g.strokeStyle = INK;
   g.strokeText(text, x, y);
-  g.fillStyle = fill;
+  if (fill === '#fff') {
+    // Lettres blanches : du chrome, en bandes nettes
+    const ch = g.createLinearGradient(0, y - size * 0.72, 0, y + size * 0.06);
+    ch.addColorStop(0, '#ffffff');
+    ch.addColorStop(0.36, '#eef1f8');
+    ch.addColorStop(0.5, '#b6bfd3');
+    ch.addColorStop(0.58, '#f6f7fb');
+    ch.addColorStop(1, '#cfd6e4');
+    g.fillStyle = ch;
+  } else g.fillStyle = fill;
   g.fillText(text, x, y);
   g.restore();
 }
@@ -808,10 +819,13 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
       g.restore();
       g.save();
       g.textAlign = 'left';
-      g.font = '700 104px Fredoka, sans-serif';
+      // Le titre tient toujours dans la place à droite de l'icône
+      let ts = 104;
+      g.font = stickerFont(ts);
+      while (ts > 60 && g.measureText(def.name[lang]).width > W - 560) g.font = stickerFont((ts -= 4));
       const nameW = g.measureText(def.name[lang]).width;
       g.restore();
-      stickerText(g, def.name[lang], 460 + nameW / 2, 165, 104, '#fff');
+      stickerText(g, def.name[lang], 460 + nameW / 2, 165, ts, '#fff');
       if (map) {
         g.font = '700 34px Fredoka, sans-serif';
         const label = '🗺️ ' + (lang === 'fr' ? 'Carte : ' : 'Map: ') + map;
@@ -908,15 +922,20 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
         g.font = '96px sans-serif';
         g.textAlign = 'center';
         g.fillText(icon, cw / 2, 120 + Math.sin(el * 4 + i) * 5);
-        // Pastille numéro
-        g.fillStyle = SOLEIL;
-        g.beginPath();
-        g.arc(44, 40, 34, 0, Math.PI * 2);
-        g.fill();
-        g.stroke();
-        g.fillStyle = INK;
-        g.font = '700 40px Fredoka, sans-serif';
-        g.fillText(String(i + 1), 44, 54);
+        // Fenêtre rétro : les trois boutons ronds et le nom du fichier
+        [['#ff5f8f', 34], ['#ffd60a', 66], ['#3dd6a0', 98]].forEach(([c, dx]) => {
+          g.fillStyle = c as string;
+          g.beginPath();
+          g.arc(dx as number, 30, 11, 0, Math.PI * 2);
+          g.fill();
+          g.lineWidth = 4;
+          g.stroke();
+        });
+        g.fillStyle = 'rgba(255,255,255,.92)';
+        g.textAlign = 'right';
+        g.font = '800 28px Unbounded, Fredoka, sans-serif';
+        g.fillText(`0${i + 1}`, cw - 26, 42);
+        g.textAlign = 'center';
         // Texte
         g.font = '700 36px Nunito, sans-serif';
         let ts = 36;
@@ -950,15 +969,24 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
       g.beginPath();
       g.roundRect(px, 870, pw, 30, 15);
       g.fill();
-      g.fillStyle = SOLEIL;
-      g.beginPath();
-      g.roundRect(px, 870, Math.max(30, pw * tutoLeft), 30, 15);
-      g.fill();
+      // Barre de chargement en segments, comme sur un vieil ordinateur
+      const done = 1 - tutoLeft;
+      const seg = 34;
+      const nSeg = Math.floor((pw - 12) / seg);
+      for (let k = 0; k < Math.round(nSeg * done); k++) {
+        g.fillStyle = k % 2 ? '#2fd4a3' : '#3fe0b0';
+        g.fillRect(px + 8 + k * seg, 875, seg - 7, 20);
+      }
       g.strokeStyle = INK;
       g.lineWidth = 5;
       g.beginPath();
       g.roundRect(px, 870, pw, 30, 15);
       g.stroke();
+      g.font = '800 28px Unbounded, Fredoka, sans-serif';
+      g.textAlign = 'left';
+      g.fillStyle = INK;
+      g.fillText(`${lang === 'fr' ? 'Chargement' : 'Loading'} ${Math.round(done * 100)} %`, px, 946);
+      g.textAlign = 'center';
       // Joueurs prêts
       const humans = session.runners.filter((r) => !r.bot);
       const step = Math.min(110, 1300 / Math.max(1, humans.length));
