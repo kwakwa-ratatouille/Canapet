@@ -1145,7 +1145,7 @@ function Results({ session }: { session: Session }) {
           <div className="mvp-card">
             <span className="mvp-tag">★ MVP</span>
             <div className="mvp-art">
-              <CharCanvas profile={rows[0].profile} size={190} mood="win" />
+              <CharCanvas profile={rows[0].profile} size={140} mood="win" />
             </div>
             <b className="mvp-name">{rows[0].profile.name}</b>
             <span className="mvp-line">

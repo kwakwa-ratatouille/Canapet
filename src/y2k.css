@@ -245,15 +245,15 @@ body,
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(34 * var(--u));
+  gap: calc(26 * var(--u));
 }
 .mvp-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: calc(330 * var(--u));
-  padding: calc(18 * var(--u)) calc(18 * var(--u)) calc(22 * var(--u));
+  width: calc(300 * var(--u));
+  padding: calc(14 * var(--u)) calc(16 * var(--u)) calc(16 * var(--u));
   border: calc(6 * var(--u)) solid var(--ink);
   border-radius: calc(28 * var(--u));
   /* Reflets holographiques en biais, sans flou */
@@ -295,7 +295,7 @@ body,
   margin-top: calc(12 * var(--u));
   font-family: var(--y-display);
   font-weight: 900;
-  font-size: calc(40 * var(--u));
+  font-size: calc(34 * var(--u));
   line-height: 1.1;
   text-align: center;
   color: var(--ink);
