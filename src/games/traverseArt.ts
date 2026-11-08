@@ -185,8 +185,11 @@ export function tree(kind: number) {
       g.moveTo(bx + br, by);
       g.arc(bx, by, br, 0, Math.PI * 2);
     });
-    g.fill();
+    // Contour épais d'abord, remplissage ensuite : seul le bord extérieur reste (plus de ronds visibles dans le feuillage)
+    g.lineWidth = 10;
     g.stroke();
+    g.fill();
+    g.lineWidth = 5;
     // Relief : dessous plus sombre, reflets
     g.save();
     g.beginPath();
@@ -749,8 +752,11 @@ export function bush(kind: number) {
       g.moveTo(bx + br, by);
       g.arc(bx, by, br, 0, Math.PI * 2);
     });
-    g.fill();
+    // Contour épais d'abord, remplissage ensuite : seul le bord extérieur reste (plus de ronds visibles dans le feuillage)
+    g.lineWidth = 10;
     g.stroke();
+    g.fill();
+    g.lineWidth = 5;
     g.fillStyle = 'rgba(255,255,255,0.45)';
     g.beginPath();
     g.ellipse(x - 14, 66, 10, 5, -0.3, 0, Math.PI * 2);

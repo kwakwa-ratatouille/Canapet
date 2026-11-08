@@ -406,7 +406,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         } else if (lane.kind === 'rail') {
           if (lane.train !== undefined) {
             lane.train += lane.dir * 2000 * (1 + heat() * 0.3) * dt;
-            if (Math.abs(lane.train - 960) > 2400) {
+            // Parti de l'autre côté de l'écran (il démarre hors de l'écran : ne pas le retirer avant qu'il soit passé)
+            if (lane.dir > 0 ? lane.train > 960 + 2400 : lane.train < 960 - 2400) {
               lane.train = undefined;
               lane.wait = rnd(4, 9) * (1 - heat() * 0.5);
             }
