@@ -234,8 +234,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     const t = a.filter((x) => x.p.role === 'pique').length;
     if (t === 0) winner = 'gourmand';
     else if (t >= a.length - t) winner = 'pique';
+    // Personne ne sort plus (votes à égalité, nuits calmes) : au bout de 8 jours, les traîtres ont gagné
+    else if (day >= 8) winner = 'pique';
     if (!winner) return false;
-    headline = winner === 'gourmand' ? (fr ? 'Les Gourmands gagnent !' : 'The Foodies win!') : fr ? 'Les Pique-assiettes gagnent !' : 'The Moochers win!';
+    headline = winner === 'gourmand' ? (fr ? 'Les Gourmands gagnent !' : 'The Foodies win!') : t < a.length - t ? (fr ? 'Les Pique-assiettes ont tenu 8 jours : ils gagnent !' : 'The Moochers lasted 8 days: they win!') : fr ? 'Les Pique-assiettes gagnent !' : 'The Moochers win!';
     sub = fr
       ? `Les traîtres étaient : ${pls.filter((p) => p.role === 'pique').map((p) => p.profile.name).join(', ')}`
       : `The traitors were: ${pls.filter((p) => p.role === 'pique').map((p) => p.profile.name).join(', ')}`;

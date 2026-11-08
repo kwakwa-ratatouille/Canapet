@@ -566,7 +566,7 @@ const left = pls.filter((p) => p.alive);
         g.globalAlpha = Math.min(1, o.life * 2);
         g.lineWidth = 8;
         g.strokeStyle = INK;
-        const y = screenY(o.row) - 110 - (1 - o.life) * 40;
+        const y = Math.max(130, Math.min(1000, screenY(o.row) - 110 - (1 - o.life) * 40));
         const half = g.measureText(o.text).width / 2 + 8;
         const px = Math.max(half, Math.min(1920 - half, o.x));
         g.strokeText(o.text, px, y);

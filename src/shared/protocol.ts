@@ -171,7 +171,8 @@ export function joinUrl(code: string): string {
 /** Remet d'aplomb ce qu'envoie un téléphone (chiffres valides, textes en texte, stick entre -1 et 1). */
 export function cleanMsg(m: ToTv): ToTv {
   if (m.t === 'act') {
-    const n = Array.isArray(m.n) ? m.n.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : -1)) : undefined;
+    // Les téléphones n'envoient que des nombres entiers (cases, positions sur 1000…) : un nombre à virgule ou énorme ne doit rien casser
+    const n = Array.isArray(m.n) ? m.n.slice(0, 20000).map((v) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(-1e7, Math.min(1e7, Math.round(v))) : -1)) : undefined;
     const s = typeof m.s === 'string' ? m.s : undefined;
     return { t: 'act', a: String(m.a), n, s };
   }

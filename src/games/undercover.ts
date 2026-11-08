@@ -609,13 +609,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const clue = p.clues[round - 1];
         if (clue && p.alive && phase !== 'end') {
           g.font = '700 34px Fredoka, sans-serif';
-          const w = Math.max(110, g.measureText(clue).width + 40);
+          // Indice long : coupé proprement, et la bulle reste dans l'écran
+          const shown = fitText(g, clue, 380);
+          const w = Math.max(110, g.measureText(shown).width + 40);
+          const bx = Math.max(w / 2 + 8, Math.min(1912 - w / 2, x));
           const by = y - 200;
           g.fillStyle = '#fff';
           g.strokeStyle = INK;
           g.lineWidth = 5;
           g.beginPath();
-          g.roundRect(x - w / 2, by - 34, w, 58, 22);
+          g.roundRect(bx - w / 2, by - 34, w, 58, 22);
           g.fill();
           g.stroke();
           g.beginPath();
@@ -625,7 +628,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fill();
           g.fillStyle = INK;
           g.textAlign = 'center';
-          g.fillText(clue, x, by + 6);
+          g.fillText(shown, bx, by + 6);
         }
         if (isCur) {
           g.font = '44px sans-serif';

@@ -1150,7 +1150,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (k.wrong > 0.7) {
           const pa = along(k.idx);
           g.save();
-          g.translate(k.x, k.y - 96);
+          // Le panneau reste dans l'écran même si le kart est au bord
+          g.translate(Math.max(124, Math.min(1796, k.x)), Math.max(40, k.y - 96));
           g.fillStyle = '#ff3b3b';
           g.strokeStyle = INK;
           g.lineWidth = 5;

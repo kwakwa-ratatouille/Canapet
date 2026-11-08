@@ -6,7 +6,7 @@ import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
 import type { CakePadData } from './cakeShared';
-import { candy, smileSun, stickerCloud } from './draw';
+import { candy, drawSky } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const { Engine, Bodies, Body, Composite, Events } = Matter;
@@ -256,14 +256,8 @@ function createTower(runners: Runner[], ctx: GameCtx): GameInstance {
       }
     },
     render(g, t) {
-      const sky = g.createLinearGradient(0, 0, 0, 1080);
-      sky.addColorStop(0, '#7fd6ff');
-      sky.addColorStop(1, '#ffe9f2');
-      g.fillStyle = sky;
-      g.fillRect(0, 0, 1920, 1080);
-      smileSun(g, 1720, 190, 80, SOLEIL, t);
-      stickerCloud(g, 320 + Math.sin(t * 0.1) * 60, 200, 1.1);
-      stickerCloud(g, 1060 - Math.sin(t * 0.08) * 70, 290, 0.8);
+      // Ciel, soleil et nuages déjà dessinés (les refaire à chaque image ralentissait)
+      drawSky(g, t, ctx.light, '#7fd6ff', '#ffe9f2');
       g.save();
       if (shake > 0) g.translate(Math.sin(t * 70) * shake * 40, Math.cos(t * 55) * shake * 24);
       const n = pls.length;

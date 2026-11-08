@@ -312,7 +312,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const add = (p: Pl, x: number, y: number, pts: number, c: string, text?: string) => {
     if (pts > 0 && p.dbl > 0) pts *= 2;
     p.score = Math.max(0, p.score + pts);
-    pops.push({ x, y, text: text ?? (pts > 0 ? `+${pts}` : String(pts)), c, life: 0.9 });
+    pops.push({ x: Math.max(140, Math.min(1780, x)), y: Math.max(100, Math.min(1000, y)), text: text ?? (pts > 0 ? `+${pts}` : String(pts)), c, life: 0.9 });
     if (pops.length > 26) pops.shift();
   };
 
@@ -692,9 +692,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.globalAlpha = Math.min(1, o.life * 2);
         g.lineWidth = 8;
         g.strokeStyle = INK;
-        g.strokeText(o.text, o.x, o.y);
+        const hw = g.measureText(o.text).width / 2 + 12;
+        const ox = Math.max(hw, Math.min(1920 - hw, o.x));
+        g.strokeText(o.text, ox, o.y);
         g.fillStyle = o.c;
-        g.fillText(o.text, o.x, o.y);
+        g.fillText(o.text, ox, o.y);
       }
       g.globalAlpha = 1;
       if (notice) {
