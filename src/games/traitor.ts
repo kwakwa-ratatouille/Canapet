@@ -496,8 +496,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       // Joueurs en arc de cercle
       const cnt = pls.length;
       pls.forEach((p, i) => {
-        const a = Math.PI * (0.08 + (0.84 * i) / Math.max(1, cnt - 1));
-        const x = 960 - Math.cos(a) * 820;
+        const f = cnt > 1 ? i / (cnt - 1) : 0.5;
+        const a = Math.PI * (0.08 + 0.84 * f);
+        const x = 960 + (f - 0.5) * 1640;
         const y = 1010 - Math.sin(a) * 120 - (i % 2) * 20;
         drawCharacter(g, x, y - 40, 110, {
           food: p.profile.food,

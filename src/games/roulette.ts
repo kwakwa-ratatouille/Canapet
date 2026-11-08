@@ -228,7 +228,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       showT += dt;
       if (phase === 'upload') {
         const humans = pls.filter((p) => !p.bot);
-        if (humans.length && humans.every((p) => p.ready && p.parts.size === 0) && timer > 2) timer = 2;
+        // Tout le monde est prêt (ou parti) : on n'attend pas la fin du chrono
+        if (humans.every((p) => (p.ready && p.parts.size === 0) || ctx.away(p.pid)) && timer > 2) timer = 2;
         if (timer <= 0) startGame();
         return;
       }

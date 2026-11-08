@@ -235,7 +235,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - up, t: 0, max: rnd(0.4, 0.8), size: size * rnd(0.6, 1.3), color, kind });
     }
   }
-  const pop = (x: number, y: number, text: string, color: string, size = 46) => pops.push({ x, y, text, color, t: 1, size });
+  const pop = (x: number, y: number, text: string, color: string, size = 46) => {
+    if (pops.some((o) => o.text === text && o.t > 0.7 && Math.hypot(o.x - x, o.y - y) < 160)) return;
+    pops.push({ x, y, text, color, t: 1, size });
+  };
 
   function bot(s: S, i: number, dt: number) {
     s.botT -= dt;

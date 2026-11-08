@@ -1140,6 +1140,20 @@ function Results({ session }: { session: Session }) {
             );
           })}
         </ol>
+        <div className="results-side">
+        {rows[0] && (
+          <div className="mvp-card">
+            <span className="mvp-tag">★ MVP</span>
+            <div className="mvp-art">
+              <CharCanvas profile={rows[0].profile} size={190} mood="win" />
+            </div>
+            <b className="mvp-name">{rows[0].profile.name}</b>
+            <span className="mvp-line">
+              {def?.name[lang]}
+              {!rows[0].bot && <em> · +{rows[0].points}</em>}
+            </span>
+          </div>
+        )}
         <aside className="next-card">
           {next ? (
             <>
@@ -1151,6 +1165,7 @@ function Results({ session }: { session: Session }) {
             <span className="next-hint">{t(lang, 'hostChooses')}</span>
           )}
         </aside>
+        </div>
       </div>
     </div>
   );

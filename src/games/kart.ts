@@ -115,6 +115,9 @@ interface K extends Runner {
   cloud: number;
   rocket: number;
   wrong: number;
+  /** Bots : où ils en étaient, et depuis quand (pour les décoincer). */
+  progIdx?: number;
+  progAt?: number;
 }
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -142,6 +145,20 @@ function catmull(points: [number, number][], per: number): [number, number][] {
 // Circuit de la partie en cours (une seule course à la fois).
 let PATH: [number, number][] = [];
 let N = 0;
+
+/** Le point du circuit le plus proche, cherché partout (rare, quand on a perdu le fil). */
+function nearestAll(x: number, y: number) {
+  let best = 0;
+  let bd = Infinity;
+  for (let i = 0; i < N; i++) {
+    const d = (PATH[i][0] - x) ** 2 + (PATH[i][1] - y) ** 2;
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  }
+  return best;
+}
 
 function nearest(x: number, y: number, hint: number) {
   let best = hint;
@@ -422,6 +439,24 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       time += dt;
       ks.forEach((k, i) => {
         if (k.bot && !k.done && !dozing(k, ctx.botSkill, dt)) bot(k, dt);
+        // Un bot qui n'avance plus depuis 5 s est remis sur la piste, un peu plus loin
+        if (k.bot && !k.done) {
+          const moved = (k.idx - (k.progIdx ?? k.idx) + N) % N;
+          if (moved > 20 && moved < N / 2) {
+            k.progIdx = k.idx;
+            k.progAt = time;
+          } else if (time - (k.progAt ?? time) > 5) {
+            const j = (k.idx + 6) % N;
+            k.x = PATH[j][0];
+            k.y = PATH[j][1];
+            k.a = along(j);
+            k.vx = k.vy = 0;
+            k.idx = j;
+            k.progIdx = j;
+            k.progAt = time;
+            puff(k.x, k.y, 10, '#ffffff', 220, 8);
+          }
+        }
         if (k.done) k.inp = { x: Math.cos(k.a) * 0.4, y: Math.sin(k.a) * 0.4, b: false };
         k.turbo = Math.max(0, k.turbo - dt);
         k.safe = Math.max(0, k.safe - dt);
@@ -569,7 +604,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
         // Tours : passage de la ligne dans le bon sens
         const prev = k.idx;
-        k.idx = nearest(k.x, k.y, k.idx).i;
+        const near = nearest(k.x, k.y, k.idx);
+        // Trop loin du point suivi (passage par-dessus un bord, choc) : on cherche sur tout le circuit
+        k.idx = near.d > WALL * 1.4 ? nearestAll(k.x, k.y) : near.i;
         if (prev > N * 0.85 && k.idx < N * 0.15) k.lap++;
         if (prev < N * 0.15 && k.idx > N * 0.85) k.lap--;
         if (!k.done && k.lap === LAPS - 1 && !lastLapSaid) {

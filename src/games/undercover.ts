@@ -549,8 +549,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const cur = phase === 'clues' ? turnOrder[turnPos] : -1;
       // Celui qui doit écrire : projecteur, anneau lumineux à ses pieds et grand bandeau à sa couleur
       if (cur >= 0) {
-        const a = Math.PI * (0.06 + (0.88 * cur) / Math.max(1, cnt - 1));
-        const cx = 960 - Math.cos(a) * 800;
+        const fc = cnt > 1 ? cur / (cnt - 1) : 0.5;
+        const a = Math.PI * (0.06 + 0.88 * fc);
+        const cx = 960 + (fc - 0.5) * 1600;
         const cy = 1000 - Math.sin(a) * 300;
         g.fillStyle = 'rgba(255,240,180,0.22)';
         g.beginPath();
@@ -585,8 +586,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillText(txt, 960, 360);
       }
       pls.forEach((p, i) => {
-        const a = Math.PI * (0.06 + (0.88 * i) / Math.max(1, cnt - 1));
-        const x = 960 - Math.cos(a) * 800;
+        const f = cnt > 1 ? i / (cnt - 1) : 0.5;
+        const a = Math.PI * (0.06 + 0.88 * f);
+        const x = 960 + (f - 0.5) * 1600;
+        const slotW = Math.min(170, 1600 / Math.max(1, cnt - 1) - 8);
         const y = 1000 - Math.sin(a) * 300;
         const isCur = i === cur;
         drawCharacter(g, x, y - 30 + (isCur ? Math.sin(t * 8) * 6 : 0), isCur ? 130 : 110, {
@@ -601,7 +604,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           ghost: !p.alive,
           mood: !p.alive ? 'sad' : isCur ? 'wow' : 'happy',
         });
-        roundRectText(g, p.profile.name, x - 85, y - 8, 170, 26, p.profile.color);
+        roundRectText(g, p.profile.name, x - slotW / 2, y - 8, slotW, 26, p.profile.color);
         // Bulle avec l'indice de la manche
         const clue = p.clues[round - 1];
         if (clue && p.alive && phase !== 'end') {
