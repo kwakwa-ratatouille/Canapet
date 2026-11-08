@@ -482,9 +482,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.font = '700 44px Fredoka, sans-serif';
           g.lineWidth = 8;
           g.strokeStyle = INK;
-          g.strokeText(o.text, ox + o.x, OY + o.y);
+          // Toujours dans l'écran
+          const hw = g.measureText(o.text).width / 2 + 12;
+          const px = Math.max(hw, Math.min(1920 - hw, ox + o.x));
+          g.strokeText(o.text, px, OY + o.y);
           g.fillStyle = '#ffd60a';
-          g.fillText(o.text, ox + o.x, OY + o.y);
+          g.fillText(o.text, px, OY + o.y);
           g.globalAlpha = 1;
         }
         if (b.banner) {

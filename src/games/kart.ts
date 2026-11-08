@@ -1161,7 +1161,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillStyle = '#fff';
           g.font = '700 28px Fredoka, sans-serif';
           g.textAlign = 'center';
-          g.fillText(fr ? '⛔ MAUVAIS SENS' : '⛔ WRONG WAY', 0, 10);
+          g.fillText(fr ? '⛔ MAUVAIS SENS' : '⛔ WRONG WAY', 0, 10, 196);
           g.translate(0, 70);
           g.rotate(pa);
           g.fillStyle = '#ffd60a';

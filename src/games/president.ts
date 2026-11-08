@@ -206,9 +206,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     startTurn(j);
   }
 
+  /** Tours ratés d'affilée par joueur : après 2, on ne l'attend plus que 8 s (il est sans doute parti faire un tour). */
+  const missed = new Map<number, number>();
   function startTurn(i: number) {
     turn = i;
-    timer = seats[i].bot || ctx.away(seats[i].pid) ? rnd(1.1, 2.2) : TURN_TIME;
+    timer = seats[i].bot || ctx.away(seats[i].pid) ? rnd(1.1, 2.2) : (missed.get(i) ?? 0) >= 2 ? 8 : TURN_TIME;
     if (!seats[i].bot) ctx.buzz(seats[i].pid, 80);
     ctx.refresh();
   }
@@ -332,6 +334,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       if (m.t !== 'act') return;
       const i = seats.findIndex((s) => s.pid === pid);
       if (i < 0) return;
+      if (m.a === 'play' || m.a === 'pass') missed.delete(i);
       if (m.a === 'play') play(i, m.n ?? []);
       if (m.a === 'pass') pass(i);
       if (m.a === 'give') giveBack(i, m.n ?? []);
@@ -348,6 +351,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       timer -= dt;
       if (phase === 'play') {
         if (timer > 0) return;
+        if (!seats[turn].bot) missed.set(turn, (missed.get(turn) ?? 0) + 1);
         if (seats[turn].bot) botTurn(turn);
         // Trop long : on joue à sa place (sa plus petite carte, ou on passe)
         else if (need) pass(turn);
@@ -488,7 +492,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             g.lineWidth = 8;
             g.strokeStyle = INK;
             const tx = a.x + (b.x - a.x) * e;
-            const ty = a.y + (b.y - a.y) * e - Math.sin(e * Math.PI) * 260 - 120;
+            const ty = Math.max(48, a.y + (b.y - a.y) * e - Math.sin(e * Math.PI) * 260 - 120);
             const lab = fr ? `🎁 pour ${name(f.to)}` : `🎁 for ${name(f.to)}`;
             g.strokeText(lab, tx, ty);
             g.fillStyle = '#ffd60a';

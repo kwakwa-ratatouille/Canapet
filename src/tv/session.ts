@@ -834,7 +834,7 @@ export class Session {
       return { pid, profile: r.profile, bot: !p, rank, points, team: r.team };
     });
     // Pour la cassette du bilan : le jeu et son gagnant
-    if (this.def && this.results[0]) this.history.push({ game: this.def.name[this.lang()], slug: this.def.slug, profile: this.results[0].profile, shot: this.snap?.() ?? undefined });
+    if (this.def && this.results[0]) this.history.push({ game: this.def.name[this.lang()], slug: this.def.slug, profile: this.results[0].profile, shot: this.snap?.() ?? undefined }); if (this.history.length > 12) this.history.shift();
     // Duel de rivaux : +3 à celui qui finit devant l'autre
     if (this.duel) {
       const { a, b } = this.duel;

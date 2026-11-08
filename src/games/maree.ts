@@ -396,7 +396,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.textAlign = 'center';
           g.lineWidth = 8;
           g.strokeStyle = INK;
-          const y = p.y - 160 - (1.2 - p.pop.t) * 30;
+          const y = Math.max(camY + 44, p.y - 160 - (1.2 - p.pop.t) * 30);
           g.strokeText(p.pop.text, p.x, y);
           g.fillStyle = p.pop.c;
           g.fillText(p.pop.text, p.x, y);

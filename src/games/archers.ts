@@ -738,9 +738,13 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.textAlign = 'center';
         g.lineWidth = 10;
         g.strokeStyle = INK;
-        g.strokeText(q.text, q.x, q.y);
+        // Toujours dans l'écran (un saut tout en haut ne cache plus le texte)
+        const hw = g.measureText(q.text).width / 2 + 12;
+        const qx = Math.max(hw, Math.min(1920 - hw, q.x));
+        const qy = Math.max(44, q.y);
+        g.strokeText(q.text, qx, qy);
         g.fillStyle = q.c;
-        g.fillText(q.text, q.x, q.y);
+        g.fillText(q.text, qx, qy);
       }
       g.globalAlpha = 1;
       g.restore();

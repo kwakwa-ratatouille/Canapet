@@ -277,8 +277,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const nx = p.x + dx * CW;
       if (nx > CW && nx < COLS * CW - CW && safeAt(p.row, nx, 0.25) && safeAt(p.row + 1, nx, 0.5)) return hopTo(p, dx, 0);
     }
-    const cur = laneAt(p.row)!;
-    if (cur.kind !== 'grass' && !safeAt(p.row, p.x, 0.6) && safeAt(p.row - 1, p.x, 0.3)) hopTo(p, 0, -1);
+    // Danger sur place (voiture, chat ou oiseau qui arrive…) : on recule, sinon on s'écarte
+    if (!safeAt(p.row, p.x, 0.6)) {
+      if (safeAt(p.row - 1, p.x, 0.3)) return hopTo(p, 0, -1);
+      for (const dx of options) {
+        const nx = p.x + dx * CW;
+        if (nx > CW / 2 && nx < COLS * CW - CW / 2 && safeAt(p.row, nx, 0.6)) return hopTo(p, dx, 0);
+      }
+    }
   };
 
   const shove = (p: Pl) => {
