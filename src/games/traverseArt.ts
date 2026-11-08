@@ -445,3 +445,321 @@ export function train(dir: number) {
     [lx + 90, lx + 220, lx + 400, lx + 520].forEach((wx) => wheel(g, wx, CELL - 18, 16));
   });
 }
+
+// ——— Véhicules spéciaux ———
+
+/** Moto (avec son pilote casqué), camion (cabine + remorque), limousine (très longue). Tournés vers la droite si dir > 0. */
+export function vehicle(kind: 'car' | 'bus' | 'moto' | 'truck' | 'limo', color: string, w: number, dir: number) {
+  if (kind === 'car' || kind === 'bus') return car(color, w, dir);
+  const pad = 14;
+  const SW = Math.ceil(w + pad * 2);
+  return cachedSprite('tv-veh' + kind + color + (w | 0) + dir, SW, CELL, (g) => {
+    if (dir < 0) {
+      g.translate(SW, 0);
+      g.scale(-1, 1);
+    }
+    const x = pad;
+    g.fillStyle = 'rgba(30,20,40,0.28)';
+    g.beginPath();
+    g.ellipse(x + w / 2, CELL - 12, w / 2 + 4, 10, 0, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = INK;
+    g.lineWidth = 5;
+    g.lineJoin = 'round';
+    g.lineCap = 'round';
+    const grad = (c: string, y0: number, y1: number) => {
+      const grd = g.createLinearGradient(0, y0, 0, y1);
+      grd.addColorStop(0, mixHex(c, '#ffffff', 0.25));
+      grd.addColorStop(1, mixHex(c, '#3a2140', 0.25));
+      return grd;
+    };
+    if (kind === 'moto') {
+      // Roues
+      wheel(g, x + 20, CELL - 24, 18);
+      wheel(g, x + w - 20, CELL - 24, 18);
+      // Cadre et réservoir
+      g.strokeStyle = INK;
+      g.lineWidth = 6;
+      g.beginPath();
+      g.moveTo(x + 20, CELL - 24);
+      g.lineTo(x + w * 0.45, CELL - 46);
+      g.lineTo(x + w - 20, CELL - 24);
+      g.stroke();
+      g.fillStyle = grad(color, 44, 74);
+      g.lineWidth = 5;
+      g.beginPath();
+      g.roundRect(x + w * 0.22, 50, w * 0.56, 24, 12);
+      g.fill();
+      g.stroke();
+      // Guidon
+      g.beginPath();
+      g.moveTo(x + w * 0.8, 52);
+      g.lineTo(x + w * 0.88, 34);
+      g.stroke();
+      // Pilote : corps + casque à visière
+      g.fillStyle = '#5b5166';
+      g.beginPath();
+      g.roundRect(x + w * 0.32, 26, 30, 32, 12);
+      g.fill();
+      g.stroke();
+      g.fillStyle = grad(color, 4, 36);
+      g.beginPath();
+      g.arc(x + w * 0.5, 22, 18, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#d6f4ff';
+      g.beginPath();
+      g.roundRect(x + w * 0.5 + 2, 14, 16, 12, 5);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#fff3a8';
+      g.beginPath();
+      g.arc(x + w - 6, 60, 6, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      return;
+    }
+    if (kind === 'truck') {
+      // Remorque à l'arrière
+      const back = w * 0.68;
+      g.fillStyle = grad('#f5f0ff', 8, CELL - 26);
+      g.beginPath();
+      g.roundRect(x, 8, back, CELL - 34, 12);
+      g.fill();
+      g.stroke();
+      g.fillStyle = color;
+      g.fillRect(x + 6, 40, back - 12, 16);
+      g.fillStyle = 'rgba(58,33,64,0.25)';
+      for (let k = x + 40; k < x + back - 20; k += 50) g.fillRect(k, 14, 4, CELL - 46);
+      shine(g, x + 14, 12, back * 0.4, 6);
+      // Cabine
+      g.fillStyle = grad(color, 22, CELL - 22);
+      g.beginPath();
+      g.moveTo(x + back + 6, CELL - 22);
+      g.lineTo(x + back + 6, 24);
+      g.lineTo(x + w - 36, 24);
+      g.quadraticCurveTo(x + w, 26, x + w, 64);
+      g.lineTo(x + w, CELL - 22);
+      g.closePath();
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#d6f4ff';
+      g.beginPath();
+      g.roundRect(x + back + 22, 32, w - back - 52, 26, [6, 14, 6, 6]);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#fff3a8';
+      g.beginPath();
+      g.arc(x + w - 8, 72, 7, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      [x + 40, x + 100, x + back - 40, x + w - 44].forEach((wx) => wheel(g, wx, CELL - 22, 15));
+      return;
+    }
+    // Limousine : longue, basse, plein de vitres teintées
+    g.fillStyle = grad(color, 22, 52);
+    g.beginPath();
+    g.roundRect(x + w * 0.14, 22, w * 0.66, 34, [18, 18, 4, 4]);
+    g.fill();
+    g.stroke();
+    const n = 5;
+    for (let i = 0; i < n; i++) {
+      g.fillStyle = '#4a3b66';
+      g.beginPath();
+      g.roundRect(x + w * 0.17 + i * ((w * 0.6) / n), 28, (w * 0.6) / n - 8, 22, 5);
+      g.fill();
+      shine(g, x + w * 0.17 + i * ((w * 0.6) / n) + 4, 31, 12, 4);
+    }
+    g.fillStyle = grad(color, 48, CELL - 22);
+    g.beginPath();
+    g.roundRect(x, 50, w, CELL - 72, 18);
+    g.fill();
+    g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,0.6)';
+    g.lineWidth = 3;
+    g.beginPath();
+    g.moveTo(x + 20, 66);
+    g.lineTo(x + w - 20, 66);
+    g.stroke();
+    g.strokeStyle = INK;
+    g.lineWidth = 5;
+    g.fillStyle = '#fff3a8';
+    g.beginPath();
+    g.arc(x + w - 8, 62, 7, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = '#ff3b3b';
+    g.beginPath();
+    g.roundRect(x + 1, 56, 7, 14, 3);
+    g.fill();
+    [x + 46, x + w * 0.35, x + w * 0.65, x + w - 46].forEach((wx) => wheel(g, wx, CELL - 22, 15));
+  });
+}
+
+// ——— Bêtes qui se promènent sur l'herbe ———
+
+/** Chat qui marche (2 images pour les pattes). Tourné vers la droite si dir > 0. */
+export function cat(frame: number, dir: number) {
+  return cachedSprite('tv-cat' + frame + dir, 130, CELL, (g) => {
+    if (dir < 0) {
+      g.translate(130, 0);
+      g.scale(-1, 1);
+    }
+    g.strokeStyle = INK;
+    g.lineWidth = 5;
+    g.lineJoin = 'round';
+    g.lineCap = 'round';
+    g.fillStyle = 'rgba(58,33,64,0.22)';
+    g.beginPath();
+    g.ellipse(62, CELL - 10, 46, 8, 0, 0, Math.PI * 2);
+    g.fill();
+    // Queue
+    g.strokeStyle = INK;
+    g.lineWidth = 14;
+    g.beginPath();
+    g.moveTo(26, 64);
+    g.quadraticCurveTo(4, 50, 14, 24 + frame * 6);
+    g.stroke();
+    g.strokeStyle = '#ff9a1f';
+    g.lineWidth = 7;
+    g.stroke();
+    // Pattes
+    g.strokeStyle = INK;
+    g.lineWidth = 9;
+    const legs = frame ? [32, 52, 74, 94] : [38, 46, 80, 88];
+    legs.forEach((lx, i) => {
+      g.beginPath();
+      g.moveTo(lx, 74);
+      g.lineTo(lx + (i % 2 ? 4 : -4) * (frame ? 1 : -1), CELL - 12);
+      g.stroke();
+    });
+    // Corps rayé
+    g.fillStyle = '#ff9a1f';
+    g.lineWidth = 5;
+    g.beginPath();
+    g.ellipse(62, 66, 40, 20, 0, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = '#d96a00';
+    [48, 62, 76].forEach((sx) => g.fillRect(sx, 48, 6, 14));
+    // Tête
+    g.fillStyle = '#ff9a1f';
+    g.beginPath();
+    g.moveTo(88, 34);
+    g.lineTo(92, 14);
+    g.lineTo(102, 28);
+    g.lineTo(114, 14);
+    g.lineTo(118, 36);
+    g.arc(104, 44, 18, -0.4, Math.PI + 0.6);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.fillStyle = INK;
+    g.beginPath();
+    g.arc(100, 42, 3, 0, Math.PI * 2);
+    g.arc(112, 42, 3, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#ff86bd';
+    g.beginPath();
+    g.arc(107, 50, 3, 0, Math.PI * 2);
+    g.fill();
+  });
+}
+
+/** Oiseau qui vole (ailes en haut / en bas), avec son ombre au sol. */
+export function bird(frame: number, dir: number) {
+  return cachedSprite('tv-bird' + frame + dir, 120, CELL, (g) => {
+    if (dir < 0) {
+      g.translate(120, 0);
+      g.scale(-1, 1);
+    }
+    g.fillStyle = 'rgba(58,33,64,0.2)';
+    g.beginPath();
+    g.ellipse(60, CELL - 8, 30, 7, 0, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = INK;
+    g.lineWidth = 5;
+    g.lineJoin = 'round';
+    // Corps
+    g.fillStyle = '#2ec5ff';
+    g.beginPath();
+    g.ellipse(58, 44, 30, 22, 0, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = '#fff6e0';
+    g.beginPath();
+    g.ellipse(64, 52, 16, 10, 0, 0, Math.PI * 2);
+    g.fill();
+    // Aile
+    g.fillStyle = '#1b9ad1';
+    g.beginPath();
+    if (frame) {
+      g.moveTo(44, 40);
+      g.quadraticCurveTo(40, 4, 70, 10);
+      g.quadraticCurveTo(62, 30, 64, 40);
+    } else {
+      g.moveTo(44, 46);
+      g.quadraticCurveTo(40, 84, 70, 78);
+      g.quadraticCurveTo(62, 58, 64, 48);
+    }
+    g.closePath();
+    g.fill();
+    g.stroke();
+    // Bec et œil
+    g.fillStyle = '#ff9a1f';
+    g.beginPath();
+    g.moveTo(86, 38);
+    g.lineTo(104, 44);
+    g.lineTo(86, 50);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.fillStyle = INK;
+    g.beginPath();
+    g.arc(76, 38, 4, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath();
+    g.arc(77, 37, 1.5, 0, Math.PI * 2);
+    g.fill();
+  });
+}
+
+/** Buisson rond avec des baies (obstacle bas). */
+export function bush(kind: number) {
+  return cachedSprite('tv-bush' + kind, 130, 130, (g) => {
+    const x = 65;
+    g.fillStyle = 'rgba(58,33,64,0.2)';
+    g.beginPath();
+    g.ellipse(x, 112, 50, 11, 0, 0, Math.PI * 2);
+    g.fill();
+    const blobs: [number, number, number][] = [
+      [x - 30, 92, 22],
+      [x + 30, 92, 22],
+      [x - 12, 78, 26],
+      [x + 14, 80, 24],
+      [x, 96, 24],
+    ];
+    const col = kind ? '#2f9a5a' : '#58b947';
+    g.fillStyle = col;
+    g.strokeStyle = INK;
+    g.lineWidth = 5;
+    g.beginPath();
+    blobs.forEach(([bx, by, br]) => {
+      g.moveTo(bx + br, by);
+      g.arc(bx, by, br, 0, Math.PI * 2);
+    });
+    g.fill();
+    g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.45)';
+    g.beginPath();
+    g.ellipse(x - 14, 66, 10, 5, -0.3, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = kind ? '#ff4f6e' : '#9b5cff';
+    [[x - 24, 86], [x + 4, 74], [x + 26, 90], [x - 6, 100], [x + 16, 102]].forEach(([bx, by]) => {
+      g.beginPath();
+      g.arc(bx, by, 5, 0, Math.PI * 2);
+      g.fill();
+    });
+  });
+}

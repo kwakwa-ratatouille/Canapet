@@ -5,7 +5,7 @@ import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
 import { playerTag } from './draw';
-import { bread, car, curb, grassRow, railRow, roadRow, train, tree } from './traverseArt';
+import { bird, bread, bush, cat, curb, grassRow, railRow, roadRow, train, tree, vehicle } from './traverseArt';
 import { allies, sidesLeft } from './teams';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
@@ -18,10 +18,19 @@ const LIVES = 3;
 const BOTTOM = 1040;
 
 type LaneKind = 'grass' | 'road' | 'river' | 'rail';
+type VKind = 'car' | 'bus' | 'moto' | 'truck' | 'limo';
 interface Thing {
   x: number;
   w: number;
   c: string;
+  v?: VKind;
+}
+/** Chat qui se promène ou oiseau qui vole bas, sur une pelouse : le toucher fait perdre une vie. */
+interface Critter {
+  kind: 'cat' | 'bird';
+  x: number;
+  dir: 1 | -1;
+  speed: number;
 }
 interface Lane {
   kind: LaneKind;
@@ -30,6 +39,8 @@ interface Lane {
   items: Thing[];
   /** Pelouse : colonnes occupées par un arbre. */
   trees: Set<number>;
+  /** Chats et oiseaux qui traversent la pelouse. */
+  critters?: Critter[];
   /** Bonus posé sur la case. */
   bonus?: { col: number; kind: 'star' | 'shield' | 'jump' };
   /** Rails : temps avant le prochain train, et position du train. */
@@ -83,6 +94,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   /** Difficulté qui monte avec le temps (0 au début, 1 vers 2 min 10) : tout va plus vite. */
   const heat = () => Math.min(1, Math.max(0, clock - 3) / 130);
   const speedOf = (lane: Lane) => lane.speed * (1 + heat() * 0.6);
+  const critterSpeed = (k: Critter) => k.speed * (1 + heat() * 0.5);
 
   /** Fabrique les rangées par paquets : jamais deux fois le même paquet, et ça se corse en montant. */
   const addChunk = () => {
@@ -95,12 +107,24 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     for (let i = 0; i < count; i++) {
       const lane: Lane = { kind, dir, speed: 0, items: [], trees: new Set() };
       if (kind === 'road') {
-        lane.speed = rnd(130, 240) * (1 + d * 0.9);
-        const big = Math.random() < 0.25;
-        const w = big ? CW * 2.4 : CW * 1.2;
-        const gap = rnd(3.5, 6.5) * CW * (1 - d * 0.25);
+        const r = Math.random();
+        const theme: 'moto' | 'truck' | 'mix' = r < 0.2 ? 'moto' : r < 0.38 ? 'truck' : 'mix';
+        lane.speed = rnd(130, 240) * (1 + d * 0.9) * (theme === 'moto' ? 1.6 : theme === 'truck' ? 0.6 : 1);
+        const gap = rnd(3.5, 6.5) * CW * (1 - d * 0.25) * (theme === 'moto' ? 1.3 : 1);
         const color = () => CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
-        for (let x = rnd(0, 300); x < 2400; x += w + gap) lane.items.push({ x, w, c: color() });
+        const pick = (): [VKind, number, string] => {
+          if (theme === 'moto') return ['moto', CW * 0.95, color()];
+          if (theme === 'truck') return ['truck', CW * 2.4, color()];
+          const q = Math.random();
+          if (q < 0.62) return ['car', CW * 1.2, color()];
+          if (q < 0.82) return ['bus', CW * 2.4, color()];
+          return ['limo', CW * 3, ['#2b2238', '#f5f0ff', '#ff86bd'][Math.floor(Math.random() * 3)]];
+        };
+        for (let x = rnd(0, 300); x < 2300; ) {
+          const [v, w, c] = pick();
+          lane.items.push({ x, w, c, v });
+          x += w + gap;
+        }
       } else if (kind === 'river') {
         lane.speed = rnd(70, 140) * (1 + d * 0.6);
         const w = CW * rnd(2.4 - d, 4);
@@ -112,6 +136,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         // Des arbres, mais toujours de quoi passer
         const n = Math.floor(Math.random() * (3 + d * 3));
         for (let k = 0; k < n; k++) lane.trees.add(Math.floor(Math.random() * COLS));
+        if (genRow + i > 6 && Math.random() < 0.22 + d * 0.3) {
+          const kind = Math.random() < 0.55 ? 'cat' : 'bird';
+          const cdir: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
+          lane.critters = [{ kind, x: rnd(0, 1920), dir: cdir, speed: kind === 'cat' ? rnd(70, 110) : rnd(200, 280) }];
+        }
         if (Math.random() < 0.28) {
           const r = Math.random();
           lane.bonus = { col: Math.floor(Math.random() * COLS), kind: r < 0.6 ? 'star' : r < 0.8 ? 'shield' : 'jump' };
@@ -228,7 +257,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const safeAt = (row: number, x: number, look: number) => {
     const lane = laneAt(row);
     if (!lane) return false;
-    if (lane.kind === 'grass') return !lane.trees.has(Math.floor(x / CW));
+    if (lane.kind === 'grass') return !lane.trees.has(Math.floor(x / CW)) && !(lane.critters ?? []).some((k) => Math.abs(k.x + k.dir * critterSpeed(k) * look - x) < 95);
     if (lane.kind === 'rail') return (lane.train === undefined && (lane.wait ?? 0) > 1) || false;
     const mx = x - lane.dir * speedOf(lane) * look;
     const on = lane.items.some((t) => mx > t.x - (lane.kind === 'river' ? -20 : 40) && mx < t.x + t.w + (lane.kind === 'river' ? -20 : 40));
@@ -299,6 +328,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       for (let r = Math.floor(cam) - 1; r <= top; r++) {
         const lane = laneAt(r);
         if (!lane) continue;
+        if (lane.critters)
+          for (const k of lane.critters) {
+            k.x += k.dir * critterSpeed(k) * dt;
+            if (k.dir > 0 && k.x > 2060) k.x = -140;
+            if (k.dir < 0 && k.x < -140) k.x = 2060;
+          }
         if (lane.kind === 'road' || lane.kind === 'river') {
           for (const t of lane.items) {
             t.x += lane.dir * speedOf(lane) * dt;
@@ -375,6 +410,9 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
             p.x += lane.dir * speedOf(lane) * dt;
             if (p.x < 10 || p.x > COLS * CW - 10) lose(p, fr ? 'Emporté !' : 'Swept away!');
           } else lose(p, 'PLOUF !');
+        } else if (lane.kind === 'grass' && lane.critters) {
+          const k = lane.critters.find((c) => Math.abs(c.x - p.x) < 52);
+          if (k) lose(p, k.kind === 'cat' ? (fr ? 'Griffé !' : 'Scratched!') : fr ? 'Picoré !' : 'Pecked!');
         } else if (lane.kind === 'road') {
           if (lane.items.some((t) => p.x > t.x - 36 && p.x < t.x + t.w + 36)) lose(p, fr ? 'Aplati !' : 'Squashed!');
         } else if (lane.kind === 'rail' && lane.train !== undefined && Math.abs(p.x - lane.train) < 1120) lose(p, fr ? 'TCHOU !' : 'CHOO!');
@@ -444,7 +482,15 @@ const left = pls.filter((p) => p.alive);
         if (!lane) continue;
         const y = screenY(r) - CELL / 2;
         if (lane.kind === 'grass') {
-          for (const c of lane.trees) g.drawImage(tree(m(c * 7 + r, 3)), (c + 0.5) * CW - 65, y - 8);
+          for (const c of lane.trees) {
+            const v = m(c * 7 + r, 5);
+            g.drawImage(v < 3 ? tree(v) : bush(v - 3), (c + 0.5) * CW - 65, y - 8);
+          }
+          if (lane.critters)
+            for (const k of lane.critters) {
+              const fr2 = Math.floor(t * (k.kind === 'cat' ? 6 : 9) + k.x * 0.01) % 2;
+              g.drawImage(k.kind === 'cat' ? cat(fr2, k.dir) : bird(fr2, k.dir), k.x - (k.kind === 'cat' ? 65 : 60), y + (k.kind === 'bird' ? Math.sin(t * 5 + k.x * 0.01) * 6 : 0));
+            }
           if (lane.bonus) {
             const bx = (lane.bonus.col + 0.5) * CW;
             const by = y + CELL / 2 + Math.sin(t * 4 + r) * 6;
@@ -459,7 +505,7 @@ const left = pls.filter((p) => p.alive);
             g.fillText(lane.bonus.kind === 'star' ? '⭐' : lane.bonus.kind === 'shield' ? '🛡️' : '🚀', bx, by);
           }
         } else if (lane.kind === 'road') {
-          for (const c of lane.items) g.drawImage(car(c.c, c.w, lane.dir), c.x - 14, y);
+          for (const c of lane.items) g.drawImage(vehicle(c.v ?? (c.w > 200 ? 'bus' : 'car'), c.c, c.w, lane.dir), c.x - 14, y);
         } else if (lane.kind === 'river') {
           for (const c of lane.items) g.drawImage(bread(c.w), c.x - 5, y);
         } else {
