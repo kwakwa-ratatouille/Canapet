@@ -572,7 +572,8 @@ function iconImage(slug: string) {
 
 /** Texte « autocollant » : ombre prune décalée, rebord blanc, puis la couleur. */
 /** Police des grands titres (style « Salon an 2000 ») : large, un peu plus petite pour garder la même place. */
-export const stickerFont = (size: number) => `800 ${Math.round(size * 0.8)}px Unbounded, Fredoka, sans-serif`;
+// Les petits textes restent en Fredoka : la police large devient illisible en petit avec un gros contour
+export const stickerFont = (size: number) => (size >= 60 ? `800 ${Math.round(size * 0.8)}px Unbounded, Fredoka, sans-serif` : `700 ${size}px Fredoka, sans-serif`);
 export function stickerText(g: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, fill: string) {
   g.save();
   g.font = stickerFont(size);
@@ -588,16 +589,7 @@ export function stickerText(g: CanvasRenderingContext2D, text: string, x: number
   g.lineWidth = size * 0.1;
   g.strokeStyle = INK;
   g.strokeText(text, x, y);
-  if (fill === '#fff') {
-    // Lettres blanches : du chrome, en bandes nettes
-    const ch = g.createLinearGradient(0, y - size * 0.72, 0, y + size * 0.06);
-    ch.addColorStop(0, '#ffffff');
-    ch.addColorStop(0.36, '#eef1f8');
-    ch.addColorStop(0.5, '#b6bfd3');
-    ch.addColorStop(0.58, '#f6f7fb');
-    ch.addColorStop(1, '#cfd6e4');
-    g.fillStyle = ch;
-  } else g.fillStyle = fill;
+  g.fillStyle = fill;
   g.fillText(text, x, y);
   g.restore();
 }
@@ -787,6 +779,33 @@ function drawIntro(g: CanvasRenderingContext2D, session: Session) {
       g.beginPath();
       g.arc((k * 337) % W, 120 + ((k * 211) % 860), 90 + (k % 3) * 50, 0, Math.PI * 2);
       g.fill();
+    }
+    // Barre de fenêtre d'ordinateur rétro : le jeu « s'ouvre » comme un programme
+    {
+      const bar = g.createLinearGradient(0, 0, W, 0);
+      ['#ffc2ec', '#d9c2ff', '#a9e6ff', '#bfffe0', '#fff1a8'].forEach((c, k) => bar.addColorStop(k / 4, c));
+      g.fillStyle = bar;
+      g.fillRect(0, 0, W, 46);
+      g.fillStyle = INK;
+      g.fillRect(0, 46, W, 5);
+      [['#ff5f8f', 34], ['#ffd60a', 66], ['#3dd6a0', 98]].forEach(([c, x]) => {
+        g.fillStyle = c as string;
+        g.beginPath();
+        g.arc(x as number, 23, 11, 0, Math.PI * 2);
+        g.fill();
+        g.lineWidth = 4;
+        g.strokeStyle = INK;
+        g.stroke();
+      });
+      const file = def.name[lang].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '.exe';
+      g.fillStyle = INK;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.font = '800 28px Unbounded, Fredoka, sans-serif';
+      g.fillText(file, W / 2, 25, W - 400);
+      g.textAlign = 'right';
+      g.fillText('– ☐ ✕', W - 26, 25);
+      g.textBaseline = 'alphabetic';
     }
     const tuto = TUTOS[def.id]?.[lang];
     const map = session.game?.mapName?.[lang];

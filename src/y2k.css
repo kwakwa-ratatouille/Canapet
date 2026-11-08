@@ -310,3 +310,47 @@ body,
   font-style: normal;
   color: #c4125f;
 }
+
+/* ——— Manettes des jeux ——— */
+/* Les choix : boutons plastique teintés de leur couleur, avec une petite diode */
+.choice {
+  position: relative;
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+  padding: 14px 10px 14px 34px;
+  font-family: var(--y-display);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  background-color: #fff;
+  background-image: var(--y-gel), linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--c, #ff4f9a) 24%, #ffffff) 100%);
+  box-shadow: inset 0 0 0 2px #fff, 0 4px 0 var(--ink);
+}
+.choice::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--c, #ff4f9a);
+  border: 3px solid var(--ink);
+  box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.18), inset 2px 2px 0 rgba(255, 255, 255, 0.6);
+}
+.choice:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 0 0 2px #fff, 0 1px 0 var(--ink);
+}
+.choice.on {
+  background-color: var(--yellow, #ffd60a);
+  background-image: var(--y-gel);
+}
+/* Les boutons d'action en bas, sous le pouce ; le texte d'attente au milieu */
+.traitor .choices {
+  margin-top: auto;
+}
+.traitor > .pad-title.pulse {
+  margin: auto 0;
+}
