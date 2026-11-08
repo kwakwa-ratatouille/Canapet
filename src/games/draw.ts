@@ -613,3 +613,6 @@ function installFastEmoji() {
   };
 }
 installFastEmoji();
+
+/** Image dessinée une fois puis gardée (pour les décors des jeux). */
+export const cachedSprite = cached;

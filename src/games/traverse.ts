@@ -4,7 +4,8 @@
 import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { candy, playerTag } from './draw';
+import { playerTag } from './draw';
+import { bread, car, curb, grassRow, railRow, roadRow, train, tree } from './traverseArt';
 import { allies, sidesLeft } from './teams';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
@@ -78,10 +79,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
   const lanes = new Map<number, Lane>();
   let genRow = 0;
+  let clock = 0;
+  /** Difficulté qui monte avec le temps (0 au début, 1 vers 2 min 10) : tout va plus vite. */
+  const heat = () => Math.min(1, Math.max(0, clock - 3) / 130);
+  const speedOf = (lane: Lane) => lane.speed * (1 + heat() * 0.6);
 
   /** Fabrique les rangées par paquets : jamais deux fois le même paquet, et ça se corse en montant. */
   const addChunk = () => {
-    const d = Math.min(1, genRow / 110);
+    const d = Math.min(1, Math.max(genRow / 110, clock / 140));
     const last = lanes.get(genRow - 1)?.kind;
     const opts: LaneKind[] = (['road', 'river', 'rail', 'grass'] as LaneKind[]).filter((k) => k !== last);
     const kind = genRow < 2 ? 'grass' : last !== 'grass' && Math.random() < 0.45 ? 'grass' : opts[Math.floor(Math.random() * opts.length)];
@@ -125,7 +130,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     return { ...r, col, x: (col + 0.5) * CW, row: 0, fromX: 0, fromRow: 0, hop: 0, dirX: 1, lives: LIVES, alive: true, safe: 1, best: 0, bonus: 0, shield: false, superJump: 0, sunk: 0, pushCd: 0, flat: 0, lastX: 0, lastY: 0, lastA: false, lastB: false, repeat: 0, inp: { x: 0, y: 0, a: false, b: false }, queued: null, outAt: 0, botT: rnd(0.3, 1) };
   });
   let cam = 0;
-  let clock = 0;
+  let level = 0;
+  let bannerT = 0;
   let deaths = 0;
   let endT = -1;
   const pops: { x: number; row: number; text: string; life: number; c: string }[] = [];
@@ -224,7 +230,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     if (!lane) return false;
     if (lane.kind === 'grass') return !lane.trees.has(Math.floor(x / CW));
     if (lane.kind === 'rail') return (lane.train === undefined && (lane.wait ?? 0) > 1) || false;
-    const mx = x - lane.dir * lane.speed * look;
+    const mx = x - lane.dir * speedOf(lane) * look;
     const on = lane.items.some((t) => mx > t.x - (lane.kind === 'river' ? -20 : 40) && mx < t.x + t.w + (lane.kind === 'river' ? -20 : 40));
     return lane.kind === 'river' ? on : !on;
   };
@@ -295,22 +301,30 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (!lane) continue;
         if (lane.kind === 'road' || lane.kind === 'river') {
           for (const t of lane.items) {
-            t.x += lane.dir * lane.speed * dt;
+            t.x += lane.dir * speedOf(lane) * dt;
             if (lane.dir > 0 && t.x > 2400) t.x -= 2800;
             if (lane.dir < 0 && t.x + t.w < -480) t.x += 2800;
           }
         } else if (lane.kind === 'rail') {
           if (lane.train !== undefined) {
-            lane.train += lane.dir * 2000 * dt;
+            lane.train += lane.dir * 2000 * (1 + heat() * 0.3) * dt;
             if (Math.abs(lane.train - 960) > 2400) {
               lane.train = undefined;
-              lane.wait = rnd(4, 9);
+              lane.wait = rnd(4, 9) * (1 - heat() * 0.5);
             }
           } else {
             lane.wait = (lane.wait ?? 3) - dt;
             if (lane.wait <= 0) lane.train = lane.dir > 0 ? -1500 : 3400;
           }
         }
+      }
+      // Toutes les 30 s : ça accélère (annoncé à l'écran)
+      bannerT = Math.max(0, bannerT - dt);
+      const lv = Math.min(4, Math.floor(Math.max(0, clock - 3) / 30));
+      if (lv > level) {
+        level = lv;
+        bannerT = 2.2;
+        sfx.hurry();
       }
       // L'écran monte tout seul, et rattrape le premier
       const alive = pls.filter((p) => p.alive);
@@ -358,7 +372,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (lane.kind === 'river') {
           const log = lane.items.find((t) => p.x > t.x - 8 && p.x < t.x + t.w + 8);
           if (log) {
-            p.x += lane.dir * lane.speed * dt;
+            p.x += lane.dir * speedOf(lane) * dt;
             if (p.x < 10 || p.x > COLS * CW - 10) lose(p, fr ? 'Emporté !' : 'Swept away!');
           } else lose(p, 'PLOUF !');
         } else if (lane.kind === 'road') {
@@ -390,121 +404,78 @@ const left = pls.filter((p) => p.alive);
       g.fillRect(0, 0, 1920, 1080);
       const low = Math.floor(cam) - 1;
       const high = Math.ceil(cam) + VIEW_ROWS + 2;
+      const m = (r: number, k: number) => ((r % k) + k) % k;
+      // 1. Les sols
+      for (let r = high; r >= low; r--) {
+        const lane = lanes.get(r);
+        if (!lane) continue;
+        const y = screenY(r) - CELL / 2;
+        if (lane.kind === 'grass') g.drawImage(grassRow(m(r, 4)), 0, y);
+        else if (lane.kind === 'road') g.drawImage(roadRow(m(r, 3)), 0, y);
+        else if (lane.kind === 'rail') g.drawImage(railRow(m(r, 2)), 0, y);
+        else {
+          // Rivière de sirop : vagues qui suivent le courant
+          g.fillStyle = '#ff8fc0';
+          g.fillRect(0, y, 1920, CELL + 1);
+          g.fillStyle = 'rgba(196,18,95,0.22)';
+          g.fillRect(0, y, 1920, 10);
+          g.fillStyle = 'rgba(255,255,255,.4)';
+          const off = (r * 91 + t * lane.dir * speedOf(lane) * 0.35) % 200;
+          for (let x = off - 200; x < 1920; x += 200) {
+            g.beginPath();
+            g.roundRect(x, y + 22 + m(r, 3) * 22, 70, 7, 4);
+            g.fill();
+            g.beginPath();
+            g.roundRect(x + 100, y + 70 - m(r, 2) * 14, 44, 6, 3);
+            g.fill();
+          }
+        }
+      }
+      // 2. Trottoirs au bord des routes
+      for (let r = high; r >= low; r--) {
+        if (lanes.get(r)?.kind !== 'road') continue;
+        const y = screenY(r) - CELL / 2;
+        if (lanes.get(r + 1)?.kind !== 'road') curb(g, y);
+        if (lanes.get(r - 1)?.kind !== 'road') curb(g, y + CELL);
+      }
+      // 3. Ce qui est posé dessus : arbres, bonus, voitures, baguettes, trains
       for (let r = high; r >= low; r--) {
         const lane = lanes.get(r);
         if (!lane) continue;
         const y = screenY(r) - CELL / 2;
         if (lane.kind === 'grass') {
-          g.fillStyle = r % 2 ? '#a8dd7a' : '#9bd46c';
-          g.fillRect(0, y, 1920, CELL + 1);
-          for (const c of lane.trees) {
-            const x = (c + 0.5) * CW;
-            g.fillStyle = '#a0643a';
-            g.fillRect(x - 11, y + 62, 22, 40);
-            g.fillStyle = '#3fa34a';
-            g.strokeStyle = INK;
-            g.lineWidth = 5;
-            g.beginPath();
-            g.arc(x - 22, y + 50, 28, 0, Math.PI * 2);
-            g.arc(x + 22, y + 50, 28, 0, Math.PI * 2);
-            g.arc(x, y + 28, 32, 0, Math.PI * 2);
-            g.fill();
-            g.stroke();
-          }
+          for (const c of lane.trees) g.drawImage(tree(m(c * 7 + r, 3)), (c + 0.5) * CW - 65, y - 8);
           if (lane.bonus) {
             const bx = (lane.bonus.col + 0.5) * CW;
+            const by = y + CELL / 2 + Math.sin(t * 4 + r) * 6;
+            g.fillStyle = 'rgba(255,255,255,0.55)';
+            g.beginPath();
+            g.arc(bx, by, 40 + Math.sin(t * 6) * 4, 0, Math.PI * 2);
+            g.fill();
             g.font = '64px sans-serif';
             g.textAlign = 'center';
             g.textBaseline = 'middle';
             g.fillStyle = '#000';
-            g.fillText(lane.bonus.kind === 'star' ? '⭐' : lane.bonus.kind === 'shield' ? '🛡️' : '🚀', bx, y + CELL / 2 + Math.sin(t * 4 + r) * 6);
+            g.fillText(lane.bonus.kind === 'star' ? '⭐' : lane.bonus.kind === 'shield' ? '🛡️' : '🚀', bx, by);
           }
         } else if (lane.kind === 'road') {
-          g.fillStyle = '#5b5166';
-          g.fillRect(0, y, 1920, CELL + 1);
-          g.fillStyle = 'rgba(255,255,255,.55)';
-          for (let x = (r * 37) % 120; x < 1920; x += 120) g.fillRect(x, y + CELL - 5, 60, 5);
-          for (const c of lane.items) {
-            g.fillStyle = c.c;
-            g.strokeStyle = INK;
-            g.lineWidth = 5;
-            g.beginPath();
-            g.roundRect(c.x, y + 16, c.w, CELL - 34, 22);
-            g.fill();
-            g.stroke();
-            candy(g, c.x, y + 16, c.w, CELL - 34, 22);
-            // Pare-brise et phares, du côté où ça roule
-            const front = lane.dir > 0 ? c.x + c.w - 54 : c.x + 16;
-            g.fillStyle = '#d6f4ff';
-            g.beginPath();
-            g.roundRect(front, y + 28, 38, CELL - 58, 8);
-            g.fill();
-            g.stroke();
-            g.fillStyle = INK;
-            g.beginPath();
-            g.arc(c.x + 30, y + CELL - 14, 13, 0, Math.PI * 2);
-            g.arc(c.x + c.w - 30, y + CELL - 14, 13, 0, Math.PI * 2);
-            g.fill();
-          }
+          for (const c of lane.items) g.drawImage(car(c.c, c.w, lane.dir), c.x - 14, y);
         } else if (lane.kind === 'river') {
-          g.fillStyle = '#ff8fc0';
-          g.fillRect(0, y, 1920, CELL + 1);
-          g.fillStyle = 'rgba(255,255,255,.35)';
-          for (let x = ((r * 91 + t * lane.dir * 40) % 200) - 200; x < 1920; x += 200) g.fillRect(x, y + 20 + (r % 3) * 24, 70, 6);
-          for (const c of lane.items) {
-            g.fillStyle = c.c;
-            g.strokeStyle = INK;
-            g.lineWidth = 5;
-            g.beginPath();
-            g.roundRect(c.x, y + 14, c.w, CELL - 28, 34);
-            g.fill();
-            g.stroke();
-            // Une grande baguette : ses entailles
-            g.strokeStyle = '#a0643a';
-            g.lineWidth = 6;
-            for (let x = c.x + 40; x < c.x + c.w - 30; x += 56) {
-              g.beginPath();
-              g.moveTo(x, y + 30);
-              g.lineTo(x + 22, y + CELL - 30);
-              g.stroke();
-            }
-          }
+          for (const c of lane.items) g.drawImage(bread(c.w), c.x - 5, y);
         } else {
-          g.fillStyle = '#c9b8a8';
-          g.fillRect(0, y, 1920, CELL + 1);
-          g.fillStyle = '#8a6a4a';
-          for (let x = 0; x < 1920; x += 54) g.fillRect(x, y + 12, 18, CELL - 24);
-          g.fillStyle = '#6b6f7a';
-          g.fillRect(0, y + 28, 1920, 9);
-          g.fillRect(0, y + CELL - 37, 1920, 9);
           // L'alerte juste avant le train
           const warn = lane.train === undefined && (lane.wait ?? 9) < 1.3;
-          g.font = '46px sans-serif';
-          g.textAlign = 'center';
-          g.textBaseline = 'middle';
           if (warn && Math.sin(t * 22) > -0.2) {
             g.fillStyle = 'rgba(255,42,42,.35)';
             g.fillRect(0, y, 1920, CELL);
+            g.font = '46px sans-serif';
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
             g.fillStyle = '#000';
             g.fillText('🚨', 60, y + CELL / 2);
             g.fillText('🚨', 1860, y + CELL / 2);
           }
-          if (lane.train !== undefined) {
-            const x = lane.train - 1100;
-            g.fillStyle = '#ff3b3b';
-            g.strokeStyle = INK;
-            g.lineWidth = 6;
-            g.beginPath();
-            g.roundRect(x, y + 8, 2200, CELL - 16, 26);
-            g.fill();
-            g.stroke();
-            g.fillStyle = '#fff3c9';
-            for (let k = x + 60; k < x + 2150; k += 150) {
-              g.beginPath();
-              g.roundRect(k, y + 26, 90, CELL - 60, 10);
-              g.fill();
-            }
-          }
+          if (lane.train !== undefined) g.drawImage(train(lane.dir), lane.train - 1110, y);
         }
       }
       // Les joueurs, ceux du fond d'abord
@@ -551,6 +522,28 @@ const left = pls.filter((p) => p.alive);
         g.fillText(o.text, px, y);
       }
       g.globalAlpha = 1;
+      if (bannerT > 0) {
+        const k = Math.min(1, (2.2 - bannerT) * 6, bannerT * 3);
+        g.save();
+        g.globalAlpha = Math.max(0, k);
+        g.translate(960, 300);
+        g.rotate(-0.04);
+        g.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
+        g.fillStyle = INK;
+        g.beginPath();
+        g.roundRect(-330, -62, 660, 132, 40);
+        g.fill();
+        g.fillStyle = '#ffd60a';
+        g.beginPath();
+        g.roundRect(-330, -70, 660, 128, 40);
+        g.fill();
+        g.font = '700 64px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillStyle = INK;
+        g.fillText(fr ? `⚡ Ça accélère ! (${level + 1})` : `⚡ Speeding up! (${level + 1})`, 0, -4, 620);
+        g.restore();
+      }
       // Bord du bas dangereux
       g.fillStyle = 'rgba(255,59,92,.35)';
       g.fillRect(0, 1040, 1920, 40);
