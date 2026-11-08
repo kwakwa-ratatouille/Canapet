@@ -4,7 +4,7 @@
 import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, MENTHE, ROSE } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { candy, fitText } from './draw';
+import { candy, fitText, studioBackdrop } from './draw';
 import { PACKS, PACK_OPTION } from '../shared/offer';
 import { PACK_PAIRS } from './packsData';
 import { freshDeck } from './decks';
@@ -221,8 +221,7 @@ function createPlutot(runners: Runner[], ctx: GameCtx): GameInstance {
       } else if (timer <= 0) game.over = true;
     },
     render(g, t) {
-      g.fillStyle = '#e8f7ff';
-      g.fillRect(0, 0, 1920, 1080);
+      studioBackdrop(g, t, ctx.light, '#dff3ff', '#f1e6ff', '#8fd8ff');
       g.fillStyle = INK;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
@@ -385,8 +384,7 @@ function createChiffre(runners: Runner[], ctx: GameCtx): GameInstance {
       } else if (timer <= 0) game.over = true;
     },
     render(g, t) {
-      g.fillStyle = '#fff6d9';
-      g.fillRect(0, 0, 1920, 1080);
+      studioBackdrop(g, t, ctx.light, '#fff4d1', '#ffe2ef', '#ffc93c');
       g.fillStyle = INK;
       g.textAlign = 'center';
       g.textBaseline = 'middle';

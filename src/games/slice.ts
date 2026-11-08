@@ -1,6 +1,7 @@
 // Tranche de Rire : les aliments du jeu sont lancés en l'air, chaque joueur les tranche avec son doigt.
 // Le téléphone envoie la position du doigt : elle est reportée sur tout l'écran. Pièges : coussin péteur et bombe.
 // En mode équipes, les points de chacun s'additionnent pour son camp.
+import { woodBoard } from './draw';
 import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
@@ -546,10 +547,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.save();
       if (shake > 0) g.translate(rnd(-12, 12) * (shake / 0.35), rnd(-12, 12) * (shake / 0.35));
       // Un plan de travail en bois
-      g.fillStyle = '#e8b878';
-      g.fillRect(-20, -20, 1960, 1120);
-      g.fillStyle = 'rgba(122,74,42,.16)';
-      for (let i = 0; i < 6; i++) g.fillRect(-20, 120 + i * 190, 1960, 10);
+      woodBoard(g);
       if (clock < 3.5) {
         g.fillStyle = INK;
         g.textAlign = 'center';

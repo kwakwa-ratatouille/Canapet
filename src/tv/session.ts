@@ -150,7 +150,9 @@ export class Session {
   botLevel = store('botLevel', 1);
   /** Voix du présentateur (numéro dans VOICES). */
   /** Les jeux de la soirée et leur gagnant (pour la cassette du bilan). */
-  history: { game: string; slug: string; profile: Profile }[] = [];
+  history: { game: string; slug: string; profile: Profile; shot?: string }[] = [];
+  /** Donné par l'écran télé : une petite image du dernier moment du jeu. */
+  snap: (() => string | null) | null = null;
   /** Noms d'équipe choisis par l'hôte. */
   teamNames: string[] = store('teamNames', ['', '']);
   voice = Math.max(0, VOICES.findIndex((x) => x.id === store('voiceId', defaultVoiceId())));
@@ -829,7 +831,7 @@ export class Session {
       return { pid, profile: r.profile, bot: !p, rank, points, team: r.team };
     });
     // Pour la cassette du bilan : le jeu et son gagnant
-    if (this.def && this.results[0]) this.history.push({ game: this.def.name[this.lang()], slug: this.def.slug, profile: this.results[0].profile });
+    if (this.def && this.results[0]) this.history.push({ game: this.def.name[this.lang()], slug: this.def.slug, profile: this.results[0].profile, shot: this.snap?.() ?? undefined });
     // Duel de rivaux : +3 à celui qui finit devant l'autre
     if (this.duel) {
       const { a, b } = this.duel;

@@ -93,7 +93,7 @@ export function Recap({ session, lang }: { session: Session; players: Player[]; 
         {list.map((a, i) => (
           <div key={a.title} className="recap-card" style={{ animationDelay: `${0.3 + i * 0.35}s`, ['--pc' as string]: a.who.color }}>
             <span className="recap-icon">{a.icon}</span>
-            <CharCanvas profile={a.who} size={120} still mood={a.mood} />
+            <CharCanvas profile={a.who} size={84} still mood={a.mood} />
             <b>{a.title}</b>
             <span className="recap-who">{a.who.name}</span>
             <small>{a.line}</small>
@@ -105,12 +105,14 @@ export function Recap({ session, lang }: { session: Session; players: Player[]; 
         <div className="tape-list">
           <b className="tape-title">📼 {fr ? 'La cassette de la soirée' : 'Tonight’s tape'}</b>
           <ol>
-            {session.history.slice(-8).map((h, i) => (
+            {session.history.slice(-6).map((h, i) => (
               <li key={i} style={{ animationDelay: `${1 + i * 0.25}s` }}>
-                <img src={gameIcon(h.slug)} alt="" />
+                {h.shot ? <img className="tape-shot" src={h.shot} alt="" /> : <img src={gameIcon(h.slug)} alt="" />}
                 <span>{h.game}</span>
-                <CharCanvas profile={h.profile} size={46} still mood="win" />
-                <em>{h.profile.name}</em>
+                <i>
+                  <CharCanvas profile={h.profile} size={40} still mood="win" />
+                  <em>{h.profile.name}</em>
+                </i>
               </li>
             ))}
           </ol>

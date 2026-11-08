@@ -597,3 +597,78 @@ body,
   font-style: normal;
   color: #ffd60a;
 }
+
+.tape-list li img.tape-shot {
+  width: calc(112 * var(--u, 1px));
+  height: calc(63 * var(--u, 1px));
+  object-fit: cover;
+  border: calc(4 * var(--u, 1px)) solid #fff;
+  border-radius: calc(8 * var(--u, 1px));
+  box-shadow: 0 calc(4 * var(--u, 1px)) 0 var(--ink);
+}
+
+/* ——— Bilan : tout tient dans l'écran (6 titres sur une ligne, cassette en pellicule) ——— */
+.recap-bg {
+  padding-top: calc(40 * var(--u, 1px));
+}
+.recap-grid {
+  grid-template-columns: repeat(auto-fit, calc(285 * var(--u, 1px)));
+  justify-content: center;
+  width: calc(1840 * var(--u, 1px));
+  gap: calc(18 * var(--u, 1px));
+}
+.recap-card {
+  padding: calc(62 * var(--u, 1px)) calc(10 * var(--u, 1px)) calc(14 * var(--u, 1px));
+}
+.recap-card b {
+  font-size: calc(32 * var(--u, 1px));
+  line-height: 1.05;
+  text-align: center;
+}
+.recap-card .recap-who {
+  font-size: calc(30 * var(--u, 1px));
+}
+.recap-card small {
+  font-size: calc(28 * var(--u, 1px));
+  text-align: center;
+  line-height: 1.1;
+}
+.recap-icon {
+  font-size: calc(48 * var(--u, 1px));
+}
+.tape-list {
+  width: calc(1840 * var(--u, 1px));
+  margin-top: calc(24 * var(--u, 1px));
+}
+.tape-list ol {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: calc(16 * var(--u, 1px));
+}
+.tape-list li {
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(4 * var(--u, 1px));
+}
+.tape-list li img,
+.tape-list li img.tape-shot {
+  width: 100%;
+  height: calc(150 * var(--u, 1px));
+  object-fit: cover;
+  border: calc(4 * var(--u, 1px)) solid #fff;
+  border-radius: calc(10 * var(--u, 1px));
+  background: #fff;
+}
+.tape-list li img:not(.tape-shot) {
+  object-fit: contain;
+  padding: calc(18 * var(--u, 1px));
+}
+.tape-list li span {
+  text-align: center;
+}
+.tape-list li i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--u, 1px));
+  font-style: normal;
+}

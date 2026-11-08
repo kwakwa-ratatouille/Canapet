@@ -4,7 +4,7 @@ import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { INK, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { candy, playerRing, roundRectText } from './draw';
+import { candy, playerRing, roundRectText, roomBackdrop } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 // Aire de jeu commune (repère télé 1920 × 1080)
@@ -146,8 +146,7 @@ function readInput(ps: P[], pid: string, m: { t: string; x?: number; y?: number;
 }
 
 function drawFloor(g: CanvasRenderingContext2D, c1: string, c2: string, bg: string) {
-  g.fillStyle = bg;
-  g.fillRect(0, 0, 1920, 1080);
+  roomBackdrop(g, bg);
   g.fillStyle = INK;
   g.beginPath();
   g.roundRect(AX - 14, AY - 14 + 10, AW + 28, AH + 28, 40);

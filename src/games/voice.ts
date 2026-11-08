@@ -3,7 +3,7 @@
 import { drawCharacter } from '../shared/characters';
 import { CIEL, INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
 import { decodeClip, fakeVoice, karaokeTune, playClip, playMusic, referenceSound, REF_SOUNDS, sfx, speak, type ClipPlayer, type MusicId } from '../shared/sound';
-import { candy, fitText } from './draw';
+import { candy, fitText, stageBackdrop } from './draw';
 import { wrap } from './tribunal';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 import { freshDeck } from './decks';
@@ -557,27 +557,8 @@ function createVoice(mode: Mode, runners: Runner[], ctx: GameCtx): GameInstance 
       }
     },
     render(g, t) {
-      // Scène de cabaret
-      const bg = g.createLinearGradient(0, 0, 0, 1080);
-      bg.addColorStop(0, '#6a3dff');
-      bg.addColorStop(1, '#2e1a6e');
-      g.fillStyle = bg;
-      g.fillRect(0, 0, 1920, 1080);
-      g.fillStyle = '#c4125f';
-      [0, 1].forEach((k) => {
-        g.beginPath();
-        const x = k ? 1920 : 0;
-        const d = k ? -1 : 1;
-        g.moveTo(x, 0);
-        g.lineTo(x + d * 190, 0);
-        g.quadraticCurveTo(x + d * 90, 520, x + d * 130, 1080);
-        g.lineTo(x, 1080);
-        g.fill();
-      });
-      g.fillStyle = '#ffc48a';
-      g.fillRect(0, 900, 1920, 180);
-      g.fillStyle = 'rgba(58,33,64,.18)';
-      g.fillRect(0, 900, 1920, 10);
+      // Scène de cabaret (dessinée une fois)
+      stageBackdrop(g, t, ctx.light);
       // Panneau du haut
       const title = phase === 'end' ? (fr ? 'Les plus belles voix' : 'The finest voices') : phase === 'record' || phase === 'write' ? recordTitle() : phase === 'listen' ? (fr ? '🔊 Écoutez !' : '🔊 Listen!') : phase === 'choose' ? (fr ? '🗳️ Sur vos téléphones !' : '🗳️ On your phones!') : note;
       g.fillStyle = '#fff';

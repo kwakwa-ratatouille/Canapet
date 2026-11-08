@@ -215,3 +215,242 @@ export function fitText(g: CanvasRenderingContext2D, s: string, maxW: number): s
   while (t.length > 2 && g.measureText(t + '.').width > maxW) t = t.slice(0, -1);
   return t + '.';
 }
+
+// ——— Décors partagés (dessinés une fois, puis recopiés) ———
+
+/** Petite étincelle à 4 branches (style Y2K). */
+export function spark(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string) {
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(x, y - r);
+  g.quadraticCurveTo(x, y, x + r, y);
+  g.quadraticCurveTo(x, y, x, y + r);
+  g.quadraticCurveTo(x, y, x - r, y);
+  g.quadraticCurveTo(x, y, x, y - r);
+  g.fill();
+}
+
+/** Scène de cabaret : rideau du fond plissé, lambrequin, rideaux rouges retenus, plancher et rampe de lumières. */
+export function stageBackdrop(g: CanvasRenderingContext2D, t: number, light: boolean) {
+  const bg = cached('stage', 1920, 1080, (c) => {
+    // Rideau du fond, plissé
+    const wall = c.createLinearGradient(0, 0, 0, 900);
+    wall.addColorStop(0, '#4a24b8');
+    wall.addColorStop(1, '#241052');
+    c.fillStyle = wall;
+    c.fillRect(0, 0, 1920, 1080);
+    for (let x = 0; x < 1920; x += 96) {
+      const f = c.createLinearGradient(x, 0, x + 96, 0);
+      f.addColorStop(0, 'rgba(0,0,0,0.22)');
+      f.addColorStop(0.45, 'rgba(255,255,255,0.07)');
+      f.addColorStop(1, 'rgba(0,0,0,0.22)');
+      c.fillStyle = f;
+      c.fillRect(x, 0, 96, 900);
+    }
+    // Halo chaud au centre
+    const halo = c.createRadialGradient(960, 620, 40, 960, 620, 760);
+    halo.addColorStop(0, 'rgba(255,200,120,0.35)');
+    halo.addColorStop(1, 'rgba(255,200,120,0)');
+    c.fillStyle = halo;
+    c.fillRect(0, 0, 1920, 900);
+    // Plancher en bois
+    c.fillStyle = '#e9a866';
+    c.fillRect(0, 900, 1920, 180);
+    const rows = [900, 928, 962, 1004, 1054, 1080];
+    for (let r = 0; r < rows.length - 1; r++) {
+      c.fillStyle = r % 2 ? 'rgba(122,74,42,0.10)' : 'rgba(255,255,255,0.10)';
+      c.fillRect(0, rows[r], 1920, rows[r + 1] - rows[r]);
+      c.fillStyle = 'rgba(122,74,42,0.35)';
+      c.fillRect(0, rows[r + 1] - 3, 1920, 3);
+      const step = 150 + r * 40;
+      for (let x = (r * 97) % step; x < 1920; x += step) c.fillRect(x, rows[r], 3, rows[r + 1] - rows[r]);
+    }
+    c.fillStyle = '#ffd59a';
+    c.fillRect(0, 900, 1920, 12);
+    c.fillStyle = INK;
+    c.fillRect(0, 896, 1920, 6);
+    // Rideaux rouges retenus par une cordelière
+    [0, 1].forEach((k) => {
+      const x = k ? 1920 : 0;
+      const d = k ? -1 : 1;
+      const cg = c.createLinearGradient(x, 0, x + d * 290, 0);
+      for (let i = 0; i <= 6; i++) cg.addColorStop(i / 6, i % 2 ? '#a50e4c' : '#e0246f');
+      c.fillStyle = cg;
+      c.beginPath();
+      c.moveTo(x, 0);
+      c.lineTo(x + d * 290, 0);
+      c.quadraticCurveTo(x + d * 250, 380, x + d * 120, 560);
+      c.quadraticCurveTo(x + d * 210, 760, x + d * 170, 1080);
+      c.lineTo(x, 1080);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = INK;
+      c.lineWidth = 6;
+      c.stroke();
+      // Cordelière dorée
+      c.fillStyle = '#ffc93c';
+      c.beginPath();
+      c.ellipse(x + d * 128, 562, 46, 16, d * 0.3, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+      c.beginPath();
+      c.arc(x + d * 150, 600, 14, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+    });
+    // Lambrequin festonné en haut, avec franges dorées
+    c.fillStyle = '#c4125f';
+    c.strokeStyle = INK;
+    c.lineWidth = 6;
+    c.beginPath();
+    c.moveTo(0, 0);
+    c.lineTo(1920, 0);
+    c.lineTo(1920, 70);
+    for (let x = 1920; x > 0; x -= 160) c.quadraticCurveTo(x - 80, 150, x - 160, 70);
+    c.closePath();
+    c.fill();
+    c.stroke();
+    c.strokeStyle = '#ffc93c';
+    c.lineWidth = 5;
+    c.beginPath();
+    for (let x = 0; x < 1920; x += 160) {
+      c.moveTo(x, 80);
+      c.quadraticCurveTo(x + 80, 152, x + 160, 80);
+    }
+    c.stroke();
+  });
+  g.drawImage(bg, 0, 0);
+  // Rampe de lumières au bord de la scène
+  for (let i = 0; i < 16; i++) {
+    const x = 60 + i * 120;
+    const on = light ? 1 : 0.65 + 0.35 * Math.sin(t * 3 + i * 1.7);
+    g.fillStyle = `rgba(255,236,140,${0.35 * on})`;
+    g.beginPath();
+    g.ellipse(x, 1078, 52, 26, 0, Math.PI, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#fff3b0';
+    g.beginPath();
+    g.ellipse(x, 1080, 22, 12, 0, Math.PI, Math.PI * 2);
+    g.fill();
+  }
+}
+
+/** Plateau de jeu télé : mur pastel, rayons, cadre d'ampoules qui clignotent, estrade brillante. */
+export function studioBackdrop(g: CanvasRenderingContext2D, t: number, light: boolean, top = '#efe4ff', bottom = '#ffe0f0', floor = '#c9a6ff') {
+  const bg = cached('studio' + top + bottom + floor, 1920, 1080, (c) => {
+    const wall = c.createLinearGradient(0, 0, 0, 1080);
+    wall.addColorStop(0, top);
+    wall.addColorStop(1, bottom);
+    c.fillStyle = wall;
+    c.fillRect(0, 0, 1920, 1080);
+    // Rayons qui partent du centre
+    c.fillStyle = 'rgba(255,255,255,0.38)';
+    for (let i = 0; i < 28; i += 2) {
+      const a0 = (i / 28) * Math.PI * 2;
+      const a1 = ((i + 1) / 28) * Math.PI * 2;
+      c.beginPath();
+      c.moveTo(960, 560);
+      c.lineTo(960 + Math.cos(a0) * 2200, 560 + Math.sin(a0) * 2200);
+      c.lineTo(960 + Math.cos(a1) * 2200, 560 + Math.sin(a1) * 2200);
+      c.closePath();
+      c.fill();
+    }
+    // Étincelles dans les coins
+    [[150, 170, 26], [1770, 190, 30], [110, 760, 22], [1810, 720, 24], [330, 90, 14], [1600, 100, 16]].forEach(([x, y, r]) => spark(c, x, y, r, 'rgba(255,255,255,0.9)'));
+    // Estrade brillante
+    c.fillStyle = INK;
+    c.fillRect(0, 1000, 1920, 80);
+    c.fillStyle = floor;
+    c.fillRect(0, 1008, 1920, 72);
+    c.fillStyle = 'rgba(255,255,255,0.45)';
+    c.fillRect(0, 1014, 1920, 8);
+    for (let x = 40; x < 1920; x += 140) c.fillRect(x, 1030, 70, 5);
+  });
+  g.drawImage(bg, 0, 0);
+  // Cadre d'ampoules (elles clignotent à tour de rôle)
+  const step = Math.floor(t * 3);
+  g.strokeStyle = INK;
+  g.lineWidth = 3;
+  let i = 0;
+  const bulb = (x: number, y: number) => {
+    const on = light || (i++ + step) % 3 !== 0;
+    g.fillStyle = on ? '#ffd60a' : '#fff6cf';
+    g.beginPath();
+    g.arc(x, y, 9, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+  };
+  for (let x = 30; x <= 1890; x += 62) bulb(x, 22);
+  for (let y = 84; y <= 960; y += 62) {
+    bulb(22, y);
+    bulb(1898, y);
+  }
+}
+
+/** Papier peint du salon autour d'une arène (rayures douces + étincelles). */
+export function roomBackdrop(g: CanvasRenderingContext2D, bg: string) {
+  const img = cached('room' + bg, 1920, 1080, (c) => {
+    c.fillStyle = bg;
+    c.fillRect(0, 0, 1920, 1080);
+    c.fillStyle = 'rgba(58,33,64,0.045)';
+    for (let x = -1080; x < 1920; x += 120) {
+      c.beginPath();
+      c.moveTo(x, 1080);
+      c.lineTo(x + 60, 1080);
+      c.lineTo(x + 60 + 1080, 0);
+      c.lineTo(x + 1080, 0);
+      c.closePath();
+      c.fill();
+    }
+    for (let i = 0; i < 26; i++) spark(c, (i * 389 + 70) % 1920, (i * 233 + 50) % 1080, 10 + (i % 3) * 6, 'rgba(255,255,255,0.75)');
+  });
+  g.drawImage(img, 0, 0);
+}
+
+/** Planche à découper en bois (lattes, veines, nœuds). Déborde un peu pour les tremblements d'écran. */
+export function woodBoard(g: CanvasRenderingContext2D) {
+  const img = cached('wood', 1960, 1120, (c) => {
+    c.fillStyle = '#e8b878';
+    c.fillRect(0, 0, 1960, 1120);
+    for (let i = 0; i < 6; i++) {
+      const y = i * 190;
+      c.fillStyle = i % 2 ? 'rgba(122,74,42,0.07)' : 'rgba(255,255,255,0.08)';
+      c.fillRect(0, y, 1960, 190);
+      c.fillStyle = 'rgba(122,74,42,0.25)';
+      c.fillRect(0, y + 180, 1960, 10);
+      c.strokeStyle = 'rgba(122,74,42,0.14)';
+      c.lineWidth = 3;
+      for (let k = 0; k < 4; k++) {
+        c.beginPath();
+        const yy = y + 30 + k * 38;
+        c.moveTo(0, yy);
+        for (let x = 0; x <= 1960; x += 120) c.quadraticCurveTo(x + 60, yy + ((x / 120 + k + i) % 2 ? 9 : -9), x + 120, yy);
+        c.stroke();
+      }
+      c.fillStyle = 'rgba(122,74,42,0.22)';
+      c.beginPath();
+      c.ellipse(((i * 613) % 1700) + 120, y + 90, 26, 12, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+  });
+  g.drawImage(img, -20, -20);
+}
+
+/** Mur de cuisine en carrelage (pour La Bataille des Fusions). */
+export function tileWall(g: CanvasRenderingContext2D, bg: string) {
+  const img = cached('tiles' + bg, 1920, 1080, (c) => {
+    c.fillStyle = bg;
+    c.fillRect(0, 0, 1920, 1080);
+    for (let y = 0; y < 1080; y += 90)
+      for (let x = 0; x < 1920; x += 90) {
+        if (((x + y) / 90) % 2) {
+          c.fillStyle = 'rgba(255,255,255,0.35)';
+          c.fillRect(x, y, 90, 90);
+        }
+      }
+    c.fillStyle = 'rgba(58,33,64,0.08)';
+    for (let x = 0; x < 1920; x += 90) c.fillRect(x, 0, 4, 1080);
+    for (let y = 0; y < 1080; y += 90) c.fillRect(0, y, 1920, 4);
+  });
+  g.drawImage(img, 0, 0);
+}

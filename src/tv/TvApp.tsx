@@ -146,7 +146,7 @@ export function TvApp() {
       {session.phase === 'lobby' ? <Lobby session={session} players={players} hostPid={hostPid} /> : <GameView session={session} />}
 
       {/* Pendant le jeu, le QR code se cache (il gênait les joueurs) : il revient en pause et aux résultats */}
-      {session.phase !== 'lobby' && code && (session.phase !== 'game' || session.paused) && (
+      {session.phase !== 'lobby' && session.phase !== 'recap' && code && (session.phase !== 'game' || session.paused) && (
         <div className="corner-join">
           <QR text={joinUrl(code)} size={120} />
           <div>
@@ -277,6 +277,7 @@ function GameView({ session }: { session: Session }) {
     const g = cv.getContext('2d', { alpha: false })!;
     let raf = 0;
     const rec = new ReplayRecorder();
+    session.snap = () => rec.thumb(session);
     // Aperçu : accès au ralenti pour les tests (window.__rec)
     if (PREVIEW) (window as unknown as { __rec: ReplayRecorder }).__rec = rec;
     const loop = (now: number) => {

@@ -13,6 +13,33 @@ const LIFE = 3.2;
 /** Pluie d'emojis sur toute la télé (effet d'écran du gagnant). */
 const RAIN = Array.from({ length: LIGHT ? 26 : 60 }, (_, i) => ({ x: Math.random() * W, at: Math.random() * 2.6, v: 340 + Math.random() * 420, s: 56 + Math.random() * 62, w: Math.random() * 6, i }));
 const FX_LIFE = 5.2;
+
+// Un emoji coûte très cher à dessiner (le navigateur le refait à chaque image, et encore plus à chaque taille).
+// On le dessine une seule fois dans une petite image, puis on recopie l'image : même rendu, des dizaines de fois plus rapide.
+const EMOJI_PX = 160;
+const EMOJI_BOX = 200;
+const emojiCache = new Map<string, HTMLCanvasElement>();
+function emojiSprite(e: string) {
+  let c = emojiCache.get(e);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = EMOJI_BOX;
+    c.height = EMOJI_BOX;
+    const x = c.getContext('2d')!;
+    x.font = `${EMOJI_PX}px sans-serif`;
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText(e, EMOJI_BOX / 2, EMOJI_BOX / 2 + 6);
+    if (emojiCache.size > 200) emojiCache.clear();
+    emojiCache.set(e, c);
+  }
+  return c;
+}
+/** Dessine un emoji centré en (x, y), à la taille d'une police de `size` px. */
+export function drawEmoji(g: CanvasRenderingContext2D, e: string, x: number, y: number, size: number) {
+  const d = (EMOJI_BOX * size) / EMOJI_PX;
+  g.drawImage(emojiSprite(e), x - d / 2, y - d / 2, d, d);
+}
 const KO_LIFE = 2.4;
 
 function drawCosmetics(g: CanvasRenderingContext2D, session: Session, now: number) {
@@ -29,8 +56,7 @@ function drawCosmetics(g: CanvasRenderingContext2D, session: Session, now: numbe
         g.globalAlpha = Math.min(1, (FX_LIFE - a) / 0.6);
         g.translate(d.x + Math.sin(t * 2 + d.w) * 34, -80 + t * d.v);
         g.rotate(t * (d.w - 3) * 0.5);
-        g.font = `${d.s | 0}px sans-serif`;
-        g.fillText(sc.icons[d.i % sc.icons.length], 0, 0);
+        drawEmoji(g, sc.icons[d.i % sc.icons.length], 0, 0, d.s);
         g.restore();
       }
     }
@@ -44,8 +70,7 @@ function drawCosmetics(g: CanvasRenderingContext2D, session: Session, now: numbe
       const ang = (i / 12) * Math.PI * 2 + 0.3;
       const d = (k.rise ? 40 : 260) * Math.min(1, a * 2.4);
       const up = k.rise ? -a * 300 - i * 16 : 0;
-      g.font = `${70 + (i % 3) * 22}px sans-serif`;
-      g.fillText(k.icons[i % k.icons.length], k.x + Math.cos(ang) * d, 760 + Math.sin(ang) * d * 0.7 + up);
+      drawEmoji(g, k.icons[i % k.icons.length], k.x + Math.cos(ang) * d, 760 + Math.sin(ang) * d * 0.7 + up, 70 + (i % 3) * 22);
     }
     stickerText(g, k.name, k.x, 760 + (k.rise ? -a * 200 : 0), 46, k.color);
     g.restore();
@@ -83,10 +108,7 @@ function drawOne(g: CanvasRenderingContext2D, r: FlyingReaction, a: number, fr: 
     stickerText(g, re.txt[fr ? 'fr' : 'en'], 0, 0, 62, r.color);
   } else {
     const size = re.big ? 200 : re.rude ? 132 : 104;
-    g.font = `${size}px sans-serif`;
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.fillText(re.e, 0, -10);
+    drawEmoji(g, re.e, 0, -10, size);
   }
   // Étiquette au nom de l'envoyeur
   g.font = '700 28px Fredoka, sans-serif';
@@ -126,7 +148,7 @@ function drawCombo(g: CanvasRenderingContext2D, i: number, a: number, fr: boolea
       g.save();
       g.translate(x, y);
       g.rotate(Math.sin(a * 3 + n) * 0.4);
-      g.fillText(re.e, 0, 0);
+      drawEmoji(g, re.e, 0, 0, 90);
       g.restore();
     }
   g.translate(W / 2, 250);
@@ -137,8 +159,7 @@ function drawCombo(g: CanvasRenderingContext2D, i: number, a: number, fr: boolea
   else {
     // L'emoji à part, en très grand (le contour du texte le salirait)
     stickerText(g, fr ? 'PLUIE DE' : 'RAIN OF', 0, 0, 96, '#ffd60a');
-    g.font = '170px sans-serif';
-    g.fillText(re.e, 0, 150);
+    drawEmoji(g, re.e, 0, 150, 170);
   }
   g.restore();
 }
@@ -155,6 +176,22 @@ export class ReplayRecorder {
   private filled = 0;
   private last = 0;
   private game: unknown = null;
+
+  /** Petite image du dernier moment du jeu en cours (pour la cassette du bilan). */
+  thumb(session: Session): string | null {
+    if (session.game !== this.game || !this.filled) return null;
+    const c = this.frames[(this.head - 1 + COUNT) % COUNT];
+    if (!c) return null;
+    const s = document.createElement('canvas');
+    s.width = 320;
+    s.height = 180;
+    s.getContext('2d')!.drawImage(c, 0, 0, 320, 180);
+    try {
+      return s.toDataURL('image/jpeg', 0.72);
+    } catch {
+      return null;
+    }
+  }
 
   /** À appeler après avoir dessiné le jeu : garde une image de temps en temps. */
   capture(src: HTMLCanvasElement, session: Session, now: number) {

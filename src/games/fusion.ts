@@ -5,7 +5,7 @@ import { drawCharacter } from '../shared/characters';
 import { INK, ROSE } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
 import { FUSION_COLORS, FUSION_H, FUSION_R, FUSION_W, type FusionPadData } from './fusionShared';
-import { candy } from './draw';
+import { candy, tileWall } from './draw';
 import { TEAMS } from './teams';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
@@ -347,8 +347,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
     },
     render(g, t) {
-      g.fillStyle = '#ffe9c9';
-      g.fillRect(0, 0, 1920, 1080);
+      tileWall(g, '#ffe9c9');
       boards.forEach((b) => {
         const ox = OX[b.id];
         const team = TEAMS[b.id];
