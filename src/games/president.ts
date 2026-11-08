@@ -208,7 +208,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function startTurn(i: number) {
     turn = i;
-    timer = seats[i].bot ? rnd(1.1, 2.2) : TURN_TIME;
+    timer = seats[i].bot || ctx.away(seats[i].pid) ? rnd(1.1, 2.2) : TURN_TIME;
     if (!seats[i].bot) ctx.buzz(seats[i].pid, 80);
     ctx.refresh();
   }

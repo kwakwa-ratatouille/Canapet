@@ -42,7 +42,7 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 function makePlayers(runners: Runner[]): P[] {
   const n = runners.length;
-  return runners.slice(0, 8).map((r, i) => {
+  return runners.map((r, i) => {
     const a = (i / n) * Math.PI * 2;
     return {
       ...r,
@@ -656,6 +656,7 @@ function potato(runners: Runner[], ctx: GameCtx): GameInstance {
         const k = pipes.findIndex((q) => Math.hypot(p.x - q.x, (p.y - q.y) * 1.3) < 40);
         if (k >= 0) {
           const out = pipes[1 - k];
+          if (!out) continue;
           p.x = out.x + 70;
           p.y = out.y + 10;
           pipeCd.set(p, 1.6);
