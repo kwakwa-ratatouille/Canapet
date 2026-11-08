@@ -1,0 +1,241 @@
+/* ===== Direction artistique « Salon an 2000 » (nov. 2026) =====
+   Le Y2K sans en faire trop : plastique translucide façon console des années 2000, chrome, reflets holographiques,
+   petites étincelles à quatre branches, fenêtres d'ordinateur rétro pour les cartes. On garde les contours prune
+   et les ombres plates (pas de flou, pas de filtre : le Chromecast doit suivre). Ce fichier passe après styles.css. */
+:root {
+  --y-display: 'Unbounded', 'Fredoka', system-ui, sans-serif;
+  /* Reflet holographique (fonds, barres de titre) */
+  --y-holo: linear-gradient(115deg, #ffc2ec 0%, #d9c2ff 24%, #a9e6ff 50%, #bfffe0 74%, #fff1a8 100%);
+  --y-holo-soft: linear-gradient(160deg, #ffe2f4 0%, #ece3ff 32%, #dcf3ff 64%, #eafff4 100%);
+  /* Chrome : bandes nettes, pas de flou */
+  --y-chrome: linear-gradient(180deg, #ffffff 0%, #eef1f8 34%, #b6bfd3 50%, #f4f6fb 58%, #d3d9e6 100%);
+  /* Gel : reflet en haut, ombre douce en bas */
+  --y-gel: linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.2) 46%, rgba(255, 255, 255, 0) 50%, rgba(43, 18, 60, 0.12) 100%);
+  /* Étincelle à quatre branches (fond) */
+  --y-spark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23ffffff' stroke='%233a2140' stroke-opacity='.18' stroke-width='1.5'%3E%3Cpath d='M40 22l4 14 14 4-14 4-4 14-4-14-14-4 14-4z'/%3E%3Cpath d='M182 150l3 9 9 3-9 3-3 9-3-9-9-3 9-3z'/%3E%3Cpath d='M120 92l2 6 6 2-6 2-2 6-2-6-6-2 6-2z'/%3E%3C/g%3E%3C/svg%3E");
+  /* Grille de bureau d'ordinateur */
+  --y-grid: repeating-linear-gradient(0deg, rgba(58, 33, 64, 0.05) 0 1px, transparent 1px 36px), repeating-linear-gradient(90deg, rgba(58, 33, 64, 0.05) 0 1px, transparent 1px 36px);
+}
+
+/* ——— Fonds ——— */
+body,
+.home,
+.tv,
+.pad {
+  background-color: #efe6ff;
+  background-image: var(--y-spark), var(--y-grid), var(--y-holo-soft);
+  background-size: 240px 240px, auto, auto, 100% 100%;
+  background-repeat: repeat, repeat, repeat, no-repeat;
+}
+.pad.pad-play {
+  background-image: var(--y-grid), var(--y-holo-soft);
+  background-size: auto, auto, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat;
+}
+
+/* ——— Titres : lettres larges et chromées ——— */
+.sticker,
+.home h2,
+.pad-title,
+.opt-title {
+  font-family: var(--y-display);
+  letter-spacing: -0.01em;
+}
+.sticker {
+  font-weight: 800;
+  color: transparent;
+  background-image: var(--y-chrome);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 0.045em var(--ink);
+  text-shadow: none;
+  filter: none;
+  position: relative;
+}
+/* Lettres chromées : pas d'ombre (elle se verrait à travers le chrome), un contour plus épais */
+.sticker.title,
+.overlay .title {
+  text-shadow: none;
+  -webkit-text-stroke: 0.075em var(--ink);
+  paint-order: stroke fill;
+}
+.pad-title {
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+}
+.opt-title {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.75;
+}
+.home h2 {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+/* ——— Boutons en gel ——— */
+.btn {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--y-display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+  background-image: var(--y-gel);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 5px 0 var(--ink);
+  text-shadow: 0 2px 0 rgba(43, 18, 60, 0.35);
+}
+.btn.ghost,
+.btn.sun {
+  text-shadow: none;
+}
+.btn::before {
+  /* La bulle de reflet en haut à gauche, signature des boutons plastique */
+  content: '';
+  position: absolute;
+  left: 8%;
+  top: 3px;
+  width: 18%;
+  height: 22%;
+  max-height: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+}
+.btn:active {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 1px 0 var(--ink);
+}
+.btn.big {
+  font-size: 19px;
+}
+.btn small {
+  font-family: var(--cp-font-texte);
+  text-shadow: none;
+}
+
+/* Petites pastilles : contour chromé */
+.pill,
+.count-pill {
+  background-image: var(--y-chrome);
+  box-shadow: inset 0 0 0 2px #fff, 0 3px 0 var(--ink);
+}
+
+/* ——— Cartes : fenêtres d'ordinateur rétro ——— */
+.home-card,
+.set-card,
+.code-card,
+.next-card,
+.tuto-card,
+.join-card {
+  position: relative;
+  border-radius: 20px;
+  background-color: #fff;
+  background-image: linear-gradient(180deg, #ffffff 0%, #f6f2ff 100%);
+  box-shadow: inset 0 0 0 3px #fff, 0 6px 0 var(--ink);
+}
+.home-card,
+.set-card,
+.tuto-card {
+  padding-top: 40px;
+}
+.home-card::before,
+.set-card::before,
+.tuto-card::before,
+.join-card::before {
+  /* Barre de titre holographique avec ses trois boutons ronds */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 24px;
+  border-radius: 16px 16px 0 0;
+  border-bottom: 3px solid var(--ink);
+  background-image: radial-gradient(circle at 16px 12px, #ff5f8f 0 5px, var(--ink) 5px 6.5px, transparent 7px),
+    radial-gradient(circle at 34px 12px, #ffd60a 0 5px, var(--ink) 5px 6.5px, transparent 7px),
+    radial-gradient(circle at 52px 12px, #3dd6a0 0 5px, var(--ink) 5px 6.5px, transparent 7px), var(--y-holo);
+  pointer-events: none;
+}
+
+/* ——— Salon de la télé ——— */
+.slot {
+  border-radius: calc(26 * var(--u, 1px));
+  background-image: linear-gradient(180deg, #ffffff 0%, #f3edff 100%);
+  box-shadow: inset 0 0 0 calc(4 * var(--u, 1px)) #fff, 0 calc(9 * var(--u, 1px)) 0 var(--ink);
+}
+.slot.empty {
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: none;
+}
+.slot-name {
+  font-family: var(--y-display);
+  font-weight: 700;
+}
+
+/* ——— Résultats ——— */
+.res-row {
+  background-image: linear-gradient(180deg, #ffffff 0%, #f4efff 100%);
+  box-shadow: inset 0 0 0 calc(4 * var(--u, 1px)) #fff, 0 calc(8 * var(--u, 1px)) 0 var(--ink);
+}
+.res-row .who,
+.res-row .total {
+  font-family: var(--y-display);
+}
+.res-row .bot-tag {
+  margin-left: auto;
+  padding-right: calc(20 * var(--u, 1px));
+  font-size: calc(30 * var(--u, 1px));
+  font-weight: 800;
+  opacity: 0.55;
+}
+
+/* ——— Choix et options : plastique coloré ——— */
+.choice,
+.opt,
+.game-card,
+.tab {
+  background-image: var(--y-gel);
+}
+.game-card b {
+  font-family: var(--y-display);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+/* ——— Manette ——— */
+.pad-head {
+  background-image: var(--y-gel);
+  box-shadow: inset 0 -3px 0 rgba(43, 18, 60, 0.15);
+}
+.pad-name {
+  font-family: var(--y-display);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.code-card b {
+  font-family: var(--y-display);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: transparent;
+  background-image: linear-gradient(100deg, #ff4f9a, #9b5cff 45%, #2ec5ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 2px var(--ink);
+}
+.round-btn {
+  background-image: var(--y-gel);
+}
+
+/* Deux rubriques dans la même carte : de l'air entre elles */
+.home-card .row + h2 {
+  margin-top: 22px;
+}
+/* La phrase du salon ne passe plus sous les boutons de la télé */
+.lobby-hint {
+  padding-left: calc(440 * var(--u));
+}

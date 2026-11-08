@@ -1098,6 +1098,7 @@ function Results({ session }: { session: Session }) {
                   <PlayerTitle id={r.profile.title} lang={lang} />
                   {r.duel && <em className="duel-badge">⚔️ +3</em>}
                 </span>
+                {r.bot && <span className="bot-tag">🤖 bot</span>}
                 {!r.bot && (
                   <>
                     <span className="bar">

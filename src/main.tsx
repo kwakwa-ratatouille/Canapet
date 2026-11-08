@@ -12,8 +12,12 @@ import '@fontsource/nunito/400.css';
 import '@fontsource/nunito/600.css';
 import '@fontsource/nunito/700.css';
 import '@fontsource/nunito/800.css';
+import '@fontsource/unbounded/700.css';
+import '@fontsource/unbounded/800.css';
+import '@fontsource/unbounded/900.css';
 import './tokens.css';
 import './styles.css';
+import './y2k.css';
 
 // La télé (tous les jeux) et la manette sont chargées à part : le téléphone ne télécharge pas le code des jeux.
 const TvApp = lazy(() => import('./tv/TvApp').then((m) => ({ default: m.TvApp })));
