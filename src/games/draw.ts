@@ -552,3 +552,64 @@ export function frosting(g: CanvasRenderingContext2D, x: number, y: number, w: n
   g.roundRect(x + r + 4, y + 4, Math.max(10, w * 0.28), 5, 3);
   g.fill();
 }
+
+// ——— Emojis rapides ———
+// Dessiner un emoji en texte coûte très cher (le navigateur le refait à chaque image et à chaque taille) : c'est ce qui
+// faisait ramer les pluies d'emojis. Ici, tout fillText qui ne contient QU'UN emoji est remplacé par une petite image
+// dessinée une seule fois (par taille arrondie et par ligne de base), puis recopiée : même rendu, bien plus rapide.
+// Les textes normaux, les chiffres et les symboles qui prennent la couleur du texte (★, ✓…) ne sont pas touchés.
+const PICTO = /\p{Extended_Pictographic}/gu;
+const ONLY_EMOJI = /^(?:\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}\u{1F1E6}-\u{1F1FF}\u{E0020}-\u{E007F}️‍])+$/u;
+const PRESENT = /\p{Emoji_Presentation}|️/u;
+const REGIONAL = /[\u{1F1E6}-\u{1F1FF}]/gu;
+type EmojiSprite = { c: HTMLCanvasElement; base: number; half: number; w: number };
+const emojiSprites = new Map<string, EmojiSprite>();
+function oneEmoji(s: string) {
+  if (s.length > 16 || !ONLY_EMOJI.test(s) || !PRESENT.test(s)) return false;
+  const pic = (s.match(PICTO) ?? []).length;
+  const zwj = (s.match(/‍/g) ?? []).length;
+  const flags = (s.match(REGIONAL) ?? []).length;
+  return (pic - zwj === 1 && flags === 0) || (pic === 0 && flags === 2);
+}
+function installFastEmoji() {
+  if (typeof CanvasRenderingContext2D === 'undefined') return;
+  const proto = CanvasRenderingContext2D.prototype as CanvasRenderingContext2D & { __fastEmoji?: boolean };
+  if (proto.__fastEmoji) return;
+  proto.__fastEmoji = true;
+  const orig = proto.fillText;
+  proto.fillText = function (this: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
+    if (typeof text === 'string' && oneEmoji(text)) {
+      const m = /(\d+(?:\.\d+)?)px/.exec(this.font);
+      const size = m ? +m[1] : 10;
+      if (size >= 14) {
+        const base = size <= 72 ? 72 : 144;
+        const bl = this.textBaseline;
+        const key = text + '|' + base + '|' + bl;
+        let sp = emojiSprites.get(key);
+        if (!sp) {
+          const half = Math.ceil(base * 1.3);
+          const c = document.createElement('canvas');
+          c.width = half * 2;
+          c.height = half * 2;
+          const x2 = c.getContext('2d')!;
+          x2.font = `${base}px sans-serif`;
+          x2.textAlign = 'center';
+          x2.textBaseline = bl;
+          orig.call(x2, text, half, half);
+          const w = x2.measureText(text).width;
+          if (emojiSprites.size > 160) emojiSprites.clear();
+          sp = { c, base, half, w };
+          emojiSprites.set(key, sp);
+        }
+        const k = size / sp.base;
+        const al = this.textAlign;
+        const cx = al === 'left' || al === 'start' ? x + (sp.w * k) / 2 : al === 'right' || al === 'end' ? x - (sp.w * k) / 2 : x;
+        this.drawImage(sp.c, cx - sp.half * k, y - sp.half * k, sp.half * 2 * k, sp.half * 2 * k);
+        return;
+      }
+    }
+    if (maxWidth === undefined) orig.call(this, text, x, y);
+    else orig.call(this, text, x, y, maxWidth);
+  };
+}
+installFastEmoji();

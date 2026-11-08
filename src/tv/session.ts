@@ -705,6 +705,9 @@ export class Session {
   /** Cosmétiques à la télé : effet d'écran du gagnant, effets d'élimination. */
   screenFx: { icons: string[]; born: number; name: string } | null = null;
   koFx: { icons: string[]; rise: boolean; born: number; name: string; color: string; x: number }[] = [];
+  private koHeard = new Set<string>();
+  private lastKoSound = -9;
+  private lastLeadSound = -9;
   private wasOut = new Set<string>();
 
   /** Le gagnant fait son effet : son choisi et pluie sur toute la télé. */
@@ -724,7 +727,7 @@ export class Session {
     if (!def?.create) return;
     this.syncSkins();
     setTrailMode(TRAIL_MODE[id] ?? null);
-    this.wasOut.clear();
+    this.wasOut.clear(); this.koHeard.clear();
     this.koFx = [];
     this.screenFx = null;
     const humans = this.list().filter((p) => p.connected).slice(0, def.max);
@@ -999,6 +1002,11 @@ export class Session {
     if (first !== this.leadPid) {
       const prev = this.leadPid;
       this.leadPid = first;
+      // Nouveau premier : petit carillon (pas au tout début, ni trop souvent)
+      if (prev && play > 3 && this.clock - this.lastLeadSound > 2.5) {
+        this.lastLeadSound = this.clock;
+        sfx.lead();
+      }
       if (play < 6 || this.clock - this.lastCall < 9) return;
       this.lastCall = this.clock;
       this.say(banter('lead', this.lang(), this.family, { n: name(first), p: prev ? name(prev) : '' }));
@@ -1347,6 +1355,17 @@ export class Session {
     if (!this.game) return;
     const order = this.game.ranking();
     const left = this.timeLeft();
+    // Élimination (vrais joueurs et bots) : le petit trombone triste, une fois par joueur
+    if (this.game.out)
+      for (const r of this.runners)
+        if (!this.game.out(r.pid)) this.koHeard.delete(r.pid);
+        else if (!this.koHeard.has(r.pid)) {
+          this.koHeard.add(r.pid);
+          if (this.clock - this.lastKoSound > 0.8) {
+            this.lastKoSound = this.clock;
+            sfx.ko();
+          }
+        }
     for (const r of this.runners)
       if (!r.bot) {
         const out = !!this.game.out?.(r.pid);

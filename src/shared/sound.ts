@@ -322,6 +322,16 @@ export const sfx = {
   pop() {
     tone(520, 0.12, 'sine', 0.3, 0, 1100);
   },
+  /** Quelqu'un est éliminé : petit trombone triste « wah-wah-waaah ». */
+  ko() {
+    [392, 370, 349].forEach((f, i) => tone(f, 0.2, 'sawtooth', 0.07, i * 0.2, f * 0.97));
+    tone(330, 0.7, 'sawtooth', 0.08, 0.6, 250);
+  },
+  /** Changement de tête de course : petit carillon qui monte. */
+  lead() {
+    [84, 88, 91].forEach((m, i) => tone(midi(m), 0.1, 'triangle', 0.16, i * 0.06));
+    tone(midi(96), 0.3, 'sine', 0.12, 0.18);
+  },
   join() {
     tone(660, 0.1, 'triangle', 0.25);
     tone(990, 0.15, 'triangle', 0.25, 0.08);
