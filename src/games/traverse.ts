@@ -25,13 +25,28 @@ interface Thing {
   c: string;
   v?: VKind;
 }
-/** Chat qui se promène ou oiseau qui vole bas, sur une pelouse : le toucher fait perdre une vie. */
+/**
+ * Bête imprévisible qui reste dans sa zone : chat sur la pelouse, oiseau au-dessus de la rivière de sirop.
+ * Elle marche, s'arrête, fait demi-tour ou fonce d'un coup : il faut l'esquiver. La toucher fait perdre une vie.
+ */
 interface Critter {
   kind: 'cat' | 'bird';
   x: number;
   dir: 1 | -1;
   speed: number;
+  /** Vitesse du moment (0 = arrêté), signée. */
+  v: number;
+  /** Temps avant le prochain changement d'humeur. */
+  t: number;
+  /** Zone où elle reste. */
+  minX: number;
+  maxX: number;
 }
+const critter = (kind: 'cat' | 'bird', speed: number): Critter => {
+  const home = rnd(320, 1600);
+  const half = kind === 'cat' ? rnd(240, 360) : rnd(340, 480);
+  return { kind, x: home, dir: Math.random() < 0.5 ? 1 : -1, speed, v: 0, t: rnd(0.2, 1), minX: Math.max(60, home - half), maxX: Math.min(1860, home + half) };
+};
 interface Lane {
   kind: LaneKind;
   dir: 1 | -1;
@@ -94,7 +109,39 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   /** Difficulté qui monte avec le temps (0 au début, 1 vers 2 min 10) : tout va plus vite. */
   const heat = () => Math.min(1, Math.max(0, clock - 3) / 130);
   const speedOf = (lane: Lane) => lane.speed * (1 + heat() * 0.6);
-  const critterSpeed = (k: Critter) => k.speed * (1 + heat() * 0.5);
+  const critterMul = () => 1 + heat() * 0.5;
+  /** Une bête est-elle (ou sera-t-elle bientôt) près de x ? On garde de la marge : elle est imprévisible. */
+  const critterNear = (lane: Lane, x: number, look: number) => (lane.critters ?? []).some((k) => Math.abs(k.x - x) < 120 || Math.abs(k.x + k.v * critterMul() * look - x) < 110);
+  /** L'humeur change : s'arrêter, marcher, foncer, faire demi-tour (en restant dans sa zone). */
+  const moodSwing = (k: Critter) => {
+    const r = Math.random();
+    let side: number = Math.random() < 0.5 ? 1 : -1;
+    if (k.x < k.minX + 120) side = 1;
+    if (k.x > k.maxX - 120) side = -1;
+    if (k.kind === 'cat') {
+      if (r < 0.3) {
+        k.v = 0;
+        k.t = rnd(0.5, 1.4);
+      } else if (r < 0.55) {
+        k.v = side * k.speed * 2.6;
+        k.t = rnd(0.3, 0.6);
+      } else {
+        k.v = side * k.speed;
+        k.t = rnd(0.6, 1.6);
+      }
+    } else if (r < 0.25) {
+      // Sur place, en battant des ailes
+      k.v = side * 30;
+      k.t = rnd(0.4, 0.9);
+    } else if (r < 0.5) {
+      // Piqué rapide
+      k.v = side * k.speed * 2.2;
+      k.t = rnd(0.3, 0.55);
+    } else {
+      k.v = side * k.speed;
+      k.t = rnd(0.7, 1.6);
+    }
+  };
 
   /** Fabrique les rangées par paquets : jamais deux fois le même paquet, et ça se corse en montant. */
   const addChunk = () => {
@@ -130,17 +177,14 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const w = CW * rnd(2.4 - d, 4);
         const gap = CW * rnd(1.1, 2 + d);
         for (let x = rnd(-100, 100); x < 2400; x += w + gap) lane.items.push({ x, w, c: '#d9a35a' });
+        if (genRow + i > 6 && Math.random() < 0.15 + d * 0.3) lane.critters = [critter('bird', rnd(170, 230))];
       } else if (kind === 'rail') {
         lane.wait = rnd(2, 7);
       } else if (genRow + i > 2) {
         // Des arbres, mais toujours de quoi passer
         const n = Math.floor(Math.random() * (3 + d * 3));
         for (let k = 0; k < n; k++) lane.trees.add(Math.floor(Math.random() * COLS));
-        if (genRow + i > 6 && Math.random() < 0.22 + d * 0.3) {
-          const kind = Math.random() < 0.55 ? 'cat' : 'bird';
-          const cdir: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
-          lane.critters = [{ kind, x: rnd(0, 1920), dir: cdir, speed: kind === 'cat' ? rnd(70, 110) : rnd(200, 280) }];
-        }
+        if (genRow + i > 6 && Math.random() < 0.18 + d * 0.3) lane.critters = [critter('cat', rnd(90, 130))];
         if (Math.random() < 0.28) {
           const r = Math.random();
           lane.bonus = { col: Math.floor(Math.random() * COLS), kind: r < 0.6 ? 'star' : r < 0.8 ? 'shield' : 'jump' };
@@ -203,6 +247,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       lane!.kind = 'grass';
       lane!.items = [];
       lane!.train = undefined;
+      // Un oiseau de rivière ne devient pas un chat de pelouse
+      lane!.critters = undefined;
     }
     let col = Math.round(p.x / CW - 0.5);
     col = Math.max(0, Math.min(COLS - 1, col));
@@ -257,11 +303,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const safeAt = (row: number, x: number, look: number) => {
     const lane = laneAt(row);
     if (!lane) return false;
-    if (lane.kind === 'grass') return !lane.trees.has(Math.floor(x / CW)) && !(lane.critters ?? []).some((k) => Math.abs(k.x + k.dir * critterSpeed(k) * look - x) < 95);
+    if (lane.kind === 'grass') return !lane.trees.has(Math.floor(x / CW)) && !critterNear(lane, x, look);
     if (lane.kind === 'rail') return (lane.train === undefined && (lane.wait ?? 0) > 1) || false;
     const mx = x - lane.dir * speedOf(lane) * look;
     const on = lane.items.some((t) => mx > t.x - (lane.kind === 'river' ? -20 : 40) && mx < t.x + t.w + (lane.kind === 'river' ? -20 : 40));
-    return lane.kind === 'river' ? on : !on;
+    return lane.kind === 'river' ? on && !critterNear(lane, x, look) : !on;
   };
 
   const bot = (p: Pl, dt: number) => {
@@ -336,9 +382,20 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         if (!lane) continue;
         if (lane.critters)
           for (const k of lane.critters) {
-            k.x += k.dir * critterSpeed(k) * dt;
-            if (k.dir > 0 && k.x > 2060) k.x = -140;
-            if (k.dir < 0 && k.x < -140) k.x = 2060;
+            k.t -= dt;
+            if (k.t <= 0) moodSwing(k);
+            k.x += k.v * critterMul() * dt;
+            // Le bord de sa zone : demi-tour
+            if (k.x < k.minX) {
+              k.x = k.minX;
+              k.v = Math.abs(k.v);
+            } else if (k.x > k.maxX) {
+              k.x = k.maxX;
+              k.v = -Math.abs(k.v);
+            }
+            // Le chat ne traverse pas les arbres ni les buissons : il fait demi-tour
+            if (k.kind === 'cat' && k.v && !lane.trees.has(Math.floor(k.x / CW)) && lane.trees.has(Math.floor((k.x + Math.sign(k.v) * 50) / CW))) k.v = -k.v;
+            if (k.v) k.dir = k.v > 0 ? 1 : -1;
           }
         if (lane.kind === 'road' || lane.kind === 'river') {
           for (const t of lane.items) {
@@ -415,6 +472,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           if (log) {
             p.x += lane.dir * speedOf(lane) * dt;
             if (p.x < 10 || p.x > COLS * CW - 10) lose(p, fr ? 'Emporté !' : 'Swept away!');
+            else if (lane.critters?.some((c) => Math.abs(c.x - p.x) < 52)) lose(p, fr ? 'Picoré !' : 'Pecked!');
           } else lose(p, 'PLOUF !');
         } else if (lane.kind === 'grass' && lane.critters) {
           const k = lane.critters.find((c) => Math.abs(c.x - p.x) < 52);
@@ -494,8 +552,9 @@ const left = pls.filter((p) => p.alive);
           }
           if (lane.critters)
             for (const k of lane.critters) {
-              const fr2 = Math.floor(t * (k.kind === 'cat' ? 6 : 9) + k.x * 0.01) % 2;
-              g.drawImage(k.kind === 'cat' ? cat(fr2, k.dir) : bird(fr2, k.dir), k.x - (k.kind === 'cat' ? 65 : 60), y + (k.kind === 'bird' ? Math.sin(t * 5 + k.x * 0.01) * 6 : 0));
+              // À l'arrêt, les pattes ne bougent pas ; en pleine course, elles vont plus vite
+              const fr2 = k.v === 0 ? 0 : Math.floor(t * (Math.abs(k.v) > k.speed * 1.5 ? 12 : 6)) % 2;
+              g.drawImage(cat(fr2, k.dir), k.x - 65, y);
             }
           if (lane.bonus) {
             const bx = (lane.bonus.col + 0.5) * CW;
@@ -514,6 +573,11 @@ const left = pls.filter((p) => p.alive);
           for (const c of lane.items) g.drawImage(vehicle(c.v ?? (c.w > 200 ? 'bus' : 'car'), c.c, c.w, lane.dir), c.x - 14, y);
         } else if (lane.kind === 'river') {
           for (const c of lane.items) g.drawImage(bread(c.w), c.x - 5, y);
+          if (lane.critters)
+            for (const k of lane.critters) {
+              const fr2 = Math.floor(t * (Math.abs(k.v) > k.speed * 1.5 ? 16 : 9)) % 2;
+              g.drawImage(bird(fr2, k.dir), k.x - 60, y - 6 + Math.sin(t * 5 + k.minX) * 8);
+            }
         } else {
           // L'alerte juste avant le train
           const warn = lane.train === undefined && (lane.wait ?? 9) < 1.3;
