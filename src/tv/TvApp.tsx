@@ -308,7 +308,17 @@ function GameView({ session }: { session: Session }) {
       if (ev) drawEvent(g, session, ev, tt);
       if (session.phase === 'game') drawCurses(g, session, tt);
       drawTimer(g, session, tt);
+      // Les premières images du jeu : la fenêtre s'ouvre en grandissant
+      const opening = session.phase === 'game' ? Math.min(1, session.clock / 0.45) : 1;
+      if (opening < 1) {
+        const k = 0.78 + 0.22 * (1 - Math.pow(1 - opening, 3));
+        g.save();
+        g.translate(W / 2, H / 2);
+        g.scale(k, k);
+        g.translate(-W / 2, -H / 2);
+      }
       drawIntro(g, session);
+      if (opening < 1) g.restore();
       if (session.paused) drawPause(g, session, tt);
       else if (session.toast.t > 0) {
         // Bandeau du commentateur qui glisse en haut

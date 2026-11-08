@@ -354,3 +354,146 @@ body,
 .traitor > .pad-title.pulse {
   margin: auto 0;
 }
+
+/* ——— Carte MVP sur le téléphone ——— */
+.mvp-pad {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: min(78vw, 280px);
+  margin: 22px auto 6px;
+  padding: 12px 12px 14px;
+  border: 5px solid var(--ink);
+  border-radius: 22px;
+  background-image: repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.55) 0 10px, transparent 10px 32px), var(--y-holo);
+  box-shadow: inset 0 0 0 4px #fff, 0 7px 0 var(--ink);
+  transform: rotate(-3deg);
+  animation: mvp-in 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  color: var(--ink);
+}
+.mvp-pad-tag {
+  position: absolute;
+  top: -16px;
+  right: -12px;
+  padding: 4px 12px;
+  font-family: var(--y-display);
+  font-weight: 900;
+  font-size: 16px;
+  background: #ffd60a;
+  border: 4px solid var(--ink);
+  border-radius: 999px;
+  transform: rotate(8deg);
+}
+.mvp-pad-art {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding-top: 6px;
+  background: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+}
+.mvp-pad b {
+  margin-top: 6px;
+  font-family: var(--y-display);
+  font-weight: 900;
+  font-size: 20px;
+}
+.mvp-pad small {
+  font-weight: 800;
+  font-size: 14px;
+}
+.mvp-pad em {
+  margin-top: 4px;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 13px;
+  color: #c4125f;
+}
+.mvp-shelf h3 small {
+  font-size: 14px;
+  opacity: 0.7;
+}
+.mvp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+}
+.mvp-mini {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px 4px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background-image: repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.5) 0 6px, transparent 6px 18px), var(--y-holo);
+}
+.mvp-mini img {
+  width: 44px;
+  height: 44px;
+}
+.mvp-mini b {
+  font-family: var(--y-display);
+  font-size: 13px;
+}
+
+/* ——— Bilan de la soirée : les titres sont des cassettes vidéo ——— */
+.recap-card {
+  position: relative;
+  border-radius: calc(18 * var(--u, 1px));
+  background-color: #2a1838;
+  background-image: none;
+  color: #fff;
+  padding-top: calc(70 * var(--u, 1px));
+  box-shadow: inset 0 0 0 calc(6 * var(--u, 1px)) #4b3060, 0 calc(10 * var(--u, 1px)) 0 var(--ink);
+}
+.recap-card::before {
+  /* L'étiquette de la cassette, à la couleur du joueur, et ses deux bobines */
+  content: '';
+  position: absolute;
+  left: 24%;
+  right: 8%;
+  top: calc(14 * var(--u, 1px));
+  height: calc(42 * var(--u, 1px));
+  border-radius: calc(8 * var(--u, 1px));
+  background-image: radial-gradient(circle at 26% 50%, #2a1838 0 calc(11 * var(--u, 1px)), #fff calc(11 * var(--u, 1px)) calc(15 * var(--u, 1px)), transparent calc(15 * var(--u, 1px))),
+    radial-gradient(circle at 74% 50%, #2a1838 0 calc(11 * var(--u, 1px)), #fff calc(11 * var(--u, 1px)) calc(15 * var(--u, 1px)), transparent calc(15 * var(--u, 1px))),
+    linear-gradient(180deg, var(--pc, #ff4f9a), var(--pc, #ff4f9a));
+  border: calc(4 * var(--u, 1px)) solid #fff;
+}
+.recap-card b,
+.recap-card .recap-who,
+.recap-card small {
+  color: #fff;
+}
+.recap-card b {
+  font-family: var(--y-display);
+}
+
+/* ——— Cartes de rôle des jeux à secret (Traître, Mot Intrus) : fenêtre « confidentiel » ——— */
+.role-card {
+  position: relative;
+  padding-top: 34px !important;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.4), 0 6px 0 var(--ink) !important;
+}
+.role-card::before {
+  content: 'TOP SECRET';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 22px;
+  border-radius: 14px 14px 0 0;
+  border-bottom: 3px solid var(--ink);
+  font-family: var(--y-display);
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  line-height: 20px;
+  color: var(--ink);
+  text-align: center;
+  background-image: var(--y-holo);
+}

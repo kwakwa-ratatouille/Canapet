@@ -82,6 +82,7 @@ const DEMO: Record<string, PadScreen> = {
   results: { s: 'results', gid: 1, host: true, rank: 2, points: 7, total: 17, step: { index: 2, count: 5 } },
   paused: { s: 'paused', host: true, game: 'sumo' },
   podium: { s: 'podium', gid: 1, host: true, rank: 1, total: 42 },
+  mvp: { s: 'results', gid: 1, host: true, rank: 1, points: 10, total: 30, step: null },
   vote: { s: 'vote', host: true, q: 'Qui finirait en prison en premier ?', options: [{ id: '1', label: 'Momo', color: '#ff4f9a' }, { id: '2', label: 'Lulu', color: '#ffd60a' }, { id: '3', label: 'Zaza', color: '#2ec5ff' }, { id: '4', label: 'Bot 1', color: '#7bd13b' }], reveal: false, n: 1, of: 3 },
   ab: { s: 'vote', host: true, q: 'Tu préfères…', options: [{ id: 'a', label: 'Ne plus jamais manger de pizza', color: '#ff4f9a' }, { id: 'b', label: 'Ne plus jamais dormir dans un lit', color: '#2ec5ff' }], my: 'a', reveal: false, n: 2, of: 3 },
 };
@@ -327,6 +328,11 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     const after = levelInfo(progress.xp + gain.xp).level;
     const up = after > before;
     const habit = afterGame(progress.habits, { rank: screen.rank, game: lastGameId.current, podium: screen.s === 'podium' });
+    if (screen.s === 'results' && screen.rank === 1 && lastGameId.current) {
+      const cards = store<Record<string, number>>('mvpCards', {});
+      cards[lastGameId.current] = (cards[lastGameId.current] ?? 0) + 1;
+      save('mvpCards', cards);
+    }
     setProgress((p) => ({
       ...p,
       last: key,
@@ -446,6 +452,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         {noTvState.on && (screen.s === 'play' ? !screen.tuto : screen.s === 'paused' || screen.s === 'wait') && <TvPeek game={'game' in screen ? screen.game : ''} lang={lang} />}
         <PadScreenView
           screen={screen}
+          gameLabel={lastGameId.current ? catalog.find((g) => g.id === lastGameId.current)?.name?.[lang] ?? '' : ''}
           lang={lang}
           code={code}
           myColor={profile.color}
@@ -463,6 +470,49 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
         </>
       )}
     </div>
+  );
+}
+
+/** La carte holographique du gagnant de la manche, comme une carte à collectionner. */
+function MvpCard({ profile, game, lang }: { profile: Profile; game: string; lang: Lang }) {
+  return (
+    <div className="mvp-pad">
+      <span className="mvp-pad-tag">★ MVP</span>
+      <div className="mvp-pad-art">
+        <CharCanvas profile={profile} size={120} mood="win" />
+      </div>
+      <b>{profile.name}</b>
+      <small>{game}</small>
+      <em>{lang === 'fr' ? 'Carte ajoutée à ta collection !' : 'Card added to your collection!'}</em>
+    </div>
+  );
+}
+
+/** Toutes les cartes MVP gagnées, une par jeu, avec le nombre de fois. */
+function MvpShelf({ lang }: { lang: Lang }) {
+  const cards = store<Record<string, number>>('mvpCards', {});
+  const catalog = store<GameInfo[]>('catalog', []);
+  const ids = Object.keys(cards);
+  const fr = lang === 'fr';
+  return (
+    <section className="set-card mvp-shelf">
+      <h3>🏆 {fr ? 'Mes cartes MVP' : 'My MVP cards'} <small>{ids.length}/{catalog.length || 45}</small></h3>
+      {ids.length ? (
+        <div className="mvp-grid">
+          {ids.map((id) => {
+            const g = catalog.find((x) => x.id === id);
+            return (
+              <span key={id} className="mvp-mini" title={g?.name[lang] ?? id}>
+                {g && <img src={gameIcon(g.slug)} alt="" />}
+                <b>×{cards[id]}</b>
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="set-help">{fr ? 'Gagne une manche pour avoir ta première carte !' : 'Win a round to get your first card!'}</p>
+      )}
+    </section>
   );
 }
 
@@ -559,6 +609,7 @@ function TestCode({ progress, setProgress, lang }: { progress: Progress; setProg
 
 function PadScreenView({
   screen,
+  gameLabel = '',
   lang,
   code,
   myColor,
@@ -573,6 +624,7 @@ function PadScreenView({
   account,
   family,
 }: {
+  gameLabel?: string;
   family: boolean;
   cools: Cools;
   account: Account;
@@ -810,6 +862,7 @@ function PadScreenView({
                 <span className="btn big mint">✏️ {lang === 'fr' ? 'Modifier mon perso' : 'Edit my character'}</span>
               </button>
               <ProgressCard progress={progress} lang={lang} onShop={edit} account={account} />
+              <MvpShelf lang={lang} />
               <FriendsCard user={account.user} lang={lang} room={code} connect={account.connect} />
             </>
           )}
@@ -1190,6 +1243,7 @@ function PadScreenView({
               </div>
             </div>
           )}
+          {screen.rank === 1 && <MvpCard profile={profile} game={gameLabel} lang={lang} />}
           {screen.board && <BoardList rows={screen.board} />}
           {reward && <RewardCard reward={reward} progress={progress} lang={lang} />}
           <SecretCard secret={screen.secret} lang={lang} />
