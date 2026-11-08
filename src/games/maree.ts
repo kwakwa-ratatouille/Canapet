@@ -5,7 +5,7 @@ import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { INK, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { candy, playerTag } from './draw';
+import { candy, playerTag, frosting } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const GRAV = 2600;
@@ -322,10 +322,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       g.save();
       g.translate(0, -camY);
-      // Murs de la tour
-      g.fillStyle = 'rgba(58,33,64,0.18)';
-      g.fillRect(LEFT - 40, camY, 40, VIEW);
-      g.fillRect(RIGHT, camY, 40, VIEW);
+      // Murs de la tour : gaufrette (le quadrillage suit la caméra)
+      [LEFT - 40, RIGHT].forEach((wx) => {
+        g.fillStyle = '#f2c27a';
+        g.fillRect(wx, camY, 40, VIEW);
+        g.fillStyle = 'rgba(122,74,42,0.28)';
+        for (let y = Math.floor(camY / 40) * 40; y < camY + VIEW; y += 40) g.fillRect(wx, y, 40, 4);
+        g.fillRect(wx + 18, camY, 4, VIEW);
+        g.fillStyle = INK;
+        g.fillRect(wx === RIGHT ? wx : wx + 36, camY, 5, VIEW);
+      });
       // Plateformes
       for (const q of plats) {
         if (q.gone || q.y < camY - 50 || q.y > camY + VIEW + 50) continue;
@@ -343,6 +349,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fill();
         g.stroke();
         candy(g, q.x + shake, q.y, q.w, 34, 14);
+        if (q.kind !== 'fragile') frosting(g, q.x + shake, q.y, q.w, q.kind === 'bounce' ? '#fff6c2' : q.kind === 'mover' ? '#e6d6ff' : '#fff0f7', 14, ctx.light);
         if (q.kind === 'fragile') {
           g.lineWidth = 3;
           g.beginPath();

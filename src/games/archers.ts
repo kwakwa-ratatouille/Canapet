@@ -3,7 +3,7 @@
 import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { sfx, speak } from '../shared/sound';
-import { drawSky, roundRectText, candy } from './draw';
+import { drawSky, roundRectText, candy, scenery, frosting } from './draw';
 import { TEAMS, allies, side, sidesLeft, winnerName } from './teams';
 import type { GameCtx, GameBase, GameInstance, Runner } from './types';
 import { INK } from '../shared/palette';
@@ -346,19 +346,18 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       g.roundRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
       g.fill();
       candy(g, s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
-      g.fillStyle = top;
-      g.beginPath();
-      g.roundRect(s.x + 1, s.y + 1, s.w - 2, Math.min(18, s.h - 2), [12, 12, 4, 4]);
-      g.fill();
-      if (!ctx.light && s.w > 80)
-        for (let x = s.x + 24; x < s.x + s.w - 14; x += 44) {
-          g.beginPath();
-          g.arc(x, s.y + 18, 8, 0, Math.PI);
-          g.fill();
-        }
       g.beginPath();
       g.roundRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2, 12);
       g.stroke();
+      // Glaçage qui coule sur le dessus (sauf sur les murs fins)
+      if (s.w > 60 && s.h < s.w) frosting(g, s.x + 1, s.y + 1, s.w - 2, top, 12, ctx.light);
+      else {
+        g.fillStyle = top;
+        g.beginPath();
+        g.roundRect(s.x + 1, s.y + 1, s.w - 2, Math.min(18, s.h - 2), [12, 12, 4, 4]);
+        g.fill();
+        g.stroke();
+      }
     }
   }
   let platforms: HTMLCanvasElement | null = null;
@@ -556,6 +555,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     render(g, t) {
       drawSky(g, t, ctx.light, map.sky[0], map.sky[1]);
+      scenery(g, map.sky[0], map.sky[1]);
       g.save();
       if (shake) g.translate(rnd(-shake, shake), rnd(-shake, shake));
       g.strokeStyle = INK;

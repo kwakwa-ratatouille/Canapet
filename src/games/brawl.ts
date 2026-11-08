@@ -7,7 +7,7 @@ import { dozing } from './botSkill';
 import { drawCharacter } from '../shared/characters';
 import { INK, MENTHE, ROSE, SOLEIL } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
-import { drawSky, roundRectText, candy } from './draw';
+import { drawSky, roundRectText, candy, scenery, frosting } from './draw';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const GRAV = 2200;
@@ -749,6 +749,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     render(g, t) {
       drawSky(g, t, ctx.light, map.sky[0], map.sky[1]);
+      scenery(g, map.sky[0], map.sky[1]);
       g.save();
       if (shake) g.translate(rnd(-shake, shake), rnd(-shake, shake));
       // Vent : traits qui filent
@@ -807,6 +808,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.beginPath();
         g.roundRect(p.x, p.y + wob, p.w, 46, 22);
         g.stroke();
+        frosting(g, p.x, p.y + wob, p.w, '#fff6fb', 22, ctx.light);
         if (map.hazard === 'bob' && p.ay) {
           // Fleur de nénuphar
           g.fillStyle = '#ff9ccf';

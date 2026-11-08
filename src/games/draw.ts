@@ -454,3 +454,101 @@ export function tileWall(g: CanvasRenderingContext2D, bg: string) {
   });
   g.drawImage(img, 0, 0);
 }
+
+/** Mélange une couleur #rrggbb avec une autre (k = 0 → a, 1 → b). */
+export function mixHex(a: string, b: string, k: number) {
+  const h = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const x = h(a);
+  const y = h(b);
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * k).toString(16).padStart(2, '0')).join('');
+}
+
+/** Paysage du fond (collines, sucettes, maisons en pain d'épices), teinté avec les couleurs du ciel. Dessiné une fois. */
+export function scenery(g: CanvasRenderingContext2D, top: string, bottom: string) {
+  const img = cached('scenery' + top + bottom, 1920, 1080, (c) => {
+    const far = mixHex(top, '#3a2140', 0.18);
+    const near = mixHex(bottom, '#3a2140', 0.12);
+    // Collines du fond
+    c.fillStyle = far;
+    c.globalAlpha = 0.55;
+    c.beginPath();
+    c.moveTo(0, 1080);
+    c.lineTo(0, 760);
+    for (let x = 0; x <= 1920; x += 320) c.quadraticCurveTo(x + 160, 640 + ((x / 320) % 2) * 60, x + 320, 760);
+    c.lineTo(1920, 1080);
+    c.closePath();
+    c.fill();
+    // Sucettes et maisons sur les collines du fond
+    for (let i = 0; i < 7; i++) {
+      const x = 130 + i * 280 + ((i * 53) % 70);
+      const y = 740 + ((i * 37) % 40);
+      if (i % 3 === 1) {
+        // Maison en pain d'épices
+        c.fillRect(x - 46, y - 70, 92, 70);
+        c.beginPath();
+        c.moveTo(x - 62, y - 66);
+        c.lineTo(x, y - 122);
+        c.lineTo(x + 62, y - 66);
+        c.closePath();
+        c.fill();
+      } else {
+        c.fillRect(x - 5, y - 120, 10, 120);
+        c.beginPath();
+        c.arc(x, y - 140, 40, 0, Math.PI * 2);
+        c.fill();
+      }
+    }
+    // Collines devant
+    c.globalAlpha = 0.5;
+    c.fillStyle = near;
+    c.beginPath();
+    c.moveTo(0, 1080);
+    c.lineTo(0, 860);
+    for (let x = 0; x <= 1920; x += 480) c.quadraticCurveTo(x + 240, 760 + ((x / 480) % 2) * 50, x + 480, 860);
+    c.lineTo(1920, 1080);
+    c.closePath();
+    c.fill();
+    c.globalAlpha = 1;
+    // Petites étincelles dans le ciel
+    for (let i = 0; i < 10; i++) spark(c, (i * 457 + 90) % 1920, 220 + ((i * 173) % 380), 8 + (i % 3) * 4, 'rgba(255,255,255,0.8)');
+  });
+  g.drawImage(img, 0, 0);
+}
+
+/** Glaçage qui coule sur le haut d'une plateforme (gouttes arrondies, contour prune). */
+export function frosting(g: CanvasRenderingContext2D, x: number, y: number, w: number, color: string, r = 12, light = false) {
+  const band = 14;
+  const base = y + band;
+  const n = Math.max(1, Math.floor((w - 2 * r) / 62));
+  const step = (w - 2 * r) / n;
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.lineTo(x + w - r, y);
+  g.quadraticCurveTo(x + w, y, x + w, y + Math.min(r, band));
+  g.lineTo(x + w, base);
+  // Bord du bas : plat, avec des gouttes en « U » de longueurs différentes (de droite à gauche)
+  for (let i = n - 1; i >= 0; i--) {
+    const cx = x + r + i * step + step / 2;
+    const hw = 11;
+    const len = light ? 0 : 4 + ((((x / 7) | 0) + i * 5) % 3) * 5;
+    if (len <= 0) continue;
+    g.lineTo(cx + hw, base);
+    g.lineTo(cx + hw, base + len);
+    g.arc(cx, base + len, hw, 0, Math.PI);
+    g.lineTo(cx - hw, base);
+  }
+  g.lineTo(x, base);
+  g.lineTo(x, y + Math.min(r, band));
+  g.quadraticCurveTo(x, y, x + r, y);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = INK;
+  g.lineWidth = 4;
+  g.stroke();
+  // Reflet
+  g.fillStyle = 'rgba(255,255,255,0.6)';
+  g.beginPath();
+  g.roundRect(x + r + 4, y + 4, Math.max(10, w * 0.28), 5, 3);
+  g.fill();
+}
