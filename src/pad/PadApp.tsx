@@ -383,12 +383,7 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     send({ t: 'host', action, game, opts });
   };
 
-  if (editing) {
-    const taken = screen?.s === 'lobby' ? screen.taken : [];
-    const takenFoods = screen?.s === 'lobby' ? screen.foods ?? {} : {};
-    return <Editor profile={profile} setProfile={setProfile} taken={taken} takenFoods={takenFoods} onDone={() => setEditing(false)} progress={progress} setProgress={setProgress} account={account} />;
-  }
-
+  // Les crochets React (useState/useEffect) doivent être avant tout « return » : sinon l'éditeur de perso casse la page
   const playing = screen?.s === 'play' && status === 'ok';
   // C'est à moi d'agir ? (mon tour, ou une réponse à donner) : vibration, bandeau « À toi ! » et bord lumineux
   const turnData = playing && screen?.s === 'play' && !screen.tuto ? (screen.data as { myTurn?: boolean; mine?: boolean; act?: unknown } | undefined) : undefined;
@@ -402,6 +397,13 @@ export function PadApp({ code, demo }: { code: string; demo?: string }) {
     }
     wasNeeded.current = needsMe;
   }, [needsMe]);
+
+  if (editing) {
+    const taken = screen?.s === 'lobby' ? screen.taken : [];
+    const takenFoods = screen?.s === 'lobby' ? screen.foods ?? {} : {};
+    return <Editor profile={profile} setProfile={setProfile} taken={taken} takenFoods={takenFoods} onDone={() => setEditing(false)} progress={progress} setProgress={setProgress} account={account} />;
+  }
+
   const gameName = screen && 'game' in screen ? catalog.find((g) => g.id === screen.game)?.name?.[lang] : '';
 
   const padTheme = playing ? PAD_THEMES.find((x) => x.id === profile.padTheme) : undefined;
