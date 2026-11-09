@@ -18,7 +18,7 @@ const GAMES: [string, string, string][] = [
   ['lettre', 'Ça Commence Par…', 'Starts With…'],
   ['trous', 'Les Mots à Trous', 'Words With Holes'],
   ['tranche', 'Tranche de Rire', 'Slice of Laughs'],
-  ['chef', 'Le Chef Cachottier', 'The Secretive Chef'],
+  ['chef', 'Code Canapé', 'Couch Code'],
   ['fusion', 'La Bataille des Fusions', 'Merge Battle'],
   ['traverse', 'Traverse Pas Ici !', 'Don’t Cross Here!'],
   ['tour', 'La Tour Branlante', 'The Wobbly Tower'],

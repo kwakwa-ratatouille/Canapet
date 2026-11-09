@@ -1,12 +1,13 @@
-// Le Chef Cachottier : deux brigades, 25 mots. Le chef de chaque équipe sait quels mots sont à la sienne,
+// Code Canapé : deux équipes, 25 mots à double sens. L'agent de chaque équipe sait quels mots sont à la sienne,
 // et donne un indice d'un seul mot + un nombre. Son équipe doit trouver ses mots sans tomber sur ceux des autres,
-// ni sur le mot maudit qui fait perdre tout de suite. Les chefs voient les couleurs sur leur téléphone.
+// ni sur le mot maudit qui fait perdre tout de suite. Les agents voient les couleurs sur leur téléphone.
+// (Fichier et identifiant « chef » gardés pour ne rien casser.)
 import { INK } from '../shared/palette';
 import { sfx, speak } from '../shared/sound';
 import type { ChefPadData } from './chefShared';
 import { freshDeck } from './decks';
 import { candy } from './draw';
-import { LETTER_THEMES } from './lettreWords';
+import { CODE_WORDS } from './codeWords';
 import { norm } from './lettre';
 import { TEAMS } from './teams';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
@@ -14,18 +15,23 @@ import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 interface Card {
   w: string;
   key: number;
-  theme: string;
-  themeEn: string;
+  /** Les thèmes auxquels le mot fait penser (pour l'agent bot). */
+  tags: string[];
   owner: number;
   votes: Set<string>;
+}
+/** Petit « +1 » qui s'envole d'une carte trouvée vers le panneau de l'équipe. */
+interface Pop {
+  x: number;
+  y: number;
+  side: number;
+  t: number;
 }
 interface Pl extends Runner {
   side: number;
 }
 const NEUTRAL = '#e8dcc4';
 const CURSED = '#3a2140';
-/** Thèmes trop vastes ou trop bizarres pour servir ici. */
-const SKIP = new Set(['Un prénom', 'Un verbe d’action', 'Un mot en anglais', 'Une insulte rigolote', 'Un chanteur ou un groupe', 'Une personne célèbre', 'Un film ou une série', 'Une émotion', 'Une couleur']);
 
 function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const fr = ctx.lang === 'fr';
@@ -39,24 +45,16 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   const chefOf = (s: number) => (chefs[s] && !ctx.away(chefs[s]!.pid) ? chefs[s] : null);
   const guessers = (s: number) => humansOf(s).filter((p) => p !== chefOf(s) && !ctx.away(p.pid));
 
-  // La grille : quelques thèmes, plusieurs mots par thème
-  const themes = freshDeck(`chef-${lang}`, LETTER_THEMES.filter((t) => !t.adult && !SKIP.has(t.fr)), 10, (t) => t.fr);
-  const pool: { w: string; t: (typeof themes)[number] }[] = [];
-  const seen = new Set<string>();
-  for (const t of themes) {
-    const list = t.words[lang].split(' ').filter((w) => !w.includes('_') && w.length >= 3 && w.length <= 11).sort(() => Math.random() - 0.5);
-    let n = 0;
-    for (const w of list) {
-      if (n >= 4 || seen.has(norm(w))) continue;
-      seen.add(norm(w));
-      pool.push({ w, t });
-      n++;
-    }
-  }
-  const words = pool.sort(() => Math.random() - 0.5).slice(0, 25);
+  // La grille : 25 mots à double sens, jamais les mêmes d'une partie à l'autre (tant qu'il en reste)
+  const words = freshDeck(`code-${lang}`, CODE_WORDS[lang], 25, (x) => x.w);
   const first = Math.random() < 0.5 ? 0 : 1;
   const keys = [...Array(first === 0 ? 9 : 8).fill(0), ...Array(first === 1 ? 9 : 8).fill(1), ...Array(7).fill(2), 3].sort(() => Math.random() - 0.5);
-  const cards: Card[] = words.map((x, i) => ({ w: x.w.charAt(0).toUpperCase() + x.w.slice(1), key: keys[i], theme: x.t.fr, themeEn: x.t.en, owner: -1, votes: new Set() }));
+  const cards: Card[] = words.map((x, i) => ({ w: x.w, key: keys[i], tags: x.tags, owner: -1, votes: new Set() }));
+  const total = [0, 1].map((s) => cards.filter((c) => c.key === s).length);
+  const pops: Pop[] = [];
+  const used = new Set<string>();
+  /** Le nom de l'agent de chaque équipe (bot si l'équipe n'a pas 2 humains). */
+  const agentName = (s: number) => chefOf(s)?.profile.name ?? (fr ? 'Agent bot' : 'Bot agent');
 
   let turn = first;
   let phase: ChefPadData['phase'] = 'clue';
@@ -82,7 +80,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     phase = 'clue';
     timer = 75;
     botT = 2.5 + Math.random() * 2;
-    speak(fr ? `Au chef ${TEAMS[turn].name.fr}` : `${TEAMS[turn].name.en} chef’s turn`, lang);
+    speak(fr ? `À l'agent ${TEAMS[turn].name.fr}` : `${TEAMS[turn].name.en} agent’s turn`, lang);
     ctx.refresh();
   };
   const startGuess = () => {
@@ -133,6 +131,10 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     }
     if (leftOf(0) === 0) return finish(0, fr ? 'Tous ses mots sont trouvés !' : 'All its words found!');
     if (leftOf(1) === 0) return finish(1, fr ? 'Tous ses mots sont trouvés !' : 'All its words found!');
+    if (c.key < 2) {
+      const i = cards.indexOf(c);
+      pops.push({ x: 62 + (i % 5) * 364 + 177, y: 236 + Math.floor(i / 5) * 158 + 75, side: c.key, t: 0 });
+    }
     if (c.key === turn) {
       sfx.pop();
       tries--;
@@ -144,21 +146,48 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     endTurn();
   };
 
-  /** Le bot chef : un thème qui couvre le plus de mots de son équipe. */
+  /** L'agent bot : un thème qui relie plusieurs mots de son équipe, jamais le mot maudit, le moins possible ceux des autres. */
   const botClue = () => {
-    const mine = cards.filter((c) => c.key === turn && c.owner < 0);
-    const group = new Map<string, Card[]>();
-    mine.forEach((c) => group.set(c.theme, [...(group.get(c.theme) ?? []), c]));
-    const best = [...group.values()].sort((a, b) => b.length - a.length)[0];
-    if (!best) return endTurn();
-    setClue(fr ? best[0].theme : best[0].themeEn, Math.min(4, best.length));
+    const open = cards.filter((c) => c.owner < 0);
+    const mine = open.filter((c) => c.key === turn);
+    if (!mine.length) return endTurn();
+    const onGrid = new Set(open.map((c) => norm(c.w)));
+    let best = '';
+    let bestScore = -99;
+    let bestN = 0;
+    const tags = new Set(mine.flatMap((c) => c.tags));
+    for (const tag of tags) {
+      if (onGrid.has(norm(tag))) continue;
+      const has = (c: Card) => c.tags.includes(tag);
+      if (open.some((c) => c.key === 3 && has(c))) continue;
+      const n = mine.filter(has).length;
+      const other = open.filter((c) => c.key === 1 - turn && has(c)).length;
+      const neutral = open.filter((c) => c.key === 2 && has(c)).length;
+      // Un bot moins fort prend plus de risques ; un indice déjà donné vaut moins
+      const score = n * 1.2 - other * (0.5 + ctx.botSkill * 0.6) - neutral * 0.3 - (used.has(tag) ? 0.8 : 0) + Math.random() * 0.4;
+      if (score > bestScore) {
+        bestScore = score;
+        best = tag;
+        bestN = n;
+      }
+    }
+    if (!best) {
+      // Rien de sûr : un seul mot, par un de ses thèmes
+      const c = mine[Math.floor(Math.random() * mine.length)];
+      best = c.tags[0];
+      bestN = 1;
+    }
+    used.add(best);
+    setClue(best, Math.max(1, Math.min(4, bestN)));
   };
   /** Le bot qui cherche, quand l'équipe n'a aucun humain pour le faire. */
   const botGuess = () => {
     const open = cards.filter((c) => c.owner < 0);
     const good = open.filter((c) => c.key === turn);
     const skill = 0.6 + ctx.botSkill * 0.3;
-    const c = Math.random() < skill && good.length ? good[Math.floor(Math.random() * good.length)] : open.filter((x) => x.key !== 3)[Math.floor(Math.random() * Math.max(1, open.length - 1))];
+    // L'indice est un thème connu : on tente un mot qui va avec (sans voir les couleurs)
+    const fits = open.filter((c) => c.tags.some((tg) => norm(tg) === norm(clue)));
+    const c = fits.length && Math.random() < skill ? fits[Math.floor(Math.random() * fits.length)] : Math.random() < skill * 0.8 && good.length ? good[Math.floor(Math.random() * good.length)] : open.filter((x) => x.key !== 3)[Math.floor(Math.random() * Math.max(1, open.length - 1))];
     if (c) reveal(c);
     else endTurn();
     if (phase === 'guess' && tries <= 1) endTurn();
@@ -204,6 +233,8 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     },
     update(dt) {
       timer -= dt;
+      for (const p of pops) p.t += dt;
+      for (let i = pops.length - 1; i >= 0; i--) if (pops[i].t > 1.1) pops.splice(i, 1);
       if (phase === 'clue') {
         if (!chefOf(turn) && (botT -= dt) <= 0) botClue();
         else if (timer <= 0) endTurn();
@@ -215,39 +246,83 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     render(g, t) {
       g.fillStyle = '#fff3d6';
       g.fillRect(0, 0, 1920, 1080);
-      // Les deux équipes et ce qu'il leur reste à trouver
+      // Les deux équipes : nom en grand, mots trouvés (points), qui est l'agent, et à qui c'est
       [0, 1].forEach((s) => {
-        const x = s ? 1620 : 300;
+        const x0 = s ? 1300 : 20;
         const on = turn === s && phase !== 'end';
-        g.fillStyle = TEAMS[s].color;
-        g.strokeStyle = INK;
-        g.lineWidth = on ? 10 : 5;
+        const won = phase === 'end' && winner === s;
+        const bob = on ? Math.sin(t * 5) * 3 : 0;
+        g.fillStyle = INK;
         g.beginPath();
-        g.roundRect(x - 270, 14 + (on ? Math.sin(t * 5) * 2 : 0), 540, 96, 28);
+        g.roundRect(x0, 18 + bob, 600, 124, 30);
+        g.fill();
+        g.fillStyle = TEAMS[s].color;
+        g.strokeStyle = on || won ? '#ffd60a' : INK;
+        g.lineWidth = on || won ? 9 : 5;
+        g.beginPath();
+        g.roundRect(x0, 10 + bob, 600, 124, 30);
         g.fill();
         g.stroke();
-        candy(g, x - 270, 14, 540, 96, 28);
-        g.fillStyle = '#fff';
-        g.textAlign = 'center';
+        candy(g, x0, 10 + bob, 600, 124, 30);
+        g.textAlign = 'left';
         g.textBaseline = 'middle';
-        g.font = '700 42px Fredoka, sans-serif';
-        g.fillText(`${TEAMS[s].emoji} ${TEAMS[s].name[lang]} : ${leftOf(s)}`, x, 62, 510);
+        g.font = '700 46px Fredoka, sans-serif';
+        g.lineWidth = 8;
+        g.strokeStyle = INK;
+        const title = `${TEAMS[s].emoji} ${TEAMS[s].name[lang]}`;
+        g.strokeText(title, x0 + 24, 50 + bob, 400);
+        g.fillStyle = '#fff';
+        g.fillText(title, x0 + 24, 50 + bob, 400);
+        g.font = '700 30px Fredoka, sans-serif';
+        g.fillStyle = INK;
+        g.fillText(`🕵️ ${agentName(s)}`, x0 + 24, 104 + bob, 330);
+        // Les points : mots trouvés sur le total, en gros, avec des pastilles
+        const got = total[s] - leftOf(s);
+        g.textAlign = 'right';
+        g.font = '700 64px Fredoka, sans-serif';
+        g.lineWidth = 9;
+        g.strokeStyle = INK;
+        g.strokeText(`${got}/${total[s]}`, x0 + 580, 56 + bob);
+        g.fillStyle = '#fff';
+        g.fillText(`${got}/${total[s]}`, x0 + 580, 56 + bob);
+        for (let k = 0; k < total[s]; k++) {
+          g.fillStyle = k < got ? '#fff' : 'rgba(58,33,64,0.25)';
+          g.strokeStyle = INK;
+          g.lineWidth = 3;
+          g.beginPath();
+          g.arc(x0 + 580 - (total[s] - 1 - k) * 24 - 10, 108 + bob, 9, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+        }
+        if (on) {
+          // L'étiquette pointe vers l'équipe qui joue, sans toucher son panneau
+          g.textAlign = s ? 'right' : 'left';
+          g.font = '700 34px Fredoka, sans-serif';
+          g.fillStyle = '#ffd60a';
+          g.strokeStyle = INK;
+          g.lineWidth = 7;
+          const tx = s ? x0 - 22 : x0 + 622;
+          const lab = s ? (fr ? 'À vous ! ▶' : 'Your turn! ▶') : fr ? '◀ À vous !' : '◀ Your turn!';
+          g.strokeText(lab, tx, 72);
+          g.fillText(lab, tx, 72);
+        }
       });
       g.fillStyle = INK;
       g.textAlign = 'center';
-      g.font = '700 46px Fredoka, sans-serif';
-      if (phase !== 'end') g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 62);
+      g.textBaseline = 'middle';
+      g.font = '700 50px Fredoka, sans-serif';
+      if (phase !== 'end') g.fillText(`⏱ ${Math.ceil(Math.max(0, timer))}`, 960, 72);
       // L'indice, le plus visible possible
-      g.font = '700 58px Fredoka, sans-serif';
-      if (phase === 'clue') g.fillText(fr ? '🤫 Le chef cherche son indice…' : '🤫 The chef is thinking of a clue…', 960, 158, 1800);
-      else if (phase === 'guess') g.fillText(`💡 ${clue} · ${count}   ${fr ? `(encore ${tries} essai${tries > 1 ? 's' : ''})` : `(${tries} tr${tries > 1 ? 'ies' : 'y'} left)`}`, 960, 158, 1800);
-      else g.fillText(`🏆 ${TEAMS[winner].name[lang]} — ${why}`, 960, 158, 1800);
+      g.font = '700 54px Fredoka, sans-serif';
+      if (phase === 'clue') g.fillText(fr ? `🤫 L'agent ${TEAMS[turn].name.fr} cherche son indice…` : `🤫 The ${TEAMS[turn].name.en} agent is thinking…`, 960, 186, 1800);
+      else if (phase === 'guess') g.fillText(`💡 ${clue} · ${count}   ${fr ? `(encore ${tries} essai${tries > 1 ? 's' : ''})` : `(${tries} tr${tries > 1 ? 'ies' : 'y'} left)`}`, 960, 186, 1800);
+      else g.fillText(`🏆 ${TEAMS[winner].name[lang]} — ${why}`, 960, 186, 1800);
       // La grille
       const w = 354;
       const h = 150;
       cards.forEach((c, i) => {
         const x = 62 + (i % 5) * (w + 10);
-        const y = 215 + Math.floor(i / 5) * (h + 8);
+        const y = 236 + Math.floor(i / 5) * (h + 8);
         const shown = c.owner >= 0;
         g.fillStyle = !shown ? '#fff' : c.owner === 3 ? CURSED : c.owner === 2 ? NEUTRAL : TEAMS[c.owner].color;
         g.strokeStyle = c.votes.size ? '#ff9a1f' : INK;
@@ -271,6 +346,22 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           g.fillText(String(c.votes.size), x + w - 32, y + 34);
         }
       });
+      // « +1 » qui s'envole vers l'équipe qui a trouvé
+      for (const p of pops) {
+        const k = Math.min(1, p.t / 0.9);
+        const tx = p.side ? 1880 : 560;
+        const x = p.x + (tx - p.x) * k * k;
+        const y = p.y + (60 - p.y) * k * k - Math.sin(k * Math.PI) * 120;
+        g.globalAlpha = 1 - Math.max(0, k - 0.8) * 5;
+        g.font = '700 70px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.lineWidth = 10;
+        g.strokeStyle = INK;
+        g.strokeText('+1', x, y);
+        g.fillStyle = TEAMS[p.side].color;
+        g.fillText('+1', x, y);
+        g.globalAlpha = 1;
+      }
     },
     ranking() {
       const lead = winner >= 0 ? winner : leftOf(0) <= leftOf(1) ? 0 : 1;
@@ -303,11 +394,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
 
 export const chef: GameBase = {
   id: 'chef',
-  emoji: '🤫',
-  name: { fr: 'Le Chef Cachottier', en: 'The Secretive Chef' },
+  emoji: '🕵️',
+  name: { fr: 'Code Canapé', en: 'Couch Code' },
   how: {
-    fr: 'Deux équipes, 25 mots. Le chef donne un indice d’un mot et un nombre : son équipe doit trouver ses mots sans toucher au mot maudit !',
-    en: 'Two teams, 25 words. The chef gives a one-word clue and a number: the team must find its words and avoid the cursed one!',
+    fr: 'Deux équipes, 25 mots à double sens. L’agent donne un indice d’un mot et un nombre : son équipe doit trouver ses mots sans toucher au mot maudit !',
+    en: 'Two teams, 25 words with double meanings. The agent gives a one-word clue and a number: the team must find its words and avoid the cursed one!',
   },
   layout: 'buttons',
   min: 2,

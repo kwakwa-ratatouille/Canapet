@@ -110,8 +110,8 @@ export const TUTOS: Record<string, Record<Lang, Tuto>> = {
     en: { goal: 'Go as far as you can without getting squashed!', steps: [['⬆️', 'Four buttons: forward, left, right, back. One tap = one tile'], ['🚗', 'Dodge cars and trains, and stay on the baguettes in the syrup'], ['❤️', '3 lives. The screen rises: don’t stay at the bottom! B = shove your neighbours']] },
   },
   chef: {
-    fr: { goal: 'Trouve les mots de ton équipe grâce à l’indice du chef !', steps: [['👨‍🍳', 'Le chef voit les couleurs et donne un seul mot + un nombre'], ['👆', 'Son équipe touche les mots sur le téléphone. Mauvais mot = fin du tour'], ['💀', 'Le mot maudit fait perdre tout de suite !']] },
-    en: { goal: 'Find your team’s words with the chef’s clue!', steps: [['👨‍🍳', 'The chef sees the colours and gives one word + a number'], ['👆', 'The team taps words on the phone. Wrong word = end of turn'], ['💀', 'The cursed word loses the game at once!']] },
+    fr: { goal: 'Trouve les mots de ton équipe grâce à l’indice de l’agent ! Attention, les mots ont souvent deux sens.', steps: [['🕵️', 'L’agent voit les couleurs et donne un seul mot + un nombre'], ['👆', 'Son équipe touche les mots sur le téléphone. Mauvais mot = fin du tour'], ['💀', 'Le mot maudit fait perdre tout de suite !']] },
+    en: { goal: 'Find your team’s words with the agent’s clue! Careful, words often have two meanings.', steps: [['🕵️', 'The agent sees the colours and gives one word + a number'], ['👆', 'The team taps words on the phone. Wrong word = end of turn'], ['💀', 'The cursed word loses the game at once!']] },
   },
   fusion: {
     fr: { goal: 'Fais le plus gros score sans faire déborder ton bac !', steps: [['📺', 'Chacun son tour : regarde la télé, glisse le doigt pour viser, lève-le pour lâcher'], ['🍉', 'Deux aliments pareils fusionnent en plus gros et rapportent des points'], ['😈', 'Les fusions envoient des malus : rochers qui prennent la place, Glouton qui mange tes aliments. Au-dessus de la ligne = perdu']] },

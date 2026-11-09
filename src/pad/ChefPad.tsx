@@ -1,4 +1,4 @@
-// Manette du Chef Cachottier : le chef voit les couleurs et donne l'indice ; les autres touchent les mots.
+// Manette de Code Canapé : l'agent voit les couleurs et donne l'indice ; les autres touchent les mots.
 import { useEffect, useState } from 'react';
 import type { ChefPadData } from '../games/chefShared';
 import type { Lang, ToTv } from '../shared/protocol';
@@ -19,7 +19,7 @@ export function ChefPad({ data, lang, send }: { data: ChefPadData; lang: Lang; s
     data.phase === 'end'
       ? `🏆 ${data.win}`
       : writing
-        ? fr ? 'À toi, chef : donne un indice' : 'Your turn, chef: give a clue'
+        ? fr ? 'À toi, agent : donne un indice' : 'Your turn, agent: give a clue'
         : guessing
           ? `💡 ${data.clue} · ${data.count}`
           : data.phase === 'guess'
@@ -27,7 +27,7 @@ export function ChefPad({ data, lang, send }: { data: ChefPadData; lang: Lang; s
             : fr ? `${data.turnTeam} : le chef réfléchit…` : `${data.turnTeam}: the chef is thinking…`;
   return (
     <div className="traitor chef-pad" style={{ ['--c' as string]: data.color }}>
-      <p className="chef-badge">{data.role === 'chef' ? (fr ? `👨‍🍳 Tu es le chef · ${data.team}` : `👨‍🍳 You’re the chef · ${data.team}`) : data.team}{data.left > 0 && data.phase !== 'end' ? ` · ⏱ ${data.left}` : ''}</p>
+      <p className="chef-badge">{data.role === 'chef' ? (fr ? `🕵️ Tu es l’agent · ${data.team}` : `🕵️ You’re the agent · ${data.team}`) : data.team}{data.left > 0 && data.phase !== 'end' ? ` · ⏱ ${data.left}` : ''}</p>
       <p className="pad-title">{title}</p>
       {data.note && <p className="pad-small uc-note">{data.note}</p>}
       {writing && (

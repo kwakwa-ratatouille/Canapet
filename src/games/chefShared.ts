@@ -1,4 +1,4 @@
-// Le Chef Cachottier : ce que la télé envoie à chaque téléphone.
+// Code Canapé (ex-Chef Cachottier) : ce que la télé envoie à chaque téléphone.
 export interface ChefPadData {
   phase: 'clue' | 'guess' | 'end';
   /** chef = il voit les couleurs et donne l'indice ; guess = il cherche ; watch = l'autre équipe joue. */
