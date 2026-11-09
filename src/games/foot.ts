@@ -129,6 +129,23 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
   let pause = 2;
   let banner = fr ? 'Coup d’envoi !' : 'Kick-off!';
   let endDelay = -1;
+  /** Prolongation « but en or » : le prochain but qui départage gagne. */
+  let golden = false;
+  let goldenT = 0;
+  const tied = () => {
+    const best = Math.max(...score);
+    return score.filter((s) => s === best).length > 1;
+  };
+  const winBanner = () => {
+    const best = Math.max(...score);
+    const winners = score.map((s, i) => (s === best ? i : -1)).filter((i) => i >= 0);
+    return winners.length > 1 ? (fr ? 'Match nul !' : 'Draw!') : `${SQUADS[winners[0]].name[ctx.lang]} ${fr ? 'gagne !' : 'wins!'}`;
+  };
+  /** Sprint / tacle : recharge, affichée sur le bouton B du téléphone. */
+  const dashCool = (p: { pid: string; bot?: boolean; dashCd: number }, s: number) => {
+    p.dashCd = s;
+    if (!p.bot) ctx.cool(p.pid, 'b', s);
+  };
   let shake = 0;
   const parts: { x: number; y: number; vx: number; vy: number; t: number; c: string }[] = [];
   const pops: { x: number; y: number; text: string; t: number }[] = [];
@@ -262,7 +279,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       const d = Math.hypot(near.x - p.x, near.y - p.y);
       if (near.holder && d < 140 && p.dashCd <= 0) {
         p.dash = 0.25;
-        p.dashCd = 1.4;
+        dashCool(p, 1.4);
       }
       if (!near.holder && d < R + BALL_R + 24 && p.botT <= 0) {
         const dx = target.x - p.x;
@@ -307,6 +324,12 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
     ps.forEach((p) => !p.bot && ctx.buzz(p.pid, p.side === scorer || (scorer < 0 && p.side !== side) ? 200 : 60));
     kickoff();
     pause = 2.4;
+    // But en or : dès qu'une équipe passe devant, c'est fini
+    if (golden && !tied() && endDelay < 0) {
+      endDelay = 0;
+      banner = fr ? `⚡ BUT EN OR ! ${winBanner()}` : `⚡ GOLDEN GOAL! ${winBanner()}`;
+      pause = 3.4;
+    }
   }
 
   const game: GameInstance = {
@@ -326,7 +349,7 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
       }
       if (m.b && !p.lastB && p.dashCd <= 0) {
         p.dash = 0.25;
-        p.dashCd = 1.3;
+        dashCool(p, 1.3);
       }
       if (canCatch && m.c && !p.lastC) p.catchT = 0.3;
       p.lastA = m.a;
@@ -551,11 +574,11 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
           break;
         }
       }
-      if (time > MAX_TIME && endDelay < 0) {
+      if (golden) goldenT += dt;
+      // Fin sans chrono (sans télé) ; en prolongation, au bout de 2 minutes sans but on s'arrête sur un nul
+      if (((time > MAX_TIME && !golden) || goldenT > 120) && endDelay < 0) {
         endDelay = 0;
-        const best = Math.max(...score);
-        const winners = score.map((s, i) => (s === best ? i : -1)).filter((i) => i >= 0);
-        banner = winners.length > 1 ? (fr ? 'Match nul !' : 'Draw!') : `${SQUADS[winners[0]].name[ctx.lang]} ${fr ? 'gagne !' : 'wins!'}`;
+        banner = winBanner();
         pause = 3;
       }
     },
@@ -707,6 +730,28 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         const y = nTeams === 2 ? 76 : 160 + side * 90;
         roundRectText(g, `${SQUADS[side].emoji} ${s}`, x, y, sw - 10, 40, SQUADS[side].color);
       });
+      if (golden && endDelay < 0) {
+        const k = 1 + Math.sin(t * 6) * 0.05;
+        g.save();
+        g.translate(960, 172);
+        g.scale(k, k);
+        g.font = '700 40px Fredoka, sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        const lab = fr ? '⚡ BUT EN OR : le prochain but gagne !' : '⚡ GOLDEN GOAL: next goal wins!';
+        const w = g.measureText(lab).width + 50;
+        g.fillStyle = INK;
+        g.beginPath();
+        g.roundRect(-w / 2, -24, w, 56, 28);
+        g.fill();
+        g.fillStyle = SOLEIL;
+        g.beginPath();
+        g.roundRect(-w / 2, -30, w, 56, 28);
+        g.fill();
+        g.fillStyle = INK;
+        g.fillText(lab, 0, 0);
+        g.restore();
+      }
       if (banner) {
         g.font = '700 100px Fredoka, sans-serif';
         g.textAlign = 'center';
@@ -717,6 +762,15 @@ function create(runners: Runner[], ctx: GameCtx): GameInstance {
         g.fillStyle = SOLEIL;
         g.fillText(banner, 960, 600);
       }
+    },
+    overtime() {
+      if (endDelay >= 0 || !tied()) return false;
+      golden = true;
+      goldenT = 0;
+      banner = fr ? '⚡ PROLONGATION : BUT EN OR !' : '⚡ OVERTIME: GOLDEN GOAL!';
+      kickoff();
+      pause = 2.6;
+      return true;
     },
     ranking() {
       return [...ps].sort((a, b) => score[b.side] - score[a.side] || b.goals - a.goals).map((p) => p.pid);

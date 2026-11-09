@@ -45,6 +45,8 @@ export interface GameInstance {
   padData?(pid: string): unknown;
   /** Nom de la carte tirée pour cette partie (affiché à l'intro). */
   mapName?: Record<Lang, string>;
+  /** Le chrono est à zéro : vrai si le jeu part en prolongation (le chrono disparaît, le jeu finit seul). */
+  overtime?(): boolean;
 }
 
 /** Ce que chaque fichier de jeu définit ; le catalogue y ajoute l'icône et la couleur de la DA. */

@@ -191,6 +191,8 @@ export class Session {
   version = 0;
   /** Secondes restantes de l'écran « Temps écoulé ! » avant les résultats. */
   timeUp = 0;
+  /** Prolongation en cours (but en or…) : plus de chrono, le jeu décide de la fin. */
+  overtimeOn = false;
   /** Partie en pause (l'hôte l'a demandé). */
   paused = false;
   /** Joueurs qui ont appuyé sur un bouton pendant le tuto (« prêt ! »). */
@@ -784,6 +786,7 @@ export class Session {
     this.paused = false;
     this.lastStatus = 0;
     this.timeUp = 0;
+    this.overtimeOn = false;
     this.replay = 0;
     this.replayDone = false;
     this.curses.clear();
@@ -1409,7 +1412,7 @@ export class Session {
   /** Secondes de jeu restantes au chrono (null si le jeu n'a pas de temps maximum). */
   timeLeft(): number | null {
     const lim = this.limitNow();
-    if (!lim || this.phase !== 'game') return null;
+    if (!lim || this.phase !== 'game' || this.overtimeOn) return null;
     return Math.max(0, lim - Math.max(0, this.clock - this.intro - COUNT));
   }
 
@@ -1433,6 +1436,14 @@ export class Session {
       speak(fr ? 'Dix secondes !' : 'Ten seconds!', this.lang());
     }
     if (left > 0) return false;
+    // Égalité : le jeu peut partir en prolongation au lieu de s'arrêter
+    if (!this.overtimeOn && this.game?.overtime?.()) {
+      this.overtimeOn = true;
+      setMusicRush(1.3);
+      sfx.hurry();
+      speak(fr ? 'Égalité ! Prolongation : le prochain but gagne !' : 'Tied! Overtime: next goal wins!', this.lang());
+      return false;
+    }
     this.timeUp = 2.2;
     playMusic('');
     sfx.timeUp();
