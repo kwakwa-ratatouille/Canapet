@@ -7,6 +7,10 @@ export interface Tuto {
 }
 
 export const TUTOS: Record<string, Record<Lang, Tuto>> = {
+  meme: {
+    fr: { goal: 'Devine de quel mème on parle !', steps: [['😀', 'D’abord des emojis : 5 points si tu trouves'], ['📝', 'Puis une description (3 points), puis la première lettre (2 points)'], ['⌨️', 'Tape le nom du mème sur ton téléphone, le premier gagne +1']] },
+    en: { goal: 'Guess which meme it is!', steps: [['😀', 'First some emojis: 5 points if you get it'], ['📝', 'Then a description (3 points), then the first letter (2 points)'], ['⌨️', 'Type the meme’s name on your phone, first one gets +1']] },
+  },
   duos: {
     fr: { goal: 'Par duos : pensez pareil sans vous parler !', steps: [['💞', 'Tu joues avec ton binôme (son nom est sur ton téléphone)'], ['🤫', 'Une question : chacun répond en secret. Pareil = 3 points chacun'], ['👉', '« Qui de vous deux… ? » : désignez la même personne !']] },
     en: { goal: 'In pairs: think alike without talking!', steps: [['💞', 'You play with your partner (their name is on your phone)'], ['🤫', 'One question: each answers in secret. Same = 3 points each'], ['👉', '“Which of you…?”: point at the same person!']] },

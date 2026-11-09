@@ -11,7 +11,7 @@ import { candy, fitText, studioBackdrop } from './draw';
 import { norm } from './lettre';
 import { card, centerText, drawRow } from './quick';
 import type { QuizPadData } from './quizShared';
-import { COLOR_WORDS, DUO_SAME, DUO_WHO, SURVEY } from './tvshowsData';
+import { COLOR_WORDS, DUO_SAME, DUO_WHO, MEMES, SURVEY } from './tvshowsData';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -805,6 +805,193 @@ function createLongMot(runners: Runner[], ctx: GameCtx): GameInstance {
   return game;
 }
 
+// ———————————————————————————— Le Mème Mystère ————————————————————————————
+
+interface MemePl extends Runner {
+  score: number;
+  gain: number;
+  done: boolean;
+  note: string;
+  botT: number;
+}
+
+function createMeme(runners: Runner[], ctx: GameCtx): GameInstance {
+  const fr = ctx.lang === 'fr';
+  const lang = ctx.lang;
+  const pls: MemePl[] = runners.slice(0, 12).map((r) => ({ ...r, score: 0, gain: 0, done: false, note: '', botT: 0 }));
+  const ROUNDS = 8;
+  const CLUE = 10;
+  const deck = freshDeck('meme', MEMES.filter((m) => fr || m[5] !== 'fr'), ROUNDS, (m) => m[4]);
+  let round = -1;
+  let phase: QuizPadData['phase'] = 'write';
+  let timer = 0;
+  let clock = 0;
+  let first = '';
+  const cur = () => deck[round];
+  /** Indices montrés : 1 = emojis, 2 = + description, 3 = + première lettre. */
+  const clues = () => Math.min(3, 1 + Math.floor(clock / CLUE));
+  const answer = () => cur()?.[4] ?? '';
+  const hint3 = () => {
+    const a = answer().replace(/[«»“”]/g, '').trim();
+    const words = a.split(/\s+/).length;
+    return fr ? `Commence par « ${a[0]?.toUpperCase()} » · ${words} mot${words > 1 ? 's' : ''} · ${plain(a).length} lettres` : `Starts with “${a[0]?.toUpperCase()}” · ${words} word${words > 1 ? 's' : ''} · ${plain(a).length} letters`;
+  };
+  const good = (raw: string) => {
+    const k = plain(raw);
+    if (k.length < 2) return false;
+    return (cur()?.[3] ?? '').split('/').map(plain).some((a) => a === k || (a.length >= 4 && k.includes(a)) || (k.length >= Math.max(4, a.length - 3) && a.includes(k)));
+  };
+
+  function next() {
+    round++;
+    if (round >= deck.length) {
+      phase = 'end';
+      timer = 6;
+      sfx.win();
+      ctx.refresh();
+      return;
+    }
+    phase = 'write';
+    clock = 0;
+    timer = CLUE * 3;
+    first = '';
+    pls.forEach((p) => {
+      p.gain = 0;
+      p.done = false;
+      p.note = '';
+      p.botT = rnd(4, 28);
+    });
+    speak(fr ? 'Quel est ce mème ?' : 'Which meme is this?', lang);
+    sfx.whoosh();
+    ctx.refresh();
+  }
+  const win = (p: MemePl) => {
+    p.done = true;
+    p.gain = [5, 3, 2][clues() - 1] + (first ? 0 : 1);
+    if (!first) first = p.profile.name;
+    p.score += p.gain;
+    p.note = fr ? `Trouvé ! +${p.gain}` : `Got it! +${p.gain}`;
+    sfx.pop();
+    if (!p.bot) ctx.buzz(p.pid, 120);
+  };
+  function reveal() {
+    phase = 'reveal';
+    timer = 6;
+    speak(fr ? `C’était : ${answer()}` : `It was: ${answer()}`, lang);
+    sfx.boom();
+    ctx.refresh();
+  }
+  next();
+
+  const game: GameInstance = {
+    over: false,
+    input(pid, m) {
+      if (m.t !== 'act' || m.a !== 'text' || phase !== 'write' || !m.s) return;
+      const p = pls.find((x) => x.pid === pid);
+      if (!p || p.done) return;
+      if (good(m.s)) win(p);
+      else {
+        p.note = fr ? `✖ Non, ce n’est pas « ${m.s.slice(0, 24)} »` : `✖ No, it’s not “${m.s.slice(0, 24)}”`;
+        sfx.boing();
+      }
+      ctx.refresh();
+    },
+    update(dt) {
+      timer -= dt;
+      if (phase === 'write') {
+        const before = clues();
+        clock += dt;
+        if (clues() !== before) {
+          sfx.whoosh();
+          ctx.refresh();
+        }
+        for (const p of pls) {
+          if (!p.bot || p.done || (p.botT -= dt) > 0) continue;
+          p.botT = 99;
+          if (Math.random() < 0.45 + ctx.botSkill * 0.4) {
+            win(p);
+            ctx.refresh();
+          }
+        }
+        if (timer <= 0 || pls.every((p) => p.done || (!p.bot && ctx.away(p.pid)))) reveal();
+      } else if (phase === 'reveal') {
+        if (timer <= 0) next();
+      } else if (timer <= 0) game.over = true;
+    },
+    render(g, t) {
+      studioBackdrop(g, t, ctx.light, '#efe4ff', '#e0fff2', '#9b5cff');
+      g.fillStyle = INK;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      if (phase === 'end') {
+        g.font = '700 72px Fredoka, sans-serif';
+        g.fillText(fr ? '🤳 Les rois des mèmes' : '🤳 Meme masters', 960, 160);
+        drawRow(g, [...pls].sort((a, b) => b.score - a.score), t, (p) => `${p.profile.name}\n${p.score}`, 600, 160);
+        return;
+      }
+      const m = cur();
+      const n = phase === 'reveal' ? 3 : clues();
+      g.font = '700 38px Fredoka, sans-serif';
+      g.fillText(`🤳 ${fr ? 'Le Mème Mystère' : 'Mystery Meme'} · ${round + 1}/${deck.length}${phase === 'write' ? ` · ⏱ ${Math.ceil(Math.max(0, timer))}` : ''}`, 960, 70);
+      // Indice 1 : les emojis, en très grand
+      card(g, 560, 110, 800, 230, '#fff');
+      // Les emojis prennent la transparence de la couleur de remplissage : on la remet opaque
+      g.fillStyle = '#000';
+      g.font = '150px sans-serif';
+      g.fillText(m[0], 960, 232);
+      // Indice 2 : la description
+      if (n >= 2) {
+        card(g, 160, 365, 1600, 190, '#fff7c9');
+        g.fillStyle = INK;
+        centerText(g, fr ? m[1] : m[2], 960, 460, 1500, 44);
+      } else {
+        g.font = '700 40px Fredoka, sans-serif';
+        g.fillStyle = 'rgba(58,33,64,0.5)';
+        g.fillText(fr ? `Indice suivant dans ${Math.ceil(CLUE - clock)} s…` : `Next clue in ${Math.ceil(CLUE - clock)} s…`, 960, 460);
+      }
+      // Indice 3 : la première lettre ; à la fin, la réponse
+      g.fillStyle = INK;
+      if (phase === 'reveal') {
+        card(g, 360, 585, 1200, 130, ROSE);
+        g.fillStyle = '#fff';
+        g.font = '700 64px Fredoka, sans-serif';
+        g.fillText(fitText(g, answer(), 1140), 960, 652);
+      } else if (n >= 3) {
+        card(g, 360, 585, 1200, 110, '#e3f2ff');
+        g.fillStyle = INK;
+        g.font = '700 44px Fredoka, sans-serif';
+        g.fillText(fitText(g, hint3(), 1140), 960, 642);
+      }
+      g.fillStyle = INK;
+      g.font = '700 32px Fredoka, sans-serif';
+      g.fillText(fr ? '⭐ 5 pts avec les emojis · 3 avec la description · 2 avec la lettre · +1 au premier' : '⭐ 5 pts on emojis · 3 on description · 2 on letter · +1 for first', 960, 730, 1800);
+      drawRow(g, pls, t, (p) => (p.done ? `✅ ${p.profile.name}\n+${p.gain}` : `${p.profile.name}\n${p.score}`), 870, 96);
+    },
+    ranking: () => [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid),
+    leader: () => null,
+    padData(pid): QuizPadData {
+      const p = pls.find((x) => x.pid === pid)!;
+      const m = cur();
+      const n = clues();
+      return {
+        phase,
+        prompt: fr ? 'Quel est ce mème ?' : 'Which meme is this?',
+        step: `${Math.min(round + 1, deck.length)}/${deck.length}`,
+        act: phase === 'write' && !p.done ? 'write' : null,
+        options: [],
+        picked: -1,
+        score: p.score,
+        left: phase === 'write' ? Math.ceil(Math.max(0, timer)) : 0,
+        note: p.note || (n >= 2 && m ? (fr ? m[1] : m[2]) : ''),
+        hint: fr ? 'Le nom du mème…' : 'The meme’s name…',
+        big: m ? m[0] : '',
+        chips: n >= 3 && phase === 'write' ? [hint3()] : [],
+      };
+    },
+  };
+  return game;
+}
+
 // ———————————————————————————— Fiches des jeux ————————————————————————————
 
 export const duos: GameBase = {
@@ -857,6 +1044,19 @@ export const longmot: GameBase = {
   botFill: 3,
   music: 'party',
   create: createLongMot,
+};
+
+export const meme: GameBase = {
+  id: 'meme',
+  emoji: '🤳',
+  name: { fr: 'Le Mème Mystère', en: 'Mystery Meme' },
+  how: { fr: 'Devine le mème à partir d’emojis, puis d’une description, puis de sa première lettre. Plus tu trouves tôt, plus ça rapporte !', en: 'Guess the meme from emojis, then a description, then its first letter. The sooner, the more points!' },
+  layout: 'buttons',
+  min: 1,
+  max: 12,
+  botFill: 3,
+  music: 'party',
+  create: createMeme,
 };
 
 void candy;

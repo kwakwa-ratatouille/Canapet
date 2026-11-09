@@ -122,3 +122,48 @@ export const COLOR_WORDS: Record<'fr' | 'en', string[]> = {
     .split(' ')
     .filter((w) => w.length === 5),
 };
+
+/**
+ * Le Mème Mystère : on ne montre AUCUNE image ni aucun son (droits) : seulement des emojis et une description écrite ici.
+ * [emojis, description FR, description EN, réponses acceptées (séparées par /), nom affiché, 'fr' = seulement en français]
+ */
+export const MEMES: [string, string, string, string, string, ('fr' | 'all')?][] = [
+  ['🐶🔥☕', 'Un chien assis tranquillement avec son café pendant que toute la pièce brûle autour de lui.', 'A dog calmly sitting with his coffee while the whole room is on fire.', 'this is fine/chien en feu/chien dans le feu/chien dans la maison en feu', 'This is fine'],
+  ['👫👀💃', 'Un homme se retourne sur une passante, sous les yeux outrés de sa copine.', 'A man turns to stare at a passer-by while his girlfriend looks outraged.', 'distracted boyfriend/copain distrait/le copain distrait/petit ami distrait', 'Le copain distrait'],
+  ['🎤🕺🔗', 'Un lien piégé qui t’envoie sur un clip de 1987 : un chanteur roux en trench danse en promettant de ne jamais t’abandonner.', 'A trick link to a 1987 music video: a red-haired singer in a trench coat dances, promising never to give you up.', 'rickroll/rick roll/rick astley/never gonna give you up', 'Rickroll'],
+  ['🐕✨💬', 'Un shiba inu qui regarde de côté, entouré de petits mots en Comic Sans : « wow », « very », « such »…', 'A shiba inu glancing sideways, surrounded by Comic Sans words: “wow”, “very”, “such”…', 'doge/shiba', 'Doge'],
+  ['😾', 'Une chatte au visage éternellement grognon, devenue star du net.', 'A cat with a permanently grumpy face who became an internet star.', 'grumpy cat/chat grincheux/chat grognon/chatte grincheuse', 'Grumpy Cat'],
+  ['🐱🌈🍞', 'Un chat en pixels avec un corps de gâteau qui vole dans l’espace en laissant un arc-en-ciel.', 'A pixel cat with a pop-tart body flying through space, leaving a rainbow trail.', 'nyan cat/nyancat', 'Nyan Cat'],
+  ['😏', 'Un visage dessiné en noir et blanc avec un énorme sourire narquois, star des vieilles BD du net.', 'A black-and-white drawn face with a huge smug grin, star of old internet comics.', 'trollface/troll face/troll', 'Trollface'],
+  ['👶✊🏖️', 'Un bébé sur la plage qui serre une poignée de sable d’un air victorieux.', 'A baby on the beach clenching a fistful of sand with a victorious look.', 'success kid/bebe victorieux/bebe poing', 'Success Kid'],
+  ['👴🙂💔', 'Un monsieur aux cheveux blancs qui sourit poliment… mais on voit toute la douleur dans ses yeux.', 'A white-haired man smiling politely… but you can see the pain in his eyes.', 'harold/hide the pain harold', 'Hide the Pain Harold'],
+  ['👩😡🐱🥗', 'D’un côté une femme qui hurle, de l’autre un chat blanc assis à table devant une assiette, l’air perplexe.', 'A woman yelling on one side, and on the other a white cat sitting at a dinner table, looking confused.', 'woman yelling at cat/femme qui crie sur un chat/chat a table/chat a la table', 'La femme qui crie sur le chat'],
+  ['🙅‍♂️👉😌', 'Un rappeur canadien en blouson orange qui détourne la tête d’un côté, puis pointe du doigt de l’autre, ravi.', 'A Canadian rapper in an orange jacket turning away from one thing, then pointing happily at another.', 'drake/drake hotline bling/hotline bling', 'Drake qui dit non puis oui'],
+  ['📈🧑‍💼', 'Un buste 3D en costume devant une courbe de bourse qui monte, avec un mot volontairement mal écrit.', 'A 3D head in a suit in front of a rising stock chart, with a deliberately misspelled word.', 'stonks/stonk', 'Stonks'],
+  ['🧠🌌', 'Des cerveaux de plus en plus lumineux… pour des idées de plus en plus absurdes.', 'Brains glowing brighter and brighter… for ideas that get more and more absurd.', 'galaxy brain/cerveau galaxie/expanding brain/cerveau qui grandit', 'Le cerveau galaxie'],
+  ['⚡😮', 'Une petite créature jaune bouche bée devant une conséquence pourtant évidente.', 'A small yellow creature, mouth wide open, shocked by a totally obvious consequence.', 'pikachu/pikachu surpris/surprised pikachu', 'Pikachu surpris'],
+  ['🐴🕺🇰🇷', 'Une danse où l’on fait semblant de chevaucher un cheval au galop, record de vues à l’époque.', 'A dance where you pretend to ride a galloping horse, a view-count record at the time.', 'gangnam style/gangnam/psy', 'Gangnam Style'],
+  ['🪖🕺💥', 'Une personne casquée danse seule… puis cut : toute la pièce gigote n’importe comment.', 'One masked person dances alone… then cut: the whole room flails around wildly.', 'harlem shake', 'Harlem Shake'],
+  ['🪣🧊😱', 'On se renverse un seau d’eau glacée sur la tête, puis on défie ses amis de le faire.', 'You pour a bucket of ice water over your head, then challenge your friends to do it.', 'ice bucket challenge/ice bucket/seau d eau glacee/seau glace', 'Ice Bucket Challenge'],
+  ['💪🙇', 'Un geste de danse : la tête cachée dans le creux du coude, l’autre bras tendu en l’air.', 'A dance move: head tucked into the elbow, the other arm stretched out.', 'dab/le dab/dabbing', 'Le dab'],
+  ['🦷🕺', 'Une danse où l’on balance très vite les bras de chaque côté des hanches, comme avec du fil dentaire.', 'A dance swinging your arms quickly from side to side around your hips, like flossing.', 'floss/fil dentaire/danse du fil dentaire/the floss', 'La danse du fil dentaire'],
+  ['👴📱🙄', 'Deux mots pour clore un débat avec quelqu’un de plus âgé.', 'Two words to end an argument with someone older.', 'ok boomer/okay boomer', 'OK boomer'],
+  ['🐰🍔🍔', 'Un lapin de dessin animé très célèbre… mais devenu très, très gros.', 'A very famous cartoon rabbit… but very, very chubby.', 'big chungus/chungus', 'Big Chungus'],
+  ['🚀👨‍🚀🔪', 'Un petit astronaute en combinaison colorée : « Lui, il est trop louche. »', 'A small astronaut in a coloured suit: “That one is really sus.”', 'sus/among us/amogus/imposteur/impostor', 'Among Us (sus)'],
+  ['🧤🪑🥶', 'Un vieux sénateur américain assis seul, bras croisés, avec de grosses moufles tricotées.', 'An elderly US senator sitting alone, arms crossed, wearing big knitted mittens.', 'bernie/bernie mittens/moufles/bernie sanders', 'Bernie et ses moufles'],
+  ['🐸☕', 'Une grenouille-marionnette sirote son thé : « Mais ça ne me regarde pas. »', 'A frog puppet sipping tea: “But that’s none of my business.”', 'kermit/kermit the frog/grenouille qui boit du the', 'Kermit qui boit son thé'],
+  ['🤓📸💀', 'Un ado à l’appareil dentaire sur sa photo de classe : il lui arrive toujours le pire.', 'A teen with braces in his school photo: the worst always happens to him.', 'bad luck brian/brian', 'Bad Luck Brian'],
+  ['👀😍', 'Une fille qui fixe la caméra avec des yeux immenses et un sourire beaucoup trop insistant.', 'A girl staring into the camera with huge eyes and a far too intense smile.', 'overly attached girlfriend/copine collante/petite amie collante', 'La copine trop collante'],
+  ['😭🎤🙏', 'Un fan en larmes devant sa webcam qui supplie qu’on laisse sa chanteuse préférée tranquille.', 'A fan in tears in front of his webcam, begging everyone to leave his favourite singer alone.', 'leave britney alone/britney', 'Leave Britney alone'],
+  ['👶👶🦷', 'Un bébé mord le doigt de son grand frère, qui crie le prénom du petit.', 'A baby bites his big brother’s finger, who yells the little one’s name.', 'charlie bit my finger/charlie', 'Charlie bit my finger'],
+  ['🐱🎹', 'Un chat en t-shirt bleu qui joue du clavier pour faire sortir les gens de scène.', 'A cat in a blue t-shirt playing the keyboard to play people off stage.', 'keyboard cat/chat pianiste/chat au piano', 'Keyboard Cat'],
+  ['🦖🤔', 'Un dinosaure, la griffe sous le menton, qui se pose de très grandes questions.', 'A dinosaur, claw on its chin, pondering deep questions.', 'philosoraptor/philoraptor', 'Philosoraptor'],
+  ['😭👤', 'Une tête dessinée qui pleure de solitude, avec deux mots en anglais pour dire « seul pour toujours ».', 'A drawn face crying with loneliness, saying it will be alone forever.', 'forever alone', 'Forever Alone'],
+  ['⚰️🕺🎺', 'Des porteurs de cercueil en costume qui dansent en rythme.', 'Pallbearers in suits dancing in rhythm with a coffin.', 'coffin dance/danse du cercueil/porteurs de cercueil/cercueil', 'La danse du cercueil'],
+  ['👧🔥🏠', 'Une petite fille sourit d’un air malicieux devant une maison en flammes.', 'A little girl smiles mischievously in front of a burning house.', 'disaster girl/fille du desastre', 'Disaster Girl'],
+  ['🧠👉😎', 'Un homme se tapote la tempe avec un sourire en coin : idée « géniale »… pas vraiment.', 'A man tapping his temple with a smirk: a “genius” idea… not really.', 'roll safe/think about it', 'Roll Safe'],
+  ['🧽🐔', 'Une éponge jaune pliée comme une poule, pour répéter une phrase en AlTeRnAnT les majuscules.', 'A yellow sponge bent like a chicken, repeating a sentence in AlTeRnAtInG caps.', 'spongebob/mocking spongebob/bob l eponge/bob leponge', 'Bob l’éponge moqueur'],
+  ['🧂🥩💪', 'Un chef qui sale sa viande en laissant tomber le sel le long de son avant-bras, l’air très théâtral.', 'A chef sprinkling salt down his forearm onto the meat, very theatrically.', 'salt bae', 'Salt Bae'],
+  ['🥐⚔️', 'Le grand débat qui coupe la France en deux au petit-déjeuner.', 'The big debate that splits France in two at breakfast.', 'chocolatine/pain au chocolat/chocolatine ou pain au chocolat', 'Chocolatine ou pain au chocolat', 'fr'],
+  ['🗡️🤔', 'Un chevalier qui ne comprend jamais rien mais répond toujours la même petite phrase pour faire illusion.', 'A knight who never understands anything but always replies with the same little phrase.', 'c est pas faux/cest pas faux/pas faux', '« C’est pas faux »', 'fr'],
+];

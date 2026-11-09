@@ -27,7 +27,7 @@ import { fusion } from './fusion';
 import { casse, devine, doublage, envers, imite, karaoke, perroquet, voix } from './voice';
 import { shout } from './shout';
 import { chiffre, plutot } from './quick';
-import { duos, longmot, motus, sondage } from './tvshows';
+import { duos, longmot, meme, motus, sondage } from './tvshows';
 import { mareeGame } from './maree';
 import { chairsGame, colorGame, lavaGame, pixelGame, potatoGame, rainGame } from './minis';
 import type { GameBase, GameDef } from './types';
@@ -84,10 +84,11 @@ const ART: Record<string, string> = {
   sondage: 'sondage',
   motus: 'motus',
   longmot: 'longmot',
+  meme: 'meme',
 };
 
 /** Couleur des jeux ajoutés après la DA. */
-const EXTRA_COLORS: Record<string, string> = { tour: '#9b5cff', gateau: '#ff86bd', traverse: '#22c99a', chef: '#3a6bff', fusion: '#ff9a1f', lettre: '#2ec5ff', trous: '#9b5cff', tranche: '#ff5a1f', doublage: '#3a6bff', karaoke: '#e08bff', cri: '#ff3b3b', imite: '#ff4f9a', devine: '#2ec5ff', perroquet: '#22c99a', envers: '#9b5cff', voix: '#3a2140', casse: '#ff9a1f', undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f', trappe: '#9b5cff', couleur: '#2ec5ff', maree: '#1e8fc0', pixel: '#9b5cff', tribunal: '#9b5cff', dico: '#2ec5ff', plutot: '#ffd60a', chiffre: '#7bd13b', duos: '#ff4f9a', sondage: '#ff9a1f', motus: '#3a6bff', longmot: '#22c99a' };
+const EXTRA_COLORS: Record<string, string> = { tour: '#9b5cff', gateau: '#ff86bd', traverse: '#22c99a', chef: '#3a6bff', fusion: '#ff9a1f', lettre: '#2ec5ff', trous: '#9b5cff', tranche: '#ff5a1f', doublage: '#3a6bff', karaoke: '#e08bff', cri: '#ff3b3b', imite: '#ff4f9a', devine: '#2ec5ff', perroquet: '#22c99a', envers: '#9b5cff', voix: '#3a2140', casse: '#ff9a1f', undercover: '#7b4dff', roulette: '#ff9a1f', reflexes: '#ffd60a', foot: '#7bd13b', president: '#3f7be0', chaises: '#ff4f9a', patate: '#ff9a1f', pluie: '#2ec5ff', lave: '#ff5a1f', trappe: '#9b5cff', couleur: '#2ec5ff', maree: '#1e8fc0', pixel: '#9b5cff', tribunal: '#9b5cff', dico: '#2ec5ff', plutot: '#ffd60a', chiffre: '#7bd13b', duos: '#ff4f9a', sondage: '#ff9a1f', motus: '#3a6bff', longmot: '#22c99a', meme: '#9b5cff' };
 
 const withArt = (g: GameBase): GameDef => {
   const slug = ART[g.id];
@@ -100,6 +101,7 @@ export const GAMES: GameDef[] = [
   sondage,
   motus,
   longmot,
+  meme,
   tribunal,
   dico,
   lettre,
