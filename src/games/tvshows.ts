@@ -828,7 +828,7 @@ function createMeme(runners: Runner[], ctx: GameCtx): GameInstance {
   // Les vraies vidéos des mèmes (GIPHY), cherchées dès le début ; sans clé ou sans réseau, on reste aux emojis
   const clips: (MemeClip | null)[] = deck.map(() => null);
   deck.forEach((m, i) =>
-    void findMemeClip(m[3].split('/')[0] + ' meme', ctx.family, lang).then((c) => {
+    void findMemeClip(m[3].split('/')[0], ctx.family, lang).then((c) => {
       clips[i] = c;
       if (i === round && c && !video) video = memeVideo(c);
     }),

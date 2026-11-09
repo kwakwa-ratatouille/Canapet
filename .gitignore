@@ -1,3 +1,7 @@
 node_modules
 dist
 *.log
+
+# Réglages et clés locales (jamais envoyés)
+*.local
+.env.local
