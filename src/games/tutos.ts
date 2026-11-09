@@ -7,6 +7,22 @@ export interface Tuto {
 }
 
 export const TUTOS: Record<string, Record<Lang, Tuto>> = {
+  duos: {
+    fr: { goal: 'Par duos : pensez pareil sans vous parler !', steps: [['💞', 'Tu joues avec ton binôme (son nom est sur ton téléphone)'], ['🤫', 'Une question : chacun répond en secret. Pareil = 3 points chacun'], ['👉', '« Qui de vous deux… ? » : désignez la même personne !']] },
+    en: { goal: 'In pairs: think alike without talking!', steps: [['💞', 'You play with your partner (their name is on your phone)'], ['🤫', 'One question: each answers in secret. Same = 3 points each'], ['👉', '“Which of you…?”: point at the same person!']] },
+  },
+  sondage: {
+    fr: { goal: 'Retrouve les réponses les plus données au sondage !', steps: [['📊', '6 réponses cachées au tableau'], ['⌨️', 'Tape des réponses : la plus courante rapporte le plus'], ['✖', '3 erreurs et c’est fini pour cette question']] },
+    en: { goal: 'Find the most popular survey answers!', steps: [['📊', '6 hidden answers on the board'], ['⌨️', 'Type answers: the most common pays the most'], ['✖', '3 misses and you’re out for this question']] },
+  },
+  motus: {
+    fr: { goal: 'Devine le mot caché en 6 essais !', steps: [['🔤', 'Tu as la première lettre et le nombre de lettres'], ['🟥', 'Rouge = bien placée, 🟨 jaune = mal placée'], ['⚡', 'Moins d’essais = plus de points, le premier gagne un bonus']] },
+    en: { goal: 'Guess the hidden word in 6 tries!', steps: [['🔤', 'You get the first letter and the length'], ['🟥', 'Red = right spot, 🟨 yellow = wrong spot'], ['⚡', 'Fewer tries = more points, first one gets a bonus']] },
+  },
+  longmot: {
+    fr: { goal: 'Le mot le plus long avec 9 lettres tirées au hasard !', steps: [['🔠', 'Chaque lettre ne sert qu’une fois'], ['📖', 'Le mot doit exister dans le dictionnaire'], ['🏆', 'Une lettre = un point, le plus long tout seul = +3']] },
+    en: { goal: 'The longest word from 9 random letters!', steps: [['🔠', 'Each letter can be used once'], ['📖', 'The word must be in the dictionary'], ['🏆', 'One letter = one point, sole longest = +3']] },
+  },
   plutot: {
     fr: {
       goal: 'Deux choix absurdes : devine ce que le groupe va préférer !',

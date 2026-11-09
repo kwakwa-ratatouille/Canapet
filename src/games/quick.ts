@@ -92,7 +92,7 @@ interface Pl extends Runner {
 
 const newPlayers = (runners: Runner[]): Pl[] => runners.slice(0, 12).map((r) => ({ ...r, score: 0, pick: -1, guess: null, gain: 0 }));
 
-function drawRow(g: CanvasRenderingContext2D, pls: Pl[], t: number, label: (p: Pl) => string, y = 960, size = 90) {
+export function drawRow<T extends Runner>(g: CanvasRenderingContext2D, pls: T[], t: number, label: (p: T) => string, y = 960, size = 90) {
   pls.forEach((p, i) => {
     const x = 960 + (i - (pls.length - 1) / 2) * Math.min(230, 1760 / pls.length);
     drawCharacter(g, x, y, size, {
@@ -114,7 +114,7 @@ function drawRow(g: CanvasRenderingContext2D, pls: Pl[], t: number, label: (p: P
   });
 }
 
-function card(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, fill: string) {
+export function card(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, fill: string) {
   g.fillStyle = fill;
   g.strokeStyle = INK;
   g.lineWidth = 6;
@@ -125,7 +125,7 @@ function card(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: n
   candy(g, x, y, w, h, 40);
 }
 
-function centerText(g: CanvasRenderingContext2D, text: string, cx: number, cy: number, w: number, size: number) {
+export function centerText(g: CanvasRenderingContext2D, text: string, cx: number, cy: number, w: number, size: number) {
   const font = `700 ${size}px Fredoka, sans-serif`;
   const lines = wrap(g, text, w, font);
   g.textAlign = 'center';

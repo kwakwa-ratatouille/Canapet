@@ -13,6 +13,10 @@ import './site.css';
 const BUY_AFTER = 'buy-after';
 
 const GAMES: [string, string, string][] = [
+  ['duos', 'Les Inséparables', 'The Inseparables'],
+  ['sondage', 'Le Sondage du Salon', 'The Couch Survey'],
+  ['motus', 'Mot en Couleurs', 'Colour Word'],
+  ['longmot', 'Le Mot le Plus Long', 'The Longest Word'],
   ['tribunal', 'Le Tribunal du Canapé', 'Couch Court'],
   ['dico', 'Le Petit Bobard Illustré', 'The Oxford Fibber'],
   ['lettre', 'Ça Commence Par…', 'Starts With…'],

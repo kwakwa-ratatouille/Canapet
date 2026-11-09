@@ -3,7 +3,7 @@
 import type { ToPad, ToTv } from './protocol';
 
 /** Les jeux qui marchent vraiment bien sans écran commun : tout se joue sur le téléphone, rien ne va trop vite. */
-export const PHONE_GAMES = ['tribunal', 'dico', 'plutot', 'chiffre', 'lettre', 'trous', 'bluff', 'traitre', 'undercover', 'president', 'chef', 'reflexes', 'dessin', 'roulette'];
+export const PHONE_GAMES = ['duos', 'sondage', 'motus', 'longmot', 'tribunal', 'dico', 'plutot', 'chiffre', 'lettre', 'trous', 'bluff', 'traitre', 'undercover', 'president', 'chef', 'reflexes', 'dessin', 'roulette'];
 
 /** Jeux dont le téléphone a déjà tout : l'image reste repliée, on l'ouvre si on veut. */
 export const PEEK_FOLDED = ['chef', 'reflexes'];

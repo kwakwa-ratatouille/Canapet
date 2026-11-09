@@ -1,0 +1,124 @@
+// Contenu des jeux « plateau télé » (inspirés des émissions françaises, rien de copié : questions, sondages et mots écrits ici).
+// `!` au début d'une question = cachée en mode famille.
+
+/** Les Inséparables, manche « Pareil ? » : [question FR, 4 réponses FR, question EN, 4 réponses EN]. Le duo doit choisir la même. */
+export const DUO_SAME: [string, string[], string, string[]][] = [
+  ['Les vacances idéales ?', ['Plage', 'Montagne', 'Grande ville', 'Canapé'], 'The ideal holiday?', ['Beach', 'Mountains', 'Big city', 'Sofa']],
+  ['Le meilleur repas du dimanche ?', ['Raclette', 'Pizza', 'Poulet frites', 'Sushis'], 'The best Sunday meal?', ['Raclette', 'Pizza', 'Roast chicken', 'Sushi']],
+  ['Super-pouvoir rêvé ?', ['Voler', 'Être invisible', 'Lire les pensées', 'Arrêter le temps'], 'Dream superpower?', ['Flying', 'Invisibility', 'Mind reading', 'Stopping time']],
+  ['Animal de compagnie parfait ?', ['Chat', 'Chien', 'Poisson rouge', 'Lama'], 'Perfect pet?', ['Cat', 'Dog', 'Goldfish', 'Llama']],
+  ['Le pire réveil ?', ['Alarme stridente', 'Un enfant qui saute', 'Un marteau-piqueur', 'Le chat sur la tête'], 'The worst wake-up?', ['Screaming alarm', 'A jumping kid', 'A jackhammer', 'Cat on your face']],
+  ['Soirée parfaite ?', ['Film sous la couette', 'Boîte de nuit', 'Jeux de société', 'Resto entre potes'], 'Perfect evening?', ['Film under a blanket', 'Nightclub', 'Board games', 'Dinner with friends']],
+  ['Le dessert qu’on ne refuse jamais ?', ['Tiramisu', 'Crêpes', 'Glace', 'Fondant au chocolat'], 'The dessert you never refuse?', ['Tiramisu', 'Pancakes', 'Ice cream', 'Chocolate lava cake']],
+  ['Le moyen de transport préféré ?', ['Vélo', 'Voiture', 'Train', 'Trottinette'], 'Favourite way to travel?', ['Bike', 'Car', 'Train', 'Scooter']],
+  ['Si on gagnait au loto, on achète d’abord…', ['Une maison', 'Un voyage', 'Une voiture de luxe', 'Un parc d’attractions'], 'If we won the lottery, first we buy…', ['A house', 'A trip', 'A luxury car', 'A theme park']],
+  ['La saison préférée ?', ['Printemps', 'Été', 'Automne', 'Hiver'], 'Favourite season?', ['Spring', 'Summer', 'Autumn', 'Winter']],
+  ['La pire corvée ?', ['La vaisselle', 'Le repassage', 'Les poubelles', 'Le ménage de la salle de bain'], 'The worst chore?', ['Dishes', 'Ironing', 'Taking the bins out', 'Cleaning the bathroom']],
+  ['Le film à revoir pour la 100e fois ?', ['Un dessin animé', 'Une comédie', 'Un film d’horreur', 'Une histoire d’amour'], 'The film to watch for the 100th time?', ['A cartoon', 'A comedy', 'A horror film', 'A love story']],
+  ['Le petit-déjeuner idéal ?', ['Croissant', 'Tartines', 'Céréales', 'Œufs bacon'], 'Ideal breakfast?', ['Croissant', 'Toast', 'Cereal', 'Bacon and eggs']],
+  ['Pour un rendez-vous, on choisit…', ['Un pique-nique', 'Un restaurant chic', 'Un escape game', 'Un bowling'], 'For a date, we pick…', ['A picnic', 'A fancy restaurant', 'An escape room', 'Bowling']],
+  ['La musique pour le trajet ?', ['Rap', 'Pop', 'Rock', 'Chansons de dessin animé'], 'Music for the drive?', ['Rap', 'Pop', 'Rock', 'Cartoon songs']],
+  ['Le pire défaut chez quelqu’un ?', ['Être en retard', 'Mentir', 'Être radin', 'Parler la bouche pleine'], 'The worst flaw in someone?', ['Being late', 'Lying', 'Being stingy', 'Talking with your mouth full']],
+  ['Le meilleur moment de la journée ?', ['Le matin', 'Le midi', 'Le goûter', 'Le soir'], 'Best time of day?', ['Morning', 'Lunchtime', 'Snack time', 'Evening']],
+  ['Sur une île déserte, on emporte…', ['Un couteau', 'Un téléphone', 'Du chocolat', 'Un bon livre'], 'On a desert island, we bring…', ['A knife', 'A phone', 'Chocolate', 'A good book']],
+  ['La boisson préférée ?', ['Café', 'Thé', 'Jus d’orange', 'Soda'], 'Favourite drink?', ['Coffee', 'Tea', 'Orange juice', 'Soda']],
+  ['Le métier rêvé ?', ['Astronaute', 'Chef cuisinier', 'Star de cinéma', 'Rentier'], 'Dream job?', ['Astronaut', 'Chef', 'Film star', 'Living off savings']],
+  ['Le plat qu’on ne peut pas voir en peinture ?', ['Les endives', 'Le foie', 'Les choux de Bruxelles', 'Les huîtres'], 'The dish we can’t stand?', ['Chicory', 'Liver', 'Brussels sprouts', 'Oysters']],
+  ['Le jeu de société préféré ?', ['Cartes', 'Jeu de plateau', 'Jeu d’ambiance', 'Échecs'], 'Favourite board game type?', ['Cards', 'Board game', 'Party game', 'Chess']],
+  ['Pour se détendre…', ['Une sieste', 'Du sport', 'Un bain', 'Les réseaux sociaux'], 'To relax…', ['A nap', 'Sport', 'A bath', 'Social media']],
+  ['La ville à visiter ?', ['Rome', 'New York', 'Tokyo', 'Marseille'], 'City to visit?', ['Rome', 'New York', 'Tokyo', 'Paris']],
+  ['L’odeur préférée ?', ['Pain chaud', 'Herbe coupée', 'Café', 'Pluie sur le bitume'], 'Favourite smell?', ['Fresh bread', 'Cut grass', 'Coffee', 'Rain on the road']],
+  ['!Le premier truc fait le matin ?', ['Regarder son téléphone', 'Aller aux toilettes', 'Boire un café', 'Se rendormir'], '!First thing in the morning?', ['Check the phone', 'Go to the toilet', 'Drink coffee', 'Fall back asleep']],
+  ['!Le pire en soirée ?', ['Tomber sur son ex', 'Être malade', 'Perdre ses clés', 'Dire une bêtise au micro'], '!Worst at a party?', ['Meeting your ex', 'Being sick', 'Losing your keys', 'Saying something silly on the mic']],
+  ['!Le plus gênant ?', ['Un rot en réunion', 'Une chute dans la rue', 'Un message envoyé à la mauvaise personne', 'Un trou dans le pantalon'], '!Most embarrassing?', ['Burping in a meeting', 'Falling in the street', 'A text sent to the wrong person', 'A hole in your trousers']],
+];
+
+/** Les Inséparables, manche « Qui de vous deux ? » : chacun montre lui-même ou l'autre. Accord = ils désignent la même personne. */
+export const DUO_WHO: [string, string][] = [
+  ['Qui de vous deux ronfle le plus ?', 'Which of you snores the most?'],
+  ['Qui de vous deux est toujours en retard ?', 'Which of you is always late?'],
+  ['Qui de vous deux cuisine le mieux ?', 'Which of you cooks best?'],
+  ['Qui de vous deux a le plus mauvais caractère ?', 'Which of you is grumpier?'],
+  ['Qui de vous deux pleure devant les films ?', 'Which of you cries at films?'],
+  ['Qui de vous deux perd toujours ses clés ?', 'Which of you always loses their keys?'],
+  ['Qui de vous deux chante sous la douche ?', 'Which of you sings in the shower?'],
+  ['Qui de vous deux est le plus mauvais perdant ?', 'Which of you is the sorest loser?'],
+  ['Qui de vous deux dépense le plus ?', 'Which of you spends the most?'],
+  ['Qui de vous deux est le plus peureux ?', 'Which of you is the biggest scaredy-cat?'],
+  ['Qui de vous deux danse le plus mal ?', 'Which of you dances worst?'],
+  ['Qui de vous deux mange le plus ?', 'Which of you eats the most?'],
+  ['Qui de vous deux passe le plus de temps sur son téléphone ?', 'Which of you spends more time on the phone?'],
+  ['Qui de vous deux se lève le plus tard ?', 'Which of you gets up latest?'],
+  ['Qui de vous deux a la plus mauvaise mémoire ?', 'Which of you has the worst memory?'],
+  ['Qui de vous deux raconte les pires blagues ?', 'Which of you tells the worst jokes?'],
+  ['Qui de vous deux survivrait le plus longtemps dans la nature ?', 'Which of you would survive longest in the wild?'],
+  ['Qui de vous deux est le plus bordélique ?', 'Which of you is messier?'],
+  ['Qui de vous deux gagnerait un concours de grimaces ?', 'Which of you would win a funny-face contest?'],
+  ['Qui de vous deux conduit le plus mal ?', 'Which of you drives worst?'],
+  ['!Qui de vous deux a déjà menti pour éviter une soirée ?', '!Which of you has lied to skip a party?'],
+  ['!Qui de vous deux pète le plus en douce ?', '!Which of you farts most sneakily?'],
+  ['!Qui de vous deux finit toujours la soirée le dernier ?', '!Which of you always leaves the party last?'],
+];
+
+/**
+ * Le Sondage du Salon : un sondage imaginaire. Réponses : « alternatives séparées par / » et nombre de points (le total fait 100).
+ * Le plus donné en premier.
+ */
+export const SURVEY: Record<'fr' | 'en', [string, [string, number][]][]> = {
+  fr: [
+    ['Un truc qu’on oublie souvent en partant en vacances', [['brosse a dents/dentifrice', 32], ['chargeur', 24], ['maillot/maillot de bain', 16], ['creme solaire/creme', 12], ['passeport/papiers/carte d identite', 9], ['lunettes de soleil/lunettes', 7]]],
+    ['Quelque chose qu’on met dans un sandwich', [['jambon', 30], ['fromage/emmental/gruyere', 24], ['salade', 15], ['tomate', 13], ['beurre', 10], ['poulet', 8]]],
+    ['Un animal qu’on voit dans une ferme', [['vache', 28], ['poule/coq/poussin', 24], ['cochon', 18], ['mouton/brebis', 14], ['cheval/ane', 9], ['chevre', 7]]],
+    ['Une excuse pour arriver en retard', [['bouchon/embouteillage/trafic', 30], ['reveil/panne de reveil', 25], ['train/metro/bus', 18], ['voiture/panne', 12], ['enfant/enfants', 8], ['malade', 7]]],
+    ['Une chose qu’on trouve dans une salle de bain', [['brosse a dents', 26], ['savon/gel douche', 22], ['serviette', 18], ['miroir', 14], ['shampoing', 12], ['dentifrice', 8]]],
+    ['Un sport qu’on regarde à la télé', [['foot/football', 40], ['rugby', 18], ['tennis', 15], ['velo/cyclisme/tour de france', 12], ['basket', 9], ['formule 1/f1', 6]]],
+    ['Quelque chose qui fait peur', [['araignee', 30], ['noir', 20], ['serpent', 16], ['fantome', 13], ['clown', 12], ['vide/hauteur', 9]]],
+    ['Un fruit qu’on met dans une salade de fruits', [['pomme', 22], ['banane', 21], ['fraise', 17], ['orange', 15], ['kiwi', 13], ['ananas', 12]]],
+    ['Quelque chose qu’on fait le dimanche', [['dormir/grasse matinee/sieste', 30], ['manger en famille/repas', 22], ['marche/balade/promenade', 18], ['menage', 12], ['sport', 10], ['tele/serie/film', 8]]],
+    ['Un objet qu’on perd tout le temps', [['cle/cles', 38], ['telephone', 20], ['telecommande', 16], ['lunettes', 12], ['chaussette', 8], ['portefeuille', 6]]],
+    ['Une chose qu’on voit à la plage', [['sable', 25], ['mer/vague', 22], ['parasol', 16], ['serviette', 14], ['coquillage', 12], ['mouette', 11]]],
+    ['Un cadeau qu’on reçoit souvent à Noël', [['chocolat', 26], ['livre', 20], ['parfum', 18], ['pull/vetement', 14], ['chaussette', 12], ['jeu/jouet', 10]]],
+    ['Un métier où l’on porte un uniforme', [['policier/police/gendarme', 34], ['pompier', 24], ['militaire/soldat', 14], ['infirmier/infirmiere/medecin', 12], ['pilote/hotesse', 9], ['cuisinier', 7]]],
+    ['Quelque chose qu’on fait en attendant le bus', [['telephone', 40], ['musique', 20], ['attendre/regarder l heure', 14], ['lire', 10], ['parler/discuter', 9], ['manger', 7]]],
+    ['Une chose qui sent mauvais', [['poubelle', 26], ['pied/chaussette', 24], ['fromage', 16], ['pet', 14], ['egout', 11], ['oeuf pourri/oeuf', 9]]],
+    ['Une chose qu’on emporte au cinéma', [['popcorn/pop corn', 46], ['boisson/soda', 22], ['bonbon/bonbons', 14], ['ticket/billet', 9], ['lunettes', 5], ['veste/manteau', 4]]],
+    ['Un légume que les enfants détestent', [['epinard', 30], ['brocoli', 22], ['chou/choux de bruxelles', 18], ['endive', 12], ['haricot', 10], ['courgette', 8]]],
+    ['Quelque chose qu’on dit en décrochant le téléphone', [['allo', 60], ['oui', 15], ['bonjour', 12], ['salut', 7], ['qui est ce', 4], ['quoi', 2]]],
+    ['Un endroit où l’on fait la queue', [['supermarche/caisse', 34], ['poste', 20], ['boulangerie', 14], ['cinema', 12], ['parc d attraction/manege', 11], ['toilettes', 9]]],
+    ['Une chose qu’on trouve dans un sac à main', [['portefeuille', 26], ['cle/cles', 22], ['telephone', 18], ['rouge a levres/maquillage', 14], ['mouchoir', 12], ['chewing gum', 8]]],
+    ['Une couleur de voiture', [['noir/noire', 28], ['blanc/blanche', 24], ['gris/grise', 20], ['rouge', 14], ['bleu/bleue', 9], ['vert/verte', 5]]],
+    ['Un plat qu’on mange avec les doigts', [['pizza', 26], ['frite/frites', 24], ['burger/hamburger', 20], ['sandwich', 12], ['poulet', 10], ['sushi', 8]]],
+    ['!Une raison de se disputer en couple', [['argent', 28], ['menage', 24], ['jalousie', 18], ['retard', 12], ['belle mere/famille', 10], ['telephone', 8]]],
+    ['!Un truc qu’on fait en cachette', [['manger', 30], ['fumer', 20], ['regarder le telephone', 16], ['dormir', 14], ['chanter', 11], ['pleurer', 9]]],
+  ],
+  en: [
+    ['Something people forget to pack for holidays', [['toothbrush/toothpaste', 32], ['charger', 24], ['swimsuit/swimming costume', 16], ['sunscreen/sun cream', 12], ['passport/id', 9], ['sunglasses', 7]]],
+    ['Something you put in a sandwich', [['ham', 30], ['cheese', 24], ['lettuce/salad', 15], ['tomato', 13], ['butter', 10], ['chicken', 8]]],
+    ['An animal you see on a farm', [['cow', 28], ['chicken/hen/rooster', 24], ['pig', 18], ['sheep', 14], ['horse/donkey', 9], ['goat', 7]]],
+    ['An excuse for being late', [['traffic', 30], ['alarm/overslept', 25], ['train/bus', 18], ['car/broke down', 12], ['kids/children', 8], ['sick/ill', 7]]],
+    ['Something you find in a bathroom', [['toothbrush', 26], ['soap/shower gel', 22], ['towel', 18], ['mirror', 14], ['shampoo', 12], ['toothpaste', 8]]],
+    ['Something that scares people', [['spider', 30], ['dark', 20], ['snake', 16], ['ghost', 13], ['clown', 12], ['heights', 9]]],
+    ['An object people always lose', [['keys/key', 38], ['phone', 20], ['remote', 16], ['glasses', 12], ['sock', 8], ['wallet', 6]]],
+    ['Something you see at the beach', [['sand', 25], ['sea/waves/wave', 22], ['umbrella/parasol', 16], ['towel', 14], ['shell', 12], ['seagull', 11]]],
+    ['A common Christmas present', [['chocolate', 26], ['book', 20], ['perfume', 18], ['jumper/sweater/clothes', 14], ['socks', 12], ['toy/game', 10]]],
+    ['A job where you wear a uniform', [['police/police officer', 34], ['firefighter/fireman', 24], ['soldier', 14], ['nurse/doctor', 12], ['pilot', 9], ['chef', 7]]],
+    ['Something that smells bad', [['bin/rubbish/garbage', 26], ['feet/socks', 24], ['cheese', 16], ['fart', 14], ['sewer', 11], ['rotten egg/egg', 9]]],
+    ['Something you take to the cinema', [['popcorn', 46], ['drink/soda', 22], ['sweets/candy', 14], ['ticket', 9], ['glasses', 5], ['jacket/coat', 4]]],
+    ['A vegetable kids hate', [['broccoli', 30], ['sprouts/brussels sprouts', 22], ['spinach', 18], ['cabbage', 12], ['peas', 10], ['carrot', 8]]],
+    ['A place where you queue', [['supermarket', 34], ['post office', 20], ['bank', 14], ['cinema', 12], ['theme park/ride', 11], ['toilets/toilet', 9]]],
+    ['Food you eat with your fingers', [['pizza', 26], ['chips/fries', 24], ['burger', 20], ['sandwich', 12], ['chicken', 10], ['sushi', 8]]],
+    ['A car colour', [['black', 28], ['white', 24], ['grey/gray', 20], ['red', 14], ['blue', 9], ['green', 5]]],
+    ['Something people do on Sunday', [['sleep/lie in/nap', 30], ['family lunch/roast', 22], ['walk', 18], ['cleaning', 12], ['sport', 10], ['tv/film/series', 8]]],
+    ['!Something couples argue about', [['money', 28], ['chores/cleaning', 24], ['jealousy', 18], ['being late', 12], ['in laws/family', 10], ['phone', 8]]],
+  ],
+};
+
+/** Mot en Couleurs : mots de 6 lettres (FR) et 5 lettres (EN), courants, sans accent gênant. */
+export const COLOR_WORDS: Record<'fr' | 'en', string[]> = {
+  fr: 'maison jardin cheval soleil plante bateau orange cerise banane fourmi lapin tomate fusil bougie cadeau garage citron bouton miroir cahier crayon fenetre poulet salade fromage cochon renard castor requin girafe tortue souris balcon sirene pirate trésor dragon fusee planete comete etoile nuages orages neiger glacon chalet cabane tenter voyage valise billet hotels plages sables vagues marins pecher filets canard oiseau corbeau mouton chevre vaches piquet clocher eglise chapel musees statue palais chateau donjon prince prison police avocat medecin dentiste pompier facteur boucher potier peintre poetes chanteur guitare violon tambour trompette piano flute musique danser sauter courir nager glisser tomber rouler voler gagner perdre jouer lancer attraper ballon raquette tennis rugby boxeur skieur patins velos moteur camion voiture taxis metro avions fusees trains rails tunnel pont route chemin village ville campagne riviere fleuve source desert jungle savane foret arbres feuille racine branche graine fleurs rosier tulipe muguet cactus'
+    .split(' ')
+    .filter((w) => w.normalize('NFD').replace(/[̀-ͯ]/g, '').length === 6),
+  en: 'house apple bread chair table plant beach horse snake tiger zebra mouse sheep goose eagle shark whale ocean river storm cloud sunny rainy snowy frost toast candy pizza pasta salad lemon grape mango melon peach berry honey sugar spice knife spoon plate glass bottle money coins train plane wheel truck drive pilot tower castle queen kings crown sword magic ghost witch dream sleep laugh smile dance music piano drums flute guitar score field goals tennis rugby bikes skate climb swing slide paint brush chalk books story write paper pencil green black white brown purple'
+    .split(' ')
+    .filter((w) => w.length === 5),
+};

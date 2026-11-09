@@ -1212,7 +1212,7 @@ function PadScreenView({
       if (screen.game === 'gateau' && screen.data) return <CakePad data={screen.data as CakePadData} lang={lang} send={send} />;
       if (screen.game === 'fusion' && screen.data) return <FusionPad data={screen.data as FusionPadData} lang={lang} send={send} />;
       if (screen.game === 'chef' && screen.data) return <ChefPad data={screen.data as ChefPadData} lang={lang} send={send} />;
-      if (['tribunal', 'dico', 'plutot', 'chiffre', 'lettre', 'trous'].includes(screen.game) && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
+      if (['tribunal', 'dico', 'plutot', 'chiffre', 'lettre', 'trous', 'duos', 'sondage', 'motus', 'longmot'].includes(screen.game) && screen.data) return <QuizPad data={screen.data as QuizPadData} lang={lang} send={send} />;
       if (screen.game === 'undercover' && screen.data) return <UndercoverPad data={screen.data as UndercoverPadData} lang={lang} send={send} />;
       if (screen.game === 'traitre' && screen.data) return <TraitorPad data={screen.data as TraitorPadData} lang={lang} send={send} />;
       if (screen.game === 'president' && screen.data) return <PresidentPad data={screen.data as PresidentPadData} lang={lang} send={send} />;

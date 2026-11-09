@@ -44,3 +44,36 @@ export function looksReal(key: string): boolean {
   if (/(.)\1\1/.test(key)) return false;
   return !/[bcdfghjklmnpqrstvwxz]{5,}/.test(key);
 }
+
+/**
+ * Les mots du dictionnaire qu'on peut écrire avec ces lettres (chaque lettre une fois), les plus longs d'abord.
+ * Parcourt tout le dictionnaire : ~50 ms, à appeler une fois par manche. Vide si le dictionnaire n'est pas là.
+ */
+export function wordsFrom(lang: string, letters: string, max = 40, min = 3): string[] {
+  const t = texts[lang];
+  if (t === undefined) return [];
+  const have = new Array(26).fill(0);
+  for (const ch of letters) have[ch.charCodeAt(0) - 97]++;
+  const out: string[] = [];
+  const need = new Array(26);
+  let start = 0;
+  while (start < t.length) {
+    let end = t.indexOf('\n', start);
+    if (end < 0) end = t.length;
+    const len = end - start;
+    if (len >= min && len <= letters.length) {
+      need.fill(0);
+      let ok = true;
+      for (let i = start; i < end; i++) {
+        const k = t.charCodeAt(i) - 97;
+        if (k < 0 || k > 25 || ++need[k] > have[k]) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) out.push(t.slice(start, end));
+    }
+    start = end + 1;
+  }
+  return out.sort((a, b) => b.length - a.length).slice(0, max);
+}
