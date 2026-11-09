@@ -11,7 +11,8 @@ import { candy, fitText, studioBackdrop } from './draw';
 import { norm } from './lettre';
 import { card, centerText, drawRow } from './quick';
 import type { QuizPadData } from './quizShared';
-import { COLOR_WORDS, DUO_SAME, DUO_WHO, MEMES, SURVEY } from './tvshowsData';
+import { COLOR_WORDS, DUO_SAME, DUO_WHO, MEMES, MEMES_RECENT, SURVEY } from './tvshowsData';
+import { findMemeClip, memeVideo, type MemeClip } from '../shared/giphy';
 import type { GameBase, GameCtx, GameInstance, Runner } from './types';
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -821,7 +822,26 @@ function createMeme(runners: Runner[], ctx: GameCtx): GameInstance {
   const pls: MemePl[] = runners.slice(0, 12).map((r) => ({ ...r, score: 0, gain: 0, done: false, note: '', botT: 0 }));
   const ROUNDS = 8;
   const CLUE = 10;
-  const deck = freshDeck('meme', MEMES.filter((m) => fr || m[5] !== 'fr'), ROUNDS, (m) => m[4]);
+  // Surtout des mèmes récents, avec quelques classiques
+  const okLang = (m: (typeof MEMES)[number]) => fr || m[5] !== 'fr';
+  const deck = shuffled([...freshDeck('meme-new', MEMES_RECENT.filter(okLang), 5, (m) => m[4]), ...freshDeck('meme', MEMES.filter(okLang), ROUNDS - 5, (m) => m[4])]);
+  // Les vraies vidéos des mèmes (GIPHY), cherchées dès le début ; sans clé ou sans réseau, on reste aux emojis
+  const clips: (MemeClip | null)[] = deck.map(() => null);
+  deck.forEach((m, i) =>
+    void findMemeClip(m[3].split('/')[0] + ' meme', ctx.family, lang).then((c) => {
+      clips[i] = c;
+      if (i === round && c && !video) video = memeVideo(c);
+    }),
+  );
+  let video: HTMLVideoElement | null = null;
+  const small = document.createElement('canvas');
+  const stopVideo = () => {
+    if (!video) return;
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    video = null;
+  };
   let round = -1;
   let phase: QuizPadData['phase'] = 'write';
   let timer = 0;
@@ -844,6 +864,7 @@ function createMeme(runners: Runner[], ctx: GameCtx): GameInstance {
 
   function next() {
     round++;
+    stopVideo();
     if (round >= deck.length) {
       phase = 'end';
       timer = 6;
@@ -851,6 +872,7 @@ function createMeme(runners: Runner[], ctx: GameCtx): GameInstance {
       ctx.refresh();
       return;
     }
+    if (clips[round]) video = memeVideo(clips[round]!);
     phase = 'write';
     clock = 0;
     timer = CLUE * 3;
@@ -916,7 +938,10 @@ function createMeme(runners: Runner[], ctx: GameCtx): GameInstance {
         if (timer <= 0 || pls.every((p) => p.done || (!p.bot && ctx.away(p.pid)))) reveal();
       } else if (phase === 'reveal') {
         if (timer <= 0) next();
-      } else if (timer <= 0) game.over = true;
+      } else if (timer <= 0) {
+        stopVideo();
+        game.over = true;
+      }
     },
     render(g, t) {
       studioBackdrop(g, t, ctx.light, '#efe4ff', '#e0fff2', '#9b5cff');
@@ -933,38 +958,84 @@ function createMeme(runners: Runner[], ctx: GameCtx): GameInstance {
       const n = phase === 'reveal' ? 3 : clues();
       g.font = '700 38px Fredoka, sans-serif';
       g.fillText(`🤳 ${fr ? 'Le Mème Mystère' : 'Mystery Meme'} · ${round + 1}/${deck.length}${phase === 'write' ? ` · ⏱ ${Math.ceil(Math.max(0, timer))}` : ''}`, 960, 70);
-      // Indice 1 : les emojis, en très grand
-      card(g, 560, 110, 800, 230, '#fff');
+      const vid = video && video.readyState >= 2 && video.videoWidth ? video : null;
+      if (vid) {
+        // Indice 1 : la vidéo très pixelisée ; 2 : moins ; 3 et la réponse : nette
+        const bw = 900;
+        const bh = 320;
+        const k = Math.min(bw / vid.videoWidth, bh / vid.videoHeight);
+        const w = vid.videoWidth * k;
+        const h = vid.videoHeight * k;
+        const x = 960 - w / 2;
+        const y = 104 + (bh - h) / 2;
+        g.fillStyle = INK;
+        g.beginPath();
+        g.roundRect(x - 8, y - 8 + 8, w + 16, h + 16, 18);
+        g.fill();
+        const px = phase === 'reveal' || n >= 3 ? 0 : n === 2 ? 46 : 18;
+        g.save();
+        g.beginPath();
+        g.roundRect(x, y, w, h, 12);
+        g.clip();
+        if (px) {
+          small.width = px;
+          small.height = Math.max(1, Math.round((px * h) / w));
+          small.getContext('2d')!.drawImage(vid, 0, 0, small.width, small.height);
+          g.imageSmoothingEnabled = false;
+          g.drawImage(small, x, y, w, h);
+          g.imageSmoothingEnabled = true;
+        } else g.drawImage(vid, x, y, w, h);
+        g.restore();
+        g.strokeStyle = INK;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.roundRect(x, y, w, h, 12);
+        g.stroke();
+        // Mention obligatoire de GIPHY
+        g.fillStyle = INK;
+        g.textAlign = 'right';
+        g.font = '700 28px Fredoka, sans-serif';
+        g.fillText('Powered by GIPHY', x + w, y + h + 30);
+        g.textAlign = 'right';
+        g.font = '64px sans-serif';
+        g.fillStyle = '#000';
+        g.fillText(m[0], x - 28, y + 60);
+        g.textAlign = 'center';
+      }
+      // Indice 1 (sans vidéo) : les emojis, en très grand
+      if (!vid) card(g, 560, 110, 800, 230, '#fff');
       // Les emojis prennent la transparence de la couleur de remplissage : on la remet opaque
       g.fillStyle = '#000';
       g.font = '150px sans-serif';
-      g.fillText(m[0], 960, 232);
+      if (!vid) g.fillText(m[0], 960, 232);
+      // Avec la vidéo, tout le reste descend un peu
+      const dy = vid ? 111 : 0;
       // Indice 2 : la description
       if (n >= 2) {
-        card(g, 160, 365, 1600, 190, '#fff7c9');
+        card(g, 160, 365 + dy, 1600, vid ? 120 : 190, '#fff7c9');
         g.fillStyle = INK;
-        centerText(g, fr ? m[1] : m[2], 960, 460, 1500, 44);
+        centerText(g, fr ? m[1] : m[2], 960, (vid ? 425 : 460) + dy, 1500, vid ? 38 : 44);
       } else {
         g.font = '700 40px Fredoka, sans-serif';
         g.fillStyle = 'rgba(58,33,64,0.5)';
-        g.fillText(fr ? `Indice suivant dans ${Math.ceil(CLUE - clock)} s…` : `Next clue in ${Math.ceil(CLUE - clock)} s…`, 960, 460);
+        g.fillText(fr ? `Indice suivant dans ${Math.ceil(CLUE - clock)} s…` : `Next clue in ${Math.ceil(CLUE - clock)} s…`, 960, 460 + dy);
       }
       // Indice 3 : la première lettre ; à la fin, la réponse
       g.fillStyle = INK;
       if (phase === 'reveal') {
-        card(g, 360, 585, 1200, 130, ROSE);
+        card(g, 360, vid ? 612 : 585, 1200, vid ? 90 : 130, ROSE);
         g.fillStyle = '#fff';
-        g.font = '700 64px Fredoka, sans-serif';
-        g.fillText(fitText(g, answer(), 1140), 960, 652);
+        g.font = `700 ${vid ? 54 : 64}px Fredoka, sans-serif`;
+        g.fillText(fitText(g, answer(), 1140), 960, vid ? 658 : 652);
       } else if (n >= 3) {
-        card(g, 360, 585, 1200, 110, '#e3f2ff');
+        card(g, 360, vid ? 612 : 585, 1200, vid ? 86 : 110, '#e3f2ff');
         g.fillStyle = INK;
         g.font = '700 44px Fredoka, sans-serif';
-        g.fillText(fitText(g, hint3(), 1140), 960, 642);
+        g.fillText(fitText(g, hint3(), 1140), 960, vid ? 656 : 642);
       }
       g.fillStyle = INK;
       g.font = '700 32px Fredoka, sans-serif';
-      g.fillText(fr ? '⭐ 5 pts avec les emojis · 3 avec la description · 2 avec la lettre · +1 au premier' : '⭐ 5 pts on emojis · 3 on description · 2 on letter · +1 for first', 960, 730, 1800);
+      g.fillText(vid ? (fr ? '⭐ 5 pts tout flou · 3 avec la description · 2 avec la lettre · +1 au premier' : '⭐ 5 pts while blurry · 3 on description · 2 on letter · +1 for first') : fr ? '⭐ 5 pts avec les emojis · 3 avec la description · 2 avec la lettre · +1 au premier' : '⭐ 5 pts on emojis · 3 on description · 2 on letter · +1 for first', 960, vid ? 738 : 730, 1800);
       drawRow(g, pls, t, (p) => (p.done ? `✅ ${p.profile.name}\n+${p.gain}` : `${p.profile.name}\n${p.score}`), 870, 96);
     },
     ranking: () => [...pls].sort((a, b) => b.score - a.score).map((p) => p.pid),
